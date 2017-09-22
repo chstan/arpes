@@ -1,0 +1,45 @@
+[
+  {
+    "file": "RhSn2/hdf5/RhSn_005",
+    "description": "First map",
+    "note":   {
+      "Version": "1.2.2",
+      "Instrument": "SES 100-556",
+      "Location": "BL403",
+      "User": "Conrad",
+      "Sample": "RhSn_2",
+      "Date": "06/05/2017",
+      "Time": "05:03:07 PM",
+      "Region Name": "Dither 20",
+      "Excitation Energy": 105.00,
+      "Energy Scale": "Binding",
+      "Acquisition Mode": "Dither",
+      "Center Energy": 0.49,
+      "Low Energy": 1.337,
+      "High Energy": -0.353,
+      "Energy Step": 0.0015900,
+      "Step Time": 7,
+      "Detector first x-channel": 3,
+      "Detector last x-channel": 1024,
+      "Detector first y-channel": 1,
+      "Detector last y-channel": 1000,
+      "Number of slices": 1,
+      "Lens Mode": "Angular30",
+      "Pass Energy": 20,
+      "Number of Sweeps": 10,
+      "Slit Plate": 8.9,
+      "MCP": 1550,
+      "ENDSTATION": "ARPES",
+      "Ring Energy": 1.893,
+      "Beam Current": 500,
+      "userNormalIncidenceOffset": 1,
+      "userPolarOffset": 0.609,
+      "userPhiOffset": -3.571
+    },
+    "data_preparation": {
+      "axis_offset": {
+
+      }
+    }
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "unique_name": "t_at_61",
+    "spectrometer_name": "DLD",
+    "file": "ToF_test_data/20170918/hdf5/timing_at_Gamma.h5",
+    "description": "Timing at gamma, theta=61",
+    "axes": ["x", "t"],
+    "dE": 0.005,
+    "E_max": 10,
+    "t0": 0,
+    "timing_offset": 712,
+    "m*": 0.5,
+    "data_preparation": {
+    }
+  },
+  {
+    "unique_name": "t_at_55",
+    "spectrometer_name": "DLD",
+    "file": "ToF_test_data/20170918/hdf5/timing_at_55.h5",
+    "description": "Timing at theta=55",
+    "axes": ["x", "t"],
+    "dE": 0.005,
+    "E_max": 10,
+    "timing_offset": 712,
+    "t0": 0,
+    "m*": 0.5,
+    "data_preparation": {
+    }
+  },
+  {
+    "unique_name": "t_at_67",
+    "spectrometer_name": "DLD",
+    "file": "ToF_test_data/20170918/hdf5/timing_at_67.h5",
+    "description": "Timing at theta=67",
+    "axes": ["x", "t"],
+    "dE": 0.005,
+    "E_max": 10,
+    "timing_offset": 712,
+    "t0": 0,
+    "m*": 0.5,
+    "data_preparation": {
+    }
+  }
+]

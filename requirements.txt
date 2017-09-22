@@ -1,0 +1,18 @@
+# Data loading
+astropy
+xarray
+h5py
+
+# Analysis
+dask
+numpy
+lmfit
+
+# Plotting
+matplotlib
+seaborn
+bokeh
+
+# Rendering and exploration
+# paraview
+ipyvolume
