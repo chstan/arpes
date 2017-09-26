@@ -10,7 +10,7 @@ import re
 from math import sin, cos, acos
 from operator import itemgetter
 
-import numpy
+import numpy as np
 import xarray as xr
 
 import arpes.constants
@@ -34,9 +34,9 @@ def fix_burnt_pixels(spectrum):
     frames of a spectrum as indication of issues to be fixed. To patch the
     pixels, we replace them with the average value of their neighbors.
 
-    spectrum - <NumpyArray> containing the pixels
+    spectrum - <npArray> containing the pixels
 
-    returns: <NumpyArray> containing the fixed pixels
+    returns: <npArray> containing the fixed pixels
     """
     pass
 
@@ -56,16 +56,16 @@ def fermi_dirac_distribution(Es, mu, T):
     This is meant to be fed into scipy.optimize or another fitting tool typically,
     or to generate data
 
-    Es - <NumpyArray> an array of all of the energy data
+    Es - <npArray> an array of all of the energy data
 
-    returns: <NumpyArray> the value of the distribution at different energies
+    returns: <npArray> the value of the distribution at different energies
     """
 
-    return 1/(numpy.exp((Es-mu)/T) + 1)
+    return 1/(np.exp((Es-mu)/T) + 1)
 
 
 def bose_einstein_distribution(Es, mu, T):
-    return 1/(numpy.exp((Es-mu)/T) - 1)
+    return 1/(np.exp((Es-mu)/T) - 1)
 
 
 def denorm_fermi_dirac_distribution(Es, mu, T, g):
@@ -213,22 +213,22 @@ def jacobian_correction(energies, lattice_constant, theta, beta, alpha, phis, rh
     This function builds an array with the same shape that has the appropriate
     correction for each cell.
 
-    energies - <NumpyArray> the linear sampling of energies across the spectrum
-    phis - <NumpyArray> the linear sampling of angles across the spectrum
+    energies - <npArray> the linear sampling of energies across the spectrum
+    phis - <npArray> the linear sampling of angles across the spectrum
 
-    returns: <NumpyArray> a 2D array of the Jacobian correction to apply to each
+    returns: <npArray> a 2D array of the Jacobian correction to apply to each
     pixel in the spectrum
     """
 
     k_inv_angstrom = 0.5123
-    k0s = k_inv_angstrom * numpy.sqrt(energies) * lattice_constant / math.pi
+    k0s = k_inv_angstrom * np.sqrt(energies) * lattice_constant / math.pi
 
-    dkxdphi = (cos(theta) * cos(alpha) * numpy.cos(phis) -
-               sin(theta) * numpy.sin(phis))
+    dkxdphi = (cos(theta) * cos(alpha) * np.cos(phis) -
+               sin(theta) * np.sin(phis))
 
     dkydphi = (
-        -cos(theta) * sin(beta) * numpy.sin(phis) +
-        numpy.cos(phis) * (
+        -cos(theta) * sin(beta) * np.sin(phis) +
+        np.cos(phis) * (
             cos(beta) * sin(alpha) -
             cos(alpha) * sin(theta) * sin(beta)))
 
@@ -236,7 +236,7 @@ def jacobian_correction(energies, lattice_constant, theta, beta, alpha, phis, rh
     rhat_x, rhat_y = rhat
 
     geometric_correction = math.pi/180*(rhat_x * dkxdphi + rhat_y * dkydphi)
-    return numpy.outer(k0s, geometric_correction)
+    return np.outer(k0s, geometric_correction)
 
 
 def arrange_by_indices(items, indices):
@@ -272,3 +272,68 @@ def get_spectrometer(dataset: xr.Dataset):
     }
 
     return spectrometers[dataset.attrs['spectrometer_name']]
+
+def apply_dataarray(arr: xr.DataArray, f, *args, **kwargs):
+    return xr.DataArray(
+        f(arr.values, *args, **kwargs),
+        arr.coords,
+        arr.dims,
+        attrs=arr.attrs
+    )
+
+def lift_dataarray(f):
+    """
+    Lifts a function that operates on an np.ndarray's values to one that
+    acts on the values of an xr.DataArray
+    :param f:
+    :return: g: Function operating on an xr.DataArray
+    """
+
+    def g(arr: xr.DataArray, *args, **kwargs):
+        return apply_dataarray(arr, f, *args, **kwargs)
+
+    return g
+
+def lift_dataarray_attrs(f):
+    """
+    Lifts a function that operates on a dictionary to a function that acts on the
+    attributes of an xr.DataArray, producing a new xr.DataArray. Another option
+    if you don't need to create a new DataArray is to modify the attributes.
+    :param f:
+    :return: g: Function operating on the attributes of an xr.DataArray
+    """
+
+    def g(arr: xr.DataArray, *args, **kwargs):
+        return xr.DataArray(
+            arr.values,
+            arr.coords,
+            arr.dims,
+            attrs=f(arr.attrs, *args, **kwargs)
+        )
+
+    return g
+
+def _rename_key(d, k, nk):
+    if k in d:
+        d[nk] = d[k]
+        del d[k]
+
+def rename_keys(d, keys_dict):
+    for k, nk in keys_dict.items():
+        _rename_key(d, k, nk)
+
+    return d
+
+
+rename_dataarray_attrs = lift_dataarray_attrs(rename_keys)
+
+
+rename_standard_attrs = lambda x: rename_dataarray_attrs(x, {
+    'Lens Mode': 'lens_mode',
+    'Excitation Energy': 'hv',
+    'Pass Energy': 'pass_energy',
+    'Slit Plate': 'slit',
+    'Number of Sweepts': 'n_sweeps',
+    'Acquisition Mode': 'scan_mode',
+    'Region Name': 'scan_region',
+})

@@ -8,6 +8,9 @@ from arpes.utilities.math import (
 
 test_polarization = propagate_statistical_error(polarization)
 
+def prettyplot():
+    pass
+
 def spin_polarized_spectrum(spin_edc):
     up = numpy.copy(spin_edc.spin_up_energy)
     down = numpy.copy(spin_edc.spin_down_energy)

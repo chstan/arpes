@@ -52,7 +52,8 @@ def load_SES(metadata: dict=None, filename: str=None):
 
     raw_data = f['/' + primary_dataset_name][:]
 
-    scaling = [numpy.linspace(scale[1], scale[0] * raw_data.shape[i]) for i, scale in enumerate(scaling)]
+    scaling = [numpy.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
+               for i, scale in enumerate(scaling)]
 
     dataset_contents = dict()
     dataset_contents['raw'] = xarray.DataArray(

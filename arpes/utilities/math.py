@@ -1,4 +1,8 @@
+import collections
+import itertools
+
 import numpy
+import scipy.ndimage.interpolation
 
 
 def derivative(f, arg_idx=0):
@@ -35,3 +39,24 @@ def propagate_statistical_error(f):
         return numpy.sqrt(running_sum)
 
     return compute_propagated_error
+
+def shift_by(arr, value, axis=0, by_axis=0, **kwargs):
+    print(axis, by_axis)
+    assert(axis != by_axis)
+    arr_copy = arr.copy()
+
+    if not isinstance(value, collections.Iterable):
+        value = list(itertools.repeat(value, times=arr.shape[by_axis]))
+
+    for axis_idx in range(arr.shape[by_axis]):
+        slc = (slice(None),) * by_axis + (axis_idx,) + (slice(None),) * (arr.ndim - by_axis - 1)
+        shift_amount = (0,) * axis + (value[axis_idx],) + (0,) * (arr.ndim - axis - 1)
+
+        if axis > by_axis:
+            shift_amount = shift_amount[1:]
+        else:
+            shift_amount = shift_amount[:-1]
+
+        arr_copy[slc] = scipy.ndimage.interpolation.shift(arr[slc], shift_amount, **kwargs)
+
+    return arr_copy

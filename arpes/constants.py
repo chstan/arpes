@@ -64,11 +64,29 @@ K_INV_ANGSTROM = 0.5123
 
 SPECTROMETER_STRAIGHT_TOF = {
     'length': STRAIGHT_TOF_LENGTH,
+    'type': 'tof',
+    'dof': ['t'],
+    'scan_dof': ['polar'],
 }
 SPECTROMETER_SPIN_TOF = {
     'length': SPIN_TOF_LENGTH,
+    'type': 'tof',
+    'dof': ['t', 'spin'],
+    'scan_dof': ['polar'],
 }
 
 SPECTROMETER_DLD = {
     'length': DLD_LENGTH,
+    'type': 'tof',
+    'type': {
+        'timing': ['x_pixels', 't_pixels'],
+        'spatial': ['x_pixels', 'y_pixels'],
+    },
+    'scan_dof': ['polar'],
+}
+
+SPECTROMETER_BL4 = {
+    'slit_orientation': 'vertical',
+    'type': 'hemisphere',
+    'dof': ['polar', 'sample_phi'],
 }

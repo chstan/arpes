@@ -7,12 +7,16 @@ h5py
 dask
 numpy
 lmfit
+scikit-learn
+scikit-image
 
 # Plotting
+holoviews
 matplotlib
 seaborn
 bokeh
 
 # Rendering and exploration
 # paraview
+ipywidgets=7.0.1
 ipyvolume
