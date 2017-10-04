@@ -6,7 +6,9 @@ import xarray as xr
 from scipy.ndimage import geometric_transform
 
 from arpes.utilities import get_spectrometer
+from arpes.provenance import provenance
 
+from sklearn import preprocessing
 
 def transform_dataarray_axis(f: Callable[[float], float], old_axis_name: str,
                              new_axis_name: str,
@@ -26,6 +28,15 @@ def transform_dataarray_axis(f: Callable[[float], float], old_axis_name: str,
     new_coords = dict(dataset.coords)
     new_coords.pop(old_axis_name)
 
+    new_dataarray = xr.DataArray(output, coords=new_coords, dims=new_dims, attrs=dataset.attrs,).rename(name)
+    del new_dataarray.attrs['id']
+    
+    provenance(new_dataarray, dataset, {
+        'what': 'Transformed a DataArray coordinate axis',
+        'by': 'transform_dataarray_axis',
+        'old_axis': old_axis_name,
+        'new_axis': new_axis_name,
+    })
     return xr.merge([
         dataset,
         xr.DataArray(
@@ -93,3 +104,15 @@ def process_DLD(dataset: xr.Dataset):
     )
 
     return dataset
+
+
+def normalize_dim(arr: xr.DataArray, dim):
+    normalized_arr = arr / arr.sum([d for d in arr.dims if d != dim])
+
+    provenance(normalized_arr, arr, {
+        'what': 'Normalize axis',
+        'by': 'normalize_dim',
+        'dim': dim,
+    })
+
+    return normalized_arr

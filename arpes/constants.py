@@ -90,3 +90,9 @@ SPECTROMETER_BL4 = {
     'type': 'hemisphere',
     'dof': ['polar', 'sample_phi'],
 }
+
+HV_CONVERSION = 3.81
+
+FINE_K_GRAINING = 0.01
+MEDIUM_K_GRAINING = 0.05
+COARSE_K_GRAINING = 0.1

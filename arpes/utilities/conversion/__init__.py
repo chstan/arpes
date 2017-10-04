@@ -23,8 +23,13 @@ Standard vertically oriented cryostats:
 Additionally, everywhere, 'eV' denotes binding energies. Other energy units should
 be labelled as:
 
-Kinetic energy -> 'KE'
+Kinetic energy -> 'kinetic_energy'
+Binding energy -> 'binding_energy'
 Photon energy -> 'hv'
+
+Other angles:
+Sample elevation/tilt/beta angle -> 'polar'
+Analyzer polar angle -> 'phi'
 """
 
 # pylint: disable=W0613, C0103
@@ -39,22 +44,17 @@ import xarray as xr
 import arpes
 import arpes.constants as consts
 from arpes.exceptions import UnimplementedException
+from arpes.provenance import provenance
 
-HV_CONVERSION = 3.81
 
-FINE_K_GRAINING = 0.01
-MEDIUM_K_GRAINING = 0.05
-COARSE_K_GRAINING = 0.1
+# TODO Add conversion utilities for MC (i.e. vertical slit)
+# TODO Add conversion utilities for photon energy dependence
+# TODO Add conversion utilities that work for lower dimensionality, i.e. the ToF
+# TODO Add provenance capabilities
 
-# koutw = 0.5123*sqrt(hv-WF+BE)
-#
-# IF(geometry == 3) // Sample
-#     # Polar - Tilt + Detector Vertical Slit(polw=detector angle)
-#
-#     t
-#
-#     newvol = interp3D(vol, polEw, tiltEw, z)
-# ENDIF
+
+K_SPACE_BORDER = 0.1
+
 
 class CoordinateConverter(object):
     def __init__(self, arr: xr.DataArray, *args, **kwargs):
@@ -63,7 +63,7 @@ class CoordinateConverter(object):
 
     def prep(self, arr: xr.DataArray):
         """
-        The CoordinateConverter.prep method allows you to precompute some transformations
+        The CoordinateConverter.prep method allows you to pre-compute some transformations
         that are common to the individual coordinate transform methods as an optimization.
 
         This is useful if you want the conversion methods to have separation of concern,
@@ -79,6 +79,74 @@ class CoordinateConverter(object):
         """
         pass
 
+    def kspace_to_BE(self, binding_energy, *args, **kwargs):
+        return binding_energy
+
+    def conversion_for(self, dim):
+        pass
+
+    def get_coordinates(self, resolution: dict=None):
+        coordinates = {}
+        coordinates['eV'] = self.arr.coords['eV']
+        return coordinates
+
+class ConvertKpKzV0(CoordinateConverter):
+    # TODO implement
+    def __init__(self, *args, **kwargs):
+        super(ConvertKpKzV0, self).__init__(*args, **kwargs)
+
+class ConvertKpKz(CoordinateConverter):
+    def __init__(self, *args, **kwargs):
+        super(ConvertKpKz, self).__init__(*args, **kwargs)
+        self.hv = None
+
+    def get_coordinates(self, resolution: dict=None):
+        if resolution is None:
+            resolution = {}
+
+        coordinates = super(ConvertKpKz, self).get_coordinates(resolution)
+
+        ((kp_low, kp_high), (kz_low, kz_high)) = calculate_kp_kz_bounds(self.arr)
+
+        coordinates['kp'] = np.arange(kp_low - K_SPACE_BORDER, kp_high + K_SPACE_BORDER,
+                                      resolution.get('kp', arpes.constants.MEDIUM_K_GRAINING))
+        coordinates['kz'] = np.arange(kz_low - K_SPACE_BORDER, kz_high + K_SPACE_BORDER,
+                                      resolution.get('kz', arpes.constants.MEDIUM_K_GRAINING))
+
+        return coordinates
+
+    def kspace_to_hv(self, binding_energy, kp, kz, *args, **kwargs):
+        # x = kp, y = kz, z = BE
+        if self.hv is not None:
+            inner_potential = self.arr.attrs.get('inner_potential', 10)
+            work_function = self.arr.attrs.get('sample_workfunction', 4.32)
+            self.hv = arpes.constants.HV_CONVERSION * (kp ** 2 + kz ** 2) + (
+                -inner_potential - binding_energy + work_function)
+
+        return self.hv
+
+    def kspace_to_phi(self, binding_energy, kp, kz, *args, **kwargs):
+        if self.hv is None:
+            self.kspace_to_hv(binding_energy, kp, kz, *args, **kwargs)
+
+        def kp_to_polar(kinetic_energy_out, kp):
+            return 180 / np.pi * np.arcsin(kp / (arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy_out)))
+
+        work_function = self.arr.attrs.get('sample_workfunction', 4.32)
+        return kp_to_polar(self.hv + work_function, kp)
+
+    def conversion_for(self, dim):
+        return {
+            'BE': self.kspace_to_BE,
+            'hv': self.kspace_to_hv,
+            'phi': self.kspace_to_phi,
+        }.get(dim, None)
+
+
+class ConvertKxKyKz(CoordinateConverter):
+    def __init__(self, *args, **kwargs):
+        super(ConvertKxKyKz, self).__init__(*args, **kwargs)
+
 
 class ConvertKxKy(CoordinateConverter):
     # TODO Convert all angles to radians where possible, avoid computations back and forth
@@ -87,31 +155,76 @@ class ConvertKxKy(CoordinateConverter):
         self.polar = None
         self.k_tot = None
 
-    def kspace_to_BE(self, BE, *args, **kwargs):
-        return BE
+    def get_coordinates(self, resolution: dict=None):
+        if resolution is None:
+            resolution = {}
 
-    def compute_k_tot(self, BE):
+        coordinates = super(ConvertKxKy, self).get_coordinates(resolution)
+
+        ((kx_low, kx_high), (ky_low, ky_high)) = calculate_kx_ky_bounds(self.arr)
+
+        coordinates['kx'] = np.arange(kx_low - K_SPACE_BORDER, kx_high + K_SPACE_BORDER,
+                                      resolution.get('kx', arpes.constants.MEDIUM_K_GRAINING))
+        coordinates['ky'] = np.arange(kx_low - K_SPACE_BORDER, kx_high + K_SPACE_BORDER,
+                                      resolution.get('kx', arpes.constants.MEDIUM_K_GRAINING))
+
+        return coordinates
+
+    def compute_k_tot(self, binding_energy):
         self.k_tot = arpes.constants.K_INV_ANGSTROM * np.sqrt(
-            self.arr.attrs['hv'] - self.arr.attrs.get('sample_workfunction', 4.32) + BE)
+            self.arr.attrs['hv'] - self.arr.attrs.get('sample_workfunction', 4.32) + binding_energy)
 
-    #tiltEw = r2d * asin(ky / k_tot)
-
-    #     polEw = r2d * asin(x / koutw(z) / cos(tiltEw / r2d))
-    def kspace_to_phi(self, BE, kx, ky, *args, **kwargs):
+    def kspace_to_phi(self, binding_energy, kx, ky, *args, **kwargs):
         if self.k_tot is None:
-           self.compute_k_tot(BE)
+            self.compute_k_tot(binding_energy)
 
         if self.polar is None:
-            self.kspace_to_polar(BE, kx, ky, *args, **kwargs)
+            self.kspace_to_polar(binding_energy, kx, ky, *args, **kwargs)
 
         return (180 / np.pi) * np.arcsin(kx / self.k_tot / np.cos(self.polar * np.pi / 180))
 
-    def kspace_to_polar(self, BE, kx, ky, *args, **kwargs):
+    def kspace_to_polar(self, binding_energy, kx, ky, *args, **kwargs):
         if self.k_tot is None:
-            self.compute_k_tot(BE)
+            self.compute_k_tot(binding_energy)
 
         self.polar = (180 / np.pi) * np.arcsin(ky / self.k_tot)
         return self.polar
+
+    def conversion_for(self, dim):
+        return {
+            'BE': self.kspace_to_BE,
+            'phi': self.kspace_to_phi,
+            'polar': self.kspace_to_polar,
+        }.get(dim, None)
+
+def calculate_kp_kz_bounds(arr: xr.DataArray):
+    phi_min, phi_max = np.min(arr.coords['phi']), np.max(arr.coords['phi'])
+    binding_energy_min, binding_energy_max = np.min(arr.coords['eV']), np.max(arr.coords['eV'])
+    hv_min, hv_max = np.min(arr.coords['hv']), np.max(arr.coords['hv'])
+
+    def spherical_to_kx(kinetic_energy, theta, phi):
+        return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(
+            np.pi / 180 * theta) * np.cos(np.pi / 180 * phi)
+
+    def spherical_to_kz(kinetic_energy, theta, phi, inner_V):
+        return arpes.constants.K_INV_ANGSTROM * np.sqrt(
+            kinetic_energy * np.cos(np.pi / 180 * theta) ** 2 + inner_V)
+
+    work_function = arr.attrs.get('sample_workfunction', 4.32)
+    kx_min = min(spherical_to_kx(hv_max - binding_energy_max - work_function, phi_min, 0),
+                 spherical_to_kx(hv_min - binding_energy_max - work_function, phi_min, 0))
+    kx_max = max(spherical_to_kx(hv_max - binding_energy_max - work_function, phi_max, 0),
+                 spherical_to_kx(hv_min - binding_energy_max - work_function, phi_max, 0))
+
+    angle_max = max(abs(phi_min), abs(phi_max))
+    inner_potential = arr.attrs.get('inner_potential', 10)
+    kz_min = spherical_to_kz(hv_min + binding_energy_min - work_function, angle_max, 0, inner_potential)
+    kz_max = spherical_to_kz(hv_max + binding_energy_max - work_function, 0, 0, inner_potential)
+
+    return (
+        (round(kx_min, 2), round(kx_max, 2)), # kp
+        (round(kz_min, 2), round(kz_max, 2)), # kz
+    )
 
 def calculate_kx_ky_bounds(arr: xr.DataArray):
     """
@@ -134,18 +247,18 @@ def calculate_kx_ky_bounds(arr: xr.DataArray):
                                    phi_low, phi_mid, phi_high, phi_high])
     sampled_polar_values = np.array([polar_mid, polar_high, polar_high, polar_high, polar_mid,
                                      polar_low, polar_low, polar_low, polar_mid])
-    KE = arr.attrs['hv'] - arr.attrs.get('sample_work_function', 4.32)
+    kinetic_energy = arr.attrs['hv'] - arr.attrs.get('sample_work_function', 4.32)
 
-    kxs = arpes.constants.K_INV_ANGSTROM * np.sqrt(KE) * \
-                        np.sin(np.pi / 180. * sampled_phi_values)
-    kys = arpes.constants.K_INV_ANGSTROM * np.sqrt(KE) * \
-                        np.cos(np.pi / 180. * sampled_phi_values) * \
-                        np.sin(np.pi / 180. * sampled_polar_values)
+    kxs = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(np.pi / 180. * sampled_phi_values)
+    kys = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.cos(
+        np.pi / 180. * sampled_phi_values) * np.sin(
+        np.pi / 180. * sampled_polar_values)
 
     return (
         (round(np.min(kxs), 2), round(np.max(kxs), 2)),
         (round(np.min(kys), 2), round(np.max(kys), 2)),
     )
+
 
 def infer_kspace_coordinate_transform(arr: xr.DataArray):
     """
@@ -159,13 +272,13 @@ def infer_kspace_coordinate_transform(arr: xr.DataArray):
     conversion functions
     """
     old_coords = deepcopy(list(arr.coords))
-    assert('eV' in old_coords)
+    assert ('eV' in old_coords)
     old_coords.remove('eV')
     old_coords.sort()
 
     new_coords = {
         ('phi',): ['kp'],
-        ('phi','polar',): ['kx', 'ky'],
+        ('phi', 'polar',): ['kx', 'ky'],
         ('hv', 'phi',): ['kp', 'kz'],
         ('hv', 'phi', 'polar',): ['kx', 'ky', 'kz'],
     }.get(tuple(old_coords))
@@ -196,9 +309,45 @@ def grid_interpolator_from_dataarray(arr: xr.DataArray, fill_value=0.0, method='
         bounds_error=bounds_error, fill_value=fill_value, method=method, **kwargs)
 
 
+def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
+    old_dims = deepcopy(arr.dims)
+    old_dims.remove('eV')
+
+    converted_dims = ['eV'] + {
+        ('phi'): ['kp'],
+        ('phi', 'polar'): ['kx', 'ky'],
+        ('hv', 'phi'): ['kp', 'kz'],
+        ('hv', 'phi', 'polar'): ['kx', 'ky', 'kz'],
+    }.get(tuple(old_dims))
+
+    convert_cls = {
+        ('phi'): None,
+        ('phi', 'polar'): ConvertKxKy,
+        ('hv', 'phi'): ConvertKpKz,
+        ('hv', 'phi', 'polar'): ConvertKxKyKz,
+    }.get(tuple(old_dims))
+    converter = CoordinateConverter(arr)
+    converted_coordinates = converter.get_coordinates(resolution)
+
+    converted_arr = convert_coordinates(
+        arr,
+        converted_coordinates,
+        {
+            'dims': converted_dims,
+            'transforms': dict(zip(converted_dims, [converter.conversion_for(d) for d in converted_dims])),
+        }
+    )
+
+    provenance(converted_arr, arr, {
+        'what': 'Automatically k-space converted',
+        'by': 'convert_to_kspace',
+    })
+
+    return converted_arr
+
+
 def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transform):
     target_dimensions = coordinate_transform['dims']
-    transforms = coordinate_transform['transforms']
 
     ordered_source_dimensions = arr.dims
     grid_interpolator = grid_interpolator_from_dataarray(
@@ -220,7 +369,8 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
         attrs=arr.attrs
     )
 
-def ke_polar_to_kx(kinetic_energy, theta, phi, metadata: dict=None):
+
+def ke_polar_to_kx(kinetic_energy, theta, phi, metadata: dict = None):
     """
     Convert from standard polar angles p_theta, p_phi to the k-space Cartesian
     coordinate p_x.
@@ -232,7 +382,7 @@ def ke_polar_to_kx(kinetic_energy, theta, phi, metadata: dict=None):
             np.sin(theta) * np.cos(phi))
 
 
-def ke_polar_to_kz(kinetic_energy, theta, phi, metadata: dict=None):
+def ke_polar_to_kz(kinetic_energy, theta, phi, metadata: dict = None):
     """
     Convert from standard polar angles p_theta, p_phi to the k-space Cartesian
     coordinate p_z.
@@ -250,12 +400,12 @@ def kp_to_polar(energies, kp, metadata=None):
 
 def kx_kz_E_to_polar(kx, kz, E, metadata=None):
     k2 = kx ** 2 + kz ** 2
-    return kp_to_polar(HV_CONVERSION * k2 - metadata['inner_potential'] - E, kx)
+    return kp_to_polar(arpes.constants.HV_CONVERSION * k2 - metadata['inner_potential'] - E, kx)
 
 
 def kx_kz_E_to_hv(kx, kz, E, metadata=None):
     k2 = kx ** 2 + kz ** 2
-    return HV_CONVERSION * k2 - metadata['inner_potential'] - E + metadata['work_function']
+    return arpes.constants.HV_CONVERSION * k2 - metadata['inner_potential'] - E + metadata['work_function']
 
 
 def polar_hv_E_to_kx(polar, hv, E, metadata=None):

@@ -2,10 +2,12 @@
 astropy
 xarray
 h5py
+netCDF4
 
 # Analysis
 dask
 numpy
+scipy
 lmfit
 scikit-learn
 scikit-image

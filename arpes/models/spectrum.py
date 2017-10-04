@@ -14,7 +14,16 @@ import arpes.config
 import arpes.constants as consts
 from arpes.exceptions import AnalysisError
 from arpes.utilities import split_hdu_header
+from arpes.provenance import provenance_from_file
 from .viewable import Viewable
+
+
+def load_scan(scan_desc):
+    # TODO support other spectrometers and scan types transparently
+    if 'SES' in scan_desc.get('note', {}).get('Instrument', ''):
+        return load_SES(scan_desc)
+
+    raise ValueError('Could not identify appropriate spectrometer')
 
 
 def load_SES(metadata: dict=None, filename: str=None):
@@ -56,12 +65,21 @@ def load_SES(metadata: dict=None, filename: str=None):
                for i, scale in enumerate(scaling)]
 
     dataset_contents = dict()
+    attrs = metadata.pop('note', {})
+    if 'id' in metadata:
+        attrs['id'] = metadata['id']
+
     dataset_contents['raw'] = xarray.DataArray(
         raw_data,
         coords=dict(zip(dimension_labels, scaling)),
         dims=dimension_labels,
-        attrs=metadata.get('note', {}),
+        attrs=attrs,
     )
+
+    provenance_from_file(dataset_contents['raw'], data_loc, {
+        'what': 'Loaded SES dataset from HDF5.',
+        'by': 'load_SES'
+    })
 
     return xarray.Dataset(
         dataset_contents,
@@ -104,9 +122,14 @@ def load_DLD(metadata: dict=None, filename: str=None):
         attrs=f['/PRIMARY'].attrs.items(),
     )
 
+    provenance_from_file(dataset_contents['raw'], data_loc, {
+        'what': 'Loaded Anton and Ping DLD dataset from HDF5.',
+        'by': 'load_DLD',
+    })
+
     return xarray.Dataset(
         dataset_contents,
-        attrs=metadata,
+        attrs=metadata
     )
 
 

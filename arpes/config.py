@@ -4,12 +4,20 @@ for loading configuration in via external files, to allow better modularity
 between different projects.
 """
 
-DATA_PATH = "/Users/chstansbury/Research/lanzara/data/"
-SOURCE_PATH = "/Users/chstansbury/PycharmProjects/python-arpes/"
-
+import os.path
 import json
 
 import arpes.constants as consts
+
+
+DATA_PATH = '/Users/chstansbury/Research/lanzara/data/'
+SOURCE_PATH = '/Users/chstansbury/PycharmProjects/python-arpes/'
+
+DATASET_CACHE_PATH = '/Users/chstansbury/Research/lanzara/data/cache/'
+DATASET_CACHE_RECORD = os.path.join(SOURCE_PATH, 'datasets/cache.json')
+
+PIPELINE_SHELF = os.path.join(SOURCE_PATH, 'datasets/pipeline.shelf')
+
 
 CONFIG = {
     'VERSION': '1.0.0',
