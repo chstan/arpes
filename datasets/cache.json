@@ -1,96 +1,80 @@
 {
   "25f2fcb6-a91f-11e7-b9fd-6c40088ef8e6": {
-    "Region Name": "Dither 20",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/25f2fcb6-a91f-11e7-b9fd-6c40088ef8e6.nc",
     "id": "25f2fcb6-a91f-11e7-b9fd-6c40088ef8e6"
   },
   "806dbe74-a91f-11e7-9e41-6c40088ef8e6": {
-    "Region Name": "Swept_Core_1",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806dbe74-a91f-11e7-9e41-6c40088ef8e6.nc",
     "id": "806dbe74-a91f-11e7-9e41-6c40088ef8e6"
   },
   "806f6152-a91f-11e7-b930-6c40088ef8e6": {
-    "Region Name": "Dither 20",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f6152-a91f-11e7-b930-6c40088ef8e6.nc",
     "id": "806f6152-a91f-11e7-b930-6c40088ef8e6"
   },
   "806f6262-a91f-11e7-84e0-6c40088ef8e6": {
-    "Region Name": "Swept_Core_1",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f6262-a91f-11e7-84e0-6c40088ef8e6.nc",
     "id": "806f6262-a91f-11e7-84e0-6c40088ef8e6"
   },
   "806f62cc-a91f-11e7-8f49-6c40088ef8e6": {
-    "Region Name": "Swept_Core_1",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f62cc-a91f-11e7-8f49-6c40088ef8e6.nc",
     "id": "806f62cc-a91f-11e7-8f49-6c40088ef8e6"
   },
   "806f6346-a91f-11e7-881c-6c40088ef8e6": {
-    "Region Name": "Dither 20",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f6346-a91f-11e7-881c-6c40088ef8e6.nc",
     "id": "806f6346-a91f-11e7-881c-6c40088ef8e6"
   },
   "806f63a8-a91f-11e7-a803-6c40088ef8e6": {
-    "Region Name": "Swept_VB4",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f63a8-a91f-11e7-a803-6c40088ef8e6.nc",
     "id": "806f63a8-a91f-11e7-a803-6c40088ef8e6"
   },
   "806f6406-a91f-11e7-b7a0-6c40088ef8e6": {
-    "Region Name": "Swept_VB4",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f6406-a91f-11e7-b7a0-6c40088ef8e6.nc",
     "id": "806f6406-a91f-11e7-b7a0-6c40088ef8e6"
   },
   "806f6468-a91f-11e7-a628-6c40088ef8e6": {
-    "Region Name": "Swept_VB4",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f6468-a91f-11e7-a628-6c40088ef8e6.nc",
     "id": "806f6468-a91f-11e7-a628-6c40088ef8e6"
   },
   "806f64c2-a91f-11e7-b35a-6c40088ef8e6": {
-    "Region Name": "Swept_VB4",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f64c2-a91f-11e7-b35a-6c40088ef8e6.nc",
     "id": "806f64c2-a91f-11e7-b35a-6c40088ef8e6"
   },
   "806f651c-a91f-11e7-9a09-6c40088ef8e6": {
-    "Region Name": "Swept_VB4",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f651c-a91f-11e7-9a09-6c40088ef8e6.nc",
     "id": "806f651c-a91f-11e7-9a09-6c40088ef8e6"
   },
   "806f656c-a91f-11e7-b3a4-6c40088ef8e6": {
-    "Region Name": "Dither 20",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f656c-a91f-11e7-b3a4-6c40088ef8e6.nc",
     "id": "806f656c-a91f-11e7-b3a4-6c40088ef8e6"
   },
   "806f65c8-a91f-11e7-b24d-6c40088ef8e6": {
-    "Region Name": "Dither 20",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f65c8-a91f-11e7-b24d-6c40088ef8e6.nc",
     "id": "806f65c8-a91f-11e7-b24d-6c40088ef8e6"
   },
   "806f6622-a91f-11e7-8965-6c40088ef8e6": {
-    "Region Name": "Dither 20",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f6622-a91f-11e7-8965-6c40088ef8e6.nc",
     "id": "806f6622-a91f-11e7-8965-6c40088ef8e6"
   },
   "806f6670-a91f-11e7-bed7-6c40088ef8e6": {
-    "Region Name": "Swept_VB4",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f6670-a91f-11e7-bed7-6c40088ef8e6.nc",
     "id": "806f6670-a91f-11e7-bed7-6c40088ef8e6"
   },
   "806f66ca-a91f-11e7-a559-6c40088ef8e6": {
-    "Region Name": "Swept_VB4",
     "Sample": "RhSn_2",
     "file": "/Users/chstansbury/Research/lanzara/data/cache/806f66ca-a91f-11e7-a559-6c40088ef8e6.nc",
     "id": "806f66ca-a91f-11e7-a559-6c40088ef8e6"
