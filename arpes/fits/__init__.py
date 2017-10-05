@@ -45,13 +45,19 @@ class XModel(lf.Model):
         if isinstance(data, xr.DataArray):
             real_data = data.values
             assert(len(real_data.shape) == 1)
-            x = data.coords[list(data.coords)[0]].values
+            x = data.coords[list(data.indexes)[0]].values
 
         guessed_params = self.guess(real_data)
         if params is not None:
             guessed_params.update(params)
 
-        return super(XModel, self).fit(real_data, guessed_params, x=x, **kwargs)
+        result = None
+        try:
+            result = super(XModel, self).fit(real_data, guessed_params, x=x, **kwargs)
+        except Exception as e:
+            import pdb; pdb.set_trace()
+        finally:
+            return result
 
 class GStepBModel(XModel):
     """
@@ -64,15 +70,17 @@ class GStepBModel(XModel):
 
         self.set_param_hint('erf_amp', min=0.)
         self.set_param_hint('width', min=0)
+        self.set_param_hint('lin_bkg', min=-10, max=10)
+        self.set_param_hint('const_bkg', min=-50, max=50)
 
     def guess(self, data, x=None, **kwargs):
         pars = self.make_params()
 
         pars['%scenter' % self.prefix].set(value=0)
         pars['%slin_bkg' % self.prefix].set(value=0)
-        pars['%sconst_bkg' % self.prefix].set(value=0)
-        pars['%swidth' % self.prefix].set(0.03) # TODO we can do better than this
-        pars['%serf_amp' % self.prefix].set(value=data.mean())
+        pars['%sconst_bkg' % self.prefix].set(value=data.min())
+        pars['%swidth' % self.prefix].set(0.02) # TODO we can do better than this
+        pars['%serf_amp' % self.prefix].set(value=data.mean() - data.min())
 
         return update_param_vals(pars, self.prefix, **kwargs)
 

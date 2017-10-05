@@ -1,7 +1,11 @@
 import json
 import os.path
+import uuid
+import warnings
+
 import xarray as xr
-from arpes.config import DATASET_CACHE_PATH, DATASET_CACHE_RECORD
+
+from arpes.config import DATASET_CACHE_PATH, DATASET_CACHE_RECORD, CLEAVE_RECORD
 
 
 def _filename_for(data):
@@ -11,12 +15,12 @@ def _filename_for(data):
     return os.path.join(DATASET_CACHE_PATH, data + '.nc')
 
 
-_wrappable = {'note', 'data_preparation', 'provenance'}
+_wrappable = {'note', 'data_preparation', 'provenance', 'corrections'}
 _ignore_keys = {'Number of slices', 'Time', 'Detector last x-channel', 'Detector first x-channel',
                 'Detector first y-channel', 'Detector last y-channel', 'User', 'Step Time', 'ENDSTATION',
                 'userPhiOffset', 'MCP', 'provenance', 'Date', 'Version', 'Beam Current', 'userPolarOffset',
                 'userNormalIncidenceOffset', 'Energy Step', 'Center Energy'}
-_whitelist_keys = {'Region Name', 'Sample', 'id'}
+_whitelist_keys = {'scan_region', 'sample', 'scan_mode', 'id', 'scan_mode'}
 
 
 def wrap_attrs(arr: xr.DataArray):
@@ -48,7 +52,6 @@ def save_dataset(arr: xr.DataArray):
 
     wrap_attrs(arr)
     filename = _filename_for(arr)
-    print(filename)
     arr.to_netcdf(filename, engine='netcdf4')
 
     records[arr.attrs['id']] = {
@@ -62,6 +65,31 @@ def save_dataset(arr: xr.DataArray):
     unwrap_attrs(arr)
 
 
+def is_a_dataset(dataset):
+    if isinstance(dataset, xr.Dataset) or isinstance(dataset, xr.DataArray):
+        return True
+
+    if isinstance(dataset, str):
+        try:
+            uid = uuid.Uuid(dataset)
+            return True
+        except:
+            return False
+
+    return False
+
+
+def dataset_exists(dataset):
+    if isinstance(dataset, xr.Dataset) or isinstance(dataset, xr.DataArray):
+        return True
+
+    if isinstance(dataset, str):
+        filename = _filename_for(dataset)
+        return os.path.exists(filename)
+
+    return False
+
+
 def load_dataset(dataset_uuid):
     filename = _filename_for(dataset_uuid)
     if not os.path.exists(filename):
@@ -69,6 +97,22 @@ def load_dataset(dataset_uuid):
 
     arr = xr.open_dataarray(filename)
     unwrap_attrs(arr)
+
+    # If the sample is associated with a cleave, attach the information from that cleave
+    if 'sample' in arr.attrs and 'cleave' in arr.attrs:
+        full_cleave_name = '%s-%s' % (arr.attrs['sample'], arr.attrs['cleave'])
+
+        with open(CLEAVE_RECORD, 'r') as f:
+            cleaves = json.load(f)
+
+        skip_keys = {'included_scans', 'note'}
+        for k, v in cleaves.get(full_cleave_name, {}).items():
+            if k not in skip_keys and k not in arr.attrs:
+                arr.attrs[k] = v
+    else:
+        warnings.warn('Could not fetch cleave information.')
+
+    return arr
 
 
 def available_datasets(**filters):

@@ -1,31 +1,40 @@
 import xarray as xr
 
+from arpes.corrections import apply_photon_energy_fermi_edge_correction, apply_quadratic_fermi_edge_correction
+from arpes.preparation import dim_normalizer
+from arpes.utilities import conversion
 from .pipeline import pipeline, compose
 
-from arpes.corrections import apply_photon_energy_fermi_edge_correction, apply_quadratic_fermi_edge_correction
-from arpes.utilities.conversion import convert_to_kspace
 
-@pipeline('correct_e_fermi_hv')
+@pipeline()
 def correct_e_fermi_hv(arr: xr.DataArray):
+    if isinstance(arr, xr.Dataset):
+        arr = arr.raw
+
     if 'hv' not in arr.dims:
         return arr
 
     return apply_photon_energy_fermi_edge_correction(arr)
 
-@pipeline('correct_e_fermi_spectrometer')
-def correct_e_fermi_spectrometer(arr: xr.DataArray):
-    return apply_quadratic_fermi_edge_correction(arr)
 
-@pipeline('convert_to_kspace')
-def convert_to_kspace(arr: xr.DataArray):
-    pass
+@pipeline()
+def correct_e_fermi_spectrometer(arr: xr.DataArray):
+    if 'phi' not in arr.dims:
+        return arr
+
+    return apply_quadratic_fermi_edge_correction(arr)
 
 
 # Pipelines should never include data loading
+# Scans are already normalized at this point, they should be whenever they are first
+# interned in the netCDF format
 convert_scan_to_kspace = compose(
     #remove_dead_pixels, TODO implement
+    #lucy_richardson_deconvolution, TODO implement
+    #trapezoid_correction, TODO implement, consider order
+    pipeline('normalize_hv_axis')(dim_normalizer('hv')),
     correct_e_fermi_hv,
     correct_e_fermi_spectrometer,
-    convert_to_kspace,
+    pipeline()(conversion.convert_to_kspace),
 )
 

@@ -5,7 +5,9 @@ lineages.
 """
 
 import functools
+import json
 import math
+import os
 import re
 from math import sin, cos, acos
 from operator import itemgetter
@@ -14,6 +16,7 @@ import numpy as np
 import xarray as xr
 
 import arpes.constants
+import arpes.materials
 
 
 def split_hdu_header(value):
@@ -336,4 +339,71 @@ rename_standard_attrs = lambda x: rename_dataarray_attrs(x, {
     'Number of Sweepts': 'n_sweeps',
     'Acquisition Mode': 'scan_mode',
     'Region Name': 'scan_region',
+    'Instrument': 'instrument',
+    'Pressure': 'pressure',
+    'User': 'user',
+    'Polar': 'polar',
+    'Sample': 'sample',
 })
+
+
+def walk_scans(path, only_id=False):
+    for path, _, files in os.walk(path):
+        json_files = [f for f in files if '.json' in f]
+
+        for j in json_files:
+            with open(os.path.join(path, j), 'r') as f:
+                metadata = json.load(f)
+
+            for scan in metadata:
+                if only_id:
+                    yield scan['id']
+                else:
+                    yield scan
+
+
+def polar_offset(arr: xr.DataArray):
+    if 'polar_offset' in arr.attrs:
+        return arr.attrs['polar_offset']
+
+    return arr.attrs.get('data_preparation', {}).get('polar_offset', 0)
+
+
+def phi_offset(arr: xr.DataArray):
+    if 'polar_offset' in arr.attrs:
+        return arr.attrs['phi_offset']
+
+    return arr.attrs.get('data_preparation', {}).get('phi_offset', 0)
+
+
+def material(arr: xr.DataArray):
+    try:
+        return arpes.materials.material_by_formula[arr.attrs['sample']]
+    except:
+        return None
+
+
+def work_function(arr: xr.DataArray):
+    if 'sample_workfunction' in arr.attrs:
+        return arr.attrs['sample_workfunction']
+
+    if material(arr):
+        return material(arr).get('work_function', 4.32)
+
+    return 4.32
+
+
+def inner_potential(arr: xr.DataArray):
+    if 'inner_potential' in arr.attrs:
+        return arr.attrs['inner_potential']
+
+    if material(arr):
+        return material(arr).get('inner_potential', 10)
+
+    return 10
+
+def photon_energy(arr: xr.DataArray):
+    if 'hv' in arr.attrs:
+        return float(arr.attrs['hv'])
+
+    return None

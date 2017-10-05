@@ -11,8 +11,8 @@ def normalize_data(data):
     if isinstance(data, xr.DataArray):
         return data.attrs['id']
 
-    if isinstance(data, xr.DataSet):
-        raise TypeError('xarray.DataSet is not supported as a normalizable dataset')
+    if isinstance(data, xr.Dataset):
+        raise TypeError('xarray.Dataset is not supported as a normalizable dataset')
 
     return data
 
@@ -30,46 +30,41 @@ def computation_hash(pipeline_name, data, *args, **kwargs):
         'pipeline_name': pipeline_name,
         'data': normalize_data(data),
         'args': args,
-        'kwargs': kwargs.items(),
+        'kwargs': list(kwargs.items()),
     }, sort_keys=True)
 
 
 def cache_computation(key, data):
-    if isinstance(data, xr.DataArray):
-        # intern the computation
-        arpes.io.save_dataset(data)
-        data = normalize_data(data)
+    try:
+        if isinstance(data, xr.DataArray):
+            # intern the computation
+            arpes.io.save_dataset(data)
+            data = normalize_data(data)
+        with shelve.open(arpes.config.PIPELINE_SHELF) as db:
+            if key in db:
+                print("Hash value %s already in pipeline shelf!" % key)
 
-    with shelve.open(arpes.config.PIPELINE_SHELF) as db:
-        if key in db:
-            print("Hash value %s already in pipeline shelf!" % key)
-
-        db[key] = data
-
-
-def tags(tag_name):
-    def tags_decorator(func):
-        def func_wrapper(name):
-            return "<{0}>{1}</{0}>".format(tag_name, func(name))
-
-        return func_wrapper
-
-    return tags_decorator
+            db[key] = data
+    except Exception as e:
+        raise(e)
 
 
-@tags("p")
-def get_text(name):
-    return "Hello " + name
+class PipelineRollbackException(Exception):
+    pass
 
 
-def pipeline(pipeline_name):
+def pipeline(pipeline_name=None):
     def pipeline_decorator(f):
         def func_wrapper(data, *args, **kwargs):
             key = computation_hash(pipeline_name or f.__name__,
                                    data, *args, **kwargs)
             with shelve.open(arpes.config.PIPELINE_SHELF) as db:
                 if key in db:
-                    return db[key]
+                    if (not arpes.io.is_a_dataset(key) or arpes.io.dataset_exists(key)):
+                        return db[key]
+                    else:
+                        del db[key]
+                        raise PipelineRollbackException()
 
                 try:
                     if isinstance(data, str):
@@ -88,9 +83,20 @@ def pipeline(pipeline_name):
 
 def compose(*pipelines):
     def composed(data):
-        for p in pipelines:
-            data = p(data)
+        max_restarts = len(pipelines)
+        while max_restarts:
+            data_in_process = data
 
-        return data
+            try:
+                for p in pipelines:
+                    data_in_process = p(data_in_process)
+
+                return data_in_process
+            except PipelineRollbackException as e:
+                if not max_restarts:
+                    raise(e)
+
+                max_restarts -= 1
+                continue
 
     return composed

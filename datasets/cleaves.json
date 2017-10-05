@@ -2,7 +2,7 @@
   "RhSn_2-A-A-A": {
     "polar_offset": 0,
     "phi_offset": 0,
-    "symmetry_direction": null,
+    "symmetry_direction": "",
     "note": "First set of scans, including photon energy scan",
     "use_note": "Cleave names are always {Sample}-{Cleave}-{Scan Location}",
     "included_scans": ["RhSn_001", "RhSn_003", "RhSn_002_S001"]
@@ -10,7 +10,7 @@
   "RhSn_2-A-A-B": {
     "polar_offset": -0.84,
     "phi_offset": 3.47,
-    "symmetry_direction": null,
+    "symmetry_direction": "",
     "note": "Second scan location, includes first map",
     "included_scans": [
       "RhSn_004", "RhSn_005", "RhSn_006", "RhSn_008", "RhSn_009"
@@ -19,7 +19,7 @@
   "RhSn_2-A-A-C": {
     "polar_offset": 0,
     "phi_offset": 3,
-    "symmetry_direction": null,
+    "symmetry_direction": "",
     "note": "Rotated to phi=-40",
     "included_scans": [
       "RhSn_010", "RhSn_011"
@@ -28,7 +28,7 @@
   "RhSn_2-A-A-D": {
     "polar_offset": -1.1,
     "phi_offset": 3.17,
-    "symmetry_direction": null,
+    "symmetry_direction": "",
     "note": "Rotated back to phi=-85",
     "included_scans": [
       "RhSn_012", "RhSn_014", "RhSn_015", "RhSn_016"
@@ -37,7 +37,7 @@
   "RhSn_2-A-A-E": {
     "polar_offset": 0,
     "phi_offset": 2.9,
-    "symmetry_direction": null,
+    "symmetry_direction": "",
     "note": "Rotated back to phi=-40",
     "included_scans": [
       "RhSn_017_S001", "RhSn_017_S002"
@@ -46,7 +46,7 @@
   "RhSn_2-A-A-F": {
     "polar_offset": -1,
     "phi_offset": 3.5,
-    "symmetry_direction": null,
+    "symmetry_direction": "",
     "note": "Rotated back to phi=-85",
     "included_scans": [
       "RhSn_018_S001", "RhSn_019"

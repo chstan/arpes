@@ -1,7 +1,9 @@
 [
   {
     "data_preparation": {
-      "axis_offset": null
+      "axis_offset": null,
+      "phi_offset": 0,
+      "polar_offset": 0
     },
     "description": "First map",
     "file": "RhSn2/hdf5/RhSn_005.h5",
@@ -72,9 +74,10 @@
       "Total Gas Flow": 52095.7,
       "User": "Conrad",
       "Version": "1.2.2",
-      "userNormalIncidenceOffset": 1,
-      "userPhiOffset": -3.571,
-      "userPolarOffset": 0.609
+      "cleave": "A-A-B",
+      "phi_offset": 0,
+      "polar_offset": 0,
+      "userNormalIncidenceOffset": 1
     }
   },
   {
@@ -149,7 +152,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 50842.4,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-A"
     }
   },
   {
@@ -224,7 +228,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 51186.8,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-A"
     }
   },
   {
@@ -298,7 +303,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 51612.6,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-A"
     }
   },
   {
@@ -372,7 +378,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 51643.6,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-A"
     }
   },
   {
@@ -446,7 +453,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 52045.1,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-B"
     }
   },
   {
@@ -520,7 +528,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 53172.5,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-B"
     }
   },
   {
@@ -594,7 +603,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 694,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-B"
     }
   },
   {
@@ -668,7 +678,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 1055.8,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-B"
     }
   },
   {
@@ -742,7 +753,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 1559.9,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-C"
     }
   },
   {
@@ -816,7 +828,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 1935.5,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-C"
     }
   },
   {
@@ -890,7 +903,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 2055.5,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-D"
     }
   },
   {
@@ -964,7 +978,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 2121.5,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-D"
     }
   },
   {
@@ -1038,7 +1053,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 3412.3,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-D"
     }
   },
   {
@@ -1112,7 +1128,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 4187.6,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-D"
     }
   },
   {
@@ -1121,9 +1138,8 @@
     },
     "description": "",
     "file": "RhSn2/hdf5/RhSn_016_S002.h5",
-    "id": "806f66ca-a91f-11e7-a559-6c40088ef8e6",
+    "id": "39313bc6-a96f-11e7-b16b-6c40088ef8e6",
     "note": {
-      "2Sample X": 0.481,
       "Acquisition Mode": "Swept",
       "Azimuth": -85,
       "BL Energy": 90,
@@ -1186,7 +1202,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 4534.3,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-D"
     }
   },
   {
@@ -1195,7 +1212,7 @@
     },
     "description": "",
     "file": "RhSn2/hdf5/RhSn_017_S001.h5",
-    "id": "806f66ca-a91f-11e7-a559-6c40088ef8e6",
+    "id": "3936a980-a96f-11e7-a693-6c40088ef8e6",
     "note": {
       "Acquisition Mode": "Swept",
       "Azimuth": -40,
@@ -1260,7 +1277,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 4990.5,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-E"
     }
   },
   {
@@ -1269,7 +1287,7 @@
     },
     "description": "",
     "file": "RhSn2/hdf5/RhSn_017_S002.h5",
-    "id": "806f66ca-a91f-11e7-a559-6c40088ef8e6",
+    "id": "3936aade-a96f-11e7-b5e3-6c40088ef8e6",
     "note": {
       "Acquisition Mode": "Swept",
       "Azimuth": -40,
@@ -1334,7 +1352,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 5339.1,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-E"
     }
   },
   {
@@ -1343,7 +1362,7 @@
     },
     "description": "",
     "file": "RhSn2/hdf5/RhSn_018_S001.h5",
-    "id": "806f66ca-a91f-11e7-a559-6c40088ef8e6",
+    "id": "3936ab5e-a96f-11e7-a1f8-6c40088ef8e6",
     "note": {
       "Acquisition Mode": "Swept",
       "Azimuth": -85,
@@ -1408,7 +1427,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 5864.8,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-F"
     }
   },
   {
@@ -1417,7 +1437,7 @@
     },
     "description": "",
     "file": "RhSn2/hdf5/RhSn_019.h5",
-    "id": "806f66ca-a91f-11e7-a559-6c40088ef8e6",
+    "id": "3936abcc-a96f-11e7-a535-6c40088ef8e6",
     "note": {
       "Acquisition Mode": "Swept",
       "Azimuth": -85,
@@ -1482,7 +1502,8 @@
       "Timed Power": 0,
       "Total Gas Flow": 6171.2,
       "User": "Conrad",
-      "Version": "1.2.2"
+      "Version": "1.2.2",
+      "cleave": "A-A-F"
     }
   }
 ]
