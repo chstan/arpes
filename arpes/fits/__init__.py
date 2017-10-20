@@ -34,32 +34,33 @@ def gstep(x, center=0, width=1, erf_amp=1):
     return erf_amp * 0.5 * erfc(1.66511 * dx / width)
 
 
-class XModel(lf.Model):
-    def __init__(self, func, **kwargs):
-        super(XModel, self).__init__(func, **kwargs)
-
+class XModelMixin(lf.Model):
     def guess_fit(self, data, params=None, **kwargs):
         x = kwargs.pop('x', None)
 
         real_data = data
         if isinstance(data, xr.DataArray):
             real_data = data.values
-            assert(len(real_data.shape) == 1)
+            assert (len(real_data.shape) == 1)
             x = data.coords[list(data.indexes)[0]].values
 
-        guessed_params = self.guess(real_data)
+        guessed_params = self.guess(real_data, x=x)
         if params is not None:
-            guessed_params.update(params)
+            for k, v in params.items():
+                if isinstance(v, dict):
+                    guessed_params[self.prefix + k].set(**v)
+            guessed_params.update({self.prefix + k: v for k, v in params.items() if isinstance(v, lf.model.Parameter)})
 
         result = None
         try:
-            result = super(XModel, self).fit(real_data, guessed_params, x=x, **kwargs)
+            result = super(XModelMixin, self).fit(real_data, guessed_params, x=x, **kwargs)
         except Exception as e:
-            import pdb; pdb.set_trace()
+            pass
         finally:
             return result
 
-class GStepBModel(XModel):
+
+class GStepBModel(XModelMixin):
     """
     A model for fitting Fermi functions with a linear background
     """
@@ -87,11 +88,10 @@ class GStepBModel(XModel):
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
-class QuadraticModel(XModel):
+class QuadraticModel(XModelMixin):
     """
     A model for fitting a quadratic function
     """
-
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
         kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
         super(QuadraticModel, self).__init__(quadratic, **kwargs)
@@ -107,6 +107,27 @@ class QuadraticModel(XModel):
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+
+class LorentzianModel(XModelMixin, lf.models.LorentzianModel):
+    pass
+
+
+class VoigtModel(XModelMixin, lf.models.VoigtModel):
+    pass
+
+
+class GaussianModel(XModelMixin, lf.models.GaussianModel):
+    pass
+
+
+class ConstantModel(XModelMixin, lf.models.ConstantModel):
+    pass
+
+
+class LinearModel(XModelMixin, lf.models.LinearModel):
+    pass
+
 
 def broadcast_model(model_cls: type, dataset: xr.DataArray, broadcast_axis):
     cs = {}

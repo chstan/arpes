@@ -30,6 +30,9 @@ def wrap_attrs(arr: xr.DataArray):
 
         arr.attrs[key] = json.dumps(arr.attrs[key])
 
+    if 'time' in arr.attrs:
+        arr.attrs['time'] = str(arr.attrs['time'])
+
 
 def unwrap_attrs(arr: xr.DataArray):
     for key in _wrappable:
@@ -123,3 +126,18 @@ def available_datasets(**filters):
         records = {k: v for k, v in records.items() if filt in v and v[filt] == value}
 
     return records
+
+def flush_cache(ids, delete=True):
+    with open(DATASET_CACHE_RECORD, 'r') as cache_record:
+        records = json.load(cache_record)
+
+    for id in ids:
+        if id in records:
+            del records[id]
+
+        filename = os.path.join(DATASET_CACHE_PATH, id + '.nc')
+        if os.path.exists(filename) and delete:
+            os.remove(filename)
+
+    with open(DATASET_CACHE_RECORD, 'w') as cache_record:
+        json.dump(records, cache_record, sort_keys=True, indent=2)

@@ -57,9 +57,15 @@ K_SPACE_BORDER = 0.1
 
 
 class CoordinateConverter(object):
-    def __init__(self, arr: xr.DataArray, *args, **kwargs):
+    def __init__(self, arr: xr.DataArray, dim_order=None, *args, **kwargs):
         # Intern the volume so that we can check on things during computation
         self.arr = arr
+        self.dim_order = dim_order
+
+        spectrometer = arpes.utilities.get_spectrometer(self.arr)
+        if spectrometer is not None:
+            self.spectrometer = spectrometer
+            self.is_slit_vertical = spectrometer['is_slit_vertical']
 
     def prep(self, arr: xr.DataArray):
         """
@@ -84,6 +90,9 @@ class CoordinateConverter(object):
 
     def conversion_for(self, dim):
         pass
+
+    def identity_transform(self, axis_name, *args, **kwargs):
+        return args[self.dim_order.index(axis_name)]
 
     def get_coordinates(self, resolution: dict=None):
         coordinates = {}
@@ -110,6 +119,10 @@ class ConvertKp(CoordinateConverter):
         coordinates['kp'] = np.arange(kp_low - K_SPACE_BORDER, kp_high + K_SPACE_BORDER,
                                       resolution.get('kp', arpes.constants.MEDIUM_FINE_K_GRAINING))
 
+        base_coords = {k: v for k, v in self.arr.coords.items()
+                       if k not in ['eV', 'phi', 'polar']}
+
+        coordinates.update(base_coords)
         return coordinates
 
     def compute_k_tot(self, binding_energy):
@@ -117,7 +130,7 @@ class ConvertKp(CoordinateConverter):
             photon_energy(self.arr) - work_function(self.arr) + binding_energy)
 
     def kspace_to_phi(self, binding_energy, kp, *args, **kwargs):
-        polar_angle = self.arr.attrs.get('polar')
+        polar_angle = float(self.arr.attrs.get('polar'))
         polar_angle -= polar_offset(self.arr)
 
         if self.k_tot is None:
@@ -128,10 +141,13 @@ class ConvertKp(CoordinateConverter):
 
 
     def conversion_for(self, dim):
+        def with_identity(*args, **kwargs):
+            return self.identity_transform(dim, *args, **kwargs)
+
         return {
             'eV': self.kspace_to_BE,
             'phi': self.kspace_to_phi
-        }.get(dim, None)
+        }.get(dim, with_identity)
 
 class ConvertKpKz(CoordinateConverter):
     def __init__(self, *args, **kwargs):
@@ -150,6 +166,11 @@ class ConvertKpKz(CoordinateConverter):
                                       resolution.get('kp', arpes.constants.MEDIUM_FINE_K_GRAINING))
         coordinates['kz'] = np.arange(kz_low - K_SPACE_BORDER, kz_high + K_SPACE_BORDER,
                                       resolution.get('kz', arpes.constants.MEDIUM_FINE_K_GRAINING))
+
+        base_coords = {k: v for k, v in self.arr.coords.items()
+                       if k not in ['eV', 'phi', 'polar']}
+
+        coordinates.update(base_coords)
 
         return coordinates
 
@@ -173,11 +194,14 @@ class ConvertKpKz(CoordinateConverter):
         return kp_to_polar(self.hv + work_function(self.arr), kp) + phi_offset(self.arr)
 
     def conversion_for(self, dim):
+        def with_identity(*args, **kwargs):
+            return self.identity_transform(dim, *args, **kwargs)
+
         return {
             'eV': self.kspace_to_BE,
             'hv': self.kspace_to_hv,
             'phi': self.kspace_to_phi,
-        }.get(dim, None)
+        }.get(dim, with_identity)
 
 
 class ConvertKxKyKz(CoordinateConverter):
@@ -205,6 +229,10 @@ class ConvertKxKy(CoordinateConverter):
         coordinates['ky'] = np.arange(ky_low - K_SPACE_BORDER, ky_high + K_SPACE_BORDER,
                                       resolution.get('ky', arpes.constants.MEDIUM_FINE_K_GRAINING))
 
+        base_coords = {k: v for k, v in self.arr.coords.items()
+                       if k not in ['eV', 'phi', 'polar']}
+        coordinates.update(base_coords)
+
         return coordinates
 
     def compute_k_tot(self, binding_energy):
@@ -218,22 +246,31 @@ class ConvertKxKy(CoordinateConverter):
         if self.polar is None:
             self.kspace_to_polar(binding_energy, kx, ky, *args, **kwargs)
 
-        return (180 / np.pi) * np.arcsin(kx / self.k_tot / np.cos((self.polar - polar_offset(self.arr)) * np.pi / 180)) + \
-               phi_offset(self.arr)
+        if self.is_slit_vertical:
+            return (180 / np.pi) * np.arcsin(kx / self.k_tot / np.cos((self.polar - polar_offset(self.arr)) * np.pi / 180)) + \
+                   phi_offset(self.arr)
+        else:
+            return (180 / np.pi) * np.arcsin(kx / self.k_tot)
 
     def kspace_to_polar(self, binding_energy, kx, ky, *args, **kwargs):
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
-        self.polar = (180 / np.pi) * np.arcsin(ky / self.k_tot) + polar_offset(self.arr)
+        if self.is_slit_vertical:
+            self.polar = (180 / np.pi) * np.arcsin(ky / self.k_tot) + polar_offset(self.arr)
+        else:
+            self.polar = (180 / np.pi) * np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2))
         return self.polar
 
     def conversion_for(self, dim):
+        def with_identity(*args, **kwargs):
+            return self.identity_transform(dim, *args, **kwargs)
+
         return {
             'eV': self.kspace_to_BE,
             'phi': self.kspace_to_phi,
             'polar': self.kspace_to_polar,
-        }.get(dim, None)
+        }.get(dim, with_identity)
 
 
 def calculate_kp_kz_bounds(arr: xr.DataArray):
@@ -270,7 +307,7 @@ def calculate_kp_kz_bounds(arr: xr.DataArray):
 
 def calculate_kp_bounds(arr: xr.DataArray):
     phi_coords = arr.coords['phi'].values - phi_offset(arr)
-    polar = arr.attrs.get('polar') - polar_offset(arr)
+    polar = float(arr.attrs.get('polar')) - polar_offset(arr)
 
     phi_low, phi_high = np.min(phi_coords), np.max(phi_coords)
     phi_mid = (phi_high + phi_low) / 2
@@ -378,8 +415,18 @@ def grid_interpolator_from_dataarray(arr: xr.DataArray, fill_value=0.0, method='
 
 
 def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
+    # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
-    old_dims.remove('eV')
+    remove_dims = ['eV', 'delay', 'cycle', 'T']
+    removed = []
+    for to_remove in remove_dims:
+        if to_remove in old_dims:
+            removed.append(to_remove)
+            old_dims.remove(to_remove)
+
+    if 'eV' in removed:
+        removed.remove('eV') # This is put at the front as a standardization
+
     old_dims.sort()
 
     if len(old_dims) == 0:
@@ -391,14 +438,14 @@ def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
         ('phi', 'polar'): ['kx', 'ky'],
         ('hv', 'phi'): ['kp', 'kz'],
         ('hv', 'phi', 'polar'): ['kx', 'ky', 'kz'],
-    }.get(tuple(old_dims))
+    }.get(tuple(old_dims)) + removed
 
     convert_cls = {
         ('phi',): ConvertKp,
         ('phi', 'polar'): ConvertKxKy,
         ('hv', 'phi'): ConvertKpKz,
     }.get(tuple(old_dims))
-    converter = convert_cls(arr)
+    converter = convert_cls(arr, converted_dims)
     converted_coordinates = converter.get_coordinates(resolution)
 
     converted_arr = convert_coordinates(
@@ -426,7 +473,8 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
 
     # Skip the Jacobian correction for now
     # Convert the raw coordinate axes to a set of gridded points
-    meshed_coordinates = np.meshgrid(*[target_coordinates[dim] for dim in target_coordinates], indexing='ij')
+    meshed_coordinates = np.meshgrid(*[target_coordinates[dim] for dim in coordinate_transform['dims']],
+                                     indexing='ij')
     meshed_coordinates = [meshed_coord.ravel() for meshed_coord in meshed_coordinates]
 
     ordered_transformations = [coordinate_transform['transforms'][dim] for dim in arr.dims]
@@ -434,9 +482,9 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
 
     # Wrap it all up
     return xr.DataArray(
-        np.reshape(converted_volume, [len(target_coordinates[d]) for d in target_coordinates], order='C'),
+        np.reshape(converted_volume, [len(target_coordinates[d]) for d in coordinate_transform['dims']], order='C'),
         target_coordinates,
-        target_coordinates,
+        coordinate_transform['dims'],
         attrs=arr.attrs
     )
 

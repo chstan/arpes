@@ -62,12 +62,23 @@ DLD_LENGTH = 1.1456 # This isn't correct but it should be a reasonable guess
 
 K_INV_ANGSTROM = 0.5123
 
+SPECTROMETER_MC = {
+    'deg_per_pixel': 0.125, # TODO CHECK THIS
+    'is_slit_vertical': False,
+}
+
+SPECTROMETER_MC_OLD = {
+    'deg_per_pixel': 0.125,
+    'is_slit_vertical': False,
+}
+
 SPECTROMETER_STRAIGHT_TOF = {
     'length': STRAIGHT_TOF_LENGTH,
     'type': 'tof',
     'dof': ['t'],
     'scan_dof': ['polar'],
 }
+
 SPECTROMETER_SPIN_TOF = {
     'length': SPIN_TOF_LENGTH,
     'type': 'tof',
@@ -78,7 +89,7 @@ SPECTROMETER_SPIN_TOF = {
 SPECTROMETER_DLD = {
     'length': DLD_LENGTH,
     'type': 'tof',
-    'type': {
+    'dof_type': {
         'timing': ['x_pixels', 't_pixels'],
         'spatial': ['x_pixels', 'y_pixels'],
     },
@@ -86,7 +97,7 @@ SPECTROMETER_DLD = {
 }
 
 SPECTROMETER_BL4 = {
-    'slit_orientation': 'vertical',
+    'is_slit_vertical': True,
     'type': 'hemisphere',
     'dof': ['polar', 'sample_phi'],
 }

@@ -5,6 +5,7 @@ h5py
 netCDF4
 
 # Analysis
+pandas
 dask
 numpy
 scipy
@@ -13,7 +14,7 @@ scikit-learn
 scikit-image
 
 # Plotting
-holoviews
+holoviews=1.8.4
 matplotlib
 seaborn
 bokeh
@@ -22,3 +23,7 @@ bokeh
 # paraview
 ipywidgets=7.0.1
 ipyvolume
+
+# Dependencies
+xlrd
+openpyxl

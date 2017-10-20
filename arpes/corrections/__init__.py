@@ -35,11 +35,13 @@ def build_quadratic_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, pl
 
     return quadratic_corr
 
+
 def build_photon_energy_fermi_edge_correction(arr: xr.DataArray, plot=False, energy_window=0.2):
     edge_fit = broadcast_model(GStepBModel, arr.sum(exclude_hv_axes(arr.dims)).sel(
         eV=slice(-energy_window, energy_window)), 'hv')
 
     return edge_fit
+
 
 def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None, **kwargs):
     if correction is None:

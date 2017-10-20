@@ -1,0 +1,374 @@
+import copy
+import functools
+import itertools
+
+import numpy as np
+import xarray as xr
+from scipy import ndimage
+from scipy.spatial import distance
+
+import arpes.models.band
+import arpes.utilities
+from arpes.provenance import provenance
+
+
+def curvature(arr: xr.DataArray, directions=None, alpha=1):
+    """
+    Defined via
+        C(x,y) = ([C_0 + (df/dx)^2]d^2f/dy^2 - 2 * df/dx df/dy d^2f/dxdy + [C_0 + (df/dy)^2]d^2f/dx^2) /
+                 (C_0 (df/dx)^2 + (df/dy)^2)^(3/2)
+
+    of in the case of inequivalent dimensions x and y
+
+        C(x,y) = ([1 + C_x(df/dx)^2]C_y * d^2f/dy^2 -
+                  2 * C_x * C_y * df/dx df/dy d^2f/dxdy +
+                  [1 + C_y * (df/dy)^2] * C_x * d^2f/dx^2) /
+                 (1 + C_x (df/dx)^2 + C_y (df/dy)^2)^(3/2)
+
+        where
+        C_x = C_y * (xi / eta)^2
+        and where (xi / eta) = dx / dy
+
+        The value of C_y can reasonably be taken to have the value |df/dx|_max^2 + |df/dy|_max^2
+        C_y = (dy / dx) * (|df/dx|_max^2 + |df/dy|_max^2) * \alpha
+
+        for some dimensionless parameter alpha
+    :param arr:
+    :param alpha: regulation parameter, chosen semi-universally, but with no particular justification
+    :return:
+    """
+    if directions is None:
+        directions = arr.dims[:2]
+
+    axis_indices = tuple(arr.dims.index(d) for d in directions)
+    dx, dy = tuple(float(arr.coords[d][1] - arr.coords[d][0]) for d in directions)
+    dfx, dfy = np.gradient(arr.values, dx, dy, axis=axis_indices)
+    np.nan_to_num(dfx, copy=False)
+    np.nan_to_num(dfy, copy=False)
+
+    mdfdx, mdfdy = np.max(np.abs(dfx)), np.max(np.abs(dfy))
+
+    cy = (dy / dx) * (mdfdx ** 2 + mdfdy ** 2) * alpha
+    cx = (dx / dy) * (mdfdx ** 2 + mdfdy ** 2) * alpha
+
+    dfx_2, dfy_2 = np.power(dfx, 2), np.power(dfy, 2)
+    d2fy = np.gradient(dfy, dy, axis=axis_indices[1])
+    d2fx = np.gradient(dfx, dx, axis=axis_indices[0])
+    d2fxy = np.gradient(dfx, dy, axis=axis_indices[1])
+
+    denom = np.power((1 + cx * dfx_2 + cy * dfy_2), 1.5)
+    numerator = (1 + cx * dfx_2) * cy * d2fy - 2 * cx * cy * dfx * dfy * d2fxy + \
+                (1 + cy * dfy_2) * cx * d2fx
+
+    curv = xr.DataArray(
+        numerator / denom,
+        arr.coords,
+        arr.dims,
+        attrs=arr.attrs
+    )
+
+    del curv.attrs['id']
+    return curv
+
+
+def d2_along_axis(arr: xr.DataArray):
+    pass
+
+
+def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_weighting=True):
+    """
+    This function is used to deconvolve the band identities of a series of overlapping bands.
+    Sometimes through the fitting process, or across a place in the band structure where there is a nodal
+    point, the identities of the bands across sequential fits can get mixed up.
+
+    We can try to restore this identity by using the cosine similarity of fits, where the fit is represented
+    as a vector by:
+
+        v_band =  (sigma, amplitude, center) * weights
+        weights = (5, 1/5, 10)
+
+    For any point in the band structure, we find the closest place where we have fixed the band identities.
+    Let the bands be indexed by i so that the bands are b_i and b_i_0 at the point of interest and at the reference
+    respectively.
+
+    Then, we calculate the matrix:
+        s_ij = sim(b_i, b_j_0)
+
+    The band identities are subsequently chosen so that the trace of this matrix is maximized among possible ways of
+    labelling the bands b_i.
+
+    The value of the weights parameter is chosen only to scale the dimensions so that they are closer to the
+    same magnitude.
+
+    :param arr:
+    :param band_results:
+    :param weights:
+    :param use_stderr_weighting: Flag to indicate whether to scale vectors by the uncertainty
+    :return:
+    """
+    if weights is None:
+        weights = (2, 0, 10,)
+
+    template_components = band_results.values[0].model.components
+    prefixes = [component.prefix for component in template_components]
+
+    identified_band_results = copy.deepcopy(band_results)
+
+    def as_vector(model_fit, prefix=''):
+        stderr = np.array([model_fit.params[prefix + 'sigma'].stderr,
+                           model_fit.params[prefix + 'amplitude'].stderr,
+                           model_fit.params[prefix + 'center'].stderr])
+        return np.array([model_fit.params[prefix + 'sigma'].value,
+                         model_fit.params[prefix + 'amplitude'].value,
+                         model_fit.params[prefix + 'center'].value]) * weights / (1 + stderr)
+
+    identified_by_coordinate = {}
+    first_coordinate = None
+    for coordinate, fit_result in arpes.utilities.enumerate_dataarray(band_results):
+        frozen_coord = tuple(coordinate[d] for d in band_results.dims)
+
+        closest_identified = None
+        dist = float('inf')
+        for coord, identified_band in identified_by_coordinate.items():
+            current_dist = np.dot(coord, frozen_coord)
+            if current_dist < dist:
+                closest_identified = identified_band
+                dist = current_dist
+
+        if closest_identified is None:
+            first_coordinate = coordinate
+            closest_identified = [c.prefix for c in fit_result.model.components], fit_result
+            identified_by_coordinate[frozen_coord] = closest_identified
+
+        closest_prefixes, closest_fit = closest_identified
+        mat_shape = (len(prefixes), len(prefixes),)
+        dist_mat = np.zeros(shape=mat_shape)
+
+        for i, j in np.ndindex(mat_shape):
+            dist_mat[i, j] = distance.euclidean(
+                as_vector(fit_result, prefixes[i]),
+                as_vector(closest_fit, closest_prefixes[j])
+            )
+
+        best_arrangement = None
+        best_trace = float('inf')
+        for p in itertools.permutations(range(len(prefixes))):
+            trace = sum(dist_mat[i, p_i] for i, p_i in enumerate(p))
+            if trace < best_trace:
+                best_trace = trace
+                best_arrangement = p
+
+        ordered_prefixes = [closest_prefixes[p_i] for p_i in best_arrangement]
+        identified_by_coordinate[frozen_coord] = ordered_prefixes, fit_result
+        identified_band_results.loc[coordinate] = ordered_prefixes
+
+    # Now that we have identified the bands,
+    # extract them into real bands
+    bands = []
+    for i in range(len(prefixes)):
+        label = identified_band_results.loc[first_coordinate].values.item()[i]
+        def dataarray_for_value(param_name, is_value):
+            values = np.ndarray(shape=identified_band_results.values.shape, dtype=np.float)
+            it = np.nditer(values, flags=['multi_index'], op_flags=['writeonly'])
+            while not it.finished:
+                prefix = identified_band_results.values[it.multi_index][i]
+                param = band_results.values[it.multi_index].params[prefix + param_name]
+                if is_value:
+                    it[0] = param.value
+                else:
+                    it[0] = param.stderr
+                it.iternext()
+
+            return xr.DataArray(
+                values,
+                identified_band_results.coords,
+                identified_band_results.dims
+            )
+        band_data = xr.Dataset({
+            'center': dataarray_for_value('center', True),
+            'center_stderr': dataarray_for_value('center', False),
+            'amplitude': dataarray_for_value('amplitude', True),
+            'amplitude_stderr': dataarray_for_value('amplitude', False),
+            'sigma': dataarray_for_value('sigma', True),
+            'sigma_stderr': dataarray_for_value('sigma', False),
+        })
+        bands.append(arpes.models.band.Band(label, data=band_data))
+
+    return bands
+
+
+def fit_bands(arr: xr.DataArray, band_description, background=None, direction='mdc',
+              preferred_k_direction=None, step=None):
+    """
+    Fits bands and determines dispersion in some region of a spectrum
+    :param arr:
+    :param band_description: A description of the bands to fit in the region
+    :param background:
+    :param direction:
+    :return:
+    """
+    assert(direction in ['edc', 'mdc'])
+
+    def iterate_marginals(arr: xr.DataArray, iterate_directions=None):
+        if iterate_directions is None:
+            iterate_directions = list(arr.dims)
+            iterate_directions.remove('eV')
+
+        selectors = itertools.product(*[arr.coords[d] for d in iterate_directions])
+        for ss in selectors:
+            coords = dict(zip(iterate_directions, [float(s) for s in ss]))
+            yield arr.sel(**coords), coords
+
+    directions = list(tuple(arr.dims))
+
+    broadcast_direction = 'eV'
+    if direction == 'mdc':
+        if preferred_k_direction is None:
+            possible_directions = set(directions).intersection({'kp', 'kx', 'ky'})
+            broadcast_direction = list(possible_directions)[0]
+
+    directions.remove(broadcast_direction)
+
+    residual, _ = next(iterate_marginals(arr, directions))
+    residual = residual - np.min(residual.values)
+
+    # Let the first band be given by fitting the raw data to this band
+    # Find subsequent peaks by fitting models to the residuals
+    raw_bands = [band.get('band') if isinstance(band, dict) else band for band in band_description]
+    initial_fits = None
+    all_fit_parameters = {}
+
+    if step == 'initial':
+        residual.plot()
+
+    for band in band_description:
+        if isinstance(band, dict):
+            band_inst = band.get('band')
+            constraints = band.get('constraints', {})
+        else:
+            band_inst = band
+            constraints = None
+        fit_model = band_inst.fit_cls(prefix=band_inst.label)
+        initial_fit = fit_model.guess_fit(residual, params=constraints)
+        if initial_fits is None:
+            initial_fits = initial_fit.params
+        else:
+            initial_fits.update(initial_fit.params)
+
+        residual = residual - initial_fit.best_fit
+        if isinstance(band_inst, arpes.models.band.BackgroundBand):
+            # This is an approximation to simulate a constant background band underneath the data
+            # Because backgrounds are added to our model only after the initial sequence of fits.
+            # This is by no means the most appropriate way to do this, just one that works
+            # alright for now
+            residual = residual - residual.min()
+
+        if step == 'initial':
+            residual.plot()
+            (residual - residual + initial_fit.best_fit).plot()
+
+    template = arr.sum(broadcast_direction)
+    band_results = xr.DataArray(
+        np.ndarray(shape=template.values.shape, dtype=object),
+        coords=template.coords,
+        dims=template.dims,
+        attrs=template.attrs
+    )
+
+    for marginal, coordinate in iterate_marginals(arr, directions):
+        # Use the closest parameters that have been successfully fit, or use the initial
+        # parameters, this should be good enough because the order of the iterator will
+        # be stable
+        closest_model_params = initial_fits # fix me
+        distance = float('inf')
+        frozen_coordinate = tuple(coordinate[k] for k in template.dims)
+        for c, v in all_fit_parameters.items():
+            delta = np.array(c) - frozen_coordinate
+            current_distance = delta.dot(delta)
+            if current_distance < distance:
+                current_distance = distance
+                closest_model_params = v
+
+        closest_model_params = copy.deepcopy(closest_model_params)
+
+        # TODO mix in any constraints to the model params
+
+        # populate models
+        internal_models = [band.fit_cls(prefix=band.label) for band in raw_bands]
+        composite_model = functools.reduce(lambda x, y: x + y, internal_models)
+        new_params = composite_model.make_params(**{k: v.value for k, v in closest_model_params.items()})
+        fit_result = composite_model.fit(marginal.values, new_params,
+                                         x=marginal.coords[list(marginal.indexes)[0]].values)
+
+        # insert fit into the results, insert the parameters into the cache so that we have
+        # fitting parameters for the next sequence
+        band_results.loc[coordinate] = fit_result
+        all_fit_parameters[frozen_coordinate] = fit_result.params
+
+
+    # Unpack the band results
+    unpacked_bands = [] #unpack_bands_from_fit(band_results)
+    residual = None
+
+    return band_results, unpacked_bands, residual
+
+
+def gaussian_filter_arr(arr: xr.DataArray, sigma=None):
+    if sigma is None:
+        sigma = {}
+
+    sigma = {k: int(v / (arr.coords[k][1] - arr.coords[k][0])) for k, v in sigma.items()}
+    for dim in arr.dims:
+        if dim not in sigma:
+            sigma[dim] = 5
+
+    sigma = tuple(sigma[k] for k in arr.dims)
+
+    filtered_arr = xr.DataArray(
+        ndimage.filters.gaussian_filter(arr.values, sigma),
+        arr.coords,
+        arr.dims,
+        attrs=copy.deepcopy(arr.attrs)
+    )
+
+    del filtered_arr.attrs['id']
+
+    provenance(filtered_arr, arr, {
+        'what': 'Gaussian filtered data',
+        'by': 'gaussian_filter_arr',
+        'sigma': sigma,
+    })
+
+    return filtered_arr
+
+def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1):
+    if size is None:
+        size = {}
+
+    size = {k: int(v / (arr.coords[k][1] - arr.coords[k][0])) for k, v in size.items()}
+    for dim in arr.dims:
+        if dim not in size:
+            size[dim] = 5
+
+    size = tuple(size[k] for k in arr.dims)
+
+    values = arr.values
+    for i in range(n):
+        values = ndimage.filters.uniform_filter(values, size)
+
+    filtered_arr = xr.DataArray(
+        values,
+        arr.coords,
+        arr.dims,
+        attrs=copy.deepcopy(arr.attrs)
+    )
+
+    del filtered_arr.attrs['id']
+
+    provenance(filtered_arr, arr, {
+        'what': 'Boxcar filtered data',
+        'by': 'boxcar_filter_arr',
+        'size': size,
+    })
+
+    return filtered_arr

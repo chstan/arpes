@@ -5,19 +5,28 @@ lineages.
 """
 
 import functools
+import itertools
 import json
 import math
 import os
 import re
+import uuid
+import warnings
 from math import sin, cos, acos
 from operator import itemgetter
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 import arpes.constants
 import arpes.materials
 
+
+def enumerate_dataarray(arr: xr.DataArray):
+    for coordinate in itertools.product(*[arr.coords[d] for d in arr.dims]):
+        zip_location = dict(zip(arr.dims, (float(f) for f in coordinate)))
+        yield zip_location, arr.loc[zip_location].values.item()
 
 def split_hdu_header(value):
     """
@@ -267,12 +276,21 @@ def unarrange_by_indices(items, indices):
     return [x for x, _ in sorted(zip(indices, items), key=itemgetter[0])]
 
 
-def get_spectrometer(dataset: xr.Dataset):
+def get_spectrometer(dataset):
     spectrometers = {
         'SToF': arpes.constants.SPECTROMETER_SPIN_TOF,
         'ToF': arpes.constants.SPECTROMETER_STRAIGHT_TOF,
         'DLD': arpes.constants.SPECTROMETER_DLD,
     }
+
+    if 'spectrometer_name' in dataset.attrs:
+        return spectrometers.get(dataset.set.attrs['spectrometer_name'])
+
+    if 'location' in dataset.attrs:
+        return {
+            'ALG-MC': arpes.constants.SPECTROMETER_MC,
+            'BL403': arpes.constants.SPECTROMETER_BL4,
+        }.get(dataset.attrs['location'])
 
     return spectrometers[dataset.attrs['spectrometer_name']]
 
@@ -327,8 +345,16 @@ def rename_keys(d, keys_dict):
 
     return d
 
+def clean_keys(d):
+    def clean_single_key(k):
+        k = k.replace(' ', '_')
+        return re.sub(r'[\(\)\/?]', '', k)
+
+    return dict(zip([clean_single_key(k) for k in d.keys()], d.values()))
+
 
 rename_dataarray_attrs = lift_dataarray_attrs(rename_keys)
+clean_attribute_names = lift_dataarray_attrs(clean_keys)
 
 
 rename_standard_attrs = lambda x: rename_dataarray_attrs(x, {
@@ -344,12 +370,57 @@ rename_standard_attrs = lambda x: rename_dataarray_attrs(x, {
     'User': 'user',
     'Polar': 'polar',
     'Sample': 'sample',
+    'Beta': 'polar',
+    'Location': 'location',
 })
 
+
+def clean_xlsx_dataset(path):
+    base_filename, extension = os.path.splitext(path)
+    if extension not in ['.xlsx', '.xlx']:
+        warnings.warn('File is not an excel file')
+        return None
+
+    new_filename = base_filename + '.cleaned' + extension
+    if os.path.exists(new_filename):
+        return pd.read_excel(new_filename).set_index('file')
+
+    ds = pd.read_excel(path, header=1, index_col=1)
+    ds = ds.loc[ds.index.dropna()]
+
+    last_index = None
+    def is_blank(item):
+        if isinstance(item, str):
+            return item == ''
+
+        if isinstance(item, float):
+            return math.isnan(item)
+
+        return False
+
+    # Cascade blank values
+    for index, row in ds.sort_index().iterrows():
+        row = row.copy()
+
+        for key, value in row.iteritems():
+            if key == 'id' and math.isnan(float(row['id'])):
+                ds.loc[index, ('id',)] = str(uuid.uuid1())
+
+            elif last_index is not None and is_blank(value) and not is_blank(ds.loc[last_index,(key,)]):
+                ds.loc[index,(key,)] = ds.loc[last_index,(key,)]
+
+        last_index = index
+
+    excel_writer = pd.ExcelWriter(new_filename)
+    ds.to_excel(excel_writer)
+    excel_writer.save()
+
+    return ds
 
 def walk_scans(path, only_id=False):
     for path, _, files in os.walk(path):
         json_files = [f for f in files if '.json' in f]
+        excel_files = [f for f in files if '.xlsx' in f or '.xlx' in f]
 
         for j in json_files:
             with open(os.path.join(path, j), 'r') as f:
@@ -360,6 +431,21 @@ def walk_scans(path, only_id=False):
                     yield scan['id']
                 else:
                     yield scan
+
+
+        for x in excel_files:
+            if 'cleaned' in x or 'cleaned' in path:
+                continue
+
+            ds = clean_xlsx_dataset(os.path.join(path, x))
+            for file, scan in ds.iterrows():
+                scan['file'] = scan.get('path', file)
+                scan['short_file'] = file
+                if only_id:
+                    yield scan['id']
+                else:
+                    yield scan
+
 
 
 def polar_offset(arr: xr.DataArray):

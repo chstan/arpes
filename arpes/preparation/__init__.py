@@ -1,9 +1,12 @@
+import copy
 import math
 from typing import Callable
 
 import numpy as np
 import xarray as xr
+from scipy import ndimage as ndi
 from scipy.ndimage import geometric_transform
+from skimage import feature
 
 from arpes.provenance import provenance
 from arpes.utilities import get_spectrometer
@@ -105,6 +108,22 @@ def process_DLD(dataset: xr.Dataset):
     return dataset
 
 
+def replace_coords(arr: xr.DataArray, new_coords, mapping):
+    coords = dict(copy.deepcopy(arr.coords))
+    dims = list(copy.deepcopy(arr.dims))
+    for old_dim, new_dim in mapping:
+        coords[new_dim] = new_coords[new_dim]
+        del coords[old_dim]
+        dims[dims.index(old_dim)] = new_dim
+
+    return xr.DataArray(
+        arr.values,
+        coords,
+        dims,
+        attrs=arr.attrs,
+    )
+
+
 def normalize_dim(arr: xr.DataArray, dim, keep_id=False):
     normalized_arr = arr / arr.sum([d for d in arr.dims if d != dim])
 
@@ -125,6 +144,35 @@ def normalize_dim(arr: xr.DataArray, dim, keep_id=False):
     })
 
     return to_return
+
+
+def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):
+    import pdb
+    pdb.set_trace()
+    coords = copy.deepcopy(arr.coords)
+    coords[axis_name] = coords[axis_name][::-1]
+
+    return xr.DataArray(
+        np.flip(arr.values, arr.dims.index(axis_name)) if flip_data else arr.values,
+        coords,
+        arr.dims,
+        attrs=arr.attrs
+    )
+
+
+def infer_center_pixel(arr: xr.DataArray):
+    near_ef = arr.sel(eV=slice(-0.1, 0)).sum([d for d in arr.dims if d not in ['pixel']])
+    embed_size = 20
+    embedded = np.ndarray(shape=[embed_size] + list(near_ef.values.shape))
+    embedded[:] = near_ef.values
+    embedded = ndi.gaussian_filter(embedded, embed_size / 3)
+
+    edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
+                          low_threshold=0.2) * 1
+    edges = np.where(edges[int(embed_size / 2)] == 1)
+
+    return float((np.max(edges) + np.min(edges)) / 2 + np.min(arr.coords['pixel']))
+
 
 def dim_normalizer(dim_name):
     def normalize(arr: xr.DataArray):
