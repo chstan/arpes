@@ -24,7 +24,7 @@ def gstepb(x, center=0, width=1, erf_amp=1, lin_bkg=0, const_bkg=0):
 def gstep(x, center=0, width=1, erf_amp=1):
     """
     Fermi function convolved with a Gaussian
-    :param x: value to evaluate fit at
+    :param x: value to evalua0te fit at
     :param center: center of the step
     :param width: width of the step
     :param erf_amp: height of the step
@@ -32,6 +32,12 @@ def gstep(x, center=0, width=1, erf_amp=1):
     """
     dx = x - center
     return erf_amp * 0.5 * erfc(1.66511 * dx / width)
+
+
+def exponential_decay_c(x, amp, tau, t0, const_bkg):
+    dx = x - t0
+    mask = (dx >= 0) * 1
+    return const_bkg + amp * mask * np.exp(-(x - t0)/tau)
 
 
 class XModelMixin(lf.Model):
@@ -55,7 +61,7 @@ class XModelMixin(lf.Model):
         try:
             result = super(XModelMixin, self).fit(real_data, guessed_params, x=x, **kwargs)
         except Exception as e:
-            pass
+            pass # Hook for PDB
         finally:
             return result
 
@@ -80,13 +86,42 @@ class GStepBModel(XModelMixin):
         pars['%scenter' % self.prefix].set(value=0)
         pars['%slin_bkg' % self.prefix].set(value=0)
         pars['%sconst_bkg' % self.prefix].set(value=data.min())
-        pars['%swidth' % self.prefix].set(0.02) # TODO we can do better than this
+        pars['%swidth' % self.prefix].set(0.02)  # TODO we can do better than this
         pars['%serf_amp' % self.prefix].set(value=data.mean() - data.min())
 
         return update_param_vals(pars, self.prefix, **kwargs)
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+
+class ExponentialDecayCModel(XModelMixin):
+    """
+    A model for fitting an exponential decay with a constant background
+    """
+
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super(ExponentialDecayCModel, self).__init__(exponential_decay_c, **kwargs)
+
+        # amp is also a parameter, but we have no hint for it
+        self.set_param_hint('tau', min=0.)
+        # t0 is also a parameter, but we have no hint for it
+        self.set_param_hint('const_bkg')
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%stau' % self.prefix].set(value=0.2) # 200fs
+        pars['%st0' % self.prefix].set(value=0)
+        pars['%sconst_bkg' % self.prefix].set(value=data.mean())
+        pars['%samp' % self.prefix].set(value=data.max() - data.mean())
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
 
 class QuadraticModel(XModelMixin):
     """

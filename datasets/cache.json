@@ -1,4 +1,152 @@
 {
+  "039b493e-c2b2-11e7-a62f-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/039b493e-c2b2-11e7-a62f-6c40088ef8e6.nc",
+    "id": "039b493e-c2b2-11e7-a62f-6c40088ef8e6"
+  },
+  "0d9a6964-c2b6-11e7-86b5-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/0d9a6964-c2b6-11e7-86b5-6c40088ef8e6.nc",
+    "id": "0d9a6964-c2b6-11e7-86b5-6c40088ef8e6"
+  },
+  "0f8c2e06-c2b6-11e7-8a48-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/0f8c2e06-c2b6-11e7-8a48-6c40088ef8e6.nc",
+    "id": "0f8c2e06-c2b6-11e7-8a48-6c40088ef8e6"
+  },
+  "0fdde976-c2b6-11e7-9d95-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/0fdde976-c2b6-11e7-9d95-6c40088ef8e6.nc",
+    "id": "0fdde976-c2b6-11e7-9d95-6c40088ef8e6"
+  },
+  "204b1fdc-c2b0-11e7-876c-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/204b1fdc-c2b0-11e7-876c-6c40088ef8e6.nc",
+    "id": "204b1fdc-c2b0-11e7-876c-6c40088ef8e6"
+  },
+  "2a253a12-c2b8-11e7-8ac0-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/2a253a12-c2b8-11e7-8ac0-6c40088ef8e6.nc",
+    "id": "2a253a12-c2b8-11e7-8ac0-6c40088ef8e6"
+  },
+  "2a59b134-c2b8-11e7-bfc6-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/2a59b134-c2b8-11e7-bfc6-6c40088ef8e6.nc",
+    "id": "2a59b134-c2b8-11e7-bfc6-6c40088ef8e6"
+  },
+  "2cb18038-c2b8-11e7-b513-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/2cb18038-c2b8-11e7-b513-6c40088ef8e6.nc",
+    "id": "2cb18038-c2b8-11e7-b513-6c40088ef8e6"
+  },
+  "2cebff76-c2b8-11e7-b72e-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/2cebff76-c2b8-11e7-b72e-6c40088ef8e6.nc",
+    "id": "2cebff76-c2b8-11e7-b72e-6c40088ef8e6"
+  },
+  "2d1e4588-c2b8-11e7-ba51-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/2d1e4588-c2b8-11e7-ba51-6c40088ef8e6.nc",
+    "id": "2d1e4588-c2b8-11e7-ba51-6c40088ef8e6"
+  },
+  "2d48250a-c2b1-11e7-8bed-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/2d48250a-c2b1-11e7-8bed-6c40088ef8e6.nc",
+    "id": "2d48250a-c2b1-11e7-8bed-6c40088ef8e6"
+  },
+  "2f7d8606-c2b8-11e7-b502-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/2f7d8606-c2b8-11e7-b502-6c40088ef8e6.nc",
+    "id": "2f7d8606-c2b8-11e7-b502-6c40088ef8e6"
+  },
+  "2fe55646-c2b8-11e7-9bd0-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/2fe55646-c2b8-11e7-9bd0-6c40088ef8e6.nc",
+    "id": "2fe55646-c2b8-11e7-9bd0-6c40088ef8e6"
+  },
+  "3047bb40-c2b8-11e7-a796-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/3047bb40-c2b8-11e7-a796-6c40088ef8e6.nc",
+    "id": "3047bb40-c2b8-11e7-a796-6c40088ef8e6"
+  },
+  "327c8fe4-c2b8-11e7-8d39-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/327c8fe4-c2b8-11e7-8d39-6c40088ef8e6.nc",
+    "id": "327c8fe4-c2b8-11e7-8d39-6c40088ef8e6"
+  },
+  "3310a292-c2b8-11e7-84f6-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/3310a292-c2b8-11e7-84f6-6c40088ef8e6.nc",
+    "id": "3310a292-c2b8-11e7-84f6-6c40088ef8e6"
+  },
+  "338d60fe-c2b8-11e7-912a-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/338d60fe-c2b8-11e7-912a-6c40088ef8e6.nc",
+    "id": "338d60fe-c2b8-11e7-912a-6c40088ef8e6"
+  },
+  "36595e6c-c2b8-11e7-89f1-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/36595e6c-c2b8-11e7-89f1-6c40088ef8e6.nc",
+    "id": "36595e6c-c2b8-11e7-89f1-6c40088ef8e6"
+  },
+  "36d0b480-c2b8-11e7-8df5-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/36d0b480-c2b8-11e7-8df5-6c40088ef8e6.nc",
+    "id": "36d0b480-c2b8-11e7-8df5-6c40088ef8e6"
+  },
+  "373e6728-c2b8-11e7-8485-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/373e6728-c2b8-11e7-8485-6c40088ef8e6.nc",
+    "id": "373e6728-c2b8-11e7-8485-6c40088ef8e6"
+  },
+  "39ee6e0a-c2b8-11e7-a130-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/39ee6e0a-c2b8-11e7-a130-6c40088ef8e6.nc",
+    "id": "39ee6e0a-c2b8-11e7-a130-6c40088ef8e6"
+  },
+  "3a6746de-c2b8-11e7-9474-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/3a6746de-c2b8-11e7-9474-6c40088ef8e6.nc",
+    "id": "3a6746de-c2b8-11e7-9474-6c40088ef8e6"
+  },
+  "3ad79848-c2b8-11e7-8c8f-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/3ad79848-c2b8-11e7-8c8f-6c40088ef8e6.nc",
+    "id": "3ad79848-c2b8-11e7-8c8f-6c40088ef8e6"
+  },
+  "3d7f0324-c2b8-11e7-8e2b-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/3d7f0324-c2b8-11e7-8e2b-6c40088ef8e6.nc",
+    "id": "3d7f0324-c2b8-11e7-8e2b-6c40088ef8e6"
+  },
+  "3df61be2-c2b8-11e7-b69a-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/3df61be2-c2b8-11e7-b69a-6c40088ef8e6.nc",
+    "id": "3df61be2-c2b8-11e7-b69a-6c40088ef8e6"
+  },
+  "3e6c7df0-c2b8-11e7-8021-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/3e6c7df0-c2b8-11e7-8021-6c40088ef8e6.nc",
+    "id": "3e6c7df0-c2b8-11e7-8021-6c40088ef8e6"
+  },
+  "410422e8-c2b8-11e7-9483-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/410422e8-c2b8-11e7-9483-6c40088ef8e6.nc",
+    "id": "410422e8-c2b8-11e7-9483-6c40088ef8e6"
+  },
+  "42398018-c2b8-11e7-ba2e-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/42398018-c2b8-11e7-ba2e-6c40088ef8e6.nc",
+    "id": "42398018-c2b8-11e7-ba2e-6c40088ef8e6"
+  },
+  "43b5b9a4-c2b8-11e7-8e57-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/43b5b9a4-c2b8-11e7-8e57-6c40088ef8e6.nc",
+    "id": "43b5b9a4-c2b8-11e7-8e57-6c40088ef8e6"
+  },
+  "47ef9f7e-c2b8-11e7-93b6-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/47ef9f7e-c2b8-11e7-93b6-6c40088ef8e6.nc",
+    "id": "47ef9f7e-c2b8-11e7-93b6-6c40088ef8e6"
+  },
+  "49eac7e8-c2b8-11e7-8d1a-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/49eac7e8-c2b8-11e7-8d1a-6c40088ef8e6.nc",
+    "id": "49eac7e8-c2b8-11e7-8d1a-6c40088ef8e6"
+  },
+  "4c47c894-c2b8-11e7-9777-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/4c47c894-c2b8-11e7-9777-6c40088ef8e6.nc",
+    "id": "4c47c894-c2b8-11e7-9777-6c40088ef8e6"
+  },
+  "53ee411a-c2b8-11e7-ac31-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/53ee411a-c2b8-11e7-ac31-6c40088ef8e6.nc",
+    "id": "53ee411a-c2b8-11e7-ac31-6c40088ef8e6"
+  },
+  "560ee45c-c2b8-11e7-8697-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/560ee45c-c2b8-11e7-8697-6c40088ef8e6.nc",
+    "id": "560ee45c-c2b8-11e7-8697-6c40088ef8e6"
+  },
+  "592cefa6-c2b8-11e7-ba36-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/592cefa6-c2b8-11e7-ba36-6c40088ef8e6.nc",
+    "id": "592cefa6-c2b8-11e7-ba36-6c40088ef8e6"
+  },
+  "60e1998a-c2b8-11e7-8ffd-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/60e1998a-c2b8-11e7-8ffd-6c40088ef8e6.nc",
+    "id": "60e1998a-c2b8-11e7-8ffd-6c40088ef8e6"
+  },
+  "66cca412-c2b5-11e7-b272-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/66cca412-c2b5-11e7-b272-6c40088ef8e6.nc",
+    "id": "66cca412-c2b5-11e7-b272-6c40088ef8e6"
+  },
   "6d10d176-b3c2-11e7-9381-6c40088ef8e6": {
     "file": "/Users/chstansbury/Research/lanzara/data/cache/6d10d176-b3c2-11e7-9381-6c40088ef8e6.nc",
     "id": "6d10d176-b3c2-11e7-9381-6c40088ef8e6"
@@ -326,6 +474,54 @@
   "6dba7f94-b3c2-11e7-b4b0-6c40088ef8e6": {
     "file": "/Users/chstansbury/Research/lanzara/data/cache/6dba7f94-b3c2-11e7-b4b0-6c40088ef8e6.nc",
     "id": "6dba7f94-b3c2-11e7-b4b0-6c40088ef8e6"
+  },
+  "7e4cb0b6-c2b5-11e7-b89c-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/7e4cb0b6-c2b5-11e7-b89c-6c40088ef8e6.nc",
+    "id": "7e4cb0b6-c2b5-11e7-b89c-6c40088ef8e6"
+  },
+  "7ea0b998-c2b7-11e7-9ddb-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/7ea0b998-c2b7-11e7-9ddb-6c40088ef8e6.nc",
+    "id": "7ea0b998-c2b7-11e7-9ddb-6c40088ef8e6"
+  },
+  "8012daa4-c2b7-11e7-bed5-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/8012daa4-c2b7-11e7-bed5-6c40088ef8e6.nc",
+    "id": "8012daa4-c2b7-11e7-bed5-6c40088ef8e6"
+  },
+  "84614466-c2b7-11e7-a264-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/84614466-c2b7-11e7-a264-6c40088ef8e6.nc",
+    "id": "84614466-c2b7-11e7-a264-6c40088ef8e6"
+  },
+  "87017c1c-c2b5-11e7-8c7e-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/87017c1c-c2b5-11e7-8c7e-6c40088ef8e6.nc",
+    "id": "87017c1c-c2b5-11e7-8c7e-6c40088ef8e6"
+  },
+  "ab568b6c-c2b1-11e7-8c92-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/ab568b6c-c2b1-11e7-8c92-6c40088ef8e6.nc",
+    "id": "ab568b6c-c2b1-11e7-8c92-6c40088ef8e6"
+  },
+  "bb03634a-c2b5-11e7-af29-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/bb03634a-c2b5-11e7-af29-6c40088ef8e6.nc",
+    "id": "bb03634a-c2b5-11e7-af29-6c40088ef8e6"
+  },
+  "c30dd44c-c2b5-11e7-b160-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/c30dd44c-c2b5-11e7-b160-6c40088ef8e6.nc",
+    "id": "c30dd44c-c2b5-11e7-b160-6c40088ef8e6"
+  },
+  "c804a9a2-c2b0-11e7-a7bf-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/c804a9a2-c2b0-11e7-a7bf-6c40088ef8e6.nc",
+    "id": "c804a9a2-c2b0-11e7-a7bf-6c40088ef8e6"
+  },
+  "cb01a5e8-c2b5-11e7-a447-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/cb01a5e8-c2b5-11e7-a447-6c40088ef8e6.nc",
+    "id": "cb01a5e8-c2b5-11e7-a447-6c40088ef8e6"
+  },
+  "d390aa50-c2b5-11e7-86be-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/d390aa50-c2b5-11e7-86be-6c40088ef8e6.nc",
+    "id": "d390aa50-c2b5-11e7-86be-6c40088ef8e6"
+  },
+  "e9085a48-c2b5-11e7-bb64-6c40088ef8e6": {
+    "file": "/Users/chstansbury/Research/lanzara/data/cache/e9085a48-c2b5-11e7-bb64-6c40088ef8e6.nc",
+    "id": "e9085a48-c2b5-11e7-bb64-6c40088ef8e6"
   },
   "fccf4182-b3c1-11e7-b8d1-6c40088ef8e6": {
     "file": "/Users/chstansbury/Research/lanzara/data/cache/fccf4182-b3c1-11e7-b8d1-6c40088ef8e6.nc",

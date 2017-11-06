@@ -7,6 +7,8 @@ import xarray as xr
 
 from arpes.config import DATASET_CACHE_PATH, DATASET_CACHE_RECORD, CLEAVE_RECORD
 
+__all__ = ['load_dataset', 'save_dataset', 'delete_dataset',
+           'dataset_exists', 'is_a_dataset']
 
 def _filename_for(data):
     if isinstance(data, xr.DataArray) or isinstance(data, xr.Dataset):
@@ -15,11 +17,7 @@ def _filename_for(data):
     return os.path.join(DATASET_CACHE_PATH, data + '.nc')
 
 
-_wrappable = {'note', 'data_preparation', 'provenance', 'corrections'}
-_ignore_keys = {'Number of slices', 'Time', 'Detector last x-channel', 'Detector first x-channel',
-                'Detector first y-channel', 'Detector last y-channel', 'User', 'Step Time', 'ENDSTATION',
-                'userPhiOffset', 'MCP', 'provenance', 'Date', 'Version', 'Beam Current', 'userPolarOffset',
-                'userNormalIncidenceOffset', 'Energy Step', 'Center Energy'}
+_wrappable = {'note', 'data_preparation', 'provenance', 'corrections', 'symmetry_points'}
 _whitelist_keys = {'scan_region', 'sample', 'scan_mode', 'id', 'scan_mode'}
 
 
@@ -45,25 +43,56 @@ def unwrap_attrs(arr: xr.DataArray):
             pass
 
 
-def save_dataset(arr: xr.DataArray):
+def delete_dataset(arr_or_uuid):
+    if isinstance(arr_or_uuid, xr.DataArray):
+        return delete_dataset(arr_or_uuid.attrs['id'])
+
+    assert(isinstance(arr_or_uuid, str))
+
+    fname = _filename_for(arr_or_uuid)
+    if os.path.exists(fname):
+        os.remove(fname)
+
+
+def save_dataset(arr: xr.DataArray, force=False):
+    """
+    Persists a dataset to disk. In order to serialize some attributes, you may need to modify wrap and unwrap arrs above
+    in order to make sure a parameter is saved.
+
+    In some cases, such as when you would like to add information to the attributes,
+    it is nice to be able to force a write, since a write would not take place if the file is already on disk.
+    To do this you can set the ``force`` attribute.
+    :param arr:
+    :param force:
+    :return:
+    """
     # TODO human readable caching in addition to FS caching
     with open(DATASET_CACHE_RECORD, 'r') as cache_record:
         records = json.load(cache_record)
 
+    fname = _filename_for(arr)
     if arr.attrs['id'] in records:
-        return
+        if force:
+            if os.path.exists(fname):
+                os.replace(fname, fname + '.keep')
+        else:
+            return
 
     wrap_attrs(arr)
     filename = _filename_for(arr)
     arr.to_netcdf(filename, engine='netcdf4')
+
+    first_write = arr.attrs['id'] not in records
 
     records[arr.attrs['id']] = {
         'file': filename,
         **{k: v for k, v in arr.attrs.items() if k in _whitelist_keys}
     }
 
-    with open(DATASET_CACHE_RECORD, 'w') as cache_record:
-        json.dump(records, cache_record, sort_keys=True, indent=2)
+    # this was a first write
+    if first_write:
+        with open(DATASET_CACHE_RECORD, 'w') as cache_record:
+            json.dump(records, cache_record, sort_keys=True, indent=2)
 
     unwrap_attrs(arr)
 

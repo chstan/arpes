@@ -1,6 +1,7 @@
 import copy
 import functools
 import itertools
+import warnings
 
 import numpy as np
 import xarray as xr
@@ -10,6 +11,9 @@ from scipy.spatial import distance
 import arpes.models.band
 import arpes.utilities
 from arpes.provenance import provenance
+
+__all__ = ['curvature', 'd2_along_axis', 'gaussian_filter_arr', 'boxcar_filter_arr',
+           'boxcar_filter', 'gaussian_filter', 'fit_bands']
 
 
 def curvature(arr: xr.DataArray, directions=None, alpha=1):
@@ -68,11 +72,65 @@ def curvature(arr: xr.DataArray, directions=None, alpha=1):
     )
 
     del curv.attrs['id']
+    provenance(curv, arr, {
+        'what': 'Curvature',
+        'by': 'curvature',
+        'directions': directions,
+        'alpha': alpha,
+    })
     return curv
 
 
-def d2_along_axis(arr: xr.DataArray):
-    pass
+def d2_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None):
+    """
+    Like curvature, performs a second derivative. You can pass a function to use for smoothing through
+    the parameter smooth_fn, otherwise no smoothing will be performed.
+
+    You can specify the axis to take the derivative along with the axis param, which expects a string.
+    If no axis is provided the axis will be chosen from among the available ones according to the preference
+    for axes here, the first available being taken:
+
+    ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'polar']
+
+
+    :param arr:
+    :return:
+
+    """
+    axis_order = ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'polar']
+    if axis is None:
+        axes = [a for a in axis_order if a in arr.dims]
+        if len(axes):
+            axis = axes[0]
+        else:
+            # have to do something
+            axis = arr.dims[0]
+            warnings.warn('Choosing axis: {} for the second derivative, no preferred axis found.'.format(axis))
+
+    if smooth_fn is None:
+        smooth_fn = lambda x: x
+
+    d_axis = float(arr.coords[axis][1] - arr.coords[axis][0])
+    axis_idx = arr.dims.index(axis)
+
+    d1 = np.gradient(smooth_fn(arr.values), d_axis, axis=axis_idx)
+    d2 = np.gradient(smooth_fn(d1), d_axis, axis=axis_idx)
+
+    d2_arr = xr.DataArray(
+        d2,
+        arr.coords,
+        arr.dims,
+        attrs=arr.attrs
+    )
+
+    del d2_arr.attrs['id']
+    provenance(d2_arr, arr, {
+        'what': 'Second derivative',
+        'by': 'd2_along_axis',
+        'axis': axis,
+    })
+
+    return d2_arr
 
 
 def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_weighting=True):
@@ -341,20 +399,46 @@ def gaussian_filter_arr(arr: xr.DataArray, sigma=None):
 
     return filtered_arr
 
-def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1):
+
+def gaussian_filter(sigma=None):
+    def f(arr):
+        return boxcar_filter_arr(arr, sigma)
+
+    return f
+
+
+def boxcar_filter(size=None, n=1):
+    def f(arr):
+        return boxcar_filter_arr(arr, size, n)
+
+    return f
+
+def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1, default_size=1, skip_nan=True):
     if size is None:
         size = {}
 
     size = {k: int(v / (arr.coords[k][1] - arr.coords[k][0])) for k, v in size.items()}
     for dim in arr.dims:
         if dim not in size:
-            size[dim] = 5
+            size[dim] = default_size
 
     size = tuple(size[k] for k in arr.dims)
 
-    values = arr.values
-    for i in range(n):
-        values = ndimage.filters.uniform_filter(values, size)
+    if skip_nan:
+        nan_mask = np.copy(arr.values) * 0 + 1
+        nan_mask[arr.values != arr.values] = 0
+        filtered_mask = ndimage.filters.uniform_filter(nan_mask, size)
+
+        values = np.copy(arr.values)
+        values[values != values] = 0
+
+        for i in range(n):
+            values = ndimage.filters.uniform_filter(values, size) / filtered_mask
+            values[nan_mask == 0] = 0
+    else:
+        for i in range(n):
+            values = ndimage.filters.uniform_filter(values, size)
+
 
     filtered_arr = xr.DataArray(
         values,
@@ -369,6 +453,7 @@ def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1):
         'what': 'Boxcar filtered data',
         'by': 'boxcar_filter_arr',
         'size': size,
+        'skip_nan': skip_nan,
     })
 
     return filtered_arr

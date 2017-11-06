@@ -449,6 +449,11 @@ def walk_scans(path, only_id=False):
 
 
 def polar_offset(arr: xr.DataArray):
+    if 'G' in arr.attrs.get('symmetry_points', {}):
+        gamma_point = arr.attrs['symmetry_points']['G']
+        if 'polar' in gamma_point:
+            return gamma_point['polar']
+
     if 'polar_offset' in arr.attrs:
         return arr.attrs['polar_offset']
 
@@ -456,6 +461,11 @@ def polar_offset(arr: xr.DataArray):
 
 
 def phi_offset(arr: xr.DataArray):
+    if 'G' in arr.attrs.get('symmetry_points', {}):
+        gamma_point = arr.attrs['symmetry_points']['G']
+        if 'phi' in gamma_point:
+            return gamma_point['phi']
+
     if 'polar_offset' in arr.attrs:
         return arr.attrs['phi_offset']
 

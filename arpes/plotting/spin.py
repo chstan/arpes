@@ -6,6 +6,9 @@ from arpes.utilities.math import (
     propagate_statistical_error
 )
 
+__all__ = ['spin_polarized_spectrum']
+
+
 test_polarization = propagate_statistical_error(polarization)
 
 def prettyplot():
@@ -44,3 +47,5 @@ def spin_polarized_spectrum(spin_edc):
     plt.ylim(-0.2, 0.2)
 
     pol_fig.grid(True, axis='y')
+
+

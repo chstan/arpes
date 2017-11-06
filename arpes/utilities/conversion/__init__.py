@@ -34,7 +34,9 @@ Analyzer polar angle -> 'phi'
 
 # pylint: disable=W0613, C0103
 
+import collections
 import itertools
+import warnings
 from copy import deepcopy
 
 import numpy as np
@@ -43,17 +45,14 @@ import xarray as xr
 
 import arpes
 import arpes.constants as consts
-from arpes.exceptions import UnimplementedException
 from arpes.provenance import provenance
 from arpes.utilities import phi_offset, polar_offset, inner_potential, work_function, photon_energy
 
-# TODO Add conversion utilities for MC (i.e. vertical slit)
-# TODO Add conversion utilities for photon energy dependence
 # TODO Add conversion utilities that work for lower dimensionality, i.e. the ToF
-# TODO Add provenance capabilities
 
 
-K_SPACE_BORDER = 0.1
+K_SPACE_BORDER = 0.02
+MOMENTUM_BREAKPOINTS = [0.001, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 1]
 
 
 class CoordinateConverter(object):
@@ -103,6 +102,7 @@ class ConvertKpKzV0(CoordinateConverter):
     # TODO implement
     def __init__(self, *args, **kwargs):
         super(ConvertKpKzV0, self).__init__(*args, **kwargs)
+        raise NotImplementedError()
 
 class ConvertKp(CoordinateConverter):
     def __init__(self, *args, **kwargs):
@@ -116,8 +116,11 @@ class ConvertKp(CoordinateConverter):
         coordinates = super(ConvertKp, self).get_coordinates(resolution)
         (kp_low, kp_high) = calculate_kp_bounds(self.arr)
 
+        inferred_kp_res = (kp_high - kp_low + 2 * K_SPACE_BORDER) / len(self.arr.coords['phi'])
+        inferred_kp_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kp_res][-1]
+
         coordinates['kp'] = np.arange(kp_low - K_SPACE_BORDER, kp_high + K_SPACE_BORDER,
-                                      resolution.get('kp', arpes.constants.MEDIUM_FINE_K_GRAINING))
+                                      resolution.get('kp', inferred_kp_res))
 
         base_coords = {k: v for k, v in self.arr.coords.items()
                        if k not in ['eV', 'phi', 'polar']}
@@ -162,10 +165,17 @@ class ConvertKpKz(CoordinateConverter):
 
         ((kp_low, kp_high), (kz_low, kz_high)) = calculate_kp_kz_bounds(self.arr)
 
+        inferred_kp_res = (kp_high - kp_low + 2 * K_SPACE_BORDER) / len(self.arr.coords['phi'])
+        inferred_kp_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kp_res][-1]
+
+        # go a bit finer here because it would otherwise be very coarse
+        inferred_kz_res = (kz_high - kz_low + 2 * K_SPACE_BORDER) / len(self.arr.coords['hv'])
+        inferred_kz_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kz_res][-2]
+
         coordinates['kp'] = np.arange(kp_low - K_SPACE_BORDER, kp_high + K_SPACE_BORDER,
-                                      resolution.get('kp', arpes.constants.MEDIUM_FINE_K_GRAINING))
+                                      resolution.get('kp', inferred_kp_res))
         coordinates['kz'] = np.arange(kz_low - K_SPACE_BORDER, kz_high + K_SPACE_BORDER,
-                                      resolution.get('kz', arpes.constants.MEDIUM_FINE_K_GRAINING))
+                                      resolution.get('kz', inferred_kz_res))
 
         base_coords = {k: v for k, v in self.arr.coords.items()
                        if k not in ['eV', 'phi', 'polar']}
@@ -224,10 +234,17 @@ class ConvertKxKy(CoordinateConverter):
 
         ((kx_low, kx_high), (ky_low, ky_high)) = calculate_kx_ky_bounds(self.arr)
 
+        inferred_kx_res = (kx_high - kx_low + 2 * K_SPACE_BORDER) / len(self.arr.coords['phi'])
+        inferred_kx_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kx_res][-1]
+
+        # go a little finer here
+        inferred_ky_res = (ky_high - ky_low + 2 * K_SPACE_BORDER) / len(self.arr.coords['polar'])
+        inferred_ky_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_ky_res][-2]
+
         coordinates['kx'] = np.arange(kx_low - K_SPACE_BORDER, kx_high + K_SPACE_BORDER,
-                                      resolution.get('kx', arpes.constants.MEDIUM_FINE_K_GRAINING))
+                                      resolution.get('kx', inferred_kx_res))
         coordinates['ky'] = np.arange(ky_low - K_SPACE_BORDER, ky_high + K_SPACE_BORDER,
-                                      resolution.get('ky', arpes.constants.MEDIUM_FINE_K_GRAINING))
+                                      resolution.get('ky', inferred_ky_res))
 
         base_coords = {k: v for k, v in self.arr.coords.items()
                        if k not in ['eV', 'phi', 'polar']}
@@ -250,7 +267,7 @@ class ConvertKxKy(CoordinateConverter):
             return (180 / np.pi) * np.arcsin(kx / self.k_tot / np.cos((self.polar - polar_offset(self.arr)) * np.pi / 180)) + \
                    phi_offset(self.arr)
         else:
-            return (180 / np.pi) * np.arcsin(kx / self.k_tot)
+            return (180 / np.pi) * np.arcsin(kx / self.k_tot) + phi_offset(self.arr)
 
     def kspace_to_polar(self, binding_energy, kx, ky, *args, **kwargs):
         if self.k_tot is None:
@@ -259,7 +276,8 @@ class ConvertKxKy(CoordinateConverter):
         if self.is_slit_vertical:
             self.polar = (180 / np.pi) * np.arcsin(ky / self.k_tot) + polar_offset(self.arr)
         else:
-            self.polar = (180 / np.pi) * np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2))
+            self.polar = (180 / np.pi) * np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2)) + \
+                         polar_offset(self.arr)
         return self.polar
 
     def conversion_for(self, dim):
@@ -414,6 +432,161 @@ def grid_interpolator_from_dataarray(arr: xr.DataArray, fill_value=0.0, method='
         bounds_error=bounds_error, fill_value=fill_value, method=method)
 
 
+def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=None, resolution=None,
+                     shift_gamma=True, **kwargs):
+    """
+    Interpolates along a path through a volume. If the volume is higher dimensional than the desired path, the
+    interpolation is broadcasted along the free dimensions. This allows one to specify a k-space path and receive
+    the band structure along this path in k-space.
+
+    Points can either by specified by coordinates, or by reference to symmetry points, should they exist in the source
+    array. These symmetry points are translated to regular coordinates immediately, but are provided as a convenience.
+    If not all points specify the same set of coordinates, an attempt will be made to unify the coordinates. As an example,
+    if the specified path is (kx=0, ky=0, T=20) -> (kx=1, ky=1), the path will be made between (kx=0, ky=0, T=20) ->
+    (kx=1, ky=1, T=20). On the other hand, the path (kx=0, ky=0, T=20) -> (kx=1, ky=1, T=40) -> (kx=0, ky=1) will result
+    in an error because there is no way to break the ambiguity on the temperature for the last coordinate.
+
+    A reasonable value will be chosen for the resolution, near the maximum resolution of any of the interpolated
+    axes by default.
+
+    This function transparently handles the entire path. An alternate approach would be to convert each segment
+    separately and concatenate the interpolated axis with xarray.
+
+    If the sentinel value 'G' for the Gamma point is included in the interpolation points, the coordinate axis of the
+    interpolated coordinate will be shifted so that its value at the Gamma point is 0. You can opt out of this with the
+    parameter 'shift_gamma'
+
+    :param arr: Source data
+    :param interpolation_points: Path vertices
+    :param axis_name: Label for the interpolated axis. Under special circumstances a reasonable name will be chosen,
+    such as when the interpolation dimensions are kx and ky: in this case the interpolated dimension will be labeled kp.
+    In mixed or ambiguous situations the axis will be labeled by the default value 'inter'.
+    :param resolution: Requested resolution along the interpolated axis.
+    :param shift_gamma: Controls whether the interpolated axis is shifted to a value of 0 at Gamma.
+    :param kwargs:
+    :return: xr.DataArray containing the interpolated data.
+    """
+
+    if interpolation_points is None:
+        raise ValueError('You must provide points specifying an interpolation path')
+
+    parsed_interpolation_points = [
+        x if isinstance(x, collections.Iterable) and not isinstance(x, str) else arr.attrs['symmetry_points'][x]
+        for x in interpolation_points
+    ]
+
+    free_coordinates = list(arr.dims)
+    seen_coordinates = collections.defaultdict(set)
+    for point in parsed_interpolation_points:
+        for coord, value in point.items():
+            seen_coordinates[coord].add(value)
+            if coord in free_coordinates:
+                free_coordinates.remove(coord)
+
+    for point in parsed_interpolation_points:
+        for coord, values in seen_coordinates.items():
+            if coord not in point:
+                if len(values) != 1:
+                    raise ValueError('Ambiguous interpolation waypoint broadcast at dimension {}'.format(coord))
+                else:
+                    point[coord] = list(values)[0]
+
+    if axis_name is None:
+        axis_name = {
+            ('phi', 'polar',): 'angle',
+            ('kx', 'ky',): 'kp',
+            ('kx', 'kz',): 'k',
+            ('ky', 'kz',): 'k',
+            ('kx', 'ky', 'kz',): 'k'
+        }.get(tuple(sorted(seen_coordinates.keys())), 'inter')
+
+        if axis_name == 'angle' or axis_name == 'inter':
+            warnings.warn('Interpolating along axes with different dimensions '
+                          'will not include Jacobian correction factor.')
+
+    converted_coordinates = None
+    converted_dims = free_coordinates + [axis_name]
+
+    path_segments = list(zip(parsed_interpolation_points, parsed_interpolation_points[1:]))
+
+    def element_distance(waypoint_a, waypoint_b):
+        delta = np.array([waypoint_a[k] - waypoint_b[k] for k in waypoint_a.keys()])
+        return np.linalg.norm(delta)
+
+    def required_sampling_density(waypoint_a, waypoint_b):
+        ks = waypoint_a.keys()
+        dist = element_distance(waypoint_a, waypoint_b)
+        delta = np.array([waypoint_a[k] - waypoint_b[k] for k in ks])
+        delta_idx = [abs(d / (arr.coords[k][1] - arr.coords[k][0])) for d, k in zip(delta, ks)]
+        return dist / np.max(delta_idx)
+
+    # Approximate how many points we should use
+    segment_lengths = [element_distance(*segment) for segment in path_segments]
+    path_length = sum(segment_lengths)
+
+    gamma_offset = 0 # offset the gamma point to a k coordinate of 0 if possible
+    if 'G' in interpolation_points and shift_gamma:
+        gamma_offset = sum(segment_lengths[0:interpolation_points.index('G')])
+
+    if resolution is None:
+        resolution = np.min([required_sampling_density(*segment) for segment in path_segments])
+
+    def converter_for_coordinate_name(name):
+        def raw_interpolator(*coordinates):
+            return coordinates[free_coordinates.index(name)]
+
+        if name in free_coordinates:
+            return raw_interpolator
+
+        # Conversion involves the interpolated coordinates
+        def interpolated_coordinate_to_raw(*coordinates):
+            # Coordinate order is [*free_coordinates, interpolated]
+            interpolated = coordinates[len(free_coordinates)] + gamma_offset
+
+            # Start with empty array that we will mask writes onto
+            # We need to go with a masking approach rather than a concatenation based one because the coordinates
+            # come from np.meshgrid
+            dest_coordinate = np.zeros(shape=interpolated.shape)
+
+            start = 0
+            for i, l in enumerate(segment_lengths):
+                end = start + l
+                normalized = (interpolated - start) / l
+                seg_start, seg_end = path_segments[i]
+                dim_start, dim_end = seg_start[name], seg_end[name]
+                mask = np.logical_and(normalized >= 0, normalized < 1)
+                dest_coordinate[mask] = \
+                    dim_start * (1 - normalized[mask]) + dim_end * normalized[mask]
+                start = end
+
+            return dest_coordinate
+
+        return interpolated_coordinate_to_raw
+
+    converted_coordinates = {d: arr.coords[d].values for d in free_coordinates}
+
+    # Adjust this coordinate under special circumstances
+    converted_coordinates[axis_name] = np.linspace(0, path_length, int(path_length / resolution)) - gamma_offset
+
+    converted_arr = convert_coordinates(
+        arr,
+        converted_coordinates,
+        {
+            'dims': converted_dims,
+            'transforms': dict(zip(arr.dims, [converter_for_coordinate_name(d) for d in arr.dims]))
+        }
+    )
+
+    del converted_arr.attrs['id']
+    provenance(converted_arr, arr, {
+        'what': 'Slice along path',
+        'by': 'slice_along_path',
+        'parsed_interpolation_points': parsed_interpolation_points,
+        'interpolation_points': interpolation_points,
+    })
+
+    return converted_arr
+
 def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
@@ -528,11 +701,11 @@ def kx_kz_E_to_hv(kx, kz, E, metadata=None):
 
 
 def polar_hv_E_to_kx(polar, hv, E, metadata=None):
-    raise UnimplementedException('polar_hv_E_to_kx not implemented')
+    raise NotImplementedError('polar_hv_E_to_kx not implemented')
 
 
 def polar_hv_E_to_kz(polar, hv, E, metadata=None):
-    raise UnimplementedException('polar_hv_E_to_kz not implemented')
+    raise NotImplementedError('polar_hv_E_to_kz not implemented')
 
 
 def polar_elev_KE_to_kx(polar, elev, KE, metadata=None):
@@ -558,11 +731,11 @@ def kx_ky_KE_to_elev(kx, ky, KE, metadata=None):
 
 # Jacobians organized here
 def jacobian_polar_hv_E_to_kx_kz_E(kx, kz, E, metadata=None):
-    raise UnimplementedException('jacobian_polar_hv_E_to_kx_kz_E not implemented')
+    raise NotImplementedError('jacobian_polar_hv_E_to_kx_kz_E not implemented')
 
 
 def jacobian_polar_elev_KE_to_kx_ky_KE(kx, ky, E, metadata=None):
-    raise UnimplementedException('jacobian_polar_elev_E_to_kx_ky_E not implemented')
+    raise NotImplementedError('jacobian_polar_elev_E_to_kx_ky_E not implemented')
 
 
 # Bounds finding methods here, this may work out to be inferrable from the rest

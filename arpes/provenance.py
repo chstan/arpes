@@ -1,8 +1,13 @@
+import datetime
+import functools
+import json
+import os.path
 import uuid
 import warnings
 
 import xarray as xr
-import datetime
+
+import arpes.config
 
 
 def attach_id(data):
@@ -20,6 +25,47 @@ def provenance_from_file(child_arr: xr.DataArray, file, record):
         'parents_provenance': 'filesystem',
         'time': str(datetime.datetime.now()),
     }
+
+
+def save_plot_provenance(plot_fn):
+    """
+    A decorator that automates saving the provenance information for a particular plot.
+    A plotting function creates an image or movie resource at some location on the
+    filesystem.
+
+    In order to hook into this decorator appropriately, because there is no way that I know
+    of of temporarily overriding the behavior of the open builtin in order to monitor
+    for a write.
+
+    :param plot_fn: A plotting function to decorate
+    :return:
+    """
+    @functools.wraps(plot_fn)
+    def func_wrapper(*args, **kwargs):
+        path = plot_fn(*args, **kwargs)
+        if isinstance(path, str) and os.path.exists(path):
+            assert (arpes.config.CONFIG['WORKSPACE'] is not None)
+            if arpes.config.CONFIG['WORKSPACE'] not in path:
+                warnings.warn(('Plotting function {} appears not to abide by '
+                               'practice of placing plots into designated workspaces.').format(plot_fn.__name__))
+
+            provenance_context = {
+                'VERSION': arpes.config.CONFIG['VERSION'],
+                'time': datetime.datetime.now().isoformat(),
+                'name': plot_fn.__name__,
+                'args': [arg.attrs.get('provenance', {}) for arg in args
+                         if isinstance(arg, xr.DataArray)],
+                'kwargs': {k: v.attrs.get('provenance', {}) for k, v in kwargs.items()
+                           if isinstance(v, xr.DataArray)}
+            }
+
+            provenance_path = path + '.provenance.json'
+            with open(provenance_path, 'w') as f:
+                json.dump(provenance_context, f, indent=2)
+
+        return path
+
+    return func_wrapper
 
 
 def provenance(child_arr: xr.DataArray, parent_arr: xr.DataArray, record, keep_parent_ref=False):

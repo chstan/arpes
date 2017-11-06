@@ -22,7 +22,15 @@ exclude_hemisphere_axes = _exclude_from_set({'phi', 'eV'})
 exclude_hv_axes = _exclude_from_set({'hv', 'eV'})
 
 
+def install_fermi_edge_reference(arr: xr.DataArray):
+    # TODO add method to install and reference corrections by looking at dataset metadata
+    return build_quadratic_fermi_edge_correction(arr, plot=True)
+
+
 def build_quadratic_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, plot=False) -> lf.model.ModelResult:
+    # TODO improve robustness here by allowing passing in the location of the fermi edge guess
+    # We could also do this automatically by using the same method we use for step detection to find the edge of the
+    # spectrometer image
     edge_fit = broadcast_model(GStepBModel, arr.sum(exclude_hemisphere_axes(arr.dims)).sel(eV=slice(-0.1, 0.1)), 'phi')
 
     quadratic_corr = QuadraticModel().guess_fit(

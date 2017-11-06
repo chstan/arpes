@@ -10,13 +10,6 @@ class AnalysisError(Exception):
     """
     pass
 
-class UnimplementedException(Exception):
-    """
-    Stub for unimplemented code
-    """
-    pass
-
-
 class AnalysisWarning(UserWarning):
     """
     Non-fatal, but the user probably forgot something really significant that
