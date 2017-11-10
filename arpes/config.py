@@ -6,13 +6,16 @@ between different projects.
 
 import json
 import os.path
+import warnings
 
 import arpes.constants as consts
 
-DATA_PATH = '/Users/chstansbury/Research/lanzara/data/'
-SOURCE_PATH = '/Users/chstansbury/PycharmProjects/python-arpes/'
-DATASET_CACHE_PATH = '/Users/chstansbury/Research/lanzara/data/cache/'
+# ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES
+ARPES_ROOT = os.path.getenv('ARPES_ROOT')
+assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT environment "
+                                  "variable defined.")
 
+SOURCE_PATH = ARPES_ROOT
 FIGURE_PATH = os.path.join(SOURCE_PATH, 'figures/')
 
 DATASET_CACHE_RECORD = os.path.join(SOURCE_PATH, 'datasets/cache.json')
@@ -39,3 +42,10 @@ def load_json_configuration(filename):
     """
     with open(filename) as config_file:
         CONFIG.update(json.load(config_file))
+
+
+try:
+    import local_config
+except:
+    warnings.warn("Could not find local configuration file. If you don't "
+                  "have one, you can safely ignore this message.")

@@ -1,7 +1,14 @@
 figures/
-datasets/pipeline.shelf.json
-datasets/pipeline.shelf.db
+datasets/
+exp
+
+local_config.py
+
+!datasets/Misc
+!experiments/Misc
+
 bin/
+experiment_logs/
 **/.DS_Store
 
 # Byte-compiled / optimized / DLL files
