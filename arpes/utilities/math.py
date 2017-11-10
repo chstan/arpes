@@ -1,8 +1,10 @@
 import collections
 import itertools
 
-import numpy
+import numpy as np
 import scipy.ndimage.interpolation
+
+import arpes.constants
 
 
 def derivative(f, arg_idx=0):
@@ -36,7 +38,7 @@ def propagate_statistical_error(f):
             df_darg_i = derivative(f, i)
             running_sum += df_darg_i(*args) ** 2 * arg
 
-        return numpy.sqrt(running_sum)
+        return np.sqrt(running_sum)
 
     return compute_propagated_error
 
@@ -59,3 +61,13 @@ def shift_by(arr, value, axis=0, by_axis=0, **kwargs):
         arr_copy[slc] = scipy.ndimage.interpolation.shift(arr[slc], shift_amount, **kwargs)
 
     return arr_copy
+
+
+def inv_fermi_distribution(energy, temperature, mu=0):
+    """Expects energy in eV and temperature in Kelvin."""
+    return np.exp((energy - mu) / (arpes.constants.K_BOLTZMANN_EV_KELVIN * temperature)) + 1
+
+
+def fermi_distribution(energy, temperature):
+    """Expects energy in eV and temperature in Kelvin."""
+    return 1 / inv_fermi_distribution(energy, temperature)

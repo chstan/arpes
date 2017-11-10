@@ -50,4 +50,4 @@ for path, _, files in walk(os.getcwd()):
             data = load_scan(dict(scan))
             data = arpes.utilities.rename_standard_attrs(data.raw)
             data = arpes.utilities.clean_attribute_names(data)
-            save_dataset(data)
+            save_dataset(data, force=True)
