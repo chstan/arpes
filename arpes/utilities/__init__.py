@@ -7,9 +7,9 @@ lineages.
 import functools
 import itertools
 import json
-import math
 import os
 import re
+import time
 import uuid
 import warnings
 from math import sin, cos, acos
@@ -59,7 +59,7 @@ def denorm_lorentzian_with_background(x, background_level, amplitude, location, 
     but for now I'm being pretty rudimentary with things, so we're just including
     a background parameter for the Lorentzian itself
     """
-    return background_level + amplitude/math.pi/(1 + ((x - location)/fwhm)**2)
+    return background_level + amplitude/np.pi/(1 + ((x - location)/fwhm)**2)
 
 
 def fermi_dirac_distribution(Es, mu, T):
@@ -100,7 +100,7 @@ def _prep_angles(angles, convert_radians=False):
     """
     Converts the analyzer angles to radians if required
     """
-    return [(math.pi * a / 180) if convert_radians else a for a in angles]
+    return [(np.pi * a / 180) if convert_radians else a for a in angles]
 
 
 # _rotation_proj_x through _rotation_proj_z are the only ones that depend on the
@@ -141,7 +141,7 @@ def _kk(angles, energy, lattice_constant, convert_radians=False, perform_rotatio
     """
 
     k_inv_angstrom = 0.5123
-    k0 = k_inv_angstrom * math.sqrt(energy) * lattice_constant / math.pi
+    k0 = k_inv_angstrom * np.sqrt(energy) * lattice_constant / np.pi
 
     return k0 * perform_rotation(*_prep_angles(angles, convert_radians))
 
@@ -180,7 +180,7 @@ def angles_to_rhat(lattice_constant, energy, *angles):
     max_kkx, max_kky = kkxy((theta, beta, alpha, phi_max,), energy, lattice_constant)
 
     dkx, dky = max_kkx - min_kkx, max_kky - min_kky
-    norm = math.sqrt(dkx * dkx + dky * dky)
+    norm = np.sqrt(dkx * dkx + dky * dky)
 
     return (dkx / norm, dky / norm,)
 
@@ -197,7 +197,7 @@ def angles_to_k_dot_r(lattice_constant, theta, beta, alpha, phi, energy, rhat):
 
 def k_dot_r_to_angles(lattice_constant, theta, beta, alpha, k, energy, rhat):
     k_inv_angstrom = 0.5123
-    k0 = k_inv_angstrom * math.sqrt(energy) * lattice_constant / math.pi
+    k0 = k_inv_angstrom * np.sqrt(energy) * lattice_constant / np.pi
 
     rhat_x, rhat_y = rhat
 
@@ -211,7 +211,7 @@ def k_dot_r_to_angles(lattice_constant, theta, beta, alpha, k, energy, rhat):
     perp_component = cos_component ** 2 + sin_component ** 2
 
     return sign_phi * acos(
-        (cos_component * k + sin_component * math.sqrt(perp_component - k ** 2)) /
+        (cos_component * k + sin_component * np.sqrt(perp_component - k ** 2)) /
         perp_component)
 
 
@@ -233,7 +233,7 @@ def jacobian_correction(energies, lattice_constant, theta, beta, alpha, phis, rh
     """
 
     k_inv_angstrom = 0.5123
-    k0s = k_inv_angstrom * np.sqrt(energies) * lattice_constant / math.pi
+    k0s = k_inv_angstrom * np.sqrt(energies) * lattice_constant / np.pi
 
     dkxdphi = (cos(theta) * cos(alpha) * np.cos(phis) -
                sin(theta) * np.sin(phis))
@@ -247,7 +247,7 @@ def jacobian_correction(energies, lattice_constant, theta, beta, alpha, phis, rh
     # return the dot product
     rhat_x, rhat_y = rhat
 
-    geometric_correction = math.pi/180*(rhat_x * dkxdphi + rhat_y * dkydphi)
+    geometric_correction = np.pi/180*(rhat_x * dkxdphi + rhat_y * dkydphi)
     return np.outer(k0s, geometric_correction)
 
 
@@ -358,6 +358,8 @@ clean_attribute_names = lift_dataarray_attrs(clean_keys)
 
 
 rename_standard_attrs = lambda x: rename_dataarray_attrs(x, {
+    'PuPol': 'pump_pol',
+    'PrPol': 'probe_pol',
     'Lens Mode': 'lens_mode',
     'Excitation Energy': 'hv',
     'Pass Energy': 'pass_energy',
@@ -394,7 +396,7 @@ def clean_xlsx_dataset(path):
             return item == ''
 
         if isinstance(item, float):
-            return math.isnan(item)
+            return np.isnan(item)
 
         return False
 
@@ -403,7 +405,7 @@ def clean_xlsx_dataset(path):
         row = row.copy()
 
         for key, value in row.iteritems():
-            if key == 'id' and math.isnan(float(row['id'])):
+            if key == 'id' and np.isnan(float(row['id'])):
                 ds.loc[index, ('id',)] = str(uuid.uuid1())
 
             elif last_index is not None and is_blank(value) and not is_blank(ds.loc[last_index,(key,)]):
@@ -447,59 +449,36 @@ def walk_scans(path, only_id=False):
                     yield scan
 
 
+class Debounce(object):
+    def __init__(self, period):
+        self.period = period  # never call the wrapped function more often than this (in seconds)
+        self.count = 0  # how many times have we successfully called the function
+        self.count_rejected = 0  # how many times have we rejected the call
+        self.last = None  # the last time it was called
 
-def polar_offset(arr: xr.DataArray):
-    if 'G' in arr.attrs.get('symmetry_points', {}):
-        gamma_point = arr.attrs['symmetry_points']['G']
-        if 'polar' in gamma_point:
-            return gamma_point['polar']
+    # force a reset of the timer, aka the next call will always work
+    def reset(self):
+        self.last = None
 
-    if 'polar_offset' in arr.attrs:
-        return arr.attrs['polar_offset']
+    def __call__(self, f):
+        def wrapped(*args, **kwargs):
+            now = time.time()
+            willcall = False
+            if self.last is not None:
+                # amount of time since last call
+                delta = now - self.last
+                if delta >= self.period:
+                    willcall = True
+                else:
+                    willcall = False
+            else:
+                willcall = True  # function has never been called before
 
-    return arr.attrs.get('data_preparation', {}).get('polar_offset', 0)
-
-
-def phi_offset(arr: xr.DataArray):
-    if 'G' in arr.attrs.get('symmetry_points', {}):
-        gamma_point = arr.attrs['symmetry_points']['G']
-        if 'phi' in gamma_point:
-            return gamma_point['phi']
-
-    if 'polar_offset' in arr.attrs:
-        return arr.attrs['phi_offset']
-
-    return arr.attrs.get('data_preparation', {}).get('phi_offset', 0)
-
-
-def material(arr: xr.DataArray):
-    try:
-        return arpes.materials.material_by_formula[arr.attrs['sample']]
-    except:
-        return None
-
-
-def work_function(arr: xr.DataArray):
-    if 'sample_workfunction' in arr.attrs:
-        return arr.attrs['sample_workfunction']
-
-    if material(arr):
-        return material(arr).get('work_function', 4.32)
-
-    return 4.32
-
-
-def inner_potential(arr: xr.DataArray):
-    if 'inner_potential' in arr.attrs:
-        return arr.attrs['inner_potential']
-
-    if material(arr):
-        return material(arr).get('inner_potential', 10)
-
-    return 10
-
-def photon_energy(arr: xr.DataArray):
-    if 'hv' in arr.attrs:
-        return float(arr.attrs['hv'])
-
-    return None
+            if willcall:
+                # set these first incase we throw an exception
+                self.last = now  # don't use time.time()
+                self.count += 1
+                f(*args, **kwargs)  # call wrapped function
+            else:
+                self.count_rejected += 1
+        return wrapped

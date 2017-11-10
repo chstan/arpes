@@ -45,8 +45,7 @@ import xarray as xr
 
 import arpes
 import arpes.constants as consts
-from arpes.provenance import provenance
-from arpes.utilities import phi_offset, polar_offset, inner_potential, work_function, photon_energy
+from arpes.provenance import provenance, update_provenance
 
 # TODO Add conversion utilities that work for lower dimensionality, i.e. the ToF
 
@@ -130,17 +129,17 @@ class ConvertKp(CoordinateConverter):
 
     def compute_k_tot(self, binding_energy):
         self.k_tot = arpes.constants.K_INV_ANGSTROM * np.sqrt(
-            photon_energy(self.arr) - work_function(self.arr) + binding_energy)
+            self.arr.S.hv - self.arr.S.work_function + binding_energy)
 
     def kspace_to_phi(self, binding_energy, kp, *args, **kwargs):
         polar_angle = float(self.arr.attrs.get('polar'))
-        polar_angle -= polar_offset(self.arr)
+        polar_angle -= self.arr.polar_offset
 
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
         return (180 / np.pi) * np.arcsin(kp / self.k_tot / np.cos(
-            polar_angle * np.pi / 180)) + phi_offset(self.arr)
+            polar_angle * np.pi / 180)) + self.arr.phi_offset
 
 
     def conversion_for(self, dim):
@@ -187,8 +186,8 @@ class ConvertKpKz(CoordinateConverter):
     def kspace_to_hv(self, binding_energy, kp, kz, *args, **kwargs):
         # x = kp, y = kz, z = BE
         if self.hv is None:
-            inner_v = inner_potential(self.arr)
-            wf = work_function(self.arr)
+            inner_v = self.arr.inner_potential
+            wf = self.arr.work_function
             self.hv = arpes.constants.HV_CONVERSION * (kp ** 2 + kz ** 2) + (
                 -inner_v - binding_energy + wf)
 
@@ -201,7 +200,7 @@ class ConvertKpKz(CoordinateConverter):
         def kp_to_polar(kinetic_energy_out, kp):
             return 180 / np.pi * np.arcsin(kp / (arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy_out)))
 
-        return kp_to_polar(self.hv + work_function(self.arr), kp) + phi_offset(self.arr)
+        return kp_to_polar(self.hv + self.arr.S.work_function, kp) + self.arr.S.phi_offset
 
     def conversion_for(self, dim):
         def with_identity(*args, **kwargs):
@@ -254,7 +253,7 @@ class ConvertKxKy(CoordinateConverter):
 
     def compute_k_tot(self, binding_energy):
         self.k_tot = arpes.constants.K_INV_ANGSTROM * np.sqrt(
-            photon_energy(self.arr) - work_function(self.arr) + binding_energy)
+            self.arr.S.hv - self.arr.S.work_function + binding_energy)
 
     def kspace_to_phi(self, binding_energy, kx, ky, *args, **kwargs):
         if self.k_tot is None:
@@ -264,20 +263,20 @@ class ConvertKxKy(CoordinateConverter):
             self.kspace_to_polar(binding_energy, kx, ky, *args, **kwargs)
 
         if self.is_slit_vertical:
-            return (180 / np.pi) * np.arcsin(kx / self.k_tot / np.cos((self.polar - polar_offset(self.arr)) * np.pi / 180)) + \
-                   phi_offset(self.arr)
+            return (180 / np.pi) * np.arcsin(kx / self.k_tot / np.cos((self.polar - self.arr.S.polar_offset) * np.pi / 180)) + \
+                   self.arr.S.phi_offset
         else:
-            return (180 / np.pi) * np.arcsin(kx / self.k_tot) + phi_offset(self.arr)
+            return (180 / np.pi) * np.arcsin(kx / self.k_tot) + self.arr.S.phi_offset
 
     def kspace_to_polar(self, binding_energy, kx, ky, *args, **kwargs):
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
         if self.is_slit_vertical:
-            self.polar = (180 / np.pi) * np.arcsin(ky / self.k_tot) + polar_offset(self.arr)
+            self.polar = (180 / np.pi) * np.arcsin(ky / self.k_tot) + self.arr.S.polar_offset
         else:
             self.polar = (180 / np.pi) * np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2)) + \
-                         polar_offset(self.arr)
+                         self.arr.S.polar_offset
         return self.polar
 
     def conversion_for(self, dim):
@@ -292,8 +291,9 @@ class ConvertKxKy(CoordinateConverter):
 
 
 def calculate_kp_kz_bounds(arr: xr.DataArray):
-    phi_min = np.min(arr.coords['phi'].values) - phi_offset(arr)
-    phi_max = np.max(arr.coords['phi'].values) - phi_offset(arr)
+    phi_offset = arr.S.phi_offset
+    phi_min = np.min(arr.coords['phi'].values) - phi_offset
+    phi_max = np.max(arr.coords['phi'].values) - phi_offset
 
     binding_energy_min, binding_energy_max = np.min(arr.coords['eV'].values), np.max(arr.coords['eV'].values)
     hv_min, hv_max = np.min(arr.coords['hv'].values), np.max(arr.coords['hv'].values)
@@ -306,14 +306,14 @@ def calculate_kp_kz_bounds(arr: xr.DataArray):
         return arpes.constants.K_INV_ANGSTROM * np.sqrt(
             kinetic_energy * np.cos(np.pi / 180 * theta) ** 2 + inner_V)
 
-    wf = work_function(arr)
+    wf = arr.S.work_function
     kx_min = min(spherical_to_kx(hv_max - binding_energy_max - wf, phi_min, 0),
                  spherical_to_kx(hv_min - binding_energy_max - wf, phi_min, 0))
     kx_max = max(spherical_to_kx(hv_max - binding_energy_max - wf, phi_max, 0),
                  spherical_to_kx(hv_min - binding_energy_max - wf, phi_max, 0))
 
     angle_max = max(abs(phi_min), abs(phi_max))
-    inner_V = inner_potential(arr)
+    inner_V = arr.S.inner_potential
     kz_min = spherical_to_kz(hv_min + binding_energy_min - wf, angle_max, 0, inner_V)
     kz_max = spherical_to_kz(hv_max + binding_energy_max - wf, 0, 0, inner_V)
 
@@ -324,15 +324,15 @@ def calculate_kp_kz_bounds(arr: xr.DataArray):
 
 
 def calculate_kp_bounds(arr: xr.DataArray):
-    phi_coords = arr.coords['phi'].values - phi_offset(arr)
-    polar = float(arr.attrs.get('polar')) - polar_offset(arr)
+    phi_coords = arr.coords['phi'].values - arr.S.phi_offset
+    polar = float(arr.attrs.get('polar')) - arr.S.polar_offset
 
     phi_low, phi_high = np.min(phi_coords), np.max(phi_coords)
     phi_mid = (phi_high + phi_low) / 2
 
     sampled_phi_values = np.array([phi_low, phi_mid, phi_high])
 
-    kinetic_energy = photon_energy(arr) - work_function(arr)
+    kinetic_energy = arr.S.photon_energy - arr.S.work_function
     kps = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(
         np.pi / 180. * sampled_phi_values) * np.cos(np.pi / 180. * polar)
 
@@ -347,7 +347,7 @@ def calculate_kx_ky_bounds(arr: xr.DataArray):
     :param arr: Dataset that includes a key indicating the photon energy of the scan
     :return: ((kx_low, kx_high,), (ky_low, ky_high,))
     """
-    phi_coords, polar_coords = arr.coords['phi'] - phi_offset(arr), arr.coords['polar'] - polar_offset(arr)
+    phi_coords, polar_coords = arr.coords['phi'] - arr.S.phi_offset, arr.coords['polar'] - arr.S.polar_offset
 
     # Sample hopefully representatively along the edges
     phi_low, phi_high = np.min(phi_coords), np.max(phi_coords)
@@ -359,7 +359,7 @@ def calculate_kx_ky_bounds(arr: xr.DataArray):
                                    phi_low, phi_mid, phi_high, phi_high])
     sampled_polar_values = np.array([polar_mid, polar_high, polar_high, polar_high, polar_mid,
                                      polar_low, polar_low, polar_low, polar_mid])
-    kinetic_energy = photon_energy(arr) - work_function(arr)
+    kinetic_energy = arr.S.hv - arr.S.work_function
 
     kxs = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(np.pi / 180. * sampled_phi_values)
     kys = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.cos(
@@ -587,6 +587,8 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
 
     return converted_arr
 
+
+@update_provenance('Automatically k-space converted')
 def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
@@ -621,22 +623,10 @@ def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
     converter = convert_cls(arr, converted_dims)
     converted_coordinates = converter.get_coordinates(resolution)
 
-    converted_arr = convert_coordinates(
-        arr,
-        converted_coordinates,
-        {
+    return convert_coordinates(
+        arr, converted_coordinates, {
             'dims': converted_dims,
-            'transforms': dict(zip(arr.dims, [converter.conversion_for(d) for d in arr.dims])),
-        }
-    )
-
-    del converted_arr.attrs['id']
-    provenance(converted_arr, arr, {
-        'what': 'Automatically k-space converted',
-        'by': 'convert_to_kspace',
-    })
-
-    return converted_arr
+            'transforms': dict(zip(arr.dims, [converter.conversion_for(d) for d in arr.dims]))})
 
 
 def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transform):

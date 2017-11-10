@@ -10,13 +10,15 @@ from scipy.spatial import distance
 
 import arpes.models.band
 import arpes.utilities
-from arpes.provenance import provenance
+import arpes.utilities.math
+from arpes.provenance import provenance, update_provenance
 
-__all__ = ['curvature', 'd2_along_axis', 'gaussian_filter_arr', 'boxcar_filter_arr',
+__all__ = ['curvature', 'd1_along_axis', 'd2_along_axis', 'dn_along_axis',
+           'gaussian_filter_arr', 'boxcar_filter_arr', 'normalize_by_fermi_distribution',
            'boxcar_filter', 'gaussian_filter', 'fit_bands']
 
 
-def curvature(arr: xr.DataArray, directions=None, alpha=1):
+def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
     """
     Defined via
         C(x,y) = ([C_0 + (df/dx)^2]d^2f/dy^2 - 2 * df/dx df/dy d^2f/dxdy + [C_0 + (df/dy)^2]d^2f/dx^2) /
@@ -41,6 +43,9 @@ def curvature(arr: xr.DataArray, directions=None, alpha=1):
     :param alpha: regulation parameter, chosen semi-universally, but with no particular justification
     :return:
     """
+    if beta is not None:
+        alpha = np.power(10., beta)
+
     if directions is None:
         directions = arr.dims[:2]
 
@@ -81,7 +86,7 @@ def curvature(arr: xr.DataArray, directions=None, alpha=1):
     return curv
 
 
-def d2_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None):
+def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
     """
     Like curvature, performs a second derivative. You can pass a function to use for smoothing through
     the parameter smooth_fn, otherwise no smoothing will be performed.
@@ -91,11 +96,11 @@ def d2_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None):
     for axes here, the first available being taken:
 
     ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'polar']
-
-
     :param arr:
+    :param axis:
+    :param smooth_fn:
+    :param order: Specifies how many derivatives to take
     :return:
-
     """
     axis_order = ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'polar']
     if axis is None:
@@ -113,24 +118,30 @@ def d2_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None):
     d_axis = float(arr.coords[axis][1] - arr.coords[axis][0])
     axis_idx = arr.dims.index(axis)
 
-    d1 = np.gradient(smooth_fn(arr.values), d_axis, axis=axis_idx)
-    d2 = np.gradient(smooth_fn(d1), d_axis, axis=axis_idx)
+    values = arr.values
+    for _ in range(order):
+        values = np.gradient(smooth_fn(arr.values), d_axis, axis=axis_idx)
 
-    d2_arr = xr.DataArray(
-        d2,
+    dn_arr = xr.DataArray(
+        values,
         arr.coords,
         arr.dims,
         attrs=arr.attrs
     )
 
-    del d2_arr.attrs['id']
-    provenance(d2_arr, arr, {
-        'what': 'Second derivative',
-        'by': 'd2_along_axis',
+    del dn_arr.attrs['id']
+    provenance(dn_arr, arr, {
+        'what': '{}th derivative'.format(order),
+        'by': 'dn_along_axis',
         'axis': axis,
+        'order': order,
     })
 
-    return d2_arr
+    return dn_arr
+
+
+d2_along_axis = functools.partial(dn_along_axis, order=2)
+d1_along_axis = functools.partial(dn_along_axis, order=1)
 
 
 def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_weighting=True):
@@ -371,38 +382,43 @@ def fit_bands(arr: xr.DataArray, band_description, background=None, direction='m
     return band_results, unpacked_bands, residual
 
 
-def gaussian_filter_arr(arr: xr.DataArray, sigma=None):
+def gaussian_filter_arr(arr: xr.DataArray, sigma=None, n=1, default_size=1):
     if sigma is None:
         sigma = {}
 
     sigma = {k: int(v / (arr.coords[k][1] - arr.coords[k][0])) for k, v in sigma.items()}
     for dim in arr.dims:
         if dim not in sigma:
-            sigma[dim] = 5
+            sigma[dim] = default_size
 
     sigma = tuple(sigma[k] for k in arr.dims)
 
+    values = arr.values
+    for i in range(n):
+        values = ndimage.filters.gaussian_filter(values, sigma)
+
     filtered_arr = xr.DataArray(
-        ndimage.filters.gaussian_filter(arr.values, sigma),
+        values,
         arr.coords,
         arr.dims,
         attrs=copy.deepcopy(arr.attrs)
     )
 
-    del filtered_arr.attrs['id']
+    if 'id' in filtered_arr.attrs:
+        del filtered_arr.attrs['id']
 
-    provenance(filtered_arr, arr, {
-        'what': 'Gaussian filtered data',
-        'by': 'gaussian_filter_arr',
-        'sigma': sigma,
-    })
+        provenance(filtered_arr, arr, {
+            'what': 'Gaussian filtered data',
+            'by': 'gaussian_filter_arr',
+            'sigma': sigma,
+        })
 
     return filtered_arr
 
 
-def gaussian_filter(sigma=None):
+def gaussian_filter(sigma=None, n=1):
     def f(arr):
-        return boxcar_filter_arr(arr, sigma)
+        return gaussian_filter_arr(arr, sigma, n)
 
     return f
 
@@ -457,3 +473,36 @@ def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1, default_size=1, skip_na
     })
 
     return filtered_arr
+
+@update_provenance('Normalized by the 1/Fermi Dirac Distribution at sample temp')
+def normalize_by_fermi_distribution(data, max_gain=None, rigid_shift=0, instrumental_broadening=None):
+    """
+    Normalizes a scan by 1/the fermi dirac distribution. You can control the maximum gain with ``clamp``, and whether
+    the Fermi edge needs to be shifted (this is for those desperate situations where you want something that
+    "just works") via ``rigid_shift``.
+
+    :param data: Input
+    :param clamp: Maximum value for the gain. By default the value used is the mean of the spectrum.
+    :param rigid_shift: How much to shift the spectrum chemical potential.
+    Pass the nominal value for the chemical potential in the scan. I.e. if the chemical potential is at BE=0.1, pass
+    rigid_shift=0.1.
+    :param instrumental_broadening: Instrumental broadening to use for convolving the distribution
+    :return: Normalized DataArray
+    """
+    distrib = arpes.utilities.math.fermi_distribution(data.coords['eV'].values - rigid_shift, data.S.temp)
+
+    # don't boost by more than 90th percentile of input, by default
+    if max_gain is None:
+        max_gain = np.mean(data.values)
+
+    distrib[distrib < 1/max_gain] = 1/max_gain
+    distrib_arr = xr.DataArray(
+        distrib,
+        {'eV': data.coords['eV'].values},
+        ['eV']
+    )
+
+    if instrumental_broadening is not None:
+        distrib_arr = gaussian_filter_arr(distrib_arr, sigma={'eV': instrumental_broadening})
+
+    return data / distrib_arr
