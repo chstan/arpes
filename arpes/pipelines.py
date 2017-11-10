@@ -2,7 +2,7 @@ import xarray as xr
 
 from arpes.corrections import apply_photon_energy_fermi_edge_correction, apply_quadratic_fermi_edge_correction
 from arpes.preparation import dim_normalizer
-from arpes.provenance import provenance
+from arpes.provenance import update_provenance
 from arpes.utilities import conversion
 from .pipeline import pipeline, compose
 
@@ -29,19 +29,12 @@ def correct_e_fermi_spectrometer(arr: xr.DataArray):
 
 
 @pipeline()
+@update_provenance('Sum cycle dimension')
 def sum_cycles(arr: xr.DataArray):
     if 'cycle' not in arr.dims:
         return arr
 
-    summed_arr = arr.sum('cycle', keep_attrs=True)
-    del summed_arr.attrs['id']
-
-    provenance(summed_arr, arr, {
-        'what': 'Sum cycle dimension',
-        'by': 'sum_cycle',
-    })
-
-    return summed_arr
+    return arr.sum('cycle', keep_attrs=True)
 
 
 @pipeline()
