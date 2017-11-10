@@ -8,6 +8,8 @@ import warnings
 import xarray as xr
 
 import arpes.config
+import typing
+from arpes.typing import *
 
 
 def attach_id(data):
@@ -23,8 +25,50 @@ def provenance_from_file(child_arr: xr.DataArray, file, record):
         'record': record,
         'file': file,
         'parents_provenance': 'filesystem',
-        'time': str(datetime.datetime.now()),
+        'time': datetime.datetime.now().isoformat(),
     }
+
+def update_provenance(what, record_args=None, keep_parent_ref=False):
+    """
+    Provides a decorator that promotes a function to one that records data provenance.
+
+    :param what: Description of what transpired, to put into the record.
+    :param record_args: Unused presently, will allow recording args into record.
+    :param keep_parent_ref: Whether to keep a pointer to the parents in the hierarchy or not.
+    :return: decorator
+    """
+    def update_provenance_decorator(f):
+        @functools.wraps(f)
+        def func_wrapper(*args, **kwargs):
+
+            arg_parents = [v for v in args if isinstance(v, xr_types) and 'id' in v.attrs]
+            kwarg_parents = {k: v for k, v in kwargs.items()
+                             if isinstance(v, xr_types) and 'id' in v.attrs}
+            all_parents = arg_parents + list(kwarg_parents.values())
+            result = f(*args, **kwargs)
+
+            # we do not want to record provenance or change the id if ``f`` opted not to do anything
+            # to its input. This reduces the burden on client code by allowing them to return the input
+            # without changing the 'id' attr
+            result_not_identity = not any(p is result for p in all_parents)
+
+            if isinstance(result, xr_types) and result_not_identity:
+                if 'id' in result:
+                    del result.attrs['id']
+
+                provenance_fn = provenance
+                if len(all_parents) > 1:
+                    provenance_fn = provenance_multiple_parents
+
+                provenance_fn(result, all_parents, {
+                    'what': what,
+                    'by': f.__name__,
+                    'time': datetime.datetime.now().isoformat()
+                }, keep_parent_ref)
+
+            return result
+        return func_wrapper
+    return update_provenance_decorator
 
 
 def save_plot_provenance(plot_fn):
@@ -68,7 +112,11 @@ def save_plot_provenance(plot_fn):
     return func_wrapper
 
 
-def provenance(child_arr: xr.DataArray, parent_arr: xr.DataArray, record, keep_parent_ref=False):
+def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typing.List[DataType]], record, keep_parent_ref=False):
+    if isinstance(parent_arr, list):
+        assert(len(parent_arr) == 1)
+        parent_arr = parent_arr[0]
+
     if 'id' not in child_arr.attrs:
         attach_id(child_arr)
 
@@ -79,14 +127,14 @@ def provenance(child_arr: xr.DataArray, parent_arr: xr.DataArray, record, keep_p
         'record': record,
         'parent_id': parent_arr.attrs['id'],
         'parents_provanence': parent_arr.attrs['provenance'],
-        'time': str(datetime.datetime.now()),
+        'time': datetime.datetime.now().isoformat(),
     }
 
     if keep_parent_ref:
         child_arr.attrs['provenance']['parent'] = parent_arr
 
 
-def provenance_multiple_parents(child_arr: xr.DataArray, parents, record, keep_parent_ref=False):
+def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_parent_ref=False):
     if 'id' not in child_arr.attrs:
         attach_id(child_arr)
 
@@ -97,7 +145,7 @@ def provenance_multiple_parents(child_arr: xr.DataArray, parents, record, keep_p
         'record': record,
         'parent_id': [p.attrs['id'] for p in parents],
         'parents_provenance': [p.attrs['provenance'] for p in parents],
-        'time': str(datetime.datetime.now()),
+        'time': datetime.datetime.now().isoformat(),
     }
 
     if keep_parent_ref:
