@@ -1,6 +1,5 @@
 import copy
 import warnings
-from typing import Union
 
 import holoviews as hv
 import numpy as np
@@ -21,6 +20,7 @@ from skimage import exposure
 import arpes.config
 from arpes.fits import GStepBModel, ExponentialDecayCModel
 from arpes.io import load_dataset, save_dataset
+from typing import Union
 
 __all__ = ['make_bokeh_tool', 'holoview_spectrum', 'autoview']
 
@@ -65,6 +65,8 @@ def autoview(arr: xr.DataArray):
 
     print("Unimplemented for spectra with dimensionality %d" % len(arr.dims))
 
+
+# TODO select path in image
 
 def make_bokeh_tool(arr: Union[xr.DataArray, str], notebook_url='localhost:8888',
                     notebook_handle=True, **kwargs):
@@ -188,7 +190,8 @@ def bokeh_tool(arr: xr.DataArray, app_main_size=600, app_marginal_size=300):
         figures['main'].background_fill_color = "#fafafa"
         plots['main'] = figures['main'].image(
             [prepped_main_image.T], x=app_context['data_range']['x'][0], y=app_context['data_range']['y'][0],
-            dw=app_context['data_range']['x'][1] - app_context['data_range']['x'][0], dh=app_context['data_range']['y'][1] - app_context['data_range']['y'][0],
+            dw=app_context['data_range']['x'][1] - app_context['data_range']['x'][0],
+            dh=app_context['data_range']['y'][1] - app_context['data_range']['y'][0],
             color_mapper=app_context['color_maps']['main'])
 
         # Create the z-selector
@@ -326,10 +329,12 @@ def bokeh_tool(arr: xr.DataArray, app_main_size=600, app_marginal_size=300):
 
         toggle.on_click(set_show_stat_variation)
 
-        scan_keys = []#'x', 'y', 'z', 'pass_energy', 'hv', 'location', 'id']
+        scan_keys = ['x', 'y', 'z', 'pass_energy', 'hv', 'location', 'id',
+                     'probe_pol', 'pump_pol']
         scan_info_source = ColumnDataSource({
             'keys': [k for k in scan_keys if k in arr.attrs],
-            'values': [arr.attrs[k] for k in scan_keys if k in arr.attrs],
+            'values': [str(v) if isinstance(v, float) and np.isnan(v) else v for v in
+                       [arr.attrs[k] for k in scan_keys if k in arr.attrs]],
         })
         scan_info_columns = [
             widgets.TableColumn(field='keys', title='Attr.'),
@@ -567,5 +572,3 @@ def bokeh_tool(arr: xr.DataArray, app_main_size=600, app_marginal_size=300):
 
 
     return bokeh_tool_handler
-
-
