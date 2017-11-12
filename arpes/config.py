@@ -11,7 +11,7 @@ import warnings
 import arpes.constants as consts
 
 # ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES
-ARPES_ROOT = os.path.getenv('ARPES_ROOT')
+ARPES_ROOT = os.getenv('ARPES_ROOT')
 assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT environment "
                                   "variable defined.")
 
@@ -45,7 +45,7 @@ def load_json_configuration(filename):
 
 
 try:
-    import local_config
+    from local_config import *
 except:
     warnings.warn("Could not find local configuration file. If you don't "
                   "have one, you can safely ignore this message.")

@@ -4,6 +4,8 @@ import xarray as xr
 
 import arpes.fits
 
+__all__ = ['Band', 'VoigtBand', 'BackgroundBand']
+
 
 class Band(object):
     def __init__(self, label, display_label=None, data=None):

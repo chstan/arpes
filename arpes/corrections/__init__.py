@@ -17,8 +17,6 @@ def _exclude_from_set(excluded):
 
 
 exclude_hemisphere_axes = _exclude_from_set({'phi', 'eV'})
-
-
 exclude_hv_axes = _exclude_from_set({'hv', 'eV'})
 
 
