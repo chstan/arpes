@@ -86,6 +86,9 @@ class _ARPESAccessorBase(object):
         warnings.warn('This is not reliable. Fill in stub for normalizing the temperature appropriately on data load.')
         return float(self._obj.attrs['TA'])
 
+    @property
+    def fermi_surface(self):
+        return self._obj.sel(eV=0, method='nearest')
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
