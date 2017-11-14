@@ -87,6 +87,10 @@ class Band(object):
         return self.get_dataarray('center', clean)
 
     @property
+    def center_stderr(self, clean=False):
+        return self.get_dataarray('center_stderr', clean)
+
+    @property
     def sigma(self, clean=True):
         return self.get_dataarray('sigma', clean)
 
@@ -117,3 +121,9 @@ class BackgroundBand(Band):
     @property
     def fit_cls(self):
         return arpes.fits.GaussianModel
+
+
+class FermiEdgeBand(Band):
+    @property
+    def fit_cls(self):
+        return arpes.fits.GStepBStandardModel

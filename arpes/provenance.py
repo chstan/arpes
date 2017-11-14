@@ -53,7 +53,7 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
             result_not_identity = not any(p is result for p in all_parents)
 
             if isinstance(result, xr_types) and result_not_identity:
-                if 'id' in result:
+                if 'id' in result.attrs:
                     del result.attrs['id']
 
                 provenance_fn = provenance

@@ -4,7 +4,8 @@ import xarray as xr
 from lmfit.models import update_param_vals
 from scipy.special import erfc
 
-__all__ = ['XModelMixin', 'GStepBModel', 'QuadraticModel', 'ExponentialDecayCModel']
+__all__ = ['XModelMixin', 'GStepBModel', 'QuadraticModel', 'ExponentialDecayCModel',
+           'LorentzianModel', 'GaussianModel', 'VoigtModel', 'ConstantModel', 'LinearModel', 'GStepBStandardModel']
 
 class XModelMixin(lf.Model):
     def guess_fit(self, data, params=None, **kwargs):
@@ -62,6 +63,10 @@ def gstep(x, center=0, width=1, erf_amp=1):
     return erf_amp * 0.5 * erfc(1.66511 * dx / width)
 
 
+def gstepb_standard(x, center=0, sigma=1, amplitude=1, **kwargs):
+    return gstepb(x, center, width=sigma, erf_amp=amplitude, **kwargs)
+
+
 def exponential_decay_c(x, amp, tau, t0, const_bkg):
     dx = x - t0
     mask = (dx >= 0) * 1
@@ -90,6 +95,35 @@ class GStepBModel(XModelMixin):
         pars['%sconst_bkg' % self.prefix].set(value=data.min())
         pars['%swidth' % self.prefix].set(0.02)  # TODO we can do better than this
         pars['%serf_amp' % self.prefix].set(value=data.mean() - data.min())
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+
+class GStepBStandardModel(XModelMixin):
+    """
+    A model for fitting Fermi functions with a linear background
+    """
+
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super(GStepBStandardModel, self).__init__(gstepb_standard, **kwargs)
+
+        self.set_param_hint('amplitude', min=0.)
+        self.set_param_hint('sigma', min=0)
+        self.set_param_hint('lin_bkg', min=-10, max=10)
+        self.set_param_hint('const_bkg', min=-50, max=50)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%scenter' % self.prefix].set(value=0)
+        pars['%slin_bkg' % self.prefix].set(value=0)
+        pars['%sconst_bkg' % self.prefix].set(value=data.min())
+        pars['%ssigma' % self.prefix].set(0.02)  # TODO we can do better than this
+        pars['%samplitude' % self.prefix].set(value=data.mean() - data.min())
 
         return update_param_vals(pars, self.prefix, **kwargs)
 
@@ -144,3 +178,23 @@ class QuadraticModel(XModelMixin):
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+
+class LorentzianModel(XModelMixin, lf.models.LorentzianModel):
+    pass
+
+
+class VoigtModel(XModelMixin, lf.models.VoigtModel):
+    pass
+
+
+class GaussianModel(XModelMixin, lf.models.GaussianModel):
+    pass
+
+
+class ConstantModel(XModelMixin, lf.models.ConstantModel):
+    pass
+
+
+class LinearModel(XModelMixin, lf.models.LinearModel):
+    pass

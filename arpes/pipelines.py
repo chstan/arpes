@@ -1,13 +1,16 @@
 import xarray as xr
 
 from arpes.corrections import apply_photon_energy_fermi_edge_correction, apply_quadratic_fermi_edge_correction
-from arpes.preparation import dim_normalizer
-from arpes.provenance import update_provenance
-from arpes.utilities import conversion
+from .analysis import fft_filter
 from .pipeline import pipeline, compose
+from .preparation import dim_normalizer
+from .provenance import update_provenance
+from .utilities import conversion
 
 __all__ = ['convert_scan_to_kspace', 'convert_scan_to_kspace_no_corr',
-           'tr_prep_scan_ammeter', 'tr_prep_scan_simple']
+           'tr_prep_scan_ammeter', 'tr_prep_scan_simple', 'convert_mc_map_to_kspace_fft_filter']
+
+# TODO Implement chemical potential shift as a function of cycle number for delay scans
 
 @pipeline()
 def correct_e_fermi_hv(arr: xr.DataArray):
@@ -67,6 +70,20 @@ convert_scan_to_kspace_no_corr = compose(
     pipeline()(conversion.convert_to_kspace),
 )
 
+@pipeline()
+def fft_clean_mc_map(data: xr.DataArray):
+    polar_filter = [
+        {'polar': slice(0.65, 1.)},
+        {'polar': slice(-1., -0.65)},
+    ]
+    return fft_filter(data, polar_filter)
+
+
+convert_mc_map_to_kspace_fft_filter = compose(
+    pipeline('normalize_polar_axis')(dim_normalizer('polar')),
+    fft_clean_mc_map,
+    pipeline()(conversion.convert_to_kspace),
+)
 
 tr_prep_scan_simple = compose(
     pipeline('normalize_cycle_axis')(dim_normalizer('cycle')),

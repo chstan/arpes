@@ -461,6 +461,7 @@ class Debounce(object):
         self.last = None
 
     def __call__(self, f):
+        @functools.wraps(f)
         def wrapped(*args, **kwargs):
             now = time.time()
             willcall = False

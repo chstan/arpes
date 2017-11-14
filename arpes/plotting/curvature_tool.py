@@ -198,6 +198,8 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
                 f = smoothing_fn(n_smoothing_steps)
                 d2_data = d2_along_axis(f(arr), direction_select.value)
 
+            d2_data.values[
+                d2_data.values != d2_data.values] = 0  # remove NaN values until Bokeh fixes NaNs over the wire
             if clamp_spectrum_toggle.active:
                 d2_data.values = -d2_data.values
                 d2_data.values[d2_data.values < 0] = 0
@@ -210,6 +212,7 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
             curv_smoothing_fn = smoothing_fn(n_smoothing_steps)
             smoothed_curvature_data = curv_smoothing_fn(arr)
             curvature_data = curvature(smoothed_curvature_data, arr.dims, beta=beta_slider.value)
+            curvature_data.values[curvature_data.values != curvature_data.values] = 0
             if clamp_spectrum_toggle.active:
                 curvature_data.values = -curvature_data.values
                 curvature_data.values[curvature_data.values < 0] = 0
@@ -220,6 +223,42 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
                 'image': [gamma_cached_data['curvature']]
             }
             update_color_slider(color_slider.value)
+
+        # TODO better integrate these, they can share code with the above if we are more careful.
+        def take_d2(d2_data):
+            n_smoothing_steps = n_smoothing_steps_slider.value
+            if interleave_smoothing_toggle.active:
+                f = smoothing_fn(n_smoothing_steps // 2)
+                d2_data = d1_along_axis(f(d2_data), direction_select.value)
+                f = smoothing_fn(n_smoothing_steps - (n_smoothing_steps // 2))
+                d2_data = d1_along_axis(f(d2_data), direction_select.value)
+
+            else:
+                f = smoothing_fn(n_smoothing_steps)
+                d2_data = d2_along_axis(f(arr), direction_select.value)
+
+            d2_data.values[
+                d2_data.values != d2_data.values] = 0  # remove NaN values until Bokeh fixes NaNs over the wire
+            if clamp_spectrum_toggle.active:
+                d2_data.values = -d2_data.values
+                d2_data.values[d2_data.values < 0] = 0
+
+            return d2_data
+
+        def take_curvature(curvature_data, curve_dims):
+            curv_smoothing_fn = smoothing_fn(n_smoothing_steps_slider.value)
+            smoothed_curvature_data = curv_smoothing_fn(curvature_data)
+            curvature_data = curvature(smoothed_curvature_data, curve_dims, beta=beta_slider.value)
+            curvature_data.values[curvature_data.values != curvature_data.values] = 0
+            if clamp_spectrum_toggle.active:
+                curvature_data.values = -curvature_data.values
+                curvature_data.values[curvature_data.values < 0] = 0
+
+            return curvature_data
+
+        # These functions will always be linked to the current context of the curvature tool.
+        app_context['d2_fn'] = take_d2
+        app_context['curvature_fn'] = take_curvature
 
         def force_update_change_wrapper(attr, old, new):
             if old != new:

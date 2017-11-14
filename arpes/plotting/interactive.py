@@ -22,7 +22,9 @@ from arpes.fits import GStepBModel, ExponentialDecayCModel
 from arpes.io import load_dataset, save_dataset
 from typing import Union
 
-__all__ = ['make_bokeh_tool', 'holoview_spectrum', 'autoview']
+__all__ = ('make_bokeh_tool', 'holoview_spectrum', 'autoview',)
+
+# TODO Implement alignment tool
 
 def init_bokeh_server():
     if 'bokeh_configured' not in arpes.config.CONFIG:
@@ -95,7 +97,6 @@ def bokeh_tool(arr: xr.DataArray, app_main_size=600, app_marginal_size=300):
     def bokeh_tool_handler(doc):
         # Set up the data
         x_coords, y_coords, z_coords = arr.coords[arr.dims[0]], arr.coords[arr.dims[1]], arr.coords[arr.dims[2]]
-        data_name = arr.attrs.get('description', arr.attrs.get('scan', arr.attrs.get('file', 'No Scan Name')))
 
         t0 = None
         fit_data = None
@@ -185,7 +186,9 @@ def bokeh_tool(arr: xr.DataArray, app_main_size=600, app_marginal_size=300):
         figures['main'] = figure(
             tools=main_tools, plot_width=app_main_size, plot_height=app_main_size, min_border=10, min_border_left=50,
             toolbar_location='left', x_axis_location='below', y_axis_location='right',
-            title="Bokeh Tool: %s" % data_name[:60], x_range=app_context['data_range']['x'], y_range=app_context['data_range']['y'])
+            title="Bokeh Tool: %s" % arr.S.label[:60], x_range=app_context['data_range']['x'], y_range=app_context['data_range']['y'])
+        figures['main'].xaxis.axis_label = arr.dims[0]
+        figures['main'].yaxis.axis_label = arr.dims[1]
         figures['main'].toolbar.logo = None
         figures['main'].background_fill_color = "#fafafa"
         plots['main'] = figures['main'].image(

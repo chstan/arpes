@@ -1,3 +1,6 @@
+# TODO Reorganize code in here. You should be able to register new loading code in order to
+# make this code more portable to other beamlines and spectrometers.
+
 import copy
 import itertools
 import math
@@ -14,7 +17,7 @@ from scipy import ndimage
 import arpes.config
 import arpes.constants as consts
 from arpes.exceptions import AnalysisError
-from arpes.preparation import replace_coords, infer_center_pixel
+from arpes.preparation import infer_center_pixel, replace_coords
 from arpes.provenance import provenance_from_file
 from arpes.utilities import split_hdu_header
 from .viewable import Viewable

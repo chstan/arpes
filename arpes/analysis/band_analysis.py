@@ -1,147 +1,16 @@
 import copy
 import functools
 import itertools
-import warnings
 
 import numpy as np
 import xarray as xr
-from scipy import ndimage
 from scipy.spatial import distance
 
 import arpes.models.band
 import arpes.utilities
 import arpes.utilities.math
-from arpes.provenance import provenance, update_provenance
 
-__all__ = ['curvature', 'd1_along_axis', 'd2_along_axis', 'dn_along_axis',
-           'gaussian_filter_arr', 'boxcar_filter_arr', 'normalize_by_fermi_distribution',
-           'boxcar_filter', 'gaussian_filter', 'fit_bands']
-
-
-def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
-    """
-    Defined via
-        C(x,y) = ([C_0 + (df/dx)^2]d^2f/dy^2 - 2 * df/dx df/dy d^2f/dxdy + [C_0 + (df/dy)^2]d^2f/dx^2) /
-                 (C_0 (df/dx)^2 + (df/dy)^2)^(3/2)
-
-    of in the case of inequivalent dimensions x and y
-
-        C(x,y) = ([1 + C_x(df/dx)^2]C_y * d^2f/dy^2 -
-                  2 * C_x * C_y * df/dx df/dy d^2f/dxdy +
-                  [1 + C_y * (df/dy)^2] * C_x * d^2f/dx^2) /
-                 (1 + C_x (df/dx)^2 + C_y (df/dy)^2)^(3/2)
-
-        where
-        C_x = C_y * (xi / eta)^2
-        and where (xi / eta) = dx / dy
-
-        The value of C_y can reasonably be taken to have the value |df/dx|_max^2 + |df/dy|_max^2
-        C_y = (dy / dx) * (|df/dx|_max^2 + |df/dy|_max^2) * \alpha
-
-        for some dimensionless parameter alpha
-    :param arr:
-    :param alpha: regulation parameter, chosen semi-universally, but with no particular justification
-    :return:
-    """
-    if beta is not None:
-        alpha = np.power(10., beta)
-
-    if directions is None:
-        directions = arr.dims[:2]
-
-    axis_indices = tuple(arr.dims.index(d) for d in directions)
-    dx, dy = tuple(float(arr.coords[d][1] - arr.coords[d][0]) for d in directions)
-    dfx, dfy = np.gradient(arr.values, dx, dy, axis=axis_indices)
-    np.nan_to_num(dfx, copy=False)
-    np.nan_to_num(dfy, copy=False)
-
-    mdfdx, mdfdy = np.max(np.abs(dfx)), np.max(np.abs(dfy))
-
-    cy = (dy / dx) * (mdfdx ** 2 + mdfdy ** 2) * alpha
-    cx = (dx / dy) * (mdfdx ** 2 + mdfdy ** 2) * alpha
-
-    dfx_2, dfy_2 = np.power(dfx, 2), np.power(dfy, 2)
-    d2fy = np.gradient(dfy, dy, axis=axis_indices[1])
-    d2fx = np.gradient(dfx, dx, axis=axis_indices[0])
-    d2fxy = np.gradient(dfx, dy, axis=axis_indices[1])
-
-    denom = np.power((1 + cx * dfx_2 + cy * dfy_2), 1.5)
-    numerator = (1 + cx * dfx_2) * cy * d2fy - 2 * cx * cy * dfx * dfy * d2fxy + \
-                (1 + cy * dfy_2) * cx * d2fx
-
-    curv = xr.DataArray(
-        numerator / denom,
-        arr.coords,
-        arr.dims,
-        attrs=arr.attrs
-    )
-
-    del curv.attrs['id']
-    provenance(curv, arr, {
-        'what': 'Curvature',
-        'by': 'curvature',
-        'directions': directions,
-        'alpha': alpha,
-    })
-    return curv
-
-
-def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
-    """
-    Like curvature, performs a second derivative. You can pass a function to use for smoothing through
-    the parameter smooth_fn, otherwise no smoothing will be performed.
-
-    You can specify the axis to take the derivative along with the axis param, which expects a string.
-    If no axis is provided the axis will be chosen from among the available ones according to the preference
-    for axes here, the first available being taken:
-
-    ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'polar']
-    :param arr:
-    :param axis:
-    :param smooth_fn:
-    :param order: Specifies how many derivatives to take
-    :return:
-    """
-    axis_order = ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'polar']
-    if axis is None:
-        axes = [a for a in axis_order if a in arr.dims]
-        if len(axes):
-            axis = axes[0]
-        else:
-            # have to do something
-            axis = arr.dims[0]
-            warnings.warn('Choosing axis: {} for the second derivative, no preferred axis found.'.format(axis))
-
-    if smooth_fn is None:
-        smooth_fn = lambda x: x
-
-    d_axis = float(arr.coords[axis][1] - arr.coords[axis][0])
-    axis_idx = arr.dims.index(axis)
-
-    values = arr.values
-    for _ in range(order):
-        values = np.gradient(smooth_fn(arr.values), d_axis, axis=axis_idx)
-
-    dn_arr = xr.DataArray(
-        values,
-        arr.coords,
-        arr.dims,
-        attrs=arr.attrs
-    )
-
-    del dn_arr.attrs['id']
-    provenance(dn_arr, arr, {
-        'what': '{}th derivative'.format(order),
-        'by': 'dn_along_axis',
-        'axis': axis,
-        'order': order,
-    })
-
-    return dn_arr
-
-
-d2_along_axis = functools.partial(dn_along_axis, order=2)
-d1_along_axis = functools.partial(dn_along_axis, order=1)
+__all__ = ('fit_bands',)
 
 
 def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_weighting=True):
@@ -330,11 +199,15 @@ def fit_bands(arr: xr.DataArray, band_description, background=None, direction='m
             # Because backgrounds are added to our model only after the initial sequence of fits.
             # This is by no means the most appropriate way to do this, just one that works
             # alright for now
-            residual = residual - residual.min()
+            pass
+            #residual = residual - residual.min()
 
         if step == 'initial':
             residual.plot()
             (residual - residual + initial_fit.best_fit).plot()
+
+    if step == 'initial':
+        return None, None, residual
 
     template = arr.sum(broadcast_direction)
     band_results = xr.DataArray(
@@ -356,7 +229,8 @@ def fit_bands(arr: xr.DataArray, band_description, background=None, direction='m
             current_distance = delta.dot(delta)
             if current_distance < distance:
                 current_distance = distance
-                closest_model_params = v
+                if direction == 'mdc': # TODO remove me
+                    closest_model_params = v
 
         closest_model_params = copy.deepcopy(closest_model_params)
 
@@ -376,133 +250,8 @@ def fit_bands(arr: xr.DataArray, band_description, background=None, direction='m
 
 
     # Unpack the band results
-    unpacked_bands = [] #unpack_bands_from_fit(band_results)
+    unpacked_bands = unpack_bands_from_fit(band_results)
     residual = None
 
     return band_results, unpacked_bands, residual
 
-
-def gaussian_filter_arr(arr: xr.DataArray, sigma=None, n=1, default_size=1):
-    if sigma is None:
-        sigma = {}
-
-    sigma = {k: int(v / (arr.coords[k][1] - arr.coords[k][0])) for k, v in sigma.items()}
-    for dim in arr.dims:
-        if dim not in sigma:
-            sigma[dim] = default_size
-
-    sigma = tuple(sigma[k] for k in arr.dims)
-
-    values = arr.values
-    for i in range(n):
-        values = ndimage.filters.gaussian_filter(values, sigma)
-
-    filtered_arr = xr.DataArray(
-        values,
-        arr.coords,
-        arr.dims,
-        attrs=copy.deepcopy(arr.attrs)
-    )
-
-    if 'id' in filtered_arr.attrs:
-        del filtered_arr.attrs['id']
-
-        provenance(filtered_arr, arr, {
-            'what': 'Gaussian filtered data',
-            'by': 'gaussian_filter_arr',
-            'sigma': sigma,
-        })
-
-    return filtered_arr
-
-
-def gaussian_filter(sigma=None, n=1):
-    def f(arr):
-        return gaussian_filter_arr(arr, sigma, n)
-
-    return f
-
-
-def boxcar_filter(size=None, n=1):
-    def f(arr):
-        return boxcar_filter_arr(arr, size, n)
-
-    return f
-
-def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1, default_size=1, skip_nan=True):
-    if size is None:
-        size = {}
-
-    size = {k: int(v / (arr.coords[k][1] - arr.coords[k][0])) for k, v in size.items()}
-    for dim in arr.dims:
-        if dim not in size:
-            size[dim] = default_size
-
-    size = tuple(size[k] for k in arr.dims)
-
-    if skip_nan:
-        nan_mask = np.copy(arr.values) * 0 + 1
-        nan_mask[arr.values != arr.values] = 0
-        filtered_mask = ndimage.filters.uniform_filter(nan_mask, size)
-
-        values = np.copy(arr.values)
-        values[values != values] = 0
-
-        for i in range(n):
-            values = ndimage.filters.uniform_filter(values, size) / filtered_mask
-            values[nan_mask == 0] = 0
-    else:
-        for i in range(n):
-            values = ndimage.filters.uniform_filter(values, size)
-
-
-    filtered_arr = xr.DataArray(
-        values,
-        arr.coords,
-        arr.dims,
-        attrs=copy.deepcopy(arr.attrs)
-    )
-
-    del filtered_arr.attrs['id']
-
-    provenance(filtered_arr, arr, {
-        'what': 'Boxcar filtered data',
-        'by': 'boxcar_filter_arr',
-        'size': size,
-        'skip_nan': skip_nan,
-    })
-
-    return filtered_arr
-
-@update_provenance('Normalized by the 1/Fermi Dirac Distribution at sample temp')
-def normalize_by_fermi_distribution(data, max_gain=None, rigid_shift=0, instrumental_broadening=None):
-    """
-    Normalizes a scan by 1/the fermi dirac distribution. You can control the maximum gain with ``clamp``, and whether
-    the Fermi edge needs to be shifted (this is for those desperate situations where you want something that
-    "just works") via ``rigid_shift``.
-
-    :param data: Input
-    :param clamp: Maximum value for the gain. By default the value used is the mean of the spectrum.
-    :param rigid_shift: How much to shift the spectrum chemical potential.
-    Pass the nominal value for the chemical potential in the scan. I.e. if the chemical potential is at BE=0.1, pass
-    rigid_shift=0.1.
-    :param instrumental_broadening: Instrumental broadening to use for convolving the distribution
-    :return: Normalized DataArray
-    """
-    distrib = arpes.utilities.math.fermi_distribution(data.coords['eV'].values - rigid_shift, data.S.temp)
-
-    # don't boost by more than 90th percentile of input, by default
-    if max_gain is None:
-        max_gain = np.mean(data.values)
-
-    distrib[distrib < 1/max_gain] = 1/max_gain
-    distrib_arr = xr.DataArray(
-        distrib,
-        {'eV': data.coords['eV'].values},
-        ['eV']
-    )
-
-    if instrumental_broadening is not None:
-        distrib_arr = gaussian_filter_arr(distrib_arr, sigma={'eV': instrumental_broadening})
-
-    return data / distrib_arr

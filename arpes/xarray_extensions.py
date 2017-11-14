@@ -1,10 +1,12 @@
 import warnings
 
+import numpy as np
 import xarray as xr
 
 import arpes.constants
 import arpes.materials
 from arpes.plotting import make_bokeh_tool, make_curvature_tool
+from arpes.utilities.conversion import slice_along_path
 
 __all__ = ['ARPESDataArrayAccessor', 'ARPESDatasetAccessor']
 
@@ -14,14 +16,42 @@ class _ARPESAccessorBase(object):
     Base class for the xarray extensions that we put onto our datasets to make working with ARPES data a
     little cleaner. This allows you to access common attributes
     """
+
+    def along(self, directions):
+        return slice_along_path(self._obj, directions)
+
     @property
     def hv(self):
         if 'hv' in self._obj.attrs:
-            return float(self._obj.attrs['hv'])
+            value = float(self._obj.attrs['hv'])
+            if not np.isnan(value):
+                return value
 
         if 'location' in self._obj.attrs:
             if self._obj.attrs['location'] == 'ALG-MC':
                 return 5.93
+
+        return None
+
+    @property
+    def scan_name(self):
+        return self._obj.attrs.get('scan', self._obj.attrs.get('file', 'No Scan Name'))
+
+    @property
+    def label(self):
+        return self._obj.attrs.get('description', self.scan_name)
+
+    @property
+    def t0(self):
+        if 't0' in self._obj.attrs:
+            value = float(self._obj.attrs['t0'])
+            if not np.isnan(value):
+                return value
+
+        if 'T0_ps' in self._obj.attrs:
+            value = float(self._obj.attrs['T0_ps'])
+            if not np.isnan(value):
+                return value
 
         return None
 
@@ -88,7 +118,7 @@ class _ARPESAccessorBase(object):
 
     @property
     def fermi_surface(self):
-        return self._obj.sel(eV=0, method='nearest')
+        return self._obj.sel(eV=slice(-0.05, 0.05)).sum('eV', keep_attrs=True)
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
