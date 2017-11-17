@@ -66,10 +66,12 @@ K_INV_ANGSTROM = 0.5123
 
 SPECTROMETER_MC = {
     'deg_per_pixel': 0.125, # TODO CHECK THIS
+    'type': 'hemisphere',
     'is_slit_vertical': False,
 }
 
 SPECTROMETER_MC_OLD = {
+    'type': 'hemisphere',
     'deg_per_pixel': 0.125,
     'is_slit_vertical': False,
 }
