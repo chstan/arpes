@@ -10,17 +10,13 @@ import json
 import os
 import re
 import time
-import uuid
-import warnings
 from math import sin, cos, acos
 from operator import itemgetter
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
-import arpes.constants
-import arpes.materials
+from .dataset import *
 
 
 def enumerate_dataarray(arr: xr.DataArray):
@@ -276,24 +272,6 @@ def unarrange_by_indices(items, indices):
     return [x for x, _ in sorted(zip(indices, items), key=itemgetter[0])]
 
 
-def get_spectrometer(dataset):
-    spectrometers = {
-        'SToF': arpes.constants.SPECTROMETER_SPIN_TOF,
-        'ToF': arpes.constants.SPECTROMETER_STRAIGHT_TOF,
-        'DLD': arpes.constants.SPECTROMETER_DLD,
-    }
-
-    if 'spectrometer_name' in dataset.attrs:
-        return spectrometers.get(dataset.set.attrs['spectrometer_name'])
-
-    if 'location' in dataset.attrs:
-        return {
-            'ALG-MC': arpes.constants.SPECTROMETER_MC,
-            'BL403': arpes.constants.SPECTROMETER_BL4,
-        }.get(dataset.attrs['location'])
-
-    return spectrometers[dataset.attrs['spectrometer_name']]
-
 def apply_dataarray(arr: xr.DataArray, f, *args, **kwargs):
     return xr.DataArray(
         f(arr.values, *args, **kwargs),
@@ -340,6 +318,7 @@ def _rename_key(d, k, nk):
         del d[k]
 
 def rename_keys(d, keys_dict):
+    d = d.copy()
     for k, nk in keys_dict.items():
         _rename_key(d, k, nk)
 
@@ -376,48 +355,6 @@ rename_standard_attrs = lambda x: rename_dataarray_attrs(x, {
     'Location': 'location',
 })
 
-
-def clean_xlsx_dataset(path):
-    base_filename, extension = os.path.splitext(path)
-    if extension not in ['.xlsx', '.xlx']:
-        warnings.warn('File is not an excel file')
-        return None
-
-    new_filename = base_filename + '.cleaned' + extension
-    if os.path.exists(new_filename):
-        return pd.read_excel(new_filename).set_index('file')
-
-    ds = pd.read_excel(path, header=1, index_col=1)
-    ds = ds.loc[ds.index.dropna()]
-
-    last_index = None
-    def is_blank(item):
-        if isinstance(item, str):
-            return item == ''
-
-        if isinstance(item, float):
-            return np.isnan(item)
-
-        return False
-
-    # Cascade blank values
-    for index, row in ds.sort_index().iterrows():
-        row = row.copy()
-
-        for key, value in row.iteritems():
-            if key == 'id' and np.isnan(float(row['id'])):
-                ds.loc[index, ('id',)] = str(uuid.uuid1())
-
-            elif last_index is not None and is_blank(value) and not is_blank(ds.loc[last_index,(key,)]):
-                ds.loc[index,(key,)] = ds.loc[last_index,(key,)]
-
-        last_index = index
-
-    excel_writer = pd.ExcelWriter(new_filename)
-    ds.to_excel(excel_writer)
-    excel_writer.save()
-
-    return ds
 
 def walk_scans(path, only_id=False):
     for path, _, files in os.walk(path):
