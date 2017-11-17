@@ -1,51 +1,67 @@
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 
+from arpes.provenance import save_plot_provenance
 from arpes.utilities.math import (
     polarization,
     propagate_statistical_error
 )
+from .utils import *
 
 __all__ = ['spin_polarized_spectrum']
 
 
 test_polarization = propagate_statistical_error(polarization)
 
-def prettyplot():
-    pass
 
-def spin_polarized_spectrum(spin_edc):
-    up = numpy.copy(spin_edc.spin_up_energy)
-    down = numpy.copy(spin_edc.spin_down_energy)
+@save_plot_provenance
+def spin_polarized_spectrum(spin_dr, title=None, axes=None, out=None, norm=None):
+    if axes is None:
+        _, axes = plt.subplots(2, 1, sharex=True)
+
+    ax_left = axes[0]
+    ax_right = axes[1]
+
+    up = spin_dr.up.data
+    down = spin_dr.down.data
 
     test_pol = test_polarization(up, down)
     pol = polarization(up, down)
+    energies = spin_dr.coords['KE']
+    min_e, max_e = np.min(energies), np.max(energies)
 
     # Plot the spectra
-    spectra_fig = plt.subplot(2, 1, 1)
-    plt.plot(spin_edc.energies, spin_edc.spin_up_energy, 'r')
-    plt.plot(spin_edc.energies, spin_edc.spin_down_energy, 'b')
-    plt.title('Spin up counts')
-    plt.ylabel('Counts')
-    plt.xlabel('Electron kinetic energy')
-    plt.xlim(5.5, 7)
+    ax_left.plot(energies, up, 'r')
+    ax_left.plot(energies, down, 'b')
+    ax_left.set_title('Spin polarization {}'.format(spin_dr.S.label))
+    ax_left.set_ylabel(r'\textbf{Spectrum Intensity}')
+    ax_left.set_xlabel(r'\textbf{Kinetic energy} (eV)')
+    ax_left.set_xlim(min_e, max_e)
 
-    max_up = numpy.max(up)
-    max_down = numpy.max(down)
+    max_up = np.max(up)
+    max_down = np.max(down)
     plt.ylim(0, max(max_down, max_up) * 0.7)
 
     # Plot the polarization and associated statistical error bars
-    pol_fig = plt.subplot(2, 1, 2)
-    plt.plot(spin_edc.energies, pol, color='black')
-    plt.fill_between(spin_edc.energies, 0, 1, facecolor='red', alpha=0.1)
-    plt.fill_between(spin_edc.energies, -1, 0, facecolor='blue', alpha=0.1)
-    plt.fill_between(spin_edc.energies, pol - 3 * (test_pol + 0.005), pol + 3 * (test_pol + 0.005), facecolor='black', alpha=0.3)
-    plt.title('Polarization in spin resolved spectra')
-    plt.ylabel('Polarization')
-    plt.xlabel('Electron kinetic energy')
-    plt.xlim(5.5, 7)
-    plt.ylim(-0.2, 0.2)
+    ax_right.plot(energies, pol, color='black')
+    ax_right.fill_between(energies, 0, 1, facecolor='red', alpha=0.1)
+    ax_right.fill_between(energies, -1, 0, facecolor='blue', alpha=0.1)
+    ax_right.fill_between(energies, pol - 3 * (test_pol + 0.005),
+                          pol + 3 * (test_pol + 0.005), facecolor='black', alpha=0.3)
+    ax_right.set_title('Spin polarization')
+    ax_right.set_ylabel(r'\textbf{Polarization}')
+    ax_right.set_xlabel(r'\textbf{Kinetic Energy} (eV)')
+    ax_right.set_xlim(min_e, max_e)
+    ax_right.axhline(0, color='white', linestyle=':')
 
-    pol_fig.grid(True, axis='y')
+    ax_right.set_ylim(-0.2, 0.2)
+    ax_right.grid(True, axis='y')
 
+    plt.tight_layout()
 
+    if out is not None:
+        plt.savefig(path_for_plot(out), dpi=400)
+        plt.clf()
+        return path_for_plot(out)
+    else:
+        plt.show()
