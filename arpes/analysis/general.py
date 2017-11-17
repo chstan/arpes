@@ -5,7 +5,7 @@ import arpes.models.band
 import arpes.utilities
 import arpes.utilities.math
 from arpes.provenance import update_provenance
-from .filter import gaussian_filter_arr
+from .filters import gaussian_filter_arr
 
 __all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis')
 

@@ -1,5 +1,5 @@
 from .band_analysis import *
 from .derivative import *
 from .fft import *
-from .filter import *
+from .filters import *
 from .general import *

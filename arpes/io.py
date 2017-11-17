@@ -3,18 +3,32 @@ import os.path
 import uuid
 import warnings
 
+import pandas as pd
 import xarray as xr
 
 from arpes.config import DATASET_CACHE_PATH, DATASET_CACHE_RECORD, CLEAVE_RECORD
+from arpes.exceptions import ConfigurationError
 
 __all__ = ['load_dataset', 'save_dataset', 'delete_dataset',
-           'dataset_exists', 'is_a_dataset']
+           'dataset_exists', 'is_a_dataset', 'load_dataset_attrs']
 
-def _filename_for(data):
+def _id_for(data):
     if isinstance(data, xr.DataArray) or isinstance(data, xr.Dataset):
         data = data.attrs['id']
 
-    return os.path.join(DATASET_CACHE_PATH, data + '.nc')
+    if isinstance(data, pd.Series):
+        data = data.id
+
+    if isinstance(data, uuid.UUID):
+        data = str(data)
+
+    return data
+
+def _filename_for(data):
+    return os.path.join(DATASET_CACHE_PATH, _id_for(data) + '.nc')
+
+def _filename_for_attrs(data):
+    return os.path.join(DATASET_CACHE_PATH, _id_for(data) + '.json')
 
 
 _wrappable = {'note', 'data_preparation', 'provenance', 'corrections', 'symmetry_points'}
@@ -32,6 +46,17 @@ def wrap_attrs(arr: xr.DataArray):
         arr.attrs['time'] = str(arr.attrs['time'])
 
 
+def unwrap_attrs_dict(attrs: dict):
+    for key in _wrappable:
+        if key not in attrs:
+            continue
+
+        try:
+            attrs[key] = json.loads(attrs[key])
+        except json.JSONDecodeError:
+            pass
+
+
 def unwrap_attrs(arr: xr.DataArray):
     for key in _wrappable:
         if key not in arr.attrs:
@@ -39,7 +64,7 @@ def unwrap_attrs(arr: xr.DataArray):
 
         try:
             arr.attrs[key] = json.loads(arr.attrs[key])
-        except Exception as e:
+        except json.JSONDecodeError:
             pass
 
 
@@ -70,17 +95,22 @@ def save_dataset(arr: xr.DataArray, force=False):
     with open(DATASET_CACHE_RECORD, 'r') as cache_record:
         records = json.load(cache_record)
 
-    fname = _filename_for(arr)
+    filename = _filename_for(arr)
+    attrs_filename = _filename_for_attrs(arr)
     if arr.attrs['id'] in records:
         if force:
-            if os.path.exists(fname):
-                os.replace(fname, fname + '.keep')
+            if os.path.exists(filename):
+                os.replace(filename, filename + '.keep')
+            if os.path.exists(attrs_filename):
+                os.replace(attrs_filename, attrs_filename + '.keep')
         else:
             return
 
     wrap_attrs(arr)
-    filename = _filename_for(arr)
+    ref_attrs = arr.attrs.pop('ref_attrs', None)
     arr.to_netcdf(filename, engine='netcdf4')
+    with open(attrs_filename, 'w') as f:
+        json.dump(arr.attrs, f)
 
     first_write = arr.attrs['id'] not in records
 
@@ -93,6 +123,9 @@ def save_dataset(arr: xr.DataArray, force=False):
     if first_write:
         with open(DATASET_CACHE_RECORD, 'w') as cache_record:
             json.dump(records, cache_record, sort_keys=True, indent=2)
+
+    if ref_attrs is not None:
+        arr.attrs['ref_attrs'] = ref_attrs
 
     unwrap_attrs(arr)
 
@@ -122,6 +155,22 @@ def dataset_exists(dataset):
     return False
 
 
+def load_dataset_attrs(dataset_uuid):
+    filename = _filename_for_attrs(dataset_uuid)
+    if not os.path.exists(filename):
+        try:
+            ds = load_dataset(dataset_uuid)
+            save_dataset(ds, force=True)
+        except ValueError as e:
+            raise ConfigurationError(
+                'Could not load attributes for {}'.format(dataset_uuid)) from e
+
+    with open(filename, 'r') as f:
+        attrs = json.load(f)
+        unwrap_attrs_dict(attrs)
+        return attrs
+
+
 def load_dataset(dataset_uuid):
     filename = _filename_for(dataset_uuid)
     if not os.path.exists(filename):
@@ -143,6 +192,9 @@ def load_dataset(dataset_uuid):
                 arr.attrs[k] = v
     else:
         warnings.warn('Could not fetch cleave information.')
+
+    if 'ref_id' in arr.attrs:
+        arr.attrs['ref_attrs'] = load_dataset_attrs(arr.attrs['ref_id'])
 
     return arr
 
