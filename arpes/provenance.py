@@ -28,6 +28,7 @@ def provenance_from_file(child_arr: xr.DataArray, file, record):
         'time': datetime.datetime.now().isoformat(),
     }
 
+
 def update_provenance(what, record_args=None, keep_parent_ref=False):
     """
     Provides a decorator that promotes a function to one that records data provenance.
@@ -120,13 +121,17 @@ def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typin
     if 'id' not in child_arr.attrs:
         attach_id(child_arr)
 
-    if child_arr.attrs['id'] == parent_arr.attrs['id']:
+    parent_id = parent_arr.attrs.get('id')
+    if parent_id is None:
+        warnings.warn('Parent array has no ID.')
+
+    if child_arr.attrs['id'] == parent_id:
         warnings.warn('Duplicate id for dataset %s' % child_arr.attrs['id'])
 
     child_arr.attrs['provenance'] = {
         'record': record,
-        'parent_id': parent_arr.attrs['id'],
-        'parents_provanence': parent_arr.attrs['provenance'],
+        'parent_id': parent_id,
+        'parents_provanence': parent_arr.attrs.get('provenance'),
         'time': datetime.datetime.now().isoformat(),
     }
 
@@ -150,10 +155,3 @@ def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_paren
 
     if keep_parent_ref:
         child_arr.attrs['provenance']['parent'] = parents
-
-
-def _get_provenance(arr: xr.DataArray):
-    pass
-
-def show_provenance(arr: xr.DataArray):
-    frames = []
