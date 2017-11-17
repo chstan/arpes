@@ -1,6 +1,7 @@
 figures/
 datasets/
 exp
+SCRATCH.md
 
 local_config.py
 

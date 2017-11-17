@@ -13,6 +13,10 @@ lmfit
 scikit-learn
 scikit-image
 xrft # You will need to get this one from the conda forge
+cvxgrp # Conda
+cvxpy  # Conda
+libgcc # Conda
+
 
 # Plotting
 holoviews=1.8.4
