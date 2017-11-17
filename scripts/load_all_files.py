@@ -8,7 +8,6 @@ from os import walk
 
 sys.path.append('/Users/chstansbury/PyCharmProjects/python-arpes/')
 
-import arpes.utilities
 from arpes.models.spectrum import load_scan
 from arpes.utilities import clean_xlsx_dataset
 from arpes.io import save_dataset
@@ -20,8 +19,18 @@ def attach_uuid(scan):
 
     return scan
 
+
+_SEARCH_FOLDERS = {'hdf5', 'fits',}
+
+
+import arpes.config
+if arpes.config.CONFIG['WORKSPACE'] is None:
+    arpes.config.CONFIG['WORKSPACE'] = os.getenv('WORKSPACE')
+
+
 for path, _, files in walk(os.getcwd()):
-    json_files = [f for f in files if '.json' in f]
+    # JSON files are deprecated
+    json_files = [f for f in files if os.path.splitext(f)[1] == '.json']
     excel_files = [f for f in files if '.xlsx' in f or '.xlx' in f]
 
     for j in json_files:
