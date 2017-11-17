@@ -3,10 +3,16 @@ datasets/
 exp
 SCRATCH.md
 
+.idea/
+
 local_config.py
 
 !datasets/Misc
 !experiments/Misc
+
+examples/ # TODO add examples
+example_data/
+example_datasets/
 
 bin/
 experiment_logs/
