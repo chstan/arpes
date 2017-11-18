@@ -3,8 +3,6 @@ Useful constants for experiments and some useful science facts
 Much of this is collected from past students, especially Jeff's 'Cstes.ipf'
 """
 
-import math
-
 MODE_ARPES = 'arpes'
 MODE_TRARPES = 'trarpes'
 MODE_SARPES = 'sarpes'
@@ -54,8 +52,6 @@ HEX_ALPHABET = "ABCDEF0123456789"
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-DEG_PER_RAD = 180 / math.pi
-RAD_PER_DEG = math.pi / 180
 
 STRAIGHT_TOF_LENGTH = 0.937206
 SPIN_TOF_LENGTH = 1.1456
