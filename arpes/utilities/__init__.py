@@ -24,13 +24,6 @@ def enumerate_dataarray(arr: xr.DataArray):
         zip_location = dict(zip(arr.dims, (float(f) for f in coordinate)))
         yield zip_location, arr.loc[zip_location].values.item()
 
-def split_hdu_header(value):
-    """
-    WARNING, this will remove all parentheses, so you might want to modify this or
-    be more careful if you have a list of text data in your header!
-    """
-    return re.sub(r"[\(\)]", r"", value).split(',')
-
 def fix_burnt_pixels(spectrum):
     """
     In reality the analyzers cannot provide perfect images for us. One of the
