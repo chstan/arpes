@@ -15,6 +15,7 @@ import xarray
 from astropy.io import fits
 
 import arpes.config
+import arpes.constants
 from arpes.preparation import infer_center_pixel, replace_coords
 from arpes.preparation.tof_preparation import convert_SToF_to_energy
 from arpes.provenance import provenance_from_file
@@ -137,6 +138,11 @@ def load_MC(metadata: dict=None, filename: str=None):
     built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs)
     warnings.warn('Not loading all available spectra for main chamber scan. TODO.')
 
+    phi_to_rad_coords = {'polar', 'theta', 'sample-phi'}
+    # the hemisphere axis is handled below
+    built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
+                    for k, c in built_coords.items()}
+
     dimensions = dimensions[hdu.columns.names[-1]]
     real_spectrum_shape = real_spectrum_shape[hdu.columns.names[-1]]
 
@@ -149,7 +155,7 @@ def load_MC(metadata: dict=None, filename: str=None):
 
     center_pixel = infer_center_pixel(dataset_contents['raw'])
     phi_axis = (dataset_contents['raw'].coords['pixel'].values - center_pixel) * \
-               arpes.constants.SPECTROMETER_MC['deg_per_pixel']
+               arpes.constants.SPECTROMETER_MC['rad_per_pixel']
     dataset_contents['raw'] = replace_coords(dataset_contents['raw'], {
         'phi': phi_axis
     }, [('pixel', 'phi',)])
@@ -365,12 +371,30 @@ def load_SES(metadata: dict=None, filename: str=None):
     dataset_contents = dict()
     attrs = metadata.pop('note', {})
     attrs.update(wave_note)
+
+    attrs = rename_keys(attrs, {
+        'Tilt': 'theta', 'Polar': 'polar', 'Azimuth': 'chi',
+        'Sample X': 'x', 'Sample Y (Vert)': 'y', 'Sample Z': 'z',
+    })
+
     if 'id' in metadata:
         attrs['id'] = metadata['id']
 
+    built_coords = dict(zip(dimension_labels, scaling))
+
+    phi_to_rad_coords = {'polar', 'phi'}
+    # the hemisphere axis is handled below
+    built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
+                    for k, c in built_coords.items()}
+
+    rad_to_phi_attrs = {'theta', 'polar', 'chi'}
+    for angle_attr in rad_to_phi_attrs:
+        if angle_attr in attrs:
+            attrs[angle_attr] = float(attrs[angle_attr]) * numpy.pi / 180
+
     dataset_contents['raw'] = xarray.DataArray(
         raw_data,
-        coords=dict(zip(dimension_labels, scaling)),
+        coords=built_coords,
         dims=dimension_labels,
         attrs=attrs,
     )
@@ -491,6 +515,10 @@ def load_BL10(metadata: dict=None, filename: str=None):
                            set(itertools.chain(*[l[0] for l in data_vars.values()]))}
     relevant_coords = {k: v for k, v in coords.items() if k in relevant_dimensions}
 
+    phi_to_rad_coords = {'polar', 'theta', 'sample-phi'}
+    relevant_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
+                       for k, c in relevant_coords.items()}
+
     dataset = xarray.Dataset(
         data_vars,
         relevant_coords,
@@ -498,7 +526,7 @@ def load_BL10(metadata: dict=None, filename: str=None):
     )
 
     provenance_from_file(dataset, data_loc, {
-        'what': 'Loaded Spin-ToF dataset',
+        'what': 'Loaded BL10 dataset',
         'by': 'load_DLD',
     })
 

@@ -13,7 +13,7 @@ class CoordinateConverter(object):
         self.arr = arr
         self.dim_order = dim_order
 
-        spectrometer = arpes.utilities.get_spectrometer(self.arr)
+        spectrometer = self.arr.S.spectrometer
         if spectrometer is not None:
             self.spectrometer = spectrometer
             self.is_slit_vertical = spectrometer['is_slit_vertical']

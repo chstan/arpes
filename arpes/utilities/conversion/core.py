@@ -113,7 +113,7 @@ def grid_interpolator_from_dataarray(arr: xr.DataArray, fill_value=0.0, method='
 
 
 def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=None, resolution=None,
-                     shift_gamma=True, **kwargs):
+                     shift_gamma=True, extend_to_edge=False, **kwargs):
     """
     Interpolates along a path through a volume. If the volume is higher dimensional than the desired path, the
     interpolation is broadcasted along the free dimensions. This allows one to specify a k-space path and receive
@@ -143,6 +143,8 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
     In mixed or ambiguous situations the axis will be labeled by the default value 'inter'.
     :param resolution: Requested resolution along the interpolated axis.
     :param shift_gamma: Controls whether the interpolated axis is shifted to a value of 0 at Gamma.
+    :param extend_to_edge: Controls whether or not to scale the vector S - G for symmetry point S so that you interpolate
+    to the edge of the available data
     :param kwargs:
     :return: xr.DataArray containing the interpolated data.
     """
@@ -150,8 +152,40 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
     if interpolation_points is None:
         raise ValueError('You must provide points specifying an interpolation path')
 
+    def extract_symmetry_point(name):
+        raw_point = arr.attrs['symmetry_points'][name]
+        G = arr.attrs['symmetry_points']['G']
+
+        if not extend_to_edge or name == 'G':
+            return raw_point
+
+        # scale the point so that it reaches the edge of the dataset
+        S = np.array([raw_point[d] for d in arr.dims if d in raw_point])
+        G = np.array([G[d] for d in arr.dims if d in raw_point])
+
+        scale_factor = np.inf
+        for i, d in enumerate([d for d in arr.dims if d in raw_point]):
+            dS = (S - G)[i]
+            coord = arr.coords[d]
+
+            if np.abs(dS) < 0.001:
+                continue
+
+            if dS < 0:
+                required_scale = (np.min(coord) - G[i]) / dS
+                if required_scale < scale_factor:
+                    scale_factor = float(required_scale)
+            else:
+                required_scale = (np.max(coord) - G[i]) / dS
+                if required_scale < scale_factor:
+                    scale_factor = float(required_scale)
+
+        S = (S - G) * scale_factor + G
+        return dict(zip([d for d in arr.dims if d in raw_point], S))
+
+
     parsed_interpolation_points = [
-        x if isinstance(x, collections.Iterable) and not isinstance(x, str) else arr.attrs['symmetry_points'][x]
+        x if isinstance(x, collections.Iterable) and not isinstance(x, str) else extract_symmetry_point(x)
         for x in interpolation_points
     ]
 
@@ -256,6 +290,12 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
             'transforms': dict(zip(arr.dims, [converter_for_coordinate_name(d) for d in arr.dims]))
         }
     )
+
+    if axis_name in arr.dims and len(parsed_interpolation_points) == 2:
+        if parsed_interpolation_points[1][axis_name] < parsed_interpolation_points[0][axis_name]:
+            # swap the sign on this axis as a convenience to the caller
+            converted_arr.coords[axis_name].data = -converted_arr.coords[axis_name].data
+
 
     del converted_arr.attrs['id']
     provenance(converted_arr, arr, {

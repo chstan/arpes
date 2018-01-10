@@ -1,13 +1,15 @@
 import numpy as np
 import xarray as xr
-
+import typing
+from collections import defaultdict
 import arpes.models.band
 import arpes.utilities
 import arpes.utilities.math
+import itertools
 from arpes.provenance import update_provenance
 from .filters import gaussian_filter_arr
 
-__all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis')
+__all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis', 'condense', 'rebin',)
 
 
 @update_provenance('Normalized by the 1/Fermi Dirac Distribution at sample temp')
@@ -61,3 +63,80 @@ def symmetrize_axis(data, axis_name, flip_axes=None):
         rev.coords[axis].values = -rev.coords[axis].values
 
     return rev.combine_first(data)
+
+
+@update_provenance('Condensed array')
+def condense(data: xr.DataArray):
+    """
+    Clips the data so that only regions where there is substantial weight are included. In
+    practice this usually means selecting along the ``eV`` axis, although other selections
+    might be made.
+
+    :param data: xarray.DataArray
+    :return:
+    """
+    if 'eV' in data.dims:
+        data = data.sel(eV=slice(None, 0.05))
+
+    return data
+
+
+@update_provenance('Rebinned array')
+def rebin(data: xr.DataArray, shape: dict=None, reduction: typing.Union[int, dict]=None, interpolate=False):
+    """
+    Rebins the data onto a different (smaller) shape. By default the behavior is to
+    split the data into chunks that are integrated over. An interpolation option is also
+    available.
+
+    Exactly one of ``shape`` and ``reduction`` should be supplied.
+
+    Dimensions corresponding to missing entries in ``shape`` or ``reduction`` will not
+    be changed.
+
+    :param data:
+    :param interpolate: Use interpolation instead of integration
+    :param shape: Target shape
+    :param reduction: Factor to reduce each dimension by
+    :return:
+    """
+
+    if interpolate:
+        raise NotImplementedError('The interpolation option has not been implemented')
+
+    assert(shape is None or reduction is None)
+
+    if isinstance(reduction, int):
+        reduction = {d: reduction for d in data.dims}
+
+    # we standardize by computing reduction from shape is shape was supplied.
+    if shape is not None:
+        reduction = {k: len(data.coords[k]) // v for k, v in shape.items()}
+
+    # since we are not interpolating, we need to clip each dimension so that the reduction
+    # factor evenly divides the real shape of the input data.
+    slices = defaultdict(lambda: slice(None))
+
+    for dim, reduction_factor in reduction.items():
+        remainder = len(data.coords[dim]) % reduction_factor
+        if remainder != 0:
+            slices[dim] = slice(None, -remainder)
+
+    trimmed_data = data.data[[slices[d] for d in data.dims]]
+    trimmed_coords = {d: coord[slices[d]] for d, coord in data.coords.items()}
+
+    temp_shape = [[trimmed_data.shape[i] // reduction.get(d, 1), reduction.get(d, 1)]
+                  for i, d in enumerate(data.dims)]
+    temp_shape = itertools.chain(*temp_shape)
+    reduced_data = trimmed_data.reshape(*temp_shape)
+
+    for i in range(len(data.dims)):
+        reduced_data = reduced_data.mean(i + 1)
+
+    reduced_coords = {d: coord[::reduction.get(d, 1)] for d, coord in trimmed_coords.items()}
+
+    return xr.DataArray(
+        reduced_data,
+        reduced_coords,
+        data.dims,
+        attrs=data.attrs
+    )

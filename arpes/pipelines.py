@@ -8,7 +8,8 @@ from .provenance import update_provenance
 from .utilities import conversion
 
 __all__ = ['convert_scan_to_kspace', 'convert_scan_to_kspace_no_corr',
-           'tr_prep_scan_ammeter', 'tr_prep_scan_simple', 'convert_mc_map_to_kspace_fft_filter']
+           'tr_prep_scan_ammeter', 'tr_prep_scan_simple', 'convert_mc_map_to_kspace_fft_filter',
+           'prep_for_d2']
 
 # TODO Implement chemical potential shift as a function of cycle number for delay scans
 
@@ -64,10 +65,15 @@ convert_scan_to_kspace = compose(
     pipeline()(conversion.convert_to_kspace),
 )
 
-
 convert_scan_to_kspace_no_corr = compose(
     pipeline('normalize_hv_axis')(dim_normalizer('hv')),
     pipeline()(conversion.convert_to_kspace),
+)
+
+prep_for_d2 = compose(
+    pipeline('normalize_hv_axis')(dim_normalizer('hv')),
+    correct_e_fermi_hv,
+    correct_e_fermi_spectrometer,
 )
 
 @pipeline()

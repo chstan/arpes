@@ -35,14 +35,13 @@ class ConvertKp(CoordinateConverter):
             self.arr.S.hv - self.arr.S.work_function + binding_energy)
 
     def kspace_to_phi(self, binding_energy, kp, *args, **kwargs):
-        polar_angle = float(self.arr.attrs.get('polar'))
-        polar_angle -= self.arr.polar_offset
+        polar_angle = self.arr.S.polar - self.arr.S.polar_offset
 
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
-        return (180 / np.pi) * np.arcsin(kp / self.k_tot / np.cos(
-            polar_angle * np.pi / 180)) + self.arr.phi_offset
+        # TODO verify this
+        return np.arcsin(kp / self.k_tot / np.cos(polar_angle)) + self.arr.S.phi_offset
 
 
     def conversion_for(self, dim):
@@ -105,20 +104,19 @@ class ConvertKxKy(CoordinateConverter):
             self.kspace_to_polar(binding_energy, kx, ky, *args, **kwargs)
 
         if self.is_slit_vertical:
-            return (180 / np.pi) * np.arcsin(kx / self.k_tot / np.cos((self.polar - self.arr.S.polar_offset) * np.pi / 180)) + \
+            return np.arcsin(kx / self.k_tot / np.cos(self.polar - self.arr.S.polar_offset)) + \
                    self.arr.S.phi_offset
         else:
-            return (180 / np.pi) * np.arcsin(kx / self.k_tot) + self.arr.S.phi_offset
+            return np.arcsin(kx / self.k_tot) + self.arr.S.phi_offset
 
     def kspace_to_polar(self, binding_energy, kx, ky, *args, **kwargs):
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
         if self.is_slit_vertical:
-            self.polar = (180 / np.pi) * np.arcsin(ky / self.k_tot) + self.arr.S.polar_offset
+            self.polar = np.arcsin(ky / self.k_tot) + self.arr.S.polar_offset
         else:
-            self.polar = (180 / np.pi) * np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2)) + \
-                         self.arr.S.polar_offset
+            self.polar = np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2)) + self.arr.S.polar_offset
         return self.polar
 
     def conversion_for(self, dim):

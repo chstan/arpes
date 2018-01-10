@@ -36,7 +36,7 @@ class ConvertKpKz(CoordinateConverter):
 
         # go a bit finer here because it would otherwise be very coarse
         inferred_kz_res = (kz_high - kz_low + 2 * K_SPACE_BORDER) / len(self.arr.coords['hv'])
-        inferred_kz_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kz_res][-2]
+        inferred_kz_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kz_res][-1]
 
         coordinates['kp'] = np.arange(kp_low - K_SPACE_BORDER, kp_high + K_SPACE_BORDER,
                                       resolution.get('kp', inferred_kp_res))
@@ -44,7 +44,7 @@ class ConvertKpKz(CoordinateConverter):
                                       resolution.get('kz', inferred_kz_res))
 
         base_coords = {k: v for k, v in self.arr.coords.items()
-                       if k not in ['eV', 'phi', 'polar']}
+                       if k not in ['eV', 'phi', 'hv']}
 
         coordinates.update(base_coords)
 
@@ -53,8 +53,8 @@ class ConvertKpKz(CoordinateConverter):
     def kspace_to_hv(self, binding_energy, kp, kz, *args, **kwargs):
         # x = kp, y = kz, z = BE
         if self.hv is None:
-            inner_v = self.arr.inner_potential
-            wf = self.arr.work_function
+            inner_v = self.arr.S.inner_potential
+            wf = self.arr.S.work_function
             self.hv = arpes.constants.HV_CONVERSION * (kp ** 2 + kz ** 2) + (
                 -inner_v - binding_energy + wf)
 
@@ -65,7 +65,7 @@ class ConvertKpKz(CoordinateConverter):
             self.kspace_to_hv(binding_energy, kp, kz, *args, **kwargs)
 
         def kp_to_polar(kinetic_energy_out, kp):
-            return 180 / np.pi * np.arcsin(kp / (arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy_out)))
+            return np.arcsin(kp / (arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy_out)))
 
         return kp_to_polar(self.hv + self.arr.S.work_function, kp) + self.arr.S.phi_offset
 

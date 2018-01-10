@@ -3,6 +3,8 @@ Useful constants for experiments and some useful science facts
 Much of this is collected from past students, especially Jeff's 'Cstes.ipf'
 """
 
+from numpy import pi
+
 MODE_ARPES = 'arpes'
 MODE_TRARPES = 'trarpes'
 MODE_SARPES = 'sarpes'
@@ -52,27 +54,28 @@ HEX_ALPHABET = "ABCDEF0123456789"
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-
 STRAIGHT_TOF_LENGTH = 0.937206
 SPIN_TOF_LENGTH = 1.1456
 DLD_LENGTH = 1.1456 # This isn't correct but it should be a reasonable guess
 
-
 K_INV_ANGSTROM = 0.5123
 
 SPECTROMETER_MC = {
-    'deg_per_pixel': 0.125, # TODO CHECK THIS
+    'name': 'MC',
+    'rad_per_pixel': 0.125 * (pi / 180),
     'type': 'hemisphere',
     'is_slit_vertical': False,
 }
 
 SPECTROMETER_MC_OLD = {
+    'name': 'MC_OLD',
     'type': 'hemisphere',
-    'deg_per_pixel': 0.125,
+    'rad_per_pixel': 0.125 * (pi / 180),
     'is_slit_vertical': False,
 }
 
 SPECTROMETER_STRAIGHT_TOF = {
+    'name': 'STRAIGHT_ToF',
     'length': STRAIGHT_TOF_LENGTH,
     'type': 'tof',
     'dof': ['t'],
@@ -80,6 +83,7 @@ SPECTROMETER_STRAIGHT_TOF = {
 }
 
 SPECTROMETER_SPIN_TOF = {
+    'name': 'SPIN_ToF',
     'length': SPIN_TOF_LENGTH,
     'type': 'tof',
     'dof': ['t', 'spin'],
@@ -87,6 +91,7 @@ SPECTROMETER_SPIN_TOF = {
 }
 
 SPECTROMETER_DLD = {
+    'name': 'DLD',
     'length': DLD_LENGTH,
     'type': 'tof',
     'dof_type': {
@@ -97,6 +102,7 @@ SPECTROMETER_DLD = {
 }
 
 SPECTROMETER_BL4 = {
+    'name': 'BL4',
     'is_slit_vertical': True,
     'type': 'hemisphere',
     'dof': ['polar', 'sample_phi'],

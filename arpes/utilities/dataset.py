@@ -1,3 +1,4 @@
+from collections import namedtuple
 import os
 import uuid
 import warnings
@@ -6,13 +7,16 @@ import numpy as np
 import pandas as pd
 
 import arpes.config
+from arpes.io import load_dataset
 from arpes.exceptions import ConfigurationError
 
-__all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path']
+__all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
+           'attach_extra_dataset_columns', 'swap_reference_map']
 
 _DATASET_EXTENSIONS = {'.xlsx', '.xlx',}
 _SEARCH_DIRECTORIES = ('', 'hdf5', 'fits',)
 _TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits',}
+
 
 
 def is_blank(item):
@@ -55,7 +59,28 @@ def infer_data_path(file, scan_desc, allow_soft_match=False):
     raise ConfigurationError('Could not find file associated to {}'.format(file))
 
 
-def default_dataset(**kwargs):
+def swap_reference_map(df: pd.DataFrame, old_reference, new_reference):
+    """
+    Replaces instances of a reference map old_reference in the ref_map column with
+    new_reference.
+    :param df:
+    :return:
+    """
+    df = df.copy()
+
+    new_ref_id = df.loc[new_reference, ('id',)]
+
+    for id, row in df.iterrows():
+        if row.ref_map == old_reference:
+            df.loc[id, ('ref_map', 'ref_id',)] = new_reference, new_ref_id
+
+    return df
+
+
+def default_dataset(workspace=None, **kwargs):
+    if workspace is not None:
+        arpes.config.CONFIG['WORKSPACE'] = workspace
+
     material_class = arpes.config.CONFIG['WORKSPACE']
     if material_class is None:
         raise ConfigurationError('You need to set the WORKSPACE attribute on CONFIG!')
@@ -74,19 +99,106 @@ def default_dataset(**kwargs):
     return clean_xlsx_dataset(os.path.join(dir, candidates[0]), **kwargs)
 
 
-def clean_xlsx_dataset(path, allow_soft_match=False, **kwargs):
+def attach_extra_dataset_columns(path, **kwargs):
+    import arpes.xarray_extensions # this avoids a circular import
+
+    base_filename, extension = os.path.splitext(path)
+    if extension not in _DATASET_EXTENSIONS:
+        warnings.warn('File is not an excel file')
+        return None
+
+    if 'cleaned' in base_filename:
+        new_filename = base_filename + extension
+    else:
+        new_filename = base_filename + '.cleaned' + extension
+    assert(os.path.exists(new_filename))
+
+    ds = pd.read_excel(new_filename, **kwargs)
+
+    ColumnDef = namedtuple('ColumnDef', ['default', 'source'])
+    add_columns = {'spectrum_type': ColumnDef('', 'attr'), }
+
+    for column, definition in add_columns.items():
+        ds[column] = definition.default
+
+    # Add required columns
+    if 'id' not in ds:
+        ds['id'] = np.nan
+
+    if 'path' not in ds:
+        ds['path'] = ''
+
+    # Cascade blank values
+    for index, row in ds.sort_index().iterrows():
+        row = row.copy()
+
+        print(row.id)
+        try:
+            scan = load_dataset(row.id, ds)
+        except ValueError:
+            warnings.warn('Skipping {}! Unable to load scan.'.format(row.id))
+        for column, definition in add_columns.items():
+            if definition.source == 'accessor':
+                ds.loc[index, (column,)] = getattr(scan.S, column)
+            elif definition.source == 'attr':
+                ds.loc[index, (column,)] = scan.attrs[column]
+
+    os.remove(new_filename)
+    excel_writer = pd.ExcelWriter(new_filename)
+    ds.to_excel(excel_writer)
+    excel_writer.save()
+
+    return ds.set_index('file')
+
+
+def with_inferred_columns(df: pd.DataFrame):
+    """
+    Attach inferred columns to a data frame representing an ARPES dataset.
+
+    So far the columns attached are the reference map name, and the reference map_id
+    :param df:
+    :return: pd.DataFrame which is the union of columns in `df` and the columns produced here
+    """
+
+    df = df.copy()
+
+    df['ref_map'] = ''
+    df['ref_id'] = ''
+
+    assert('spectrum_type' in df.columns)
+
+    last_map = None
+    warnings.warn('Assuming sort along index')
+    for index, row in df.sort_index().iterrows():
+
+        if last_map is not None:
+            df.loc[index, ('ref_map', 'ref_id')] = last_map, df.loc[last_map, ('id',)]
+
+        if row.spectrum_type == 'map':
+            last_map = index
+
+    return df
+
+
+def clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=True, **kwargs):
     reload = kwargs.pop('reload', False)
     base_filename, extension = os.path.splitext(path)
     if extension not in _DATASET_EXTENSIONS:
         warnings.warn('File is not an excel file')
         return None
 
-    new_filename = base_filename + '.cleaned' + extension
+    if 'cleaned' in base_filename:
+        new_filename = base_filename + extension
+    else:
+        new_filename = base_filename + '.cleaned' + extension
     if os.path.exists(new_filename):
         if reload:
             os.remove(new_filename)
         else:
-            return pd.read_excel(new_filename).set_index('file')
+            ds = pd.read_excel(new_filename).set_index('file')
+            if with_inferred_cols:
+                return with_inferred_columns(ds)
+            return ds
 
     ds = pd.read_excel(path, **kwargs)
     ds = ds.loc[ds.index.dropna()]
@@ -105,20 +217,23 @@ def clean_xlsx_dataset(path, allow_soft_match=False, **kwargs):
         row = row.copy()
 
         for key, value in row.iteritems():
-            if key == 'id' and np.isnan(float(row['id'])):
+            if key == 'id' and is_blank(row.id):
                 ds.loc[index, ('id',)] = str(uuid.uuid1())
 
             elif key == 'path' and is_blank(value):
                 ds.loc[index, ('path',)] = infer_data_path(row['file'], row, allow_soft_match)
 
-            elif last_index is not None and is_blank(value) and not is_blank(ds.loc[last_index,(key,)]):
-                ds.loc[index,(key,)] = ds.loc[last_index,(key,)]
+            elif last_index is not None and is_blank(value) and not is_blank(ds.loc[last_index, (key,)]):
+                ds.loc[index, (key,)] = ds.loc[last_index, (key,)]
 
         last_index = index
 
     excel_writer = pd.ExcelWriter(new_filename)
     ds.to_excel(excel_writer)
     excel_writer.save()
+
+    if with_inferred_cols:
+        return with_inferred_columns(ds.set_index('file'))
 
     return ds.set_index('file')
 

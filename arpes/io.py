@@ -35,12 +35,19 @@ _wrappable = {'note', 'data_preparation', 'provenance', 'corrections', 'symmetry
 _whitelist_keys = {'scan_region', 'sample', 'scan_mode', 'id', 'scan_mode'}
 
 
+_freeze_props = {'spectrum_type'}
+
 def wrap_attrs(arr: xr.DataArray):
+    import arpes.xarray_extensions
     for key in _wrappable:
         if key not in arr.attrs:
             continue
 
         arr.attrs[key] = json.dumps(arr.attrs[key])
+
+    for prop in _freeze_props:
+        if prop not in arr.attrs:
+            arr.attrs[prop] = getattr(arr.S, prop)
 
     if 'time' in arr.attrs:
         arr.attrs['time'] = str(arr.attrs['time'])
@@ -106,6 +113,7 @@ def save_dataset(arr: xr.DataArray, force=False):
         else:
             return
 
+    df = arr.attrs.pop('df', None)
     wrap_attrs(arr)
     ref_attrs = arr.attrs.pop('ref_attrs', None)
     arr.to_netcdf(filename, engine='netcdf4')
@@ -128,6 +136,8 @@ def save_dataset(arr: xr.DataArray, force=False):
         arr.attrs['ref_attrs'] = ref_attrs
 
     unwrap_attrs(arr)
+    if df is not None:
+        arr.attrs['df'] = df
 
 
 def is_a_dataset(dataset):
@@ -136,7 +146,7 @@ def is_a_dataset(dataset):
 
     if isinstance(dataset, str):
         try:
-            uid = uuid.Uuid(dataset)
+            uid = uuid.UUID(dataset)
             return True
         except:
             return False
@@ -171,7 +181,11 @@ def load_dataset_attrs(dataset_uuid):
         return attrs
 
 
-def load_dataset(dataset_uuid):
+def load_dataset(dataset_uuid, df: pd.DataFrame=None):
+    if df is None:
+        from arpes.utilities import default_dataset # break circular dependency
+        df = default_dataset()
+
     filename = _filename_for(dataset_uuid)
     if not os.path.exists(filename):
         raise ValueError('%s is not cached on the FS')
@@ -195,6 +209,12 @@ def load_dataset(dataset_uuid):
 
     if 'ref_id' in arr.attrs:
         arr.attrs['ref_attrs'] = load_dataset_attrs(arr.attrs['ref_id'])
+
+    for prop in _freeze_props:
+        if prop not in arr.attrs:
+            arr.attrs[prop] = getattr(arr.S, prop)
+
+    arr.attrs['df'] = df
 
     return arr
 

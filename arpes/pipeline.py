@@ -27,12 +27,12 @@ def denormalize_data(data):
     return data
 
 
-def computation_hash(pipeline_name, data, *args, **kwargs):
+def computation_hash(pipeline_name, data, intern_kwargs, *args, **kwargs):
     return json.dumps({
         'pipeline_name': pipeline_name,
         'data': normalize_data(data),
         'args': args,
-        'kwargs': list(kwargs.items()),
+        'kwargs': {k: v for k, v in kwargs.items() if k in intern_kwargs},
     }, sort_keys=True)
 
 
@@ -52,14 +52,21 @@ class PipelineRollbackException(Exception):
     pass
 
 
-def pipeline(pipeline_name=None):
+def pipeline(pipeline_name=None, intern_kwargs=None):
+    if intern_kwargs is None:
+        intern_kwargs = set()
+
     # TODO write simple tests for the pipeline flags to ensure correct caching conditions
     def pipeline_decorator(f):
-        def func_wrapper(data, flush=False, force=False, debug=False, *args, **kwargs):
+        def func_wrapper(data, flush=False, force=False, debug=False, verbose=True, *args, **kwargs):
             key = computation_hash(pipeline_name or f.__name__,
-                                   data, *args, **kwargs)
+                                   data, intern_kwargs, *args, **kwargs)
             if debug:
                 print(pipeline_name or f.__name__, key)
+
+            def echo(v):
+                if verbose:
+                    print('{}: {}'.format(pipeline_name or f.__name__, v))
 
             with open(arpes.config.PIPELINE_JSON_SHELF, 'r') as fp:
                 # Currently we are using JSON because of a bug in the implementation
@@ -81,6 +88,7 @@ def pipeline(pipeline_name=None):
                     with open(arpes.config.PIPELINE_JSON_SHELF, 'w') as fp:
                         json.dump(records, fp)
 
+                    echo(value)
                     return value
                 else:
                     del records[key]
@@ -100,6 +108,7 @@ def pipeline(pipeline_name=None):
                 records[key] = cache_computation(key, computed)
                 with open(arpes.config.PIPELINE_JSON_SHELF, 'w') as fp:
                     json.dump(records, fp)
+                echo(normalize_data(computed))
                 return computed
 
         return func_wrapper

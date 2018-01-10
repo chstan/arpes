@@ -27,7 +27,9 @@ This will require looking at the energy attribute on the array if it is not pass
 6. Change the pipeline scripts to turn functions into generators so that StopIteration can be produced in order to signify
 that the pipeline is finished or cannot otherwise proceed. Or consider another method of achieving this
 7. Be able to plot another scans' coordinates over a FS or similar
-8. Total variation convex denoising to remove multiplicative noise from grid 
+8. Total variation convex denoising to remove multiplicative noise from grid
+9. Figure out coordinate projecting so that we can use the symmetry points
+in reference maps in order to get offsets for subsequent scans 
 
 ## Needed for plotting
 

@@ -18,6 +18,7 @@ assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT en
 SOURCE_PATH = ARPES_ROOT
 FIGURE_PATH = os.path.join(SOURCE_PATH, 'figures/')
 
+DATASET_PATH = os.path.join(SOURCE_PATH, 'datasets')
 DATASET_CACHE_RECORD = os.path.join(SOURCE_PATH, 'datasets/cache.json')
 CLEAVE_RECORD = os.path.join(SOURCE_PATH, 'datasets/cleaves.json')
 CALIBRATION_RECORD = os.path.join(SOURCE_PATH, 'datasets/calibrations.json')

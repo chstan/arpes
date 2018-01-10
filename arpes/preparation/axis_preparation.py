@@ -22,15 +22,20 @@ def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):
     )
 
 
-def normalize_dim(arr: xr.DataArray, dim, keep_id=False):
+def normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False):
     """
-    Normalizes the intensity so that all values along arr.sum(dims other than ``dim``) have the same value.
-    The function normalizes so that the average value of cells in the output is 1.
+    Normalizes the intensity so that all values along arr.sum(dims other than those in ``dim_or_dims``)
+    have the same value. The function normalizes so that the average value of cells in
+    the output is 1.
     :param dim_name:
     :return:
     """
 
-    summed_arr = arr.sum([d for d in arr.dims if d != dim])
+    dims = dim_or_dims
+    if isinstance(dim_or_dims, str):
+        dims = [dims]
+
+    summed_arr = arr.fillna(arr.mean()).sum([d for d in arr.dims if d not in dims])
     normalized_arr = arr / (summed_arr / np.product(summed_arr.shape))
 
     to_return = xr.DataArray(
@@ -44,9 +49,9 @@ def normalize_dim(arr: xr.DataArray, dim, keep_id=False):
         del to_return.attrs['id']
 
     provenance(to_return, arr, {
-        'what': 'Normalize axis',
+        'what': 'Normalize axis or axes',
         'by': 'normalize_dim',
-        'dim': dim,
+        'dims': dims,
     })
 
     return to_return

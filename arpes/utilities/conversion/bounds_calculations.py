@@ -15,12 +15,11 @@ def calculate_kp_kz_bounds(arr: xr.DataArray):
     hv_min, hv_max = np.min(arr.coords['hv'].values), np.max(arr.coords['hv'].values)
 
     def spherical_to_kx(kinetic_energy, theta, phi):
-        return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(
-            np.pi / 180 * theta) * np.cos(np.pi / 180 * phi)
+        return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.cos(phi)
 
     def spherical_to_kz(kinetic_energy, theta, phi, inner_V):
         return arpes.constants.K_INV_ANGSTROM * np.sqrt(
-            kinetic_energy * np.cos(np.pi / 180 * theta) ** 2 + inner_V)
+            kinetic_energy * np.cos(theta) ** 2 + inner_V)
 
     wf = arr.S.work_function
     kx_min = min(spherical_to_kx(hv_max - binding_energy_max - wf, phi_min, 0),
@@ -49,8 +48,7 @@ def calculate_kp_bounds(arr: xr.DataArray):
     sampled_phi_values = np.array([phi_low, phi_mid, phi_high])
 
     kinetic_energy = arr.S.hv - arr.S.work_function
-    kps = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(
-        np.pi / 180. * sampled_phi_values) * np.cos(np.pi / 180. * polar)
+    kps = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(sampled_phi_values) * np.cos(polar)
 
     return round(np.min(kps), 2), round(np.max(kps), 2)
 
@@ -78,10 +76,8 @@ def calculate_kx_ky_bounds(arr: xr.DataArray):
                                      polar_low, polar_low, polar_low, polar_mid])
     kinetic_energy = arr.S.hv - arr.S.work_function
 
-    kxs = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(np.pi / 180. * sampled_phi_values)
-    kys = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.cos(
-        np.pi / 180. * sampled_phi_values) * np.sin(
-        np.pi / 180. * sampled_polar_values)
+    kxs = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(sampled_phi_values)
+    kys = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.cos(sampled_phi_values) * np.sin(sampled_polar_values)
 
     return (
         (round(np.min(kxs), 2), round(np.max(kxs), 2)),

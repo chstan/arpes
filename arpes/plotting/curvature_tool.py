@@ -1,55 +1,31 @@
-import warnings
-
 import numpy as np
-import xarray as xr
 from bokeh import palettes
-from bokeh.application import Application
-from bokeh.application.handlers import FunctionHandler
-from bokeh.io import show
 from bokeh.layouts import row, column, widgetbox
 from bokeh.models import widgets
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.plotting import figure
 
 from arpes.analysis import curvature, d1_along_axis, d2_along_axis, gaussian_filter, boxcar_filter
-from arpes.io import load_dataset
-from arpes.plotting.interactive import init_bokeh_server
-from arpes.utilities import Debounce
-from typing import Union
+from arpes.plotting.interactive_utils import BokehInteractiveTool
+from arpes.utilities.funcutils import Debounce
 
-__all__ = ['make_curvature_tool']
+__all__ = ['CurvatureTool']
 
-def make_curvature_tool(arr: Union[xr.DataArray, str], notebook_url='localhost:8888',
-                        notebook_handle=True, **kwargs):
-    # TODO implement
-    # TODO consider whether common structure with make_bokeh_tool would be useful
-    if isinstance(arr, str):
-        arr = load_dataset(arr)
-        if 'cycle' in arr.dims and len(arr.dims) > 2:
-            warnings.warn('Summing over cycle')
-            arr = arr.sum('cycle', keep_attrs=True)
+class CurvatureTool(BokehInteractiveTool):
+    # do not remove nans because they are used for masking in taking derivatives and smoothing
+    auto_zero_nans = False
+    auto_rebin = False
 
-    # do not remove NaN values because it will be useful to have them in place
-    # for masking while we are taking the curvature
+    def __init__(self, app_main_size=600):
+        super(CurvatureTool, self).__init__()
+        self.app_main_size = app_main_size
 
-    fn_handler, app_context = curvature_tool(arr.T, **kwargs)
-    handler = FunctionHandler(fn_handler)
-    app = Application(handler)
-    show(app, notebook_url=notebook_url, notebook_handle=notebook_handle)
-
-    return app_context
-
-
-def curvature_tool(arr: xr.DataArray, app_main_size=400):
-    init_bokeh_server()
-    app_context = {}
-
-    def curvature_tool_handler(doc):
+    def tool_handler(self, doc):
         default_palette = palettes.viridis(256)
 
-        x_coords, y_coords = arr.coords[arr.dims[1]], arr.coords[arr.dims[0]]
-        app_context.update({
-            'data': arr,
+        x_coords, y_coords = self.arr.coords[self.arr.dims[1]], self.arr.coords[self.arr.dims[0]]
+        self.app_context.update({
+            'data': self.arr,
             'cached_data': {},
             'gamma_cached_data': {},
             'plots': {},
@@ -61,73 +37,72 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
             'widgets': {},
             'color_maps': {}})
 
-        app_context['color_maps']['d2'] = LinearColorMapper(
-            default_palette, low=np.min(arr.values),
-            high=np.max(arr.values), nan_color='black')
+        self.app_context['color_maps']['d2'] = LinearColorMapper(
+            default_palette, low=np.min(self.arr.values),
+            high=np.max(self.arr.values), nan_color='black')
 
-        app_context['color_maps']['curvature'] = LinearColorMapper(
-            default_palette, low=np.min(arr.values),
-            high=np.max(arr.values), nan_color='black')
+        self.app_context['color_maps']['curvature'] = LinearColorMapper(
+            default_palette, low=np.min(self.arr.values),
+            high=np.max(self.arr.values), nan_color='black')
 
-        app_context['color_maps']['raw'] = LinearColorMapper(
-            default_palette, low=np.min(arr.values),
-            high=np.max(arr.values), nan_color='black')
+        self.app_context['color_maps']['raw'] = LinearColorMapper(
+            default_palette, low=np.min(self.arr.values),
+            high=np.max(self.arr.values), nan_color='black')
 
         plots, figures, data_range, cached_data, gamma_cached_data = (
-            app_context['plots'], app_context['figures'], app_context['data_range'],
-            app_context['cached_data'], app_context['gamma_cached_data'],
+            self.app_context['plots'], self.app_context['figures'], self.app_context['data_range'],
+            self.app_context['cached_data'], self.app_context['gamma_cached_data'],
         )
 
-        cached_data['raw'] = arr.values
-        gamma_cached_data['raw'] = arr.values
+        cached_data['raw'] = self.arr.values
+        gamma_cached_data['raw'] = self.arr.values
 
-        main_tools = ['reset', 'wheel_zoom']
+        figure_kwargs = {
+            'tools': ['reset', 'wheel_zoom'],
+            'plot_width': self.app_main_size,
+            'plot_height': self.app_main_size,
+            'min_border': 10,
+            'toolbar_location': 'left',
+            'x_range': data_range['x'],
+            'y_range': data_range['y'],
+            'x_axis_location': 'below',
+            'y_axis_location': 'right',
+        }
+        figures['d2'] = figure(title='d2 Spectrum', **figure_kwargs)
 
-        figures['d2'] = figure(
-            tools=main_tools, plot_width=app_main_size, plot_height=app_main_size,
-            min_border=10, toolbar_location='left', x_axis_location='below',
-            x_range=data_range['x'], y_range=data_range['y'],
-            y_axis_location='right', title='d2 Spectrum'
-        )
-        figures['curvature'] = figure(
-            tools=['reset', 'wheel_zoom'], plot_width=app_main_size, plot_height=app_main_size,
-            y_range=app_context['figures']['d2'].y_range,  # link zooming
-            x_range=app_context['figures']['d2'].x_range,
-            min_border=10, toolbar_location=None, x_axis_location='below',
-            y_axis_location='left', title='Curvature'
-        )
-        figures['raw'] = figure(
-            tools=['reset', 'wheel_zoom'], plot_width=app_main_size, plot_height=app_main_size,
-            y_range=app_context['figures']['d2'].y_range,  # link zooming
-            x_range=app_context['figures']['d2'].x_range,
-            min_border=10, toolbar_location=None, x_axis_location='below',
-            y_axis_location='left', title='Raw Image'
-        )
+        figure_kwargs.update({
+            'y_range': self.app_context['figures']['d2'].y_range,
+            'x_range': self.app_context['figures']['d2'].x_range,
+            'toolbar_location': None, 'y_axis_location': 'left',
+        })
+
+        figures['curvature'] = figure(title='Curvature', **figure_kwargs)
+        figures['raw'] = figure(title='Raw Image', **figure_kwargs)
 
         figures['curvature'].yaxis.major_label_text_font_size = '0pt'
 
         # TODO add support for color mapper
         plots['d2'] = figures['d2'].image(
-            [arr.values], x=data_range['x'][0], y=data_range['y'][0],
+            [self.arr.values], x=data_range['x'][0], y=data_range['y'][0],
             dw=data_range['x'][1] - data_range['x'][0], dh=data_range['y'][1] - data_range['y'][0],
-            color_mapper=app_context['color_maps']['d2']
+            color_mapper=self.app_context['color_maps']['d2']
         )
         plots['curvature'] = figures['curvature'].image(
-            [arr.values], x=data_range['x'][0], y=data_range['y'][0],
+            [self.arr.values], x=data_range['x'][0], y=data_range['y'][0],
             dw=data_range['x'][1] - data_range['x'][0], dh=data_range['y'][1] - data_range['y'][0],
-            color_mapper=app_context['color_maps']['curvature']
+            color_mapper=self.app_context['color_maps']['curvature']
         )
         plots['raw'] = figures['raw'].image(
-            [arr.values], x=data_range['x'][0], y=data_range['y'][0],
+            [self.arr.values], x=data_range['x'][0], y=data_range['y'][0],
             dw=data_range['x'][1] - data_range['x'][0], dh=data_range['y'][1] - data_range['y'][0],
-            color_mapper=app_context['color_maps']['raw']
+            color_mapper=self.app_context['color_maps']['raw']
         )
 
         smoothing_sliders_by_name = {}
-        smoothing_sliders = [] # need one for each axis
-        axis_resolution = {k: abs(arr.coords[k][1] - arr.coords[k][0]) for k in arr.dims}
-        for dim in arr.dims:
-            coords = arr.coords[dim]
+        smoothing_sliders = []  # need one for each axis
+        axis_resolution = {k: abs(self.arr.coords[k][1] - self.arr.coords[k][0]) for k in self.arr.dims}
+        for dim in self.arr.dims:
+            coords = self.arr.coords[dim]
             resolution = float(axis_resolution[dim])
             high_resolution = len(coords) / 3 * resolution
             low_resolution = resolution
@@ -144,14 +119,13 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
             smoothing_sliders.append(new_slider)
             smoothing_sliders_by_name[dim] = new_slider
 
-
         n_smoothing_steps_slider = widgets.Slider(
             title="Smoothing Steps", start=0, end=5, step=1, value=2)
         beta_slider = widgets.Slider(
             title="β", start=-8, end=8, step=1, value=0)
         direction_select = widgets.Select(
-            options=list(arr.dims),
-            value='eV' if 'eV' in arr.dims else arr.dims[0], # preference to energy,
+            options=list(self.arr.dims),
+            value='eV' if 'eV' in self.arr.dims else self.arr.dims[0],  # preference to energy,
             title='Derivative Direction'
         )
         interleave_smoothing_toggle = widgets.Toggle(
@@ -181,13 +155,13 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
                 'Boxcar': boxcar_filter,
             }.get(filter_select.value, boxcar_filter)
 
-            filter_size = {d: smoothing_sliders_by_name[d].value for d in arr.dims}
+            filter_size = {d: smoothing_sliders_by_name[d].value for d in self.arr.dims}
             return filter_factory(filter_size, n_passes)
 
         @Debounce(0.25)
         def force_update():
             n_smoothing_steps = n_smoothing_steps_slider.value
-            d2_data = arr
+            d2_data = self.arr
             if interleave_smoothing_toggle.active:
                 f = smoothing_fn(n_smoothing_steps // 2)
                 d2_data = d1_along_axis(f(d2_data), direction_select.value)
@@ -196,7 +170,7 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
 
             else:
                 f = smoothing_fn(n_smoothing_steps)
-                d2_data = d2_along_axis(f(arr), direction_select.value)
+                d2_data = d2_along_axis(f(self.arr), direction_select.value)
 
             d2_data.values[
                 d2_data.values != d2_data.values] = 0  # remove NaN values until Bokeh fixes NaNs over the wire
@@ -210,8 +184,8 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
             }
 
             curv_smoothing_fn = smoothing_fn(n_smoothing_steps)
-            smoothed_curvature_data = curv_smoothing_fn(arr)
-            curvature_data = curvature(smoothed_curvature_data, arr.dims, beta=beta_slider.value)
+            smoothed_curvature_data = curv_smoothing_fn(self.arr)
+            curvature_data = curvature(smoothed_curvature_data, self.arr.dims, beta=beta_slider.value)
             curvature_data.values[curvature_data.values != curvature_data.values] = 0
             if clamp_spectrum_toggle.active:
                 curvature_data.values = -curvature_data.values
@@ -235,7 +209,7 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
 
             else:
                 f = smoothing_fn(n_smoothing_steps)
-                d2_data = d2_along_axis(f(arr), direction_select.value)
+                d2_data = d2_along_axis(f(self.arr), direction_select.value)
 
             d2_data.values[
                 d2_data.values != d2_data.values] = 0  # remove NaN values until Bokeh fixes NaNs over the wire
@@ -257,8 +231,8 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
             return curvature_data
 
         # These functions will always be linked to the current context of the curvature tool.
-        app_context['d2_fn'] = take_d2
-        app_context['curvature_fn'] = take_curvature
+        self.app_context['d2_fn'] = take_d2
+        self.app_context['curvature_fn'] = take_curvature
 
         def force_update_change_wrapper(attr, old, new):
             if old != new:
@@ -272,7 +246,7 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
             def update_plot(name, data):
                 low, high = np.min(data), np.max(data)
                 dynamic_range = high - low
-                app_context['color_maps'][name].update(
+                self.app_context['color_maps'][name].update(
                     low=low + new[0] / 100 * dynamic_range, high=low + new[1] / 100 * dynamic_range)
 
             update_plot('d2', gamma_cached_data['d2'])
@@ -294,12 +268,12 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
 
         layout = column(
             row(
-                column(app_context['figures']['d2'],
+                column(self.app_context['figures']['d2'],
                        interleave_smoothing_toggle,
                        direction_select),
-                column(app_context['figures']['curvature'],
+                column(self.app_context['figures']['curvature'],
                        beta_slider, clamp_spectrum_toggle),
-                column(app_context['figures']['raw'],
+                column(self.app_context['figures']['raw'],
                        color_slider, gamma_slider)
             ),
             widgetbox(
@@ -324,5 +298,3 @@ def curvature_tool(arr: xr.DataArray, app_main_size=400):
 
         doc.add_root(layout)
         doc.title = 'Curvature Tool'
-
-    return curvature_tool_handler, app_context

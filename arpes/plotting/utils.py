@@ -2,7 +2,11 @@ import datetime
 import errno
 import itertools
 import os.path
+import numpy as np
+
 from collections import Counter
+
+import matplotlib.pyplot as plt
 
 from arpes.config import CONFIG, FIGURE_PATH
 
@@ -85,7 +89,8 @@ def label_for_dim(data, dim_name, escaped=True):
     raw_dim_names = {
         'polar': r'$\theta$',
         'phi': r'$\varphi$',
-        'eV': r'\textbf{eV}'
+        'eV': r'\textbf{eV}',
+        'angle': r'Interp. \textbf{Angle}'
     }
 
     if data.S.spectrometer.get('type') == 'hemisphere':
@@ -105,3 +110,79 @@ def label_for_symmetry_point(point_name):
         'Y': r'Y',
     }
     return proper_names.get(point_name, point_name)
+
+
+class CoincidentLinesPlot():
+    """
+    Helper to allow drawing lines at the same location. Will draw n lines offset so that their
+    center appears at the data center, and the lines will end up nonoverlapping.
+
+    Only works for straight lines
+
+    Technique from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit.
+    """
+
+    linewidth=3
+
+    def __init__(self, **kwargs):
+        self.ax = kwargs.pop('ax', plt.gca())
+        self.fig = kwargs.pop('fig', plt.gcf())
+        self.extra_kwargs = kwargs
+        self.ppd = 72. / self.fig.dpi
+        self.has_drawn = False
+
+        self.events = {
+            'resize_event': self.ax.figure.canvas.mpl_connect('resize_event', self._resize),
+            'motion_notify_event': self.ax.figure.canvas.mpl_connect('motion_notify_event', self._resize),
+            'button_release_event': self.ax.figure.canvas.mpl_connect('button_release_event', self._resize),
+        }
+        self.handles = []
+        self.lines = [] # saved args and kwargs for plotting, does not verify coincidence
+
+    def add_line(self, *args, **kwargs):
+        assert(not self.has_drawn)
+        self.lines.append((args, kwargs,))
+
+    def draw(self):
+        self.has_drawn = True
+
+        offset_in_data_units = self.data_units_per_pixel * self.linewidth
+        self.offsets = [offset_in_data_units * (o - (len(self.lines) - 1) / 2) for o in range(len(self.lines))]
+
+        for offset, (line_args, line_kwargs) in zip(self.offsets, self.lines):
+            line_args = self.normalize_line_args(line_args)
+            line_args[1] = np.array(line_args[1]) + offset
+            handle = self.ax.plot(*line_args, **line_kwargs)
+            self.handles.append(handle)
+
+    @property
+    def data_units_per_pixel(self):
+        trans = self.ax.transData.transform
+        inverse = ((trans((1, 1)) - trans((0, 0))) * self.ppd)
+        return (1/inverse[0], 1/inverse[1])
+
+    def normalize_line_args(self, args):
+        def is_data_type(value):
+            return isinstance(value, (
+                np.array, np.ndarray, list, tuple
+            ))
+
+        assert(is_data_type(args[0]))
+
+        if len(args) > 1 and is_data_type(args[1]) and len(args[0]) == len(args[1]):
+            # looks like we have x and y data
+            return args
+
+        # otherwise we should pad the args with the x data
+        return [range(len(args[0]))] + args
+
+
+    def _resize(self, event=None):
+        # Keep the trace in here until we can test appropriately.
+        import pdb
+        pdb.set_trace()
+        """
+        self.line.set_linewidth(lw)
+        self.ax.figure.canvas.draw_idle()
+        self.lw = lw
+        """

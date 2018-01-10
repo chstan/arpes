@@ -7,7 +7,7 @@ import xarray as xr
 from scipy.spatial import distance
 
 import arpes.models.band
-import arpes.utilities
+from arpes.utilities import enumerate_dataarray
 import arpes.utilities.math
 
 __all__ = ('fit_bands',)
@@ -62,7 +62,7 @@ def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_w
 
     identified_by_coordinate = {}
     first_coordinate = None
-    for coordinate, fit_result in arpes.utilities.enumerate_dataarray(band_results):
+    for coordinate, fit_result in enumerate_dataarray(band_results):
         frozen_coord = tuple(coordinate[d] for d in band_results.dims)
 
         closest_identified = None
