@@ -11,7 +11,8 @@ from arpes.io import load_dataset
 from arpes.exceptions import ConfigurationError
 
 __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
-           'attach_extra_dataset_columns', 'swap_reference_map']
+           'attach_extra_dataset_columns', 'swap_reference_map',
+           'cleaned_dataset_exists']
 
 _DATASET_EXTENSIONS = {'.xlsx', '.xlx',}
 _SEARCH_DIRECTORIES = ('', 'hdf5', 'fits',)
@@ -55,6 +56,9 @@ def infer_data_path(file, scan_desc, allow_soft_match=False):
 
         except FileNotFoundError:
             pass
+
+    if len(file) and file[0] == 'f': # try trimming the f off
+        return infer_data_path(file[1:], scan_desc, allow_soft_match=allow_soft_match)
 
     raise ConfigurationError('Could not find file associated to {}'.format(file))
 
@@ -180,21 +184,34 @@ def with_inferred_columns(df: pd.DataFrame):
     return df
 
 
-def clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=True, **kwargs):
-    reload = kwargs.pop('reload', False)
+def cleaned_path(path):
     base_filename, extension = os.path.splitext(path)
+    if 'cleaned' in base_filename:
+        return base_filename + extension
+    return base_filename + '.cleaned' + extension
+
+
+def cleaned_dataset_exists(path):
+    return os.path.exists(cleaned_path(path))
+
+
+def clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=True, warn_on_exists=False, **kwargs):
+    reload = kwargs.pop('reload', False)
+    _, extension = os.path.splitext(path)
     if extension not in _DATASET_EXTENSIONS:
         warnings.warn('File is not an excel file')
         return None
 
-    if 'cleaned' in base_filename:
-        new_filename = base_filename + extension
-    else:
-        new_filename = base_filename + '.cleaned' + extension
+    new_filename = cleaned_path(path)
     if os.path.exists(new_filename):
         if reload:
+            if warn_on_exists:
+                warnings.warn('Cleaned dataset already exists! Removing...')
+
             os.remove(new_filename)
         else:
+            if warn_on_exists:
+                warnings.warn('Cleaned dataset already exists! Reading existing...')
             ds = pd.read_excel(new_filename).set_index('file')
             if with_inferred_cols:
                 return with_inferred_columns(ds)
@@ -202,6 +219,13 @@ def clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=True, **
 
     ds = pd.read_excel(path, **kwargs)
     ds = ds.loc[ds.index.dropna()]
+    if 'path' not in ds.columns:
+        ds = ds[pd.notnull(ds['file'])] # drop null files if path not specified
+    else:
+        try:
+            ds = ds[pd.notnull(ds['file']) | pd.notnull('path')]
+        except KeyError:
+            pass
 
     last_index = None
 
