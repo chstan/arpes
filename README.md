@@ -51,6 +51,17 @@ DATA_PATH = '/Users/chstansbury/Research/lanzara/data/'
 DATASET_CACHE_PATH = '/Users/chstansbury/Research/lanzara/data/cache/'
 ```
 
+## Environment
+
+You need to make sure to export a variable ``ARPES_ROOT`` in order to run scripts. If you are on a UNIX-like system
+you can add the following to your ``.bashrc`` or equivalent:
+
+```bash
+export ARPES_ROOT="/path/to/wherever/you/installed/this/project/"
+```
+
+The value of ``ARPES_ROOT`` should be defined so that ``$ARPES_ROOT/README.md`` points to the file that you 
+are currently reading.
 
 ## Jupyter
 
@@ -59,8 +70,19 @@ about good initial settings.
 
 ## IPython Kernel Customization
 
-Ask Conrad about getting your kernel set up so that you don't have to import common code into 
-notebooks. 
+If you don't want to have to import everything all the time, you should customize your IPython session so that it
+runs imports when you first spin up a kernel. There are good directions for how to do this online, but a short 
+version is:
+
+1. Create an IPython profile, use this to start your notebooks
+2. In ``~/.ipython/{Your profile}/`` make a folder `startup`
+3. Add the files ``~/.ipython/{Your profile}/startup/00-add-arpes-path.py`` and 
+``~/.ipython/{Your profile}/startup/01-common-imports.ipy`` according to the templates in `ipython_templates`
+4. Customize to your liking
+
+It is important that the filenames you put are such that ``-add-arpes-path`` is lexographically first, as this ensures
+that it is executed first. The ``.ipy`` extension on ``01-common-imports.ipy`` is also essential.
+Ask Conrad if any of this is confusing.
 
 # Getting Started with Analysis
 

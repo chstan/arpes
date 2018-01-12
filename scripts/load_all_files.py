@@ -7,7 +7,7 @@ import sys
 import uuid
 from os import walk
 
-sys.path.append('/Users/chstansbury/PyCharmProjects/python-arpes/')
+sys.path.append(os.getenv('ARPES_ROOT'))
 
 import arpes.config
 from arpes.models.spectrum import load_scan
