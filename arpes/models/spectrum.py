@@ -130,7 +130,6 @@ def load_MC(metadata: dict=None, filename: str=None):
 
     hdu = hdulist[1]
 
-    dataset_contents = dict()
     attrs = metadata.pop('note', metadata)
     attrs.update(dict(hdulist[0].header))
 
@@ -142,43 +141,63 @@ def load_MC(metadata: dict=None, filename: str=None):
     if 'id' in metadata:
         attrs['id'] = metadata['id']
 
-    built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs)
-    warnings.warn('Not loading all available spectra for main chamber scan. TODO.')
+    built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs, mode='MC')
 
     phi_to_rad_coords = {'polar', 'theta', 'sample-phi'}
-    # the hemisphere axis is handled below
-    built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
-                    for k, c in built_coords.items()}
+    data_vars = {}
 
-    dimensions = dimensions[hdu.columns.names[-1]]
-    real_spectrum_shape = real_spectrum_shape[hdu.columns.names[-1]]
+    PREPPED_COLUMN_NAMES = {
+        'Fixed_Spectra4': 'spectrum',
+        'time': 'time',
+        'Delay': 'delay-var', # these are named thus to avoid conflicts with the
+        'Sample-X': 'cycle-var', # underlying coordinates
+        # insert more as needed
+    }
 
-    dataset_contents['raw'] = xarray.DataArray(
-        hdu.data.columns['Fixed_Spectra4'].array.reshape(real_spectrum_shape),
-        coords=built_coords,
-        dims=dimensions,
-        attrs=attrs,
-    )
+    for column_name in hdu.columns.names:
+        # the hemisphere axis is handled below
+        built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
+                        for k, c in built_coords.items()}
 
-    center_pixel = infer_center_pixel(dataset_contents['raw'])
-    phi_axis = (dataset_contents['raw'].coords['pixel'].values - center_pixel) * \
-               arpes.constants.SPECTROMETER_MC['rad_per_pixel']
-    dataset_contents['raw'] = replace_coords(dataset_contents['raw'], {
-        'phi': phi_axis
-    }, [('pixel', 'phi',)])
+        dimension_for_column = dimensions[column_name]
+        column_shape = real_spectrum_shape[column_name]
 
-    provenance_from_file(dataset_contents['raw'], data_loc, {
-        'what': 'Loaded MC dataset from FITS.',
-        'by': 'load_MC',
-    })
+        column_display = PREPPED_COLUMN_NAMES.get(column_name, column_name)
+        data_vars[column_display] = xarray.DataArray(
+            hdu.data.columns[column_name].array.reshape(column_shape),
+            coords={k: c for k, c in built_coords.items() if k in dimension_for_column},
+            dims=dimension_for_column,
+            attrs=attrs,
+        )
+
+    def prep_spectrum(data: xarray.DataArray):
+        if 'pixel' in data.coords:
+            center_pixel = infer_center_pixel(data)
+            phi_axis = (data.coords['pixel'].values - center_pixel) * \
+                       arpes.constants.SPECTROMETER_MC['rad_per_pixel']
+            data = replace_coords(data, {
+                'phi': phi_axis
+            }, [('pixel', 'phi',)])
+
+        # Always attach provenance
+        provenance_from_file(data, data_loc, {
+            'what': 'Loaded MC dataset from FITS.',
+            'by': 'load_MC',
+        })
+
+        return data
+
+    if 'spectrum' in data_vars:
+        data_vars['spectrum'] = prep_spectrum(data_vars['spectrum'])
+
 
     return xarray.Dataset(
-        dataset_contents,
+        data_vars,
         attrs={**metadata, 'name': primary_dataset_name},
     )
 
 
-def find_clean_coords(hdu, attrs, spectra=None):
+def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
     """
     Determines the scan degrees of freedom, the shape of the actual "spectrum"
     and reads and parses the coordinates from the header information in the recorded
@@ -188,6 +207,7 @@ def find_clean_coords(hdu, attrs, spectra=None):
 
     :param hdu:
     :param attrs:
+    :param mode: Available modes are "ToF", "MC". This customizes the read process
     :return: (coordinates, dimensions, np shape of actual spectrum)
     """
     scan_coords, scan_dimension, scan_shape = extract_coords(attrs)
@@ -238,23 +258,58 @@ def find_clean_coords(hdu, attrs, spectra=None):
             dimensions_for_spectra[spectrum_name] = scan_dimension
             continue
 
-
         if len(scan_shape) == 0 and shape[0] == 1:
             # the ToF pads with ones on single EDCs
             shape = shape[1:]
 
-        rest_shape = shape[len(scan_shape):]
+        if mode == 'ToF':
+            rest_shape = shape[len(scan_shape):]
+        else:
+            rest_shape = shape[1:]
 
         assert(len(offset) == len(delta) and len(delta) == len(rest_shape))
 
-        coords = zip(offset, delta, shape)
         coords = [numpy.linspace(o, o + s * d, s, endpoint=False)
                   for o, d, s in zip(offset, delta, rest_shape)]
+
+        # We need to do smarter inference here
+        def infer_hemisphere_dimensions():
+            if len(rest_shape) == 2:
+                return ['pixel', 'phi']
+
+            # scan is either E or K integrated, or something I've never seen before
+            # try to get the description or the UNIT
+            try:
+                desc = hdu.header['TDESC%g' % spectrum_key]
+                RECOGNIZED_DESCRIPTIONS = {
+                    'eV': ['eV'],
+                }
+                if desc in RECOGNIZED_DESCRIPTIONS:
+                    return RECOGNIZED_DESCRIPTIONS[desc]
+            except KeyError:
+                pass
+
+            try:
+                unit = hdu.header['TUNIT{}'.format(spectrum_key)]
+                RECOGNIZED_UNITS = {
+                    # it's probably 'arb' which doesn't tell us anything...
+                    # because all spectra have arbitrary absolute intensity
+                }
+                if unit in RECOGNIZED_UNITS:
+                    return RECOGNIZED_UNITS[unit]
+            except KeyError:
+                pass
+
+            # Need to fall back on some human in the loop to improve the read
+            # here
+            import pdb
+            pdb.set_trace()
 
         coord_names_for_spectrum = {
             'Time_Spectra': ['time'],
             'Energy_Spectra': ['eV'],
-            'Fixed_Spectra4': ['pixel', 'phi'], # MC hemisphere image
+            # MC hemisphere image, this can still be k-integrated, E-integrated, etc
+            'Fixed_Spectra4': infer_hemisphere_dimensions,
             'wave':  ['time'],
             'targetPlus': ['time'],
             'targetMinus': ['time'],
@@ -266,10 +321,14 @@ def find_clean_coords(hdu, attrs, spectra=None):
             import pdb
             pdb.set_trace()
 
-        coords_for_spectrum = dict(zip(coord_names_for_spectrum[spectrum_name], coords))
+        coord_names = coord_names_for_spectrum[spectrum_name]
+        if callable(coord_names):
+            coord_names = coord_names()
+
+        coords_for_spectrum = dict(zip(coord_names, coords))
         extra_coords.update(coords_for_spectrum)
         dimensions_for_spectra[spectrum_name] = \
-            tuple(scan_dimension) + tuple(coord_names_for_spectrum[spectrum_name])
+            tuple(scan_dimension) + tuple(coord_names)
         spectrum_shapes[spectrum_name] = tuple(scan_shape) + tuple(rest_shape)
         coords_for_spectrum.update(scan_coords)
 

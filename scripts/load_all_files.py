@@ -12,7 +12,7 @@ sys.path.append(os.getenv('ARPES_ROOT'))
 import arpes.config
 from arpes.models.spectrum import load_scan
 from arpes.utilities import clean_xlsx_dataset, attach_extra_dataset_columns, \
-    rename_standard_attrs, clean_attribute_names
+    rename_datavar_standard_attrs, clean_datavar_attribute_names
 from arpes.io import save_dataset
 from arpes.exceptions import ConfigurationError
 
@@ -62,8 +62,8 @@ if args.file:
         print("├{}".format(file))
         scan['file'] = scan.get('path', file)
         data = load_scan(dict(scan))
-        data = rename_standard_attrs(data.raw)
-        data = clean_attribute_names(data)
+        data = rename_datavar_standard_attrs(data)
+        data = clean_datavar_attribute_names(data)
         save_dataset(data, force=True)
 
 else:
@@ -89,8 +89,8 @@ else:
                     print("├{}".format(file))
                     scan['file'] = scan.get('path', file)
                     data = load_scan(dict(scan))
-                    data = rename_standard_attrs(data.raw)
-                    data = clean_attribute_names(data)
+                    data = rename_datavar_standard_attrs(data.raw)
+                    data = clean_datavar_attribute_names(data)
                     save_dataset(data, force=True)
 
                 print()
