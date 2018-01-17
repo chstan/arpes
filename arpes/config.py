@@ -19,13 +19,34 @@ SOURCE_PATH = ARPES_ROOT
 FIGURE_PATH = os.path.join(SOURCE_PATH, 'figures/')
 
 DATASET_PATH = os.path.join(SOURCE_PATH, 'datasets')
-DATASET_CACHE_RECORD = os.path.join(SOURCE_PATH, 'datasets/cache.json')
-CLEAVE_RECORD = os.path.join(SOURCE_PATH, 'datasets/cleaves.json')
-CALIBRATION_RECORD = os.path.join(SOURCE_PATH, 'datasets/calibrations.json')
 
-# TODO use a real database here
-PIPELINE_SHELF = os.path.join(SOURCE_PATH, 'datasets/pipeline.shelf')
-PIPELINE_JSON_SHELF = os.path.join(SOURCE_PATH, 'datasets/pipeline.shelf.json')
+DATASET_ROOT_PATH = ARPES_ROOT
+# these are all set by ``update_configuration``
+DATASET_CACHE_RECORD = None
+CLEAVE_RECORD = None
+CALIBRATION_RECORD = None
+
+PIPELINE_SHELF = None
+PIPELINE_JSON_SHELF = None
+
+def update_configuration():
+    global DATASET_ROOT_PATH
+    global DATASET_CACHE_RECORD
+    global CLEAVE_RECORD
+    global CALIBRATION_RECORD
+
+    global PIPELINE_SHELF
+    global PIPELINE_JSON_SHELF
+
+    DATASET_CACHE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets/cache.json')
+    CLEAVE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets/cleaves.json')
+    CALIBRATION_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets/calibrations.json')
+
+    # TODO use a real database here
+    PIPELINE_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets/pipeline.shelf')
+    PIPELINE_JSON_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets/pipeline.shelf.json')
+
+update_configuration()
 
 CONFIG = {
     'VERSION': '1.0.0',
