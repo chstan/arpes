@@ -19,7 +19,7 @@ import arpes.constants
 from arpes.preparation import infer_center_pixel, replace_coords
 from arpes.preparation.tof_preparation import convert_SToF_to_energy
 from arpes.provenance import provenance_from_file
-from arpes.utilities import rename_keys
+from arpes.utilities import rename_keys, case_insensitive_get
 
 __all__ = ['load_scan']
 
@@ -64,12 +64,17 @@ def load_scan(scan_desc):
     if 'SES' in scan_desc.get('note', scan_desc).get('Instrument', ''):
         return load_SES(scan_desc)
 
-    location_candidate = scan_desc.get('note', scan_desc).get('location', '')
+    note = scan_desc.get('note', scan_desc)
+    full_note = copy.deepcopy(scan_desc)
+    full_note.update(note)
+
+    location = case_insensitive_get(full_note, 'location')
+
     load_fn = {
         'BL403': load_SES,
         'ALG-MC': load_MC,
         'ALG-SToF': load_SToF,
-    }.get(location_candidate)
+    }.get(location)
 
     if load_fn is not None:
         return load_fn(scan_desc)
