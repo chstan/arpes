@@ -213,3 +213,33 @@ def walk_scans(path, only_id=False):
                     yield scan['id']
                 else:
                     yield scan
+
+
+def case_insensitive_get(d: dict, key: str, default=None, take_first=False):
+    """
+    Looks up a key in a dictionary ignoring case. We use this sometimes to be
+    nicer to users who don't provide perfectly sanitized data
+    :param d:
+    :param key:
+    :param default:
+    :param take_first:
+    :return:
+    """
+    found_value = False
+    value = None
+
+    for k, v in d.items():
+        if k.lower() == key.lower():
+            if not take_first and found_value:
+                raise ValueError('Duplicate case insensitive keys')
+
+            value = v
+            found_value = True
+
+            if take_first:
+                break
+
+    if not found_value:
+        return default
+
+    return value
