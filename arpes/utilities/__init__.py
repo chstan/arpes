@@ -8,6 +8,7 @@ import os
 import re
 from math import sin, cos
 from operator import itemgetter
+from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -140,6 +141,28 @@ def lift_dataarray_attrs(f):
 
     return g
 
+def lift_datavar_attrs(f):
+    """
+    Lifts a function that operates on a dictionary to a function that acts on the
+    attributes of all the datavars in a xr.Dataset, as well as the Dataset attrs
+    themselves.
+    :param f: Function to apply
+    :return:
+    """
+
+    def g(data: Union[xr.Dataset, xr.DataArray], *args, **kwargs):
+        arr_lifted = lift_dataarray_attrs(f)
+        if isinstance(data, xr.DataArray):
+            return arr_lifted(data, *args, **kwargs)
+
+        var_names = list(data.data_vars.keys())
+        new_vars = {k: arr_lifted(data[k], *args, **kwargs) for k in var_names}
+        new_root_attrs = f(data.attrs, *args, **kwargs)
+
+        return xr.Dataset(new_vars, data.coords, new_root_attrs)
+
+    return g
+
 def _rename_key(d, k, nk):
     if k in d:
         d[nk] = d[k]
@@ -163,8 +186,10 @@ def clean_keys(d):
 rename_dataarray_attrs = lift_dataarray_attrs(rename_keys)
 clean_attribute_names = lift_dataarray_attrs(clean_keys)
 
+rename_datavar_attrs = lift_datavar_attrs(rename_keys)
+clean_datavar_attribute_names = lift_datavar_attrs(clean_keys)
 
-rename_standard_attrs = lambda x: rename_dataarray_attrs(x, {
+ATTRS_MAP = {
     'PuPol': 'pump_pol',
     'PrPol': 'probe_pol',
     'Lens Mode': 'lens_mode',
@@ -182,8 +207,10 @@ rename_standard_attrs = lambda x: rename_dataarray_attrs(x, {
     'Beta': 'polar',
     'Azimuth': 'chi',
     'Location': 'location',
-})
+}
 
+rename_standard_attrs = lambda x: rename_dataarray_attrs(x, ATTRS_MAP)
+rename_datavar_standard_attrs = lambda x: rename_datavar_attrs(x, ATTRS_MAP)
 
 def walk_scans(path, only_id=False):
     for path, _, files in os.walk(path):
