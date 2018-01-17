@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 
 import arpes.config
-from arpes.io import load_dataset
 from arpes.exceptions import ConfigurationError
 
 __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
@@ -104,6 +103,7 @@ def default_dataset(workspace=None, **kwargs):
 
 
 def attach_extra_dataset_columns(path, **kwargs):
+    from arpes.io import load_dataset
     import arpes.xarray_extensions # this avoids a circular import
 
     base_filename, extension = os.path.splitext(path)

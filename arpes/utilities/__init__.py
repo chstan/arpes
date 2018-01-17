@@ -2,13 +2,15 @@
 Provides general utility methods that get used during the course of analysis.
 """
 
+import copy
 import itertools
 import json
 import os
 import re
+import warnings
 from math import sin, cos
 from operator import itemgetter
-from typing import Union
+from arpes.typing import DataType
 
 import numpy as np
 import xarray as xr
@@ -22,6 +24,7 @@ def enumerate_dataarray(arr: xr.DataArray):
     for coordinate in itertools.product(*[arr.coords[d] for d in arr.dims]):
         zip_location = dict(zip(arr.dims, (float(f) for f in coordinate)))
         yield zip_location, arr.loc[zip_location].values.item()
+
 
 def fix_burnt_pixels(spectrum):
     """
@@ -89,6 +92,7 @@ def arrange_by_indices(items, indices):
     """
     return [items[i] for i in indices]
 
+
 def unarrange_by_indices(items, indices):
     """
     The inverse function to 'arrange_by_indices'.
@@ -98,7 +102,7 @@ def unarrange_by_indices(items, indices):
      => ['a', 'b', 'c']
     """
 
-    return [x for x, _ in sorted(zip(indices, items), key=itemgetter[0])]
+    return [x for x, _ in sorted(zip(indices, items), key=itemgetter(0))]
 
 
 def apply_dataarray(arr: xr.DataArray, f, *args, **kwargs):
@@ -108,6 +112,7 @@ def apply_dataarray(arr: xr.DataArray, f, *args, **kwargs):
         arr.dims,
         attrs=arr.attrs
     )
+
 
 def lift_dataarray(f):
     """
@@ -121,6 +126,7 @@ def lift_dataarray(f):
         return apply_dataarray(arr, f, *args, **kwargs)
 
     return g
+
 
 def lift_dataarray_attrs(f):
     """
@@ -141,6 +147,7 @@ def lift_dataarray_attrs(f):
 
     return g
 
+
 def lift_datavar_attrs(f):
     """
     Lifts a function that operates on a dictionary to a function that acts on the
@@ -150,7 +157,7 @@ def lift_datavar_attrs(f):
     :return:
     """
 
-    def g(data: Union[xr.Dataset, xr.DataArray], *args, **kwargs):
+    def g(data: DataType, *args, **kwargs):
         arr_lifted = lift_dataarray_attrs(f)
         if isinstance(data, xr.DataArray):
             return arr_lifted(data, *args, **kwargs)
@@ -163,10 +170,12 @@ def lift_datavar_attrs(f):
 
     return g
 
+
 def _rename_key(d, k, nk):
     if k in d:
         d[nk] = d[k]
         del d[k]
+
 
 def rename_keys(d, keys_dict):
     d = d.copy()
@@ -175,10 +184,11 @@ def rename_keys(d, keys_dict):
 
     return d
 
+
 def clean_keys(d):
     def clean_single_key(k):
         k = k.replace(' ', '_')
-        return re.sub(r'[\(\)\/?]', '', k)
+        return re.sub(r'[()/?]', '', k)
 
     return dict(zip([clean_single_key(k) for k in d.keys()], d.values()))
 
@@ -196,7 +206,7 @@ ATTRS_MAP = {
     'Excitation Energy': 'hv',
     'Pass Energy': 'pass_energy',
     'Slit Plate': 'slit',
-    'Number of Sweepts': 'n_sweeps',
+    'Number of Sweeps': 'n_sweeps',
     'Acquisition Mode': 'scan_mode',
     'Region Name': 'scan_region',
     'Instrument': 'instrument',
@@ -212,6 +222,7 @@ ATTRS_MAP = {
 rename_standard_attrs = lambda x: rename_dataarray_attrs(x, ATTRS_MAP)
 rename_datavar_standard_attrs = lambda x: rename_datavar_attrs(x, ATTRS_MAP)
 
+
 def walk_scans(path, only_id=False):
     for path, _, files in os.walk(path):
         json_files = [f for f in files if '.json' in f]
@@ -226,7 +237,6 @@ def walk_scans(path, only_id=False):
                     yield scan['id']
                 else:
                     yield scan
-
 
         for x in excel_files:
             if 'cleaned' in x or 'cleaned' in path:
@@ -270,3 +280,65 @@ def case_insensitive_get(d: dict, key: str, default=None, take_first=False):
         return default
 
     return value
+
+
+_wrappable = {'note', 'data_preparation', 'provenance', 'corrections', 'symmetry_points'}
+WHITELIST_KEYS = {'scan_region', 'sample', 'scan_mode', 'id', 'scan_mode'}
+FREEZE_PROPS = {'spectrum_type'}
+
+
+def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
+    freeze_extra = []
+    attrs_copy = copy.deepcopy(attrs)
+    for key in _wrappable:
+        if key not in attrs_copy:
+            continue
+
+        attrs_copy[key] = json.dumps(attrs_copy[key])
+
+    for prop in FREEZE_PROPS:
+        if prop not in original_data.attrs:
+            resolved = original_data.S if isinstance(original_data, xr.DataArray) else original_data.S.spectrum.S
+            try:
+                attrs_copy[prop] = getattr(resolved, prop)
+            except AttributeError:
+                warnings.warn('Unresolvable attribute: {}'.format(prop))
+
+    if 'time' in attrs_copy:
+        attrs_copy['time'] = str(attrs_copy['time'])
+
+    for k, v in attrs_copy.items():
+        if v is None:
+            freeze_extra.append(k)
+            attrs_copy[k] = json.dumps(v)
+
+    attrs_copy['freeze_extra'] = json.dumps(freeze_extra)
+    return attrs_copy
+
+
+def unwrap_attrs_dict(attrs: dict) -> dict:
+    attrs_copy = copy.deepcopy(attrs)
+    freeze_extra = json.loads(attrs_copy.pop('freeze_extra', '[]'))
+
+    for key in _wrappable:
+        if key not in attrs_copy:
+            continue
+
+        try:
+            attrs_copy[key] = json.loads(attrs_copy[key])
+        except json.JSONDecodeError:
+            pass
+
+    for frozen_extra in freeze_extra:
+        try:
+            attrs_copy[frozen_extra] = json.loads(attrs_copy[frozen_extra])
+        except json.JSONDecodeError:
+            warnings.warn('Was unable to unfreeze attribute "{}"'.format(frozen_extra))
+
+    return attrs_copy
+
+
+wrap_datavar_attrs = lift_datavar_attrs(wrap_attrs_dict)
+unwrap_datavar_attrs = lift_datavar_attrs(unwrap_attrs_dict)
+wrap_dataarray_attrs = lift_dataarray_attrs(wrap_attrs_dict)
+unwrap_dataarray_attrs = lift_dataarray_attrs(unwrap_attrs_dict)

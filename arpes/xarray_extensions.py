@@ -5,6 +5,8 @@ import warnings
 import numpy as np
 import xarray as xr
 
+from typing import Optional
+
 import arpes.constants
 import arpes.materials
 from arpes.io import load_dataset_attrs
@@ -569,6 +571,14 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             out = '{}_spin_polarization.png'.format(self.label)
             kwargs['out'] = out
         return plotting.spin_polarized_spectrum(self._obj, **kwargs)
+
+    @property
+    def spectrum(self) -> Optional[xr.DataArray]:
+        if 'spectrum' in self._obj.data_vars:
+            return self._obj.spectrum
+
+        if 'raw' in self._obj.data_vars:
+            return self._obj.raw
 
     def __init__(self, xarray_obj):
         super(ARPESDatasetAccessor, self).__init__(xarray_obj)
