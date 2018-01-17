@@ -390,10 +390,18 @@ def extract_coords(attrs):
                 attrs['NM_%g_0' % loop],
                 attrs['NMPOS_%g' % loop],
             )
-            n_regions_key = {'Delay': 'DS_NR'}.get(name, 'DS_NR')
-            n_regions = attrs[n_regions_key]
 
-            name = _RENAME_DIMS.get(name, name)
+            try:
+                n_regions_key = {'Delay': 'DS_NR'}.get(name, 'DS_NR')
+                n_regions = attrs[n_regions_key]
+
+                name = _RENAME_DIMS.get(name, name)
+            except KeyError:
+                if 'ST_{}_1'.format(loop) in attrs:
+                    assert(False and "More than one region detected but unhandled.")
+
+                n_regions = 1
+                name = _RENAME_DIMS.get(name, name)
 
             coord = numpy.array(())
             for region in range(n_regions):
