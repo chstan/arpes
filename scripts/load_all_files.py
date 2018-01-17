@@ -39,46 +39,70 @@ parser.add_argument("-c", "--attach-columns", help="load datasets to attach extr
 parser.add_argument("-w", "--workspace", help='name of workspace to use (i.e. "RhSn2")')
 parser.add_argument("-l", "--load", help="flag to load data from original source and save as NetCDF",
                     action="store_true")
+parser.add_argument("-f", "--file", help="specify the dataset that will be used. If it is already clean it will not be cleaned.")
 parser.add_argument("-uc", "--use-clean", help="skip dataset cleaning process", action="store_true")
 
 args = parser.parse_args()
 
-if arpes.config.CONFIG['WORKSPACE'] is None:
-    arpes.config.CONFIG['WORKSPACE'] = args.workspace or os.getenv('WORKSPACE')
+def is_excel(f):
+    return '.xlsx' in f or '.xlx' in f
 
-if arpes.config.CONFIG['WORKSPACE'] is None:
-    raise ConfigurationError('You must provide a workspace.')
+def is_cleaned(f, path=None):
+    return 'cleaned' in x or (isinstance(path, str) and 'cleaned' in path)
 
-if args.load:
-    for path, _, files in walk(os.getcwd()):
-        excel_files = [f for f in files if '.xlsx' in f or '.xlx' in f]
+if args.file:
+    print("Preparing single file {}".format(args.file))
+    assert(is_excel(args.file))
 
-        for x in excel_files:
-            print(x)
-            if args.use_clean != ('cleaned' in x or 'cleaned' in path):
-                print('SKIPPING\n')
-                continue
+    current_path = os.getcwd()
+    ds = clean_xlsx_dataset(os.path.join(current_path, args.file),
+                            with_inferred_cols=False, reload=False)
 
-            ds = clean_xlsx_dataset(os.path.join(path, x), with_inferred_cols=False, reload=not args.use_clean)
+    for file, scan in ds.iterrows():
+        print("├{}".format(file))
+        scan['file'] = scan.get('path', file)
+        data = load_scan(dict(scan))
+        data = rename_standard_attrs(data.raw)
+        data = clean_attribute_names(data)
+        save_dataset(data, force=True)
 
-            for file, scan in ds.iterrows():
-                print("├{}".format(file))
-                scan['file'] = scan.get('path', file)
-                data = load_scan(dict(scan))
-                data = rename_standard_attrs(data.raw)
-                data = clean_attribute_names(data)
-                save_dataset(data, force=True)
+else:
+    if arpes.config.CONFIG['WORKSPACE'] is None:
+        arpes.config.CONFIG['WORKSPACE'] = args.workspace or os.getenv('WORKSPACE')
 
-            print()
+    if arpes.config.CONFIG['WORKSPACE'] is None:
+        raise ConfigurationError('You must provide a workspace.')
 
-if args.attach_columns:
-    assert(args.use_clean)
-    for path, _, files in walk(os.getcwd()):
-        # JSON files are deprecated
-        excel_files = [f for f in files if '.xlsx' in f or '.xlx' in f]
+    if args.load:
+        for path, _, files in walk(os.getcwd()):
+            excel_files = [f for f in files if is_excel(f)]
 
-        for x in excel_files:
-            if args.use_clean != ('cleaned' in x or 'cleaned' in path):
-                continue
+            for x in excel_files:
+                print(x)
+                if args.use_clean != (is_cleaned(x, path)):
+                    print('SKIPPING\n')
+                    continue
 
-            attach_extra_dataset_columns(os.path.join(path, x))
+                ds = clean_xlsx_dataset(os.path.join(path, x), with_inferred_cols=False, reload=not args.use_clean)
+
+                for file, scan in ds.iterrows():
+                    print("├{}".format(file))
+                    scan['file'] = scan.get('path', file)
+                    data = load_scan(dict(scan))
+                    data = rename_standard_attrs(data.raw)
+                    data = clean_attribute_names(data)
+                    save_dataset(data, force=True)
+
+                print()
+
+    if args.attach_columns:
+        assert(args.use_clean)
+        for path, _, files in walk(os.getcwd()):
+            # JSON files are deprecated
+            excel_files = [f for f in files if is_excel(f)]
+
+            for x in excel_files:
+                if args.use_clean != (is_cleaned(x, path)):
+                    continue
+
+                attach_extra_dataset_columns(os.path.join(path, x))
