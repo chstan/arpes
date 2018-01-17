@@ -233,6 +233,8 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
             spectrum_key = hdu.columns.names.index(spectrum_key) + 1
 
         spectrum_name = hdu.columns.names[spectrum_key - 1]
+        loaded_shape_from_header = False
+        desc = None
 
         try:
             offset = hdu.header['TRVAL%g' % spectrum_key]
@@ -243,8 +245,20 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
             try:
                 shape = hdu.header['TDIM%g' % spectrum_key]
                 shape = literal_eval(shape) if isinstance(shape, str) else shape
+                loaded_shape_from_header = True
             except:
                 shape = hdu.data.field(spectrum_key - 1).shape
+
+            try:
+                desc = hdu.header['TDESC%g' % spectrum_key]
+                if '(' in desc:
+                    # might be a malformed tuple, we can't use literal_eval unfortunately
+                    desc = desc.replace('(', '').replace(')', '').split(',')
+
+                if isinstance(desc, str):
+                    desc = (desc,)
+            except KeyError:
+                pass
 
             if not isinstance(delta, Iterable):
                 delta = (delta,)
@@ -265,7 +279,12 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
         if mode == 'ToF':
             rest_shape = shape[len(scan_shape):]
         else:
-            rest_shape = shape[1:]
+            if isinstance(desc, tuple):
+                rest_shape = shape[-len(desc):]
+            elif not loaded_shape_from_header:
+                rest_shape = shape[1:]
+            else:
+                rest_shape = shape
 
         assert(len(offset) == len(delta) and len(delta) == len(rest_shape))
 
@@ -274,29 +293,27 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
 
         # We need to do smarter inference here
         def infer_hemisphere_dimensions():
-            if len(rest_shape) == 2:
-                return ['pixel', 'phi']
-
-            # scan is either E or K integrated, or something I've never seen before
+            # scans can be two dimensional per frame, or a
+            # scan can be either E or K integrated, or something I've never seen before
             # try to get the description or the UNIT
-            try:
-                desc = hdu.header['TDESC%g' % spectrum_key]
+            if desc is not None:
                 RECOGNIZED_DESCRIPTIONS = {
-                    'eV': ['eV'],
+                    'eV': 'eV',
+                    'pixels': 'pixel'
                 }
-                if desc in RECOGNIZED_DESCRIPTIONS:
-                    return RECOGNIZED_DESCRIPTIONS[desc]
-            except KeyError:
-                pass
+
+                if all(d in RECOGNIZED_DESCRIPTIONS for d in desc):
+                    return [RECOGNIZED_DESCRIPTIONS[d] for d in desc]
 
             try:
+                # TODO read above like desc
                 unit = hdu.header['TUNIT{}'.format(spectrum_key)]
                 RECOGNIZED_UNITS = {
                     # it's probably 'arb' which doesn't tell us anything...
                     # because all spectra have arbitrary absolute intensity
                 }
-                if unit in RECOGNIZED_UNITS:
-                    return RECOGNIZED_UNITS[unit]
+                if all(u in RECOGNIZED_UNITS for u in unit):
+                    return [RECOGNIZED_UNITS[u] for u in unit]
             except KeyError:
                 pass
 
