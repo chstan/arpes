@@ -13,22 +13,29 @@ lmfit
 scikit-learn
 scikit-image
 xrft # You will need to get this one from the conda forge
-cvxgrp # Conda
-cvxpy  # Conda
-libgcc # Conda
+# cvxgrp # Conda
+# cvxpy  # Conda
+# libgcc # Conda
 
 
 # Plotting
-holoviews=1.8.4
+holoviews==1.8.4
 matplotlib
 seaborn
 bokeh
 
 # Rendering and exploration
 # paraview
-ipywidgets=7.0.1
+ipywidgets==7.0.1
 ipyvolume
 
 # Dependencies
 xlrd
 openpyxl
+
+# Testing
+attrs==17.4.0
+pluggy==0.6.0
+py==1.5.2
+pytest==3.3.2
+setuptools==38.4.0
