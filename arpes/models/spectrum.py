@@ -74,7 +74,9 @@ def load_scan(scan_desc):
     if load_fn is not None:
         return load_fn(scan_desc)
 
-    raise ValueError('Could not identify appropriate spectrometer')
+    raise ValueError('Could not identify appropriate spectrometer. '
+                     'Did you set the location? Find a description of the available '
+                     'options here or in constants.py')
 
 
 def load_MC(metadata: dict=None, filename: str=None):

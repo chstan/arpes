@@ -21,7 +21,6 @@ def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):
         attrs=arr.attrs
     )
 
-
 def normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False):
     """
     Normalizes the intensity so that all values along arr.sum(dims other than those in ``dim_or_dims``)
