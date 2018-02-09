@@ -42,6 +42,18 @@ class BokehInteractiveTool(ABC):
 
         self.init_bokeh_server()
 
+    def __getattr__(self, item):
+        """
+        Allow more convenient use of attributes from self.app_context. This is a bit strange.
+        :param item:
+        :return:
+        """
+        if item in self.app_context:
+            return self.app_context[item]
+
+        return getattr(self, item)
+
+
     @abstractmethod
     def tool_handler(self, doc):
         pass

@@ -18,40 +18,9 @@ from .interactive_utils import BokehInteractiveTool
 from arpes.fits import GStepBModel, ExponentialDecayCModel
 from arpes.io import save_dataset
 
-__all__ = ('ImageTool', 'holoview_spectrum', 'autoview',)
+__all__ = ('ImageTool',)
 
 # TODO Implement alignment tool
-
-def holoview_spectrum(arr: xr.DataArray):
-    assert (len(arr.dims) == 2)  # This only works for a 2D spectrum
-
-    x_axis, y_axis = tuple(arr.dims)
-
-    main_display = hv.Image(arr)
-    tap_stream = hv.streams.Tap(source=main_display,
-                                x=float(arr.coords[x_axis].mean()),
-                                y=float(arr.coords[y_axis].mean()))
-
-    def tap_crosshairs_x(x, y):
-        return main_display.sample(**dict([[x_axis, float(y)]]))
-
-    def tap_crosshairs_y(x, y):
-        return main_display.sample(**dict([[y_axis, float(x)]]))
-
-    def cross_hair_info(x, y):
-        return hv.HLine(float(y)) * hv.VLine(float(x))
-
-    return main_display * hv.DynamicMap(cross_hair_info, streams=[tap_stream]) \
-           << hv.DynamicMap(tap_crosshairs_y, streams=[tap_stream]) \
-           << hv.DynamicMap(tap_crosshairs_x, streams=[tap_stream])
-
-
-def autoview(arr: xr.DataArray):
-    if (len(arr.dims) == 2):
-        return holoview_spectrum(arr)
-
-    print("Unimplemented for spectra with dimensionality %d" % len(arr.dims))
-
 
 class ImageTool(BokehInteractiveTool):
     def __init__(self, app_main_size=600, app_marginal_size=300):
@@ -136,11 +105,16 @@ class ImageTool(BokehInteractiveTool):
             default_palette, low=np.min(prepped_main_image), high=np.max(prepped_main_image), nan_color='black')
 
         main_tools = ["wheel_zoom", "tap", "reset"]
+        main_title = 'Bokeh Tool: WARNING Unidentified'
+        try:
+            main_title = "Bokeh Tool: %s" % arr.S.label[:60]
+        except:
+            pass
         figures['main'] = figure(
             tools=main_tools, plot_width=self.app_main_size, plot_height=self.app_main_size, min_border=10,
             min_border_left=50,
             toolbar_location='left', x_axis_location='below', y_axis_location='right',
-            title="Bokeh Tool: %s" % arr.S.label[:60], x_range=self.app_context['data_range']['x'],
+            title=main_title, x_range=self.app_context['data_range']['x'],
             y_range=self.app_context['data_range']['y'])
         figures['main'].xaxis.axis_label = arr.dims[0]
         figures['main'].yaxis.axis_label = arr.dims[1]

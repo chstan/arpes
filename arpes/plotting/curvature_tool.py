@@ -29,10 +29,7 @@ class CurvatureTool(BokehInteractiveTool):
             'cached_data': {},
             'gamma_cached_data': {},
             'plots': {},
-            'data_range': {
-                'x': (np.min(x_coords.values), np.max(x_coords.values)),
-                'y': (np.min(y_coords.values), np.max(y_coords.values)),
-            },
+            'data_range': self.arr.T.range(),
             'figures': {},
             'widgets': {},
             'color_maps': {}})
@@ -100,7 +97,7 @@ class CurvatureTool(BokehInteractiveTool):
 
         smoothing_sliders_by_name = {}
         smoothing_sliders = []  # need one for each axis
-        axis_resolution = {k: abs(self.arr.coords[k][1] - self.arr.coords[k][0]) for k in self.arr.dims}
+        axis_resolution = self.arr.T.stride(generic_dim_names=False)
         for dim in self.arr.dims:
             coords = self.arr.coords[dim]
             resolution = float(axis_resolution[dim])
