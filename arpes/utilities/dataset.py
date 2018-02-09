@@ -80,7 +80,7 @@ def swap_reference_map(df: pd.DataFrame, old_reference, new_reference):
     return df
 
 
-def default_dataset(workspace=None, **kwargs):
+def default_dataset(workspace=None, match=None, **kwargs):
     if workspace is not None:
         arpes.config.CONFIG['WORKSPACE'] = workspace
 
@@ -97,6 +97,9 @@ def default_dataset(workspace=None, **kwargs):
         return ext in _DATASET_EXTENSIONS and internal_ext != '.cleaned'
 
     candidates = list(filter(is_dataset, os.listdir(dir)))
+    if match is not None:
+        candidates = list(filter(lambda p: match in p, candidates))
+
     assert(len(candidates) == 1)
 
     return clean_xlsx_dataset(os.path.join(dir, candidates[0]), **kwargs)
@@ -139,8 +142,10 @@ def attach_extra_dataset_columns(path, **kwargs):
         print(row.id)
         try:
             scan = load_dataset(row.id, ds)
-        except ValueError:
+        except ValueError as e:
+            warnings.warn(str(e))
             warnings.warn('Skipping {}! Unable to load scan.'.format(row.id))
+            continue
         for column, definition in add_columns.items():
             if definition.source == 'accessor':
                 ds.loc[index, (column,)] = getattr(scan.S, column)
