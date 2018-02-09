@@ -11,7 +11,7 @@ from arpes.exceptions import ConfigurationError
 from arpes.typing import DataType
 from arpes.utilities import wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datavar_attrs, WHITELIST_KEYS, FREEZE_PROPS
 
-__all__ = ['load_dataset', 'save_dataset', 'delete_dataset',
+__all__ = ['simple_load', 'load_dataset', 'save_dataset', 'delete_dataset',
            'dataset_exists', 'is_a_dataset', 'load_dataset_attrs']
 
 
@@ -143,7 +143,37 @@ def load_dataset_attrs(dataset_uuid):
         return unwrap_attrs_dict(attrs)
 
 
+def simple_load(fragment, df: pd.DataFrame = None):
+    if df is None:
+        from arpes.utilities import default_dataset  # break circular dependency
+        df = default_dataset()
+
+    # find a soft match
+    files = df.index
+    if isinstance(fragment, int):
+        numbers = [int(''.join(c for c in f if c.isdigit()).lstrip('0')) for f in files]
+        index = numbers.index(fragment)
+    else:
+        fragment = str(fragment)
+        matches = [i for i, f in enumerate(files) if fragment in f]
+        if len(matches) == 0:
+            raise ValueError('No match found for {}'.format(fragment))
+        if len(matches) > 1:
+            raise ValueError('Unique match not found for {}. Options are: {}'.format(
+                fragment, [files[i] for i in matches]))
+        index = matches[0]
+
+    return load_dataset(df.loc[df.index[index]], df)
+
 def load_dataset(dataset_uuid, df: pd.DataFrame = None):
+    """
+    You might want to prefer ``simple_load`` over calling this directly as it is more convenient.
+
+    :param dataset_uuid: UUID of dataset to load, typically you get this from ds.loc['...'].id. This actually also
+    accepts a dataframe slice so ds.loc['...'] also works.
+    :param df: dataframe to use to lookup the data in. If none is provided, the result of default_dataset is used.
+    :return:
+    """
     if df is None:
         from arpes.utilities import default_dataset  # break circular dependency
         df = default_dataset()
@@ -152,7 +182,10 @@ def load_dataset(dataset_uuid, df: pd.DataFrame = None):
     if not os.path.exists(filename):
         raise ValueError('%s is not cached on the FS')
 
-    arr = xr.open_dataarray(filename)
+    try:
+        arr = xr.open_dataset(filename)
+    except ValueError:
+        arr = xr.open_dataarray(filename)
     arr = unwrap_datavar_attrs(arr)
 
     # If the sample is associated with a cleave, attach the information from that cleave
