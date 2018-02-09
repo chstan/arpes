@@ -6,11 +6,26 @@ import arpes.models.band
 import arpes.utilities
 import arpes.utilities.math
 import itertools
+
+from arpes.fits import GStepBModel, broadcast_model
 from arpes.provenance import update_provenance
 from .filters import gaussian_filter_arr
 
-__all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis', 'condense', 'rebin',)
+__all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis', 'condense', 'rebin',
+           'fit_fermi_edge')
 
+
+@update_provenance('Fit Fermi Edge')
+def fit_fermi_edge(data, energy_range=None):
+    if energy_range is None:
+        energy_range = slice(-0.1, 0.1)
+
+    broadcast_directions = list(data.dims)
+    broadcast_directions.remove('eV')
+    assert(len(broadcast_directions) == 1) # for now we don't support more
+
+    edge_fit = broadcast_model(GStepBModel, data.sel(eV=energy_range), broadcast_axis=broadcast_directions[0])
+    return edge_fit
 
 @update_provenance('Normalized by the 1/Fermi Dirac Distribution at sample temp')
 def normalize_by_fermi_distribution(data, max_gain=None, rigid_shift=0, instrumental_broadening=None):
@@ -140,3 +155,4 @@ def rebin(data: xr.DataArray, shape: dict=None, reduction: typing.Union[int, dic
         data.dims,
         attrs=data.attrs
     )
+
