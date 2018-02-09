@@ -9,32 +9,17 @@ from arpes.utilities.conversion import remap_coords_to
 from arpes.preparation import normalize_dim
 
 import warnings
-from mpl_toolkits.mplot3d import Axes3D
 
 from arpes.provenance import save_plot_provenance
 from .utils import *
 
-__all__ = ['plot_dispersion', 'plot_dispersion_holoview', 'labeled_fermi_surface',
+__all__ = ['plot_dispersion', 'labeled_fermi_surface',
            'cut_dispersion_plot', 'fancy_dispersion', 'reference_scan_fermi_surface',
-           'hv_reference_scan']
+           'hv_reference_scan', 'scan_var_reference_plot']
+
 
 def band_path(band):
     return hv.Path([band.center.values, band.coords[band.dims[0]].values])
-
-@save_plot_provenance
-def plot_dispersion_holoview(spectrum: xr.DataArray, bands, out=None):
-    image = hv.Image(spectrum)
-    band = band_path(bands[1])
-
-    # TODO consider refactoring the save code into the decorator, this might not always
-    # make sense, but the plotting function can opt out by returning a string instead and
-    # doing the plotting anyway
-    if out is not None:
-        renderer = hv.renderer('matplotlib').instance(fig='svg', holomap='gif')
-        filename = path_for_plot(out)
-        renderer.save(band, filename)
-    else:
-        return band
 
 
 @save_plot_provenance
@@ -354,6 +339,29 @@ def fancy_dispersion(data, title=None, ax=None, out=None, include_symmetry_point
 
 
     ax.axhline(0, color='red', alpha=0.8, linestyle='--', linewidth=1)
+
+    if out is not None:
+        plt.savefig(path_for_plot(out), dpi=400)
+        return path_for_plot(out)
+
+    plt.show()
+
+
+@save_plot_provenance
+def scan_var_reference_plot(data, title=None, ax=None, norm=None, out=None, **kwargs):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 5))
+
+    if title is None:
+        title = data.S.label.replace('_', ' ')
+
+    plot = data.plot(norm=norm, ax=ax)
+    plot.colorbar.set_label(label_for_colorbar(data))
+
+    ax.set_xlabel(label_for_dim(data, ax.get_xlabel()))
+    ax.set_ylabel(label_for_dim(data, ax.get_ylabel()))
+
+    ax.set_title(title, font_size=14)
 
     if out is not None:
         plt.savefig(path_for_plot(out), dpi=400)

@@ -3,3 +3,4 @@ from .derivative import *
 from .fft import *
 from .filters import *
 from .general import *
+from .tarpes import *
