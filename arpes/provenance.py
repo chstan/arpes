@@ -61,11 +61,12 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
                 if len(all_parents) > 1:
                     provenance_fn = provenance_multiple_parents
 
-                provenance_fn(result, all_parents, {
-                    'what': what,
-                    'by': f.__name__,
-                    'time': datetime.datetime.now().isoformat()
-                }, keep_parent_ref)
+                if len(all_parents) > 0:
+                    provenance_fn(result, all_parents, {
+                        'what': what,
+                        'by': f.__name__,
+                        'time': datetime.datetime.now().isoformat()
+                    }, keep_parent_ref)
 
             return result
         return func_wrapper
