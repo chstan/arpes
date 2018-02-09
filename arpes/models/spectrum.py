@@ -142,8 +142,34 @@ def load_MC(metadata: dict=None, filename: str=None):
         attrs['id'] = metadata['id']
 
     built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs, mode='MC')
+    KEY_RENAMINGS = {
+        'Phi': 'sample-phi',
+        'Beta': 'polar',
+        'Azimuth': 'chi',
+        'Pump_energy_uJcm2': 'pump_fluence',
+        'T0_ps': 't0_nominal',
+        'W_func': 'workfunction',
+        'Slit': 'slit',
+    }
+    attrs = rename_keys(attrs, KEY_RENAMINGS)
+    metadata = rename_keys(metadata, KEY_RENAMINGS)
 
+    # don't have phi because we need to convert pixels first
     phi_to_rad_coords = {'polar', 'theta', 'sample-phi'}
+
+    # convert angular attributes to radians
+    for coord_name in phi_to_rad_coords:
+        if coord_name in attrs:
+            try:
+                attrs[coord_name] = float(attrs[coord_name]) * (numpy.pi / 180)
+            except (TypeError, ValueError):
+                pass
+        if coord_name in metadata:
+            try:
+                metadata[coord_name] = float(metadata[coord_name]) * (numpy.pi / 180)
+            except (TypeError, ValueError):
+                pass
+
     data_vars = {}
 
     PREPPED_COLUMN_NAMES = {
@@ -163,8 +189,49 @@ def load_MC(metadata: dict=None, filename: str=None):
         column_shape = real_spectrum_shape[column_name]
 
         column_display = PREPPED_COLUMN_NAMES.get(column_name, column_name)
+        # sometimes if a scan is terminated early it can happen that the sizes do not match the expected value
+        # as an example, if a beta map is supposed to have 401 slices, it might end up having only 260 if it were
+        # terminated early
+        # If we are confident in our parsing code above, we can handle this case and take a subset of the coords
+        # so that the data matches
+        try:
+            resized_data = hdu.data.columns[column_name].array.reshape(column_shape)
+        except ValueError:
+            # if we could not resize appropriately, we will try to reify the shapes together
+            rest_column_shape = column_shape[1:]
+            n_per_slice = int(numpy.prod(rest_column_shape))
+            total_shape = hdu.data.columns[column_name].array.shape
+            total_n = numpy.prod(total_shape)
+
+            n_slices = total_n // n_per_slice
+            # if this isn't true, we can't recover
+            data_for_resize = hdu.data.columns[column_name].array
+            if (total_n // n_per_slice != total_n / n_per_slice):
+                # the last slice was in the middle of writing when something hit the fan
+                # we need to infer how much of the data to read, and then repeat the above
+                # we need to cut the data
+
+                # This can happen when the labview crashes during data collection,
+                # we use column_shape[1] because of the row order that is used in the FITS file
+                data_for_resize = data_for_resize[0:(total_n // n_per_slice) * column_shape[1]]
+                warnings.warn('Column {} was in the middle of slice when DAQ stopped. Throwing out incomplete slice...'.format(column_name))
+
+            column_shape = list(column_shape)
+            column_shape[0] = n_slices
+
+            try:
+                resized_data = data_for_resize.reshape(column_shape)
+            except Exception:
+                # sometimes for whatever reason FITS errors and cannot read the data
+                continue
+
+            # we also need to adjust the coordinates
+            altered_dimension = dimension_for_column[0]
+            built_coords[altered_dimension] = built_coords[altered_dimension][:n_slices]
+
+
         data_vars[column_display] = xarray.DataArray(
-            hdu.data.columns[column_name].array.reshape(column_shape),
+            resized_data,
             coords={k: c for k, c in built_coords.items() if k in dimension_for_column},
             dims=dimension_for_column,
             attrs=attrs,
@@ -190,7 +257,6 @@ def load_MC(metadata: dict=None, filename: str=None):
     if 'spectrum' in data_vars:
         data_vars['spectrum'] = prep_spectrum(data_vars['spectrum'])
 
-
     return xarray.Dataset(
         data_vars,
         attrs={**metadata, 'name': primary_dataset_name},
@@ -205,6 +271,7 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
 
     TODO Write data loading tests to ensure we don't break MC compatibility
 
+    :param spectra:
     :param hdu:
     :param attrs:
     :param mode: Available modes are "ToF", "MC". This customizes the read process
@@ -341,6 +408,12 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
         coord_names = coord_names_for_spectrum[spectrum_name]
         if callable(coord_names):
             coord_names = coord_names()
+            if len(coord_names) > 1 and mode == 'MC':
+                # for whatever reason, the main chamber records data
+                # in nonstandard byte order
+                coord_names = coord_names[::-1]
+                rest_shape = list(rest_shape)[::-1]
+                coords = coords[::-1]
 
         coords_for_spectrum = dict(zip(coord_names, coords))
         extra_coords.update(coords_for_spectrum)
@@ -452,14 +525,15 @@ def load_SES(metadata: dict=None, filename: str=None):
 
     # Use dimension labels instead of
     dimension_labels = f['/' + primary_dataset_name].attrs['IGORWaveDimensionLabels'][0]
+    if any(x == '' for x in dimension_labels):
+        raise ValueError('Missing dimension labels')
     scaling = f['/' + primary_dataset_name].attrs['IGORWaveScaling'][-len(dimension_labels):]
-
     raw_data = f['/' + primary_dataset_name][:]
 
     scaling = [numpy.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
                for i, scale in enumerate(scaling)]
 
-    dataset_contents = dict()
+    dataset_contents = {}
     attrs = metadata.pop('note', {})
     attrs.update(wave_note)
 
@@ -483,14 +557,14 @@ def load_SES(metadata: dict=None, filename: str=None):
         if angle_attr in attrs:
             attrs[angle_attr] = float(attrs[angle_attr]) * numpy.pi / 180
 
-    dataset_contents['raw'] = xarray.DataArray(
+    dataset_contents['spectrum'] = xarray.DataArray(
         raw_data,
         coords=built_coords,
         dims=dimension_labels,
         attrs=attrs,
     )
 
-    provenance_from_file(dataset_contents['raw'], data_loc, {
+    provenance_from_file(dataset_contents['spectrum'], data_loc, {
         'what': 'Loaded SES dataset from HDF5.',
         'by': 'load_SES'
     })
