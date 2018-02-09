@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 from typing import Optional
+from arpes.typing import DataType
 
 import arpes.constants
 import arpes.materials
@@ -523,6 +524,23 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
             kwargs['out'] = out
         return plotting.plot_isosurface(self._obj, **kwargs)
 
+
+    def subtraction_reference_plot(self, pattern='{}.png', **kwargs):
+        out = kwargs.get('out')
+        if out is not None and isinstance(out, bool):
+            out = pattern.format('{}_subtraction_reference'.format(self.label))
+            kwargs['out'] = out
+
+        return plotting.tarpes.plot_subtraction_reference(self._obj, **kwargs)
+
+    def fermi_edge_reference_plot(self, pattern='{}.png', **kwargs):
+        out = kwargs.get('out')
+        if out is not None and isinstance(out, bool):
+            out = pattern.format('{}_fermi_edge_reference'.format(self.label))
+            kwargs['out'] = out
+
+        return plotting.fermi_edge.fermi_edge_reference(self._obj, **kwargs)
+
     def _referenced_scans_for_map_plot(self, use_id=True, pattern='{}.png', **kwargs):
         out = kwargs.get('out')
         label = self._obj.attrs['id'] if use_id else self.label
@@ -563,6 +581,36 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
             pdb.set_trace()
 
 
+NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
+
+@xr.register_dataarray_accessor('T')
+class GenericAccessorTools(object):
+    _obj = None
+
+    def range(self, generic_dim_names=True):
+        indexed_coords = [self._obj.coords[d] for d in self._obj.dims]
+        indexed_ranges = [(np.min(coord.values), np.max(coord.values)) for coord in indexed_coords]
+
+        dim_names = self._obj.dims
+        if generic_dim_names:
+            dim_names = NORMALIZED_DIM_NAMES[:len(dim_names)]
+
+        return dict(zip(dim_names, indexed_ranges))
+
+    def stride(self, generic_dim_names=True):
+        indexed_coords = [self._obj.coords[d] for d in self._obj.dims]
+        indexed_strides = [coord.values[1] - coord.values[0] for coord in indexed_coords]
+
+        dim_names = self._obj.dims
+        if generic_dim_names:
+            dim_names = NORMALIZED_DIM_NAMES[:len(dim_names)]
+
+        return dict(zip(dim_names, indexed_strides))
+
+    def __init__(self, xarray_obj: DataType):
+        self._obj = xarray_obj
+
+
 @xr.register_dataset_accessor('S')
 class ARPESDatasetAccessor(ARPESAccessorBase):
     def polarization_plot(self, **kwargs):
@@ -574,11 +622,116 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
 
     @property
     def spectrum(self) -> Optional[xr.DataArray]:
+        spectrum = None
         if 'spectrum' in self._obj.data_vars:
-            return self._obj.spectrum
+            spectrum = self._obj.spectrum
+        elif 'raw' in self._obj.data_vars:
+            spectrum = self._obj.raw
 
-        if 'raw' in self._obj.data_vars:
-            return self._obj.raw
+        if spectrum is not None and 'df' not in spectrum.attrs:
+            spectrum.attrs['df'] = self._obj.attrs.get('df', None)
+
+        return spectrum
+
+    @property
+    def spectrum_type(self):
+        try:
+            # this isn't the smartest thing in the world,
+            # but it should allow some old code to keep working on datasets transparently
+            return self.spectrum.S.spectrum_type
+        except Exception:
+            return 'dataset'
+
+    @property
+    def degrees_of_freedom(self):
+        return set(self.spectrum.dims)
+
+    @property
+    def spectrum_degrees_of_freedom(self):
+        return self.degrees_of_freedom.intersection({
+            'eV', 'phi', 'pixel', 'kx', 'kp'
+        })
+
+    @property
+    def scan_degrees_of_freedom(self):
+        return self.degrees_of_freedom.difference(self.spectrum_degrees_of_freedom)
+
+    def reference_plot(self, **kwargs):
+        """
+        A bit of a misnomer because this actually makes many plots. For full datasets, the relevant components
+        are:
+
+        1. Temperature as function of scan DOF
+        2. Photocurrent as a function of scan DOF
+        3. Photocurrent normalized + unnormalized figures, in particular
+           i. The reference plots for the photocurrent normalized spectrum
+           ii. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF integrated over E, phi
+           iii. For delay scans:
+             1. Fermi location as a function of scan DoF, integrated over phi
+             2. Subtraction scans
+
+
+        :param kwargs:
+        :return:
+        """
+        scan_dofs_integrated = self._obj.sum(*list(self.scan_degrees_of_freedom))
+        original_out = kwargs.get('out')
+
+        # make figures for temperature, photocurrent, delay
+        make_figures_for = ['T', 'IG_nA', 'current', 'photocurrent']
+        name_normalization = {
+            'T': 'T',
+            'IG_nA': 'photocurrent',
+            'current': 'photocurrent'
+        }
+
+        for figure_item in make_figures_for:
+            if figure_item not in self._obj.data_vars:
+                continue
+
+            name = name_normalization.get(figure_item, figure_item)
+            data_var = self._obj[figure_item]
+            out = '{}_{}_spec_integrated_reference.png'.format(self.label, name)
+            return plotting.scan_var_reference_plot(
+                data_var, title='Reference {}'.format(name), out=out)
+
+
+        # may also want to make reference figures summing over cycle, or summing over beta
+
+
+        # make photocurrent normalized figures
+        try:
+            normalized = self._obj / self._obj.IG_nA
+            normalized.S.make_spectrum_reference_plots(prefix='norm_PC_', out=True)
+        except:
+            pass
+
+        self.make_spectrum_reference_plots(out=True)
+
+    def make_spectrum_reference_plots(self, prefix='', **kwargs):
+        """
+        Photocurrent normalized + unnormalized figures, in particular:
+
+        i. The reference plots for the photocurrent normalized spectrum
+        ii. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF integrated over E, phi
+        iii. For delay scans:
+          1. Fermi location as a function of scan DoF, integrated over phi
+          2. Subtraction scans
+        """
+        self.spectrum.S.reference_plot(pattern=prefix + '{}.png', **kwargs)
+        if 'cycle' in self._obj.coords:
+            integrated_over_scan = self._obj.sum(*list(self.spectrum_degrees_of_freedom))
+            integrated_over_scan.S.spectrum.S.reference_plot(pattern=prefix + 'sum_spec_DoF_{}.png', **kwargs)
+
+        if 'delay' in self._obj.coords:
+            # TODO fermi location scans
+            dims = self.spectrum_degrees_of_freedom
+            dims.remove('eV')
+            angle_integrated = self._obj.sum(*list(dims))
+
+            # subtraction scan
+            self.spectrum.S.subtraction_reference_plots(pattern=prefix + '{}.png', **kwargs)
+            angle_integrated.S.fermi_edge_reference_plots(pattern=prefix + '{}.png', **kwargs)
 
     def __init__(self, xarray_obj):
         super(ARPESDatasetAccessor, self).__init__(xarray_obj)
