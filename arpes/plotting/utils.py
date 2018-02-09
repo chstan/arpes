@@ -11,8 +11,11 @@ import matplotlib.pyplot as plt
 from arpes.config import CONFIG, FIGURE_PATH
 
 __all__ = ['path_for_plot', 'path_for_holoviews', 'name_for_dim', 'label_for_colorbar', 'label_for_dim',
-           'label_for_symmetry_point']
+           'label_for_symmetry_point', 'savefig']
 
+def savefig(desired_path, **kwargs):
+    full_path = path_for_plot(desired_path)
+    plt.savefig(full_path, **kwargs)
 
 def path_for_plot(desired_path):
     workspace = CONFIG['WORKSPACE']
