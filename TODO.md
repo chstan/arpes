@@ -17,6 +17,7 @@
 
 ## Needed for analysis
 
+0. Region selection
 1. Bootstrap resampling for statistical errors
 2. Implement a Python VSNR package according to [VSNR paper](https://www.math.univ-toulouse.fr/~weiss/Publis/IEEEIP_VSNR_Final.pdf)
 3. Experiment with different denoising methods from scikit-image see 
@@ -52,4 +53,5 @@ in reference maps in order to get offsets for subsequent scans
 1. Get something set up to test full analysis process against a test dataset
 2. Performance tests/benchmarks
 3. Tests should enforce API guarantees if more people start using this
-4. Finish writing test fixtures for setting up configuration
+4. Finish writing test fixture
+s for setting up configuration
