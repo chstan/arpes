@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# coding: utf-8
+
 import argparse
 import copy
 import os
@@ -92,8 +94,9 @@ else:
                     print("├{}".format(file))
                     scan['file'] = scan.get('path', file)
                     try:
+                        import arpes.xarray_extensions
                         data = load_scan(dict(scan))
-                        data = rename_datavar_standard_attrs(data.raw)
+                        data = rename_datavar_standard_attrs(data.S.spectrum)
                         data = clean_datavar_attribute_names(data)
                         save_dataset(data, force=True)
                     except Exception as e:
