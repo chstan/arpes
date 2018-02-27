@@ -1,6 +1,8 @@
 import collections
 import itertools
 
+import xarray as xr
+
 import numpy as np
 import scipy.ndimage.interpolation
 
@@ -45,6 +47,9 @@ def propagate_statistical_error(f):
 def shift_by(arr, value, axis=0, by_axis=0, **kwargs):
     assert(axis != by_axis)
     arr_copy = arr.copy()
+
+    if isinstance(value, xr.DataArray):
+        value = value.values
 
     if not isinstance(value, collections.Iterable):
         value = list(itertools.repeat(value, times=arr.shape[by_axis]))

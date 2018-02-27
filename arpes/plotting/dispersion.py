@@ -266,7 +266,10 @@ def labeled_fermi_surface(data, title=None, ax=None, hold=False,
     if title is None:
         title = '{} Fermi Surface'.format(data.S.label.replace('_', ' '))
 
-    mesh = data.plot(norm=kwargs.get('norm'), ax=ax)
+    if 'eV' in data.dims:
+        data = data.S.fermi_surface
+
+    mesh = data.plot(ax=ax)
     mesh.colorbar.set_label(label_for_colorbar(data))
 
     if data.S.is_differentiated:

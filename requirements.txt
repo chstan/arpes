@@ -39,3 +39,5 @@ pluggy==0.6.0
 py==1.5.2
 pytest==3.3.2
 setuptools==38.4.0
+
+tqdm

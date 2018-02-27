@@ -31,12 +31,14 @@ def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
     # get any of the elements
     reference_fit = data.values.ravel()[0]
     model = reference_fit.model
-    SKIP_NAMES = {'const_bkg', 'lin_bkg'}
+    SKIP_NAMES = {'const_bkg', 'lin_bkg', 'erf_amp'}
     param_names = [p for p in model.param_names if p not in SKIP_NAMES]
     n_params = len(param_names)
     MAX_COLS = 3
     n_rows = int(math.ceil(n_params / MAX_COLS))
     n_cols = n_params if n_params < MAX_COLS else MAX_COLS
+
+    is_bootstrapped = 'bootstrap' in data.dims
 
     if axes is None:
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 6))
@@ -52,15 +54,19 @@ def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
 
         # extract the data for this param name
         # attributes are on .value and .stderr
-        centers = apply_dataarray(data, np.vectorize(
-            lambda x: x.params[param].value, otypes=[np.float]))
+        centers = data.T.map(lambda x: x.params[param].value)
+        if is_bootstrapped:
+            centers = centers.mean('bootstrap')
+
         centers.plot(ax=ax)
 
         ax.set_title('Fit var: {}'.format(param))
 
         if len(centers.dims) == 1:
-            widths = apply_dataarray(data, np.vectorize(
-                lambda x: x.params[param].stderr, otypes=[np.float]))
+            if is_bootstrapped:
+                widths = data.T.map(lambda x: x.params[param].value).std('bootstrap')
+            else:
+                widths = data.T.map(lambda x: x.params[param].stderr)
             # then we can plot widths as well, otherwise we need more
             # figures, blergh
             x_coords = centers.coords[centers.dims[0]]
@@ -71,10 +77,8 @@ def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
     if title is None:
         title = data.S.label.replace('_', ' ')
 
-    #axes.set_xlabel(label_for_dim(data, axes[0][0].get_xlabel()))
-
     # if multidimensional, we can share y axis as well
-
+    #axes.set_xlabel(label_for_dim(data, axes[0][0].get_xlabel()))
     #ax.set_title(title, font_size=14)
 
     if out is not None:

@@ -160,9 +160,10 @@ def fit_bands(arr: xr.DataArray, band_description, background=None, direction='m
     directions = list(tuple(arr.dims))
 
     broadcast_direction = 'eV'
+
     if direction == 'mdc':
         if preferred_k_direction is None:
-            possible_directions = set(directions).intersection({'kp', 'kx', 'ky'})
+            possible_directions = set(directions).intersection({'kp', 'kx', 'ky', 'phi'})
             broadcast_direction = list(possible_directions)[0]
 
     directions.remove(broadcast_direction)

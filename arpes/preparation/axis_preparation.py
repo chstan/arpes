@@ -3,11 +3,16 @@ import functools
 
 import numpy as np
 import xarray as xr
+
+from arpes.typing import DataType
+
+from arpes.utilities.normalize import normalize_to_spectrum
 from scipy.ndimage import geometric_transform
 
 from arpes.provenance import provenance
 
-__all__ = ('flip_axis', 'normalize_dim', 'dim_normalizer', 'transform_dataarray_axis',)
+__all__ = ('flip_axis', 'normalize_dim', 'dim_normalizer', 'transform_dataarray_axis',
+           'normalize_total')
 
 
 def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):
@@ -54,6 +59,12 @@ def normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False):
     })
 
     return to_return
+
+
+def normalize_total(data: DataType):
+    data = normalize_to_spectrum(data)
+
+    return data / (data.sum(data.dims) / 1000000)
 
 
 def dim_normalizer(dim_name):

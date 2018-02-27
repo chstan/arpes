@@ -10,3 +10,5 @@ from .visualize_3d import *
 
 from .comparison_tool import *
 from .curvature_tool import *
+
+from .utils import savefig

@@ -61,10 +61,13 @@ if args.file:
     for file, scan in ds.iterrows():
         print("├{}".format(file))
         scan['file'] = scan.get('path', file)
-        data = load_scan(dict(scan))
-        data = rename_datavar_standard_attrs(data)
-        data = clean_datavar_attribute_names(data)
-        save_dataset(data, force=True)
+        try:
+            data = load_scan(dict(scan))
+            data = rename_datavar_standard_attrs(data)
+            data = clean_datavar_attribute_names(data)
+            save_dataset(data, force=True)
+        except Exception as e:
+            print('Encountered Error {}. Skipping...'.format(e))
 
 else:
     if arpes.config.CONFIG['WORKSPACE'] is None:
@@ -88,10 +91,13 @@ else:
                 for file, scan in ds.iterrows():
                     print("├{}".format(file))
                     scan['file'] = scan.get('path', file)
-                    data = load_scan(dict(scan))
-                    data = rename_datavar_standard_attrs(data.raw)
-                    data = clean_datavar_attribute_names(data)
-                    save_dataset(data, force=True)
+                    try:
+                        data = load_scan(dict(scan))
+                        data = rename_datavar_standard_attrs(data.raw)
+                        data = clean_datavar_attribute_names(data)
+                        save_dataset(data, force=True)
+                    except Exception as e:
+                        print('Encountered Error {}. Skipping...'.format(e))
 
                 print()
 

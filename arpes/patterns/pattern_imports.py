@@ -1,6 +1,3 @@
-%load_ext autoreload
-%autoreload 2
-
 import xarray as xr
 import xrft
 import scipy
@@ -38,3 +35,17 @@ import matplotlib
 matplotlib.rcParams['text.usetex'] = True
 matplotlib.rcParams['text.latex.unicode'] = True
 matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{xcolor}"]
+
+__all__ = [
+    'xr', 'np', 'xrft', 'scipy', 'pd', 'plt', 'colors', 'ndi', 'os',
+    'bokeh', 'hv', 'holoviews', 'compose', 'load_scan', 'clean_xlsx_dataset', 'default_dataset',
+    'swap_reference_map', 'output_notebook', 'CONFIG', 'SOURCE_PATH', 'FIGURE_PATH',
+    'arpes',
+] \
+          + list(arpes.preparation.__all__) \
+          + list(arpes.bootstrap.__all__) \
+          + list(arpes.plotting.__all__) \
+          + list(arpes.analysis.__all__) \
+          + list(arpes.io.__all__) \
+          + list(arpes.pipelines.__all__) \
+          + list(arpes.utilities.conversion.__all__)

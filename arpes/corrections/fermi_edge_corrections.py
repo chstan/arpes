@@ -1,12 +1,13 @@
+import numpy as np
 import lmfit as lf
 import matplotlib.pyplot as plt
-import numpy as np
 import xarray as xr
 
 from arpes.fits import QuadraticModel, GStepBModel, broadcast_model
 from arpes.provenance import provenance
-from arpes.utilities import apply_dataarray
+from arpes.typing import DataType
 from arpes.utilities.math import shift_by
+from arpes.utilities import normalize_to_spectrum
 
 
 def _exclude_from_set(excluded):
@@ -22,11 +23,93 @@ exclude_hv_axes = _exclude_from_set({'hv', 'eV'})
 
 __all__ = ['install_fermi_edge_reference', 'build_quadratic_fermi_edge_correction',
            'build_photon_energy_fermi_edge_correction', 'apply_photon_energy_fermi_edge_correction',
-           'apply_quadratic_fermi_edge_correction']
+           'apply_quadratic_fermi_edge_correction', 'apply_copper_fermi_edge_correction',
+           'apply_direct_copper_fermi_edge_correction', 'build_direct_fermi_edge_correction',
+           'apply_direct_fermi_edge_correction']
 
 def install_fermi_edge_reference(arr: xr.DataArray):
     # TODO add method to install and reference corrections by looking at dataset metadata
     return build_quadratic_fermi_edge_correction(arr, plot=True)
+
+def apply_direct_copper_fermi_edge_correction(arr: DataType, copper_ref: DataType, *args, **kwargs):
+    """
+    Applies a *direct* fermi edge correction.
+    :param arr:
+    :param copper_ref:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    arr = normalize_to_spectrum(arr)
+    copper_ref = normalize_to_spectrum(copper_ref)
+    direct_corr = build_direct_fermi_edge_correction(copper_ref, *args, **kwargs)
+    shift = np.interp(arr.coords['phi'].values, direct_corr.coords['phi'].values,
+                      direct_corr.values)
+    return apply_direct_fermi_edge_correction(arr, shift)
+
+def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args, **kwargs):
+    if correction is None:
+        correction = build_direct_fermi_edge_correction(arr, *args, **kwargs)
+
+    shift_amount = -correction / arr.T.stride(generic_dim_names=False)['eV']
+    energy_axis = list(arr.dims).index('eV')
+    phi_axis = list(arr.dims).index('phi')
+
+    corrected_arr = xr.DataArray(
+        shift_by(arr.values, shift_amount, axis=energy_axis, by_axis=phi_axis, order=1),
+        arr.coords,
+        arr.dims,
+        attrs=arr.attrs
+    )
+
+    if 'id'in corrected_arr.attrs:
+        del corrected_arr.attrs['id']
+
+    provenance(corrected_arr, arr, {
+        'what': 'Shifted Fermi edge to align at 0 along hv axis',
+        'by': 'apply_photon_energy_fermi_edge_correction',
+        'correction': list(correction.values if isinstance(correction, xr.DataArray) else correction),
+    })
+
+    return corrected_arr
+
+def build_direct_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, energy_range=None, plot=False):
+    """
+    Builds a direct fermi edge correction stencil.
+
+    This means that fits are performed at each value of the 'phi' coordinate
+    to get a list of fits. Bad fits are thrown out to form a stencil.
+
+    This can be used to shift coordinates by the nearest value in the stencil.
+
+    :param copper_ref:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    if energy_range is None:
+        energy_range = slice(-0.1, 0.1)
+    edge_fit = broadcast_model(GStepBModel, arr.sum(exclude_hemisphere_axes(arr.dims)).sel(eV=energy_range), 'phi')
+
+    def sieve(c, v):
+        return v.item().params['center'].stderr < 0.001
+
+    corrections = edge_fit.T.filter_coord('phi', sieve).T.map(lambda x: x.params['center'].value)
+
+    if plot:
+        corrections.plot()
+
+    return corrections
+
+
+def apply_copper_fermi_edge_correction(arr: DataType, copper_ref: DataType, *args, **kwargs):
+    # this maybe isn't best because we don't correct anything other than the spectrum,
+    # but that's the only thing with an energy axis in ARPES datasets so whatever
+    arr = normalize_to_spectrum(arr)
+    copper_ref = normalize_to_spectrum(copper_ref)
+    quadratic_corr = build_quadratic_fermi_edge_correction(copper_ref, *args, **kwargs)
+    return apply_quadratic_fermi_edge_correction(arr, quadratic_corr)
 
 
 def build_quadratic_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, plot=False) -> lf.model.ModelResult:
@@ -36,11 +119,10 @@ def build_quadratic_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, pl
     edge_fit = broadcast_model(GStepBModel, arr.sum(exclude_hemisphere_axes(arr.dims)).sel(eV=slice(-0.1, 0.1)), 'phi')
 
     quadratic_corr = QuadraticModel().guess_fit(
-        apply_dataarray(edge_fit, np.vectorize(lambda x: x.params['center'].value, otypes=[np.float])),
-        weights=(apply_dataarray(edge_fit, np.vectorize(lambda x: x.params['center'].stderr, otypes=[np.float])).values
-                 < fit_limit) * 1)
+        edge_fit.T.map(lambda x: x.params['center'].value),
+        weights=(edge_fit.T.map(lambda x: x.params['center'].stderr).values < fit_limit) * 1)
     if plot:
-        apply_dataarray(edge_fit, np.vectorize(lambda x: x.params['center'].value)).plot()
+        edge_fit.T.map(lambda x: x.params['center'].value).plot()
         plt.plot(arr.coords['phi'], quadratic_corr.best_fit)
 
     return quadratic_corr
@@ -57,13 +139,13 @@ def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None
     if correction is None:
         correction = build_photon_energy_fermi_edge_correction(arr, **kwargs)
 
-    correction_values = apply_dataarray(correction, np.vectorize(lambda x: x.params['center'].value, otypes=[np.float]))
+    correction_values = correction.T.map(lambda x: x.params['center'].value)
     if 'corrections' not in arr.attrs:
         arr.attrs['corrections'] = {}
 
     arr.attrs['corrections']['hv_correction'] = list(correction_values.values)
 
-    shift_amount = -correction_values / (arr.coords['eV'].values[1] - arr.coords['eV'].values[0])
+    shift_amount = -correction_values / arr.T.stride(generic_dim_names=False)['eV']
     energy_axis = arr.dims.index('eV')
     hv_axis = arr.dims.index('hv')
 
@@ -74,7 +156,9 @@ def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None
         attrs=arr.attrs
     )
 
-    del corrected_arr.attrs['id']
+    if 'id' in corrected_arr.attrs:
+        del corrected_arr.attrs['id']
+
     provenance(corrected_arr, arr, {
         'what': 'Shifted Fermi edge to align at 0 along hv axis',
         'by': 'apply_photon_energy_fermi_edge_correction',
@@ -84,6 +168,7 @@ def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None
     return corrected_arr
 
 def apply_quadratic_fermi_edge_correction(arr: xr.DataArray, correction: lf.model.ModelResult=None):
+    assert(isinstance(arr, xr.DataArray))
     if correction is None:
         correction = build_quadratic_fermi_edge_correction(arr)
 
@@ -93,10 +178,10 @@ def apply_quadratic_fermi_edge_correction(arr: xr.DataArray, correction: lf.mode
     arr.attrs['corrections']['FE_Corr'] = correction.best_values
 
     delta_E = arr.coords['eV'].values[1] - arr.coords['eV'].values[0]
-    energy_axis = arr.dims.index('eV')
-    phi_axis = arr.dims.index('phi')
+    dims = list(arr.dims)
+    energy_axis = dims.index('eV')
+    phi_axis = dims.index('phi')
     shift_amount = -correction.best_fit / delta_E
-
     corrected_arr = xr.DataArray(
         shift_by(arr.values, shift_amount, axis=energy_axis, by_axis=phi_axis, order=1),
         arr.coords,
@@ -104,7 +189,9 @@ def apply_quadratic_fermi_edge_correction(arr: xr.DataArray, correction: lf.mode
         attrs=arr.attrs
     )
 
-    del corrected_arr.attrs['id']
+    if 'id' in corrected_arr.attrs:
+        del corrected_arr.attrs['id']
+
     provenance(corrected_arr, arr, {
         'what': 'Shifted Fermi edge to align at 0',
         'by': 'apply_quadratic_fermi_edge_correction',

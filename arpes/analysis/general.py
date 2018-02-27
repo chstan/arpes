@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 import typing
+from arpes.typing import DataType
 from collections import defaultdict
 import arpes.models.band
 import arpes.utilities
@@ -13,7 +14,6 @@ from .filters import gaussian_filter_arr
 
 __all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis', 'condense', 'rebin',
            'fit_fermi_edge')
-
 
 @update_provenance('Fit Fermi Edge')
 def fit_fermi_edge(data, energy_range=None):
@@ -97,7 +97,7 @@ def condense(data: xr.DataArray):
 
 
 @update_provenance('Rebinned array')
-def rebin(data: xr.DataArray, shape: dict=None, reduction: typing.Union[int, dict]=None, interpolate=False):
+def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=None, interpolate=False):
     """
     Rebins the data onto a different (smaller) shape. By default the behavior is to
     split the data into chunks that are integrated over. An interpolation option is also
@@ -114,6 +114,8 @@ def rebin(data: xr.DataArray, shape: dict=None, reduction: typing.Union[int, dic
     :param reduction: Factor to reduce each dimension by
     :return:
     """
+
+    data = arpes.utilities.normalize_to_spectrum(data)
 
     if interpolate:
         raise NotImplementedError('The interpolation option has not been implemented')

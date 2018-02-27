@@ -19,6 +19,7 @@ from arpes import constants
 from .dataset import *
 from .funcutils import *
 from .normalize import *
+from .region import *
 
 
 def enumerate_dataarray(arr: xr.DataArray):

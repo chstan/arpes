@@ -100,6 +100,10 @@ def default_dataset(workspace=None, match=None, **kwargs):
     if match is not None:
         candidates = list(filter(lambda p: match in p, candidates))
 
+    if (len(candidates)) > 1:
+        print('Available candidates are:')
+        print(candidates)
+
     assert(len(candidates) == 1)
 
     return clean_xlsx_dataset(os.path.join(dir, candidates[0]), **kwargs)

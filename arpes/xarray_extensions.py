@@ -1,12 +1,17 @@
 import collections
+import itertools
 import copy
 import warnings
 
 import numpy as np
 import xarray as xr
 
-from typing import Optional
+from arpes.analysis import rebin
+from typing import Optional, Union
 from arpes.typing import DataType
+
+from scipy import ndimage as ndi
+from skimage import feature
 
 import arpes.constants
 import arpes.materials
@@ -14,6 +19,8 @@ from arpes.io import load_dataset_attrs
 import arpes.plotting as plotting
 from arpes.plotting import ImageTool, CurvatureTool, BandTool
 from arpes.utilities.conversion import slice_along_path
+from arpes.utilities import apply_dataarray
+from arpes.utilities.region import DesignatedRegions, normalize_region
 
 __all__ = ['ARPESDataArrayAccessor', 'ARPESDatasetAccessor']
 
@@ -277,7 +284,7 @@ class ARPESAccessorBase(object):
         try:
             df = self._obj.attrs['df']
             return df[df.id == id].index[0]
-        except IndexError:
+        except (IndexError, KeyError, AttributeError):
             # data is probably not raw data
             return self.original_parent_scan_name
 
@@ -346,6 +353,235 @@ class ARPESAccessorBase(object):
             return self.material.get('inner_potential', 10)
 
         return 10
+
+    def find_spectrum_energy_edges(self, indices=False):
+        energy_marginal = self._obj.sum([d for d in self._obj.dims if d not in ['eV']])
+
+        embed_size = 20
+        embedded = np.ndarray(shape=[embed_size] + list(energy_marginal.values.shape))
+        embedded[:] = energy_marginal.values
+        embedded = ndi.gaussian_filter(embedded, embed_size / 3)
+
+        edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
+                              low_threshold=0.2) * 1
+        edges = np.where(edges[int(embed_size / 2)] == 1)[0]
+        if indices:
+            return edges
+
+        delta = self._obj.T.stride(generic_dim_names=False)
+        return edges * delta['eV'] + self._obj.coords['eV'].values[0]
+
+    def find_spectrum_angular_edges_full(self, indices=False):
+        # as a first pass, we need to find the bottom of the spectrum, we will use this
+        # to select the active region and then to rebin into course steps in energy from 0
+        # down to this region
+        # we will then find the appropriate edge for each slice, and do a fit to the edge locations
+        energy_edge = self.find_spectrum_energy_edges()
+        low_edge = np.min(energy_edge) + 0.05
+        high_edge = np.max(energy_edge) - 0.05
+
+        assert(high_edge - low_edge > 0.15)
+
+        angular_dim = 'pixel' if 'pixel' in self._obj.dims else 'phi'
+        energy_cut = self._obj.sel(eV=slice(low_edge, high_edge)).S.sum_other(['eV', angular_dim])
+
+        n_cuts = int(np.ceil(high_edge - low_edge / 0.05))
+        new_shape = {'eV': n_cuts}
+        new_shape[angular_dim] = len(energy_cut.coords[angular_dim].values)
+        rebinned = rebin(energy_cut, shape=new_shape)
+
+        embed_size = 20
+        embedded = np.ndarray(shape=[embed_size] + [len(rebinned.coords[angular_dim].values)])
+        low_edges = []
+        high_edges = []
+        for e_cut in rebinned.coords['eV'].values:
+            e_slice = rebinned.sel(eV=e_cut)
+            values = e_slice.values
+            values[values > np.mean(values)] = np.mean(values)
+            embedded[:] = values
+            embedded = ndi.gaussian_filter(embedded, embed_size / 1.5)
+
+            edges = feature.canny(embedded, sigma=4, use_quantiles=False,
+                                  low_threshold=0.7, high_threshold=1.5) * 1
+            edges = np.where(edges[int(embed_size / 2)] == 1)[0]
+            low_edges.append(np.min(edges))
+            high_edges.append(np.max(edges))
+
+        if indices:
+            return np.array(low_edges), np.array(high_edges), rebinned.coords['eV']
+
+        delta = self._obj.T.stride(generic_dim_names=False)
+
+        low_edges = np.array(low_edges) * delta[angular_dim] + rebinned.coords[angular_dim].values[0]
+        high_edges = np.array(high_edges) * delta[angular_dim] + rebinned.coords[angular_dim].values[0]
+
+        # DEBUG
+        # import matplotlib.pyplot as plt
+        # energy_cut.plot()
+        # plt.plot(rebinned.coords['eV'], low_edges)
+        # plt.plot(rebinned.coords['eV'], high_edges)
+
+        return low_edges, high_edges, rebinned.coords['eV']
+
+
+    def zero_spectrometer_edges(self, edge_type='hard', cut_margin=None):
+        """
+        At the moment we only provide hard edges. Soft edges would be smoothed
+        with a logistic function or similar.
+        :param edge_type:
+        :return:
+        """
+
+        low_edges, high_edges, rebinned_eV_coord = self.find_spectrum_angular_edges_full(indices=True)
+
+        angular_dim = 'pixel' if 'pixel' in self._obj.dims else 'phi'
+        if cut_margin is None:
+            if 'pixel' in self._obj.dims:
+                cut_margin = 50
+            else:
+                cut_margin = int(0.08 / self._obj.T.stride(generic_dim_names=False)[angular_dim])
+        else:
+            if isinstance(cut_margin, float):
+                assert(angular_dim == 'phi')
+                cut_margin = int(cut_margin / self._obj.T.stride(generic_dim_names=False)[angular_dim])
+
+        other_dims = list(self._obj.dims)
+        other_dims.remove('eV')
+        other_dims.remove(angular_dim)
+        copied = self._obj.copy(deep=True).transpose(*(['eV', angular_dim] + other_dims))
+
+        low_edges += cut_margin
+        high_edges -= cut_margin
+
+        for i, energy in enumerate(copied.coords['eV'].values):
+            index = np.searchsorted(rebinned_eV_coord, energy)
+            other = index + 1
+            if other >= len(rebinned_eV_coord):
+                other = len(rebinned_eV_coord) - 1
+                index = len(rebinned_eV_coord) - 2
+
+            low = int(np.interp(energy, rebinned_eV_coord, low_edges))
+            high = int(np.interp(energy, rebinned_eV_coord, high_edges))
+            copied.values[i, 0:low] = 0
+            copied.values[i, high:-1] = 0
+
+        return copied
+
+    def sum_other(self, dim_or_dims):
+        if isinstance(dim_or_dims, str):
+            dim_or_dims = [dim_or_dims]
+
+        return self._obj.sum([d for d in self._obj.dims if d not in dim_or_dims])
+
+    def find_spectrum_angular_edges(self, indices=False):
+        angular_dim = 'pixel' if 'pixel' in self._obj.dims else 'phi'
+        energy_edge = self.find_spectrum_energy_edges()
+        energy_slice = slice(np.max(energy_edge) - 0.1, np.max(energy_edge))
+        near_ef = self._obj.sel(eV=energy_slice).sum([d for d in self._obj.dims if d not in [angular_dim]])
+
+        embed_size = 20
+        embedded = np.ndarray(shape=[embed_size] + list(near_ef.values.shape))
+        embedded[:] = near_ef.values
+        embedded = ndi.gaussian_filter(embedded, embed_size / 3)
+
+        edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
+                              low_threshold=0.2) * 1
+        edges = np.where(edges[int(embed_size / 2)] == 1)[0]
+        if indices:
+            return edges
+
+        delta = self._obj.T.stride(generic_dim_names=False)
+        return edges * delta[angular_dim] + self._obj.coords[angular_dim].values[0]
+
+    def trimmed_selector(self):
+        raise NotImplementedError()
+
+    def wide_angle_selector(self, include_margin=True):
+        edges = self.find_spectrum_angular_edges()
+        low_edge, high_edge = np.min(edges), np.max(edges)
+
+        # go and build in a small margin
+        if include_margin:
+            if 'pixels' in self._obj.dims:
+                low_edge += 50
+                high_edge -= 50
+            else:
+                low_edge += 0.05
+                high_edge -= 0.05
+
+        return slice(low_edge, high_edge)
+
+    def narrow_angle_selector(self):
+        raise NotImplementedError()
+
+    def meso_effective_selector(self):
+        energy_edge = self.find_spectrum_energy_edges()
+        return slice(np.max(energy_edge) - 0.3, np.max(energy_edge) - 0.1)
+
+    def region_sel(self, *regions):
+        def process_region_selector(selector: Union[slice, DesignatedRegions], dimension_name: str):
+            if isinstance(selector, slice):
+                return selector
+
+            # need to read out the region
+            options = {
+                'eV': (DesignatedRegions.ABOVE_EF,
+                       DesignatedRegions.BELOW_EF,
+                       DesignatedRegions.EF_NARROW,
+                       DesignatedRegions.MESO_EF,
+
+                       DesignatedRegions.MESO_EFFECTIVE_EF,
+                       DesignatedRegions.ABOVE_EFFECTIVE_EF,
+                       DesignatedRegions.BELOW_EFFECTIVE_EF,
+                       DesignatedRegions.EFFECTIVE_EF_NARROW),
+
+                'phi': (DesignatedRegions.NARROW_ANGLE,
+                        DesignatedRegions.WIDE_ANGLE,
+                        DesignatedRegions.TRIM_EMPTY),
+            }
+
+            options_for_dim = options.get(dimension_name, [d for d in DesignatedRegions])
+            assert(selector in options_for_dim)
+
+            # now we need to resolve out the region
+            resolution_methods = {
+                DesignatedRegions.ABOVE_EF: slice(0, None),
+                DesignatedRegions.BELOW_EF: slice(None, 0),
+                DesignatedRegions.EF_NARROW: slice(-0.1, 0.1),  # TODO do this better
+                DesignatedRegions.MESO_EF: slice(-0.3, -0.1),
+                DesignatedRegions.MESO_EFFECTIVE_EF: self.meso_effective_selector,
+
+                # Implement me
+                #DesignatedRegions.TRIM_EMPTY: ,
+                DesignatedRegions.WIDE_ANGLE: self.wide_angle_selector,
+                #DesignatedRegions.NARROW_ANGLE: self.narrow_angle_selector,
+            }
+            resolution_method = resolution_methods[selector]
+            if isinstance(resolution_method, slice):
+                return resolution_method
+            elif callable(resolution_method):
+                return resolution_method()
+            else:
+                raise NotImplementedError('FIXME')
+
+        obj = self._obj
+
+        def unpack_dim(dim_name):
+            if dim_name == 'angular':
+                return 'pixel' if 'pixel' in obj.dims else 'phi'
+
+            return dim_name
+
+        for region in regions:
+            region = {unpack_dim(k): v for k, v in normalize_region(region).items()}
+
+            # remove missing dimensions from selection for permissiveness
+            # and to transparent composing of regions
+            region = {k: process_region_selector(v, k)
+                      for k, v in region.items() if k in obj.dims}
+            obj = obj.sel(**region)
+
+        return obj
 
     def fat_sel(self, widths=None, **kwargs):
         """
@@ -587,6 +823,34 @@ NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 class GenericAccessorTools(object):
     _obj = None
 
+    def filter_coord(self, coordinate_name, sieve):
+        """
+        Filters a dataset along a coordinate.
+
+        Sieve should be a function which accepts a coordinate value and the slice
+        of the data along that dimension.
+
+        :param coordinate_name:
+        :param sieve:
+        :return:
+        """
+        mask = np.array([i for i, c in enumerate(self._obj.coords[coordinate_name])
+                         if sieve(c, self._obj.isel(**dict([[coordinate_name, i]])))])
+        return self._obj.isel(**dict([[coordinate_name, mask]]))
+
+    def map(self, fn):
+        return apply_dataarray(self._obj, np.vectorize(fn))
+
+    def enumerate_iter_coords(self):
+        coords_list = [self._obj.coords[d].values for d in self._obj.dims]
+        for indices in itertools.product(*[range(len(c)) for c in coords_list]):
+            cut_coords = [cs[index] for cs, index in zip(coords_list, indices)]
+            yield indices, dict(zip(self._obj.dims, cut_coords))
+
+    def iter_coords(self):
+        for ts in itertools.product(*[self._obj.coords[d].values for d in self._obj.dims]):
+            yield dict(zip(self._obj.dims, ts))
+
     def range(self, generic_dim_names=True):
         indexed_coords = [self._obj.coords[d] for d in self._obj.dims]
         indexed_ranges = [(np.min(coord.values), np.max(coord.values)) for coord in indexed_coords]
@@ -613,6 +877,9 @@ class GenericAccessorTools(object):
 
 @xr.register_dataset_accessor('S')
 class ARPESDatasetAccessor(ARPESAccessorBase):
+    def __getattr__(self, item):
+        return getattr(self._obj.S.spectrum.S, item)
+
     def polarization_plot(self, **kwargs):
         out = kwargs.get('out')
         if out is not None and isinstance(out, bool):

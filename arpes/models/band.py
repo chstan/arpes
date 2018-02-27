@@ -4,7 +4,7 @@ import xarray as xr
 
 import arpes.fits
 
-__all__ = ['Band', 'VoigtBand', 'BackgroundBand']
+__all__ = ['Band', 'VoigtBand', 'BackgroundBand', 'FermiEdgeBand']
 
 
 class Band(object):

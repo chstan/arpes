@@ -34,9 +34,15 @@ Clone this repository somewhere convenient.
 
 ## Project Dependencies
 
-Inside the cloned repository, after activating your environment, run `pip install -r requirements.txt`. This will
+Inside the cloned repository, after activating your environment, install dependencies:
+
+1. Install `xrft` via `conda install -c conda-forge xrft`
+2. Run `pip install -r requirements.txt`. This will
 install all packages required by the code. If you ever want to add a new package you find elsewhere, just 
-`pip install {package_name}` and add it to `requirements.txt`. 
+`pip install {package_name}` and add it to `requirements.txt`.
+
+Alternatively, if you have a bash client run `install.sh` which will perform these two steps for you. 
+Verify there are no errors on this step.  
 
 ## `local_config.py`
 
@@ -54,7 +60,7 @@ DATASET_CACHE_PATH = '/Users/chstansbury/Research/lanzara/data/cache/'
 ## Environment
 
 You need to make sure to export a variable ``ARPES_ROOT`` in order to run scripts. If you are on a UNIX-like system
-you can add the following to your ``.bashrc`` or equivalent:
+you can add the following to your ``.bashrc``, ``.bash_profile`` or equivalent:
 
 ```bash
 export ARPES_ROOT="/path/to/wherever/you/installed/this/project/"
@@ -62,6 +68,14 @@ export ARPES_ROOT="/path/to/wherever/you/installed/this/project/"
 
 The value of ``ARPES_ROOT`` should be defined so that ``$ARPES_ROOT/README.md`` points to the file that you 
 are currently reading.
+
+To make using the code simpler, consider an alias to move to the data analysis location and to start the 
+virtual environment. On Conrad's computer this looks like:
+
+```bash
+alias arpes="cd $ARPES_ROOT && source activate python_arpes"
+alias arpesn="cd $ARPES_ROOT && source activate python_arpes && jupyter notebook"
+```
 
 ## Jupyter
 
@@ -79,6 +93,8 @@ version is:
 3. Add the files ``~/.ipython/{Your profile}/startup/00-add-arpes-path.py`` and 
 ``~/.ipython/{Your profile}/startup/01-common-imports.ipy`` according to the templates in `ipython_templates`
 4. Customize to your liking
+
+Note that you can customize the default profile if you wish instead.
 
 It is important that the filenames you put are such that ``-add-arpes-path`` is lexographically first, as this ensures
 that it is executed first. The ``.ipy`` extension on ``01-common-imports.ipy`` is also essential.
