@@ -3,6 +3,7 @@ astropy
 xarray
 h5py
 netCDF4
+colorcet
 
 # Analysis
 pandas

@@ -174,6 +174,7 @@ def load_MC(metadata: dict=None, filename: str=None):
 
     PREPPED_COLUMN_NAMES = {
         'Fixed_Spectra4': 'spectrum',
+        'Fixed_Spectra2': 'spectrum',
         'time': 'time',
         'Delay': 'delay-var', # these are named thus to avoid conflicts with the
         'Sample-X': 'cycle-var', # underlying coordinates
@@ -394,6 +395,7 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
             'Energy_Spectra': ['eV'],
             # MC hemisphere image, this can still be k-integrated, E-integrated, etc
             'Fixed_Spectra4': infer_hemisphere_dimensions,
+            'Fixed_Spectra2': infer_hemisphere_dimensions,
             'wave':  ['time'],
             'targetPlus': ['time'],
             'targetMinus': ['time'],
