@@ -40,4 +40,4 @@ matplotlib.rcParams['text.usetex'] = True
 matplotlib.rcParams['text.latex.unicode'] = True
 matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{xcolor}"]
 
-arpes.config.attempt_determine_workspace()
+arpes.config.attempt_determine_workspace(permissive=True)

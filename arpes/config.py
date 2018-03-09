@@ -6,8 +6,9 @@ between different projects.
 
 import json
 import os.path
-import warnings
+import logging
 
+from arpes.exceptions import ConfigurationError
 import arpes.constants as consts
 
 # ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES
@@ -62,16 +63,14 @@ CONFIG = {
 def workspace_name_is_valid(workspace_name):
     return workspace_name in os.listdir(DATA_PATH)
 
-def attempt_determine_workspace():
+def attempt_determine_workspace(value=None, permissive=False):
     if CONFIG['WORKSPACE'] is None:
         current_path = os.path.realpath(os.getcwd())
-        print(current_path)
-
         option = None
         skip_dirs = {'experiments', 'experiment', 'exp', 'projects', 'project'}
 
-        if os.path.realpath(DATASET_ROOT_PATH) in current_path:
-            path_fragment = current_path.split(os.path.realpath(DATASET_ROOT_PATH))[1]
+        if os.path.realpath(DATASET_PATH) in current_path:
+            path_fragment = current_path.split(os.path.realpath(DATASET_PATH))[1]
             option = [x for x in path_fragment.split('/') if len(x) and x not in skip_dirs][0]
             # we are in a dataset, we can use the folder name in order to configure
 
@@ -80,9 +79,16 @@ def attempt_determine_workspace():
             path_fragment = current_path.split(os.path.realpath(EXPERIMENT_PATH))[1]
             option = [x for x in path_fragment.split('/') if len(x) and x not in skip_dirs][0]
 
+        if value is not None:
+            option = value
+
         if workspace_name_is_valid(option):
-            warnings.warn('Automatically inferring that the workspace is {}'.format(option))
+            logging.warning('Automatically inferring that the workspace is "{}"'.format(option))
             CONFIG['WORKSPACE'] = option
+
+    if CONFIG['WORKSPACE'] is None and not permissive:
+        raise ConfigurationError('You must provide a workspace.')
+
 
 def load_json_configuration(filename):
     """
@@ -96,5 +102,5 @@ def load_json_configuration(filename):
 try:
     from local_config import *
 except:
-    warnings.warn("Could not find local configuration file. If you don't "
+    logging.warning("Could not find local configuration file. If you don't "
                   "have one, you can safely ignore this message.")
