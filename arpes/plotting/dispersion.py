@@ -292,6 +292,7 @@ def labeled_fermi_surface(data, title=None, ax=None, hold=False,
 
     if include_symmetry_points:
         for point_name, point_location in data.S.iter_symmetry_points:
+            warnings.warn('Symmetry point locations are not k-converted')
             coords = [point_location[d] for d in dim_order]
             ax.plot(*coords, marker='.', color=marker_color)
             ax.annotate(label_for_symmetry_point(point_name), coords, color=marker_color,
@@ -323,6 +324,7 @@ def fancy_dispersion(data, title=None, ax=None, out=None, include_symmetry_point
     if data.S.is_differentiated:
         mesh.set_cmap('Blues')
 
+    original_x_label = ax.get_xlabel()
     ax.set_xlabel(label_for_dim(data, ax.get_xlabel()))
     ax.set_ylabel(label_for_dim(data, ax.get_ylabel()))
     ax.set_title(title, fontsize=14)
@@ -334,7 +336,7 @@ def fancy_dispersion(data, title=None, ax=None, out=None, include_symmetry_point
             if not isinstance(point_locations, list):
                 point_locations = [point_locations]
             for single_location in point_locations:
-                coords = (single_location['phi'], ax.get_ylim()[1],)
+                coords = (single_location[original_x_label], ax.get_ylim()[1],)
                 ax.plot(*coords, marker=11, color=marker_color)
                 ax.annotate(label_for_symmetry_point(point_name), coords, color=marker_color,
                             xycoords='data', textcoords='offset points', xytext=(0, -10),
