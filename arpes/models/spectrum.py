@@ -72,7 +72,9 @@ def load_scan(scan_desc):
 
     load_fn = {
         'BL403': load_SES,
+        'BL4': load_SES,
         'ALG-MC': load_MC,
+        'MC': load_MC, # be a bit permissive
         'ALG-SToF': load_SToF,
     }.get(location)
 
@@ -181,7 +183,15 @@ def load_MC(metadata: dict=None, filename: str=None):
         # insert more as needed
     }
 
+    SKIP_COLUMN_NAMES = {
+        'Phi',
+        # insert more as needed
+    }
+
     for column_name in hdu.columns.names:
+        if column_name in SKIP_COLUMN_NAMES:
+            continue
+
         # the hemisphere axis is handled below
         built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
                         for k, c in built_coords.items()}
