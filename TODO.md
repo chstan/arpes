@@ -17,8 +17,6 @@
 
 ## Needed for analysis
 
-0. Region selection
-1. Bootstrap resampling for statistical errors
 2. Implement a Python VSNR package according to [VSNR paper](https://www.math.univ-toulouse.fr/~weiss/Publis/IEEEIP_VSNR_Final.pdf)
 3. Experiment with different denoising methods from scikit-image see 
 [sk-image Tomography](http://emmanuelle.github.io/segmentation-of-3-d-tomography-images-with-python-and-scikit-image.html)
@@ -31,12 +29,19 @@ that the pipeline is finished or cannot otherwise proceed. Or consider another m
 8. Total variation convex denoising to remove multiplicative noise from grid
 9. Figure out coordinate projecting so that we can use the symmetry points
 in reference maps in order to get offsets for subsequent scans 
+10. Fix hv reference plots
+11. Make sure conversion function also forward convert symmetry points, other scalar parameters
+12. Data rotations
+13. Waypoint path selections
+14. Automatically load data without user intervention
+15. Fix file loading for the file that Sam sent
+
 
 ## Needed for plotting
 
 1. Plot MDC with stats over kspace map
 2. Plot EDC with stats over kspace map
-3. Bootstrap resampling (see also analysis)
+4. Surf plots
 
 ## Stretch Goals/Tidyness
 
