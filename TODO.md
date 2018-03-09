@@ -33,8 +33,8 @@ in reference maps in order to get offsets for subsequent scans
 11. Make sure conversion function also forward convert symmetry points, other scalar parameters
 12. Data rotations
 13. Waypoint path selections
-14. Automatically load data without user intervention
-15. Fix file loading for the file that Sam sent
+16. Ability to cache named computations
+17. Add verification for install 
 
 
 ## Needed for plotting
@@ -42,16 +42,6 @@ in reference maps in order to get offsets for subsequent scans
 1. Plot MDC with stats over kspace map
 2. Plot EDC with stats over kspace map
 4. Surf plots
-
-## Stretch Goals/Tidyness
-
-1. Warnings for data discrepancy between dataset JSON and FITS headers
-
-## Documentation
-
-1. Add module level docstrings
-2. Add class level docstrings
-3. Look into a documentation generator like Sphinx
 
 ## Tests
 
