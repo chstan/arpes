@@ -19,6 +19,8 @@ SOURCE_PATH = ARPES_ROOT
 FIGURE_PATH = os.path.join(SOURCE_PATH, 'figures/')
 
 DATASET_PATH = os.path.join(SOURCE_PATH, 'datasets')
+# don't really need this one, but you can set it if you want
+EXPERIMENT_PATH = os.path.join(SOURCE_PATH, 'exp')
 
 DATASET_ROOT_PATH = ARPES_ROOT
 # these are all set by ``update_configuration``
@@ -56,6 +58,31 @@ CONFIG = {
     'LASER_ENERGY': 5.93,
     'WORKSPACE': None, # set me in your notebook before saving anything
 }
+
+def workspace_name_is_valid(workspace_name):
+    return workspace_name in os.listdir(DATA_PATH)
+
+def attempt_determine_workspace():
+    if CONFIG['WORKSPACE'] is None:
+        current_path = os.path.realpath(os.getcwd())
+        print(current_path)
+
+        option = None
+        skip_dirs = {'experiments', 'experiment', 'exp', 'projects', 'project'}
+
+        if os.path.realpath(DATASET_ROOT_PATH) in current_path:
+            path_fragment = current_path.split(os.path.realpath(DATASET_ROOT_PATH))[1]
+            option = [x for x in path_fragment.split('/') if len(x) and x not in skip_dirs][0]
+            # we are in a dataset, we can use the folder name in order to configure
+
+        elif os.path.realpath(EXPERIMENT_PATH) in current_path:
+            # this doesn't quite work because of symlinks
+            path_fragment = current_path.split(os.path.realpath(EXPERIMENT_PATH))[1]
+            option = [x for x in path_fragment.split('/') if len(x) and x not in skip_dirs][0]
+
+        if workspace_name_is_valid(option):
+            warnings.warn('Automatically inferring that the workspace is {}'.format(option))
+            CONFIG['WORKSPACE'] = option
 
 def load_json_configuration(filename):
     """

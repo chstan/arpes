@@ -16,6 +16,7 @@ import holoviews as hv
 import holoviews.util
 
 from arpes.config import CONFIG, SOURCE_PATH, FIGURE_PATH
+import arpes.config
 
 import arpes
 from arpes.analysis import *
@@ -38,3 +39,5 @@ import matplotlib
 matplotlib.rcParams['text.usetex'] = True
 matplotlib.rcParams['text.latex.unicode'] = True
 matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{xcolor}"]
+
+arpes.config.attempt_determine_workspace()
