@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from matplotlib.tri import Triangulation, TriAnalyzer, UniformTriRefiner
 import numpy as np
 from skimage import measure
@@ -6,9 +7,13 @@ from arpes.provenance import save_plot_provenance
 from arpes.analysis import filters
 from mpl_toolkits.mplot3d import Axes3D # need this import to enable 3D axes
 
+import plotly.plotly as py
+import plotly.offline as pyo
+import plotly.graph_objs as go
+
 from .utils import *
 
-__all__ = ['plot_isosurface']
+__all__ = ['plot_isosurface', 'plot_trisurf', 'plotly_trisurf']
 
 
 @save_plot_provenance
@@ -44,6 +49,42 @@ def plot_isosurface(data, level=None, percentile=99.5, smoothing=None, out=None,
 
     plt.show()
 
+
+def plotly_trisurf(data):
+    x = data.coords[data.dims[0]].values
+    y = data.coords[data.dims[1]].values
+    plot_data = [
+        go.Surface(
+            x=x,
+            y=y,
+            z=data.transpose().values,
+        )
+    ]
+    layout = go.Layout(
+        title='Test Title',
+        autosize=True,
+        width=900,
+        height=900,
+        margin=dict(
+            l=65,
+            r=50,
+            b=65,
+            t=90
+        )
+    )
+    fig = go.Figure(data=plot_data, layout=layout)
+    pyo.iplot(fig, filename='test-surface')
+
+
+def plot_trisurf(data, out=None, ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+
+    Xs, Ys = np.meshgrid(data.coords[data.dims[0]].values, data.coords[data.dims[1]].values)
+    ax.plot_trisurf(Xs.ravel(), Ys.ravel(), data.transpose().values.ravel(), antialiased=True, cmap=cm.coolwarm, linewidth=0)
+
+    plt.show()
 
 @save_plot_provenance
 def plot_trisurface(data, out=None, ax=None):
