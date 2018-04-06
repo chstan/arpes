@@ -148,10 +148,14 @@ def simple_load(fragment, df: pd.DataFrame = None):
         from arpes.utilities import default_dataset  # break circular dependency
         df = default_dataset()
 
+    def resolve_fragment(filename):
+        return filename.split('_')[-1]
+
     # find a soft match
     files = df.index
     if isinstance(fragment, int):
-        numbers = [int(''.join(c for c in f if c.isdigit()).lstrip('0')) for f in files]
+        numbers = [int(f) for f in [''.join(c for c in resolve_fragment(f) if c.isdigit()).lstrip('0')
+                                    for f in files] if len(f)]
         index = numbers.index(fragment)
     else:
         fragment = str(fragment)
