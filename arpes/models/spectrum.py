@@ -538,7 +538,12 @@ def load_SES(metadata: dict=None, filename: str=None):
     # Use dimension labels instead of
     dimension_labels = f['/' + primary_dataset_name].attrs['IGORWaveDimensionLabels'][0]
     if any(x == '' for x in dimension_labels):
+        print(dimension_labels)
         raise ValueError('Missing dimension labels')
+
+        # temporarily shim
+        # dimension_labels[list(dimension_labels).index('')] = 'polar'
+
     scaling = f['/' + primary_dataset_name].attrs['IGORWaveScaling'][-len(dimension_labels):]
     raw_data = f['/' + primary_dataset_name][:]
 
