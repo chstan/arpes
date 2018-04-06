@@ -97,7 +97,7 @@ def condense(data: xr.DataArray):
 
 
 @update_provenance('Rebinned array')
-def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=None, interpolate=False):
+def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=None, interpolate=False, **kwargs):
     """
     Rebins the data onto a different (smaller) shape. By default the behavior is to
     split the data into chunks that are integrated over. An interpolation option is also
@@ -116,6 +116,9 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
     """
 
     data = arpes.utilities.normalize_to_spectrum(data)
+
+    if any(d in kwargs for d in data.dims):
+        reduction = kwargs
 
     if interpolate:
         raise NotImplementedError('The interpolation option has not been implemented')
@@ -139,7 +142,7 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
             slices[dim] = slice(None, -remainder)
 
     trimmed_data = data.data[[slices[d] for d in data.dims]]
-    trimmed_coords = {d: coord[slices[d]] for d, coord in data.coords.items()}
+    trimmed_coords = {d: coord[slices[d]] for d, coord in data.indexes.items()}
 
     temp_shape = [[trimmed_data.shape[i] // reduction.get(d, 1), reduction.get(d, 1)]
                   for i, d in enumerate(data.dims)]
