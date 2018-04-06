@@ -50,3 +50,34 @@ in reference maps in order to get offsets for subsequent scans
 3. Tests should enforce API guarantees if more people start using this
 4. Finish writing test fixture
 s for setting up configuration
+
+## Today
+
+1. Forward conversion
+4. Fix curvature code
+8. Continue work on installation integrity checker
+9. Order ZnSe window, order feedthrough, order integrating photodetector
+10. Order inlet screen
+11. Do BL data analysis -- looks crappy!
+14. Self energy calculation
+15. Inner potential utility
+16. Automatic inference of reference from dataset
+17. Better Brillouin zone displays
+18. Lucy Richardson testing
+19. Fit broadcasting across extra axes
+
+
+## Random Ideas
+
+Incommensurate spin spirals observable in ARPES because of the finite probe depth? 
+Same idea as in BSSCO
+
+## Hardware
+
+1. Knife puck for UV beam profiling, or gold edge patterned onto an insulator
+2. Knife edge on manipulator for main chamber
+3. Brush contacts gating main chamber
+4. Replace ZnSe window on next bake main chamber
+5. Replace ZnSe viewport + UV viewport with Ts on next bake main chamber
+6. Better story about sample imaging and orientation in situ, look into lenses and mounts from Navitar + Thorlabs
+7. Can get better beam focusing using a more complicated lens setup (blow up the beam first to 15mm, can get to 10 micron)
