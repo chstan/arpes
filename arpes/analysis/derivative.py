@@ -4,9 +4,72 @@ import warnings
 import numpy as np
 import xarray as xr
 
+from arpes.typing import DataType
 from arpes.provenance import provenance
+from utilities import normalize_to_spectrum
 
-__all__ = ('curvature', 'dn_along_axis', 'd2_along_axis', 'd1_along_axis',)
+__all__ = ('curvature', 'dn_along_axis', 'd2_along_axis', 'd1_along_axis', 'minimum_gradient', 'vector_diff')
+
+
+def vector_diff(arr, delta, n=1):
+    """
+    Computes finite differences along the vector delta, given as a tuple
+
+    Using delta = (0, 1) is equivalent to np.diff(..., axis=1), while
+    using delta = (1, 0) is equivalent to np.diff(..., axis=0).
+    :param arr: np.ndarray
+    :param delta: iterable containing vector to take difference along
+    :return:
+    """
+
+    if n == 0:
+        return arr
+    if n < 0:
+        raise ValueError(
+            'Order must be non-negative but got ' + repr(n))
+
+    nd = arr.ndim
+    slice1 = [slice(None)] * nd
+    slice2 = [slice(None)] * nd
+
+    for dim, delta_val in enumerate(delta):
+        if delta_val != 0:
+            if delta_val < 0:
+                slice2[dim] = slice(-delta_val, None)
+                slice1[dim] = slice(None, delta_val)
+            else:
+                slice1[dim] = slice(delta_val, None)
+                slice2[dim] = slice(None, -delta_val)
+
+    if n > 1:
+        return vector_diff(arr[slice1] - arr[slice2], delta, n - 1)
+
+    return arr[slice1] - arr[slice2]
+
+
+def minimum_gradient(data: DataType):
+    arr = normalize_to_spectrum(data)
+    new = arr / gradient_modulus(arr)
+    new.values[np.isnan(new.values)] = 0
+    return new
+
+def gradient_modulus(data: DataType):
+    spectrum = normalize_to_spectrum(data)
+    values = spectrum.values
+    gradient_vector = np.zeros(shape=(8,) + values.shape)
+
+    gradient_vector[0,:-1,:] = vector_diff(values, (1, 0,))
+    gradient_vector[1,:,:-1] = vector_diff(values, (0, 1,))
+    gradient_vector[2,1:,:] = vector_diff(values, (-1, 0,))
+    gradient_vector[3,:,1:] = vector_diff(values, (0, -1,))
+    gradient_vector[4,:-1,:-1] = vector_diff(values, (1, 1,))
+    gradient_vector[5,:-1,1:] = vector_diff(values, (1, -1,))
+    gradient_vector[6,1:,:-1] = vector_diff(values, (-1, 1,))
+    gradient_vector[7,1:,1:] = vector_diff(values, (-1, -1,))
+
+    data_copy = spectrum.copy(deep=True)
+    data_copy.values = np.linalg.norm(gradient_vector, axis=0)
+    return data_copy
 
 
 def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
