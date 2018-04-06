@@ -5,7 +5,8 @@ from lmfit.models import update_param_vals
 from scipy.special import erfc
 
 __all__ = ['XModelMixin', 'GStepBModel', 'QuadraticModel', 'ExponentialDecayCModel',
-           'LorentzianModel', 'GaussianModel', 'VoigtModel', 'ConstantModel', 'LinearModel', 'GStepBStandardModel']
+           'LorentzianModel', 'GaussianModel', 'VoigtModel', 'ConstantModel', 'LinearModel', 'GStepBStandardModel',
+           'AffineBackgroundModel']
 
 class XModelMixin(lf.Model):
     def guess_fit(self, data, params=None, **kwargs):
@@ -26,15 +27,20 @@ class XModelMixin(lf.Model):
 
         result = None
         try:
-            result = super(XModelMixin, self).fit(real_data, guessed_params, x=x, **kwargs)
+            result = super().fit(real_data, guessed_params, x=x, **kwargs)
         except Exception as e:
             pass # Hook for PDB
         finally:
             return result
 
 
+def affine_bkg(x, lin_bkg=0, const_bkg=0):
+    return lin_bkg * x + const_bkg
+
+
 def quadratic(x, a=1, b=0, c=0):
     return a * x**2 + b * x + c
+
 
 def gstepb(x, center=0, width=1, erf_amp=1, lin_bkg=0, const_bkg=0):
     """
@@ -49,6 +55,7 @@ def gstepb(x, center=0, width=1, erf_amp=1, lin_bkg=0, const_bkg=0):
     """
     dx = x - center
     return const_bkg + lin_bkg * np.min(dx, 0) + gstep(x, center, width, erf_amp)
+
 
 def gstep(x, center=0, width=1, erf_amp=1):
     """
@@ -80,7 +87,7 @@ class GStepBModel(XModelMixin):
 
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
         kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
-        super(GStepBModel, self).__init__(gstepb, **kwargs)
+        super().__init__(gstepb, **kwargs)
 
         self.set_param_hint('erf_amp', min=0.)
         self.set_param_hint('width', min=0)
@@ -109,7 +116,7 @@ class GStepBStandardModel(XModelMixin):
 
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
         kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
-        super(GStepBStandardModel, self).__init__(gstepb_standard, **kwargs)
+        super().__init__(gstepb_standard, **kwargs)
 
         self.set_param_hint('amplitude', min=0.)
         self.set_param_hint('sigma', min=0)
@@ -138,7 +145,7 @@ class ExponentialDecayCModel(XModelMixin):
 
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
         kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
-        super(ExponentialDecayCModel, self).__init__(exponential_decay_c, **kwargs)
+        super().__init__(exponential_decay_c, **kwargs)
 
         # amp is also a parameter, but we have no hint for it
         self.set_param_hint('tau', min=0.)
@@ -165,7 +172,7 @@ class QuadraticModel(XModelMixin):
     """
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
         kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
-        super(QuadraticModel, self).__init__(quadratic, **kwargs)
+        super().__init__(quadratic, **kwargs)
 
     def guess(self, data, x=None, **kwargs):
         pars = self.make_params()
@@ -178,6 +185,24 @@ class QuadraticModel(XModelMixin):
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+
+class AffineBackgroundModel(XModelMixin):
+    """
+    A model for an affine background
+    """
+
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(affine_bkg, **kwargs)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%slin_bkg' % self.prefix].set(value=np.percentile(data, 10))
+        pars['%sconst_bkg' % self.prefix].set(value=0)
+
+        return update_param_vals(pars, self.prefix, **kwargs)
 
 
 class LorentzianModel(XModelMixin, lf.models.LorentzianModel):

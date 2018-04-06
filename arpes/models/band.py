@@ -3,8 +3,10 @@ import scipy.ndimage.filters
 import xarray as xr
 
 import arpes.fits
+from arpes.analysis.band_analysis_utils import param_getter, param_stderr_getter
 
-__all__ = ['Band', 'VoigtBand', 'BackgroundBand', 'FermiEdgeBand']
+__all__ = ['Band', 'MultifitBand', 'VoigtBand', 'BackgroundBand', 'FermiEdgeBand',
+           'AffineBackgroundBand']
 
 
 class Band(object):
@@ -111,6 +113,20 @@ class Band(object):
         return self._data.center.dims
 
 
+class MultifitBand(Band):
+    """
+    Convenience class that reimplements reading data out of a composite fit result
+    """
+
+    def get_dataarray(self, var_name, clean=True):
+        full_var_name = self.label + var_name
+
+        if 'stderr' in full_var_name:
+            return self._data.T.map(param_stderr_getter(full_var_name.split('_stderr')[0]))
+
+        return self._data.T.map(param_getter(full_var_name))
+
+
 class VoigtBand(Band):
     @property
     def fit_cls(self):
@@ -127,3 +143,9 @@ class FermiEdgeBand(Band):
     @property
     def fit_cls(self):
         return arpes.fits.GStepBStandardModel
+
+
+class AffineBackgroundBand(Band):
+    @property
+    def fit_cls(self):
+        return arpes.fits.AffineBackgroundModel
