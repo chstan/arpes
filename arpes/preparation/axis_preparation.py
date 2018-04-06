@@ -26,7 +26,33 @@ def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):
         attrs=arr.attrs
     )
 
-def normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False):
+def soft_normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False, amp_limit=100):
+    dims = dim_or_dims
+    if isinstance(dim_or_dims, str):
+        dims = [dims]
+
+    summed_arr = arr.fillna(arr.mean()).sum([d for d in arr.dims if d not in dims])
+    normalized_arr = arr / (summed_arr / np.product(summed_arr.shape))
+
+    to_return = xr.DataArray(
+        normalized_arr.values,
+        arr.coords,
+        arr.dims,
+        attrs=arr.attrs
+    )
+
+    if not keep_id and 'id' in to_return.attrs:
+        del to_return.attrs['id']
+
+    provenance(to_return, arr, {
+        'what': 'Normalize axis or axes',
+        'by': 'normalize_dim',
+        'dims': dims,
+    })
+
+    return to_return
+
+def normalize_dim(arr: DataType, dim_or_dims, keep_id=False):
     """
     Normalizes the intensity so that all values along arr.sum(dims other than those in ``dim_or_dims``)
     have the same value. The function normalizes so that the average value of cells in
@@ -34,6 +60,8 @@ def normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False):
     :param dim_name:
     :return:
     """
+
+    arr = normalize_to_spectrum(arr)
 
     dims = dim_or_dims
     if isinstance(dim_or_dims, str):
