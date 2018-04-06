@@ -149,7 +149,7 @@ def simple_load(fragment, df: pd.DataFrame = None):
         df = default_dataset()
 
     def resolve_fragment(filename):
-        return filename.split('_')[-1]
+        return str(filename).split('_')[-1]
 
     # find a soft match
     files = df.index
