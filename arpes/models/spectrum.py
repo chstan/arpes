@@ -156,6 +156,15 @@ def load_MC(metadata: dict=None, filename: str=None):
     attrs = rename_keys(attrs, KEY_RENAMINGS)
     metadata = rename_keys(metadata, KEY_RENAMINGS)
 
+    def clean_key_name(k):
+        if '#' in k:
+            k = k.replace('#', 'num')
+
+        return k
+
+    attrs = {clean_key_name(k): v for k, v in attrs.items()}
+    metadata = {clean_key_name(k): v for k, v in metadata.items()}
+
     # don't have phi because we need to convert pixels first
     phi_to_rad_coords = {'polar', 'theta', 'sample-phi'}
 
@@ -411,13 +420,18 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
             'targetMinus': ['time'],
         }
 
+        coord_names = None
         if spectrum_name not in coord_names_for_spectrum:
             # Don't remember what the MC ones were, so I will wait to do those again
             # Might have to add new items for new spectrometers as well
-            import pdb
-            pdb.set_trace()
+            if 'Fixed_Spectra' in spectrum_name:
+                coord_names = infer_hemisphere_dimensions
+            else:
+                import pdb
+                pdb.set_trace()
+        else:
+            coord_names = coord_names_for_spectrum[spectrum_name]
 
-        coord_names = coord_names_for_spectrum[spectrum_name]
         if callable(coord_names):
             coord_names = coord_names()
             if len(coord_names) > 1 and mode == 'MC':

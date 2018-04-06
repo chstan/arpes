@@ -216,13 +216,21 @@ def cleaned_dataset_exists(path):
 def safe_read(path, **kwargs):
     REATTEMPT_LIMIT = 8
     skiprows = kwargs.pop('skiprows', None)
+
+    def read_snake(x):
+        try:
+            return [x, snake_case(x)]
+        except:
+            return [x, x]
+
     if skiprows is not None:
         read = pd.read_excel(path, skiprows=skiprows, **kwargs)
-        return read.rename(index=str, columns=dict([[x, snake_case(x)] for x in list(read.columns)]))
+
+        return read.rename(index=str, columns=dict([read_snake(x) for x in list(read.columns)]))
 
     for skiprows in range(REATTEMPT_LIMIT):
         read = pd.read_excel(path, skiprows=skiprows, **kwargs)
-        read = read.rename(index=str, columns=dict([[x, snake_case(x)] for x in list(read.columns)]))
+        read = read.rename(index=str, columns=dict([read_snake(x) for x in list(read.columns)]))
         if 'file' in read.columns:
             return read
 
