@@ -22,8 +22,8 @@ except ImportError as e:
 
 DESCRIPTION = """
 Command line tool for loading ARPES datasets from spreadsheet. Typical workflow is to call
-'load_all_files.py' and then 'load_all_files.py -c' which will also attach the spectrum type 
-to the cleaned dataset.
+'autoprep.py' with no arguments. You can see what arguments can be used to customize behavior
+with --help. 
 """
 
 parser = argparse.ArgumentParser(description=DESCRIPTION)
