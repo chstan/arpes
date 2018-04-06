@@ -43,6 +43,8 @@ import scipy.interpolate
 import xarray as xr
 
 from arpes.provenance import provenance, update_provenance
+from exceptions import AnalysisError
+from .forward import convert_to_kspace_forward
 from .kx_ky_conversion import *
 from .kz_conversion import *
 
@@ -309,7 +311,33 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
 
 
 @update_provenance('Automatically k-space converted')
-def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
+def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwargs):
+    """
+    "Forward" or "backward" converts the data to momentum space.
+
+    "Backward"
+    The standard method. Works in generality by regridding the data into the new coordinate space and then
+    interpolating back into the original data.
+
+    "Forward"
+    By converting the coordinates, rather than by
+    interpolating the data. As a result, the data will be totally unchanged by the conversion (if we do not
+    apply a Jacobian correction), but the coordinates will no longer have equal spacing.
+
+    This is only really useful for zero and one dimensional data because for two dimensional data, the coordinates
+    must become two dimensional in order to fully specify every data point (this is true in generality, in 3D the
+    coordinates must become 3D as well).
+
+    The only exception to this is if the extra axes do not need to be k-space converted. As is the case where one
+    of the dimensions is `cycle` or `delay`, for instance.
+
+    :param arr:
+    :return:
+    """
+
+    if forward:
+        return convert_to_kspace_forward(arr)
+
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
     remove_dims = ['eV', 'delay', 'cycle', 'T']
@@ -318,6 +346,10 @@ def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
         if to_remove in old_dims:
             removed.append(to_remove)
             old_dims.remove(to_remove)
+
+    # This should always be true because otherwise we have no hope of carrying
+    # through with the conversion
+    has_ev = 'eV' in arr.dims
 
     if 'eV' in removed:
         removed.remove('eV') # This is put at the front as a standardization
@@ -328,7 +360,7 @@ def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
         # Was a core level scan or something similar
         return arr
 
-    converted_dims = ['eV'] + {
+    converted_dims = (['eV'] if has_ev else []) + {
         ('phi',): ['kp'],
         ('phi', 'polar'): ['kx', 'ky'],
         ('hv', 'phi'): ['kp', 'kz'],
@@ -341,6 +373,11 @@ def convert_to_kspace(arr: xr.DataArray, resolution=None, **kwargs):
         ('hv', 'phi'): ConvertKpKz,
     }.get(tuple(old_dims))
     converter = convert_cls(arr, converted_dims)
+
+    n_kspace_coordinates = len(set(converted_dims).intersection('kp', 'kx', 'ky', 'kz'))
+    if n_kspace_coordinates > 1 and forward:
+        raise AnalysisError('You cannot forward convert more than one momentum to k-space.')
+
     converted_coordinates = converter.get_coordinates(resolution)
 
     return convert_coordinates(

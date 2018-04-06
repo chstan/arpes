@@ -3,7 +3,16 @@ import xarray as xr
 
 import arpes.constants
 
-__all__ = ('calculate_kp_kz_bounds', 'calculate_kx_ky_bounds', 'calculate_kp_bounds',)
+__all__ = ('calculate_kp_kz_bounds', 'calculate_kx_ky_bounds', 'calculate_kp_bounds')
+
+
+def spherical_to_kx(kinetic_energy, theta, phi):
+    return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.cos(phi)
+
+
+def spherical_to_kz(kinetic_energy, theta, phi, inner_V):
+    return arpes.constants.K_INV_ANGSTROM * np.sqrt(
+        kinetic_energy * np.cos(theta) ** 2 + inner_V)
 
 
 def calculate_kp_kz_bounds(arr: xr.DataArray):
@@ -13,13 +22,6 @@ def calculate_kp_kz_bounds(arr: xr.DataArray):
 
     binding_energy_min, binding_energy_max = np.min(arr.coords['eV'].values), np.max(arr.coords['eV'].values)
     hv_min, hv_max = np.min(arr.coords['hv'].values), np.max(arr.coords['hv'].values)
-
-    def spherical_to_kx(kinetic_energy, theta, phi):
-        return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.cos(phi)
-
-    def spherical_to_kz(kinetic_energy, theta, phi, inner_V):
-        return arpes.constants.K_INV_ANGSTROM * np.sqrt(
-            kinetic_energy * np.cos(theta) ** 2 + inner_V)
 
     wf = arr.S.work_function
     kx_min = min(spherical_to_kx(hv_max - binding_energy_max - wf, phi_min, 0),
