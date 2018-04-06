@@ -24,7 +24,9 @@ class BokehInteractiveTool(ABC):
     def init_bokeh_server(self):
         if 'bokeh_configured' not in arpes.config.CONFIG:
             arpes.config.CONFIG['bokeh_configured'] = True
-            output_notebook(hide_banner=True)
+
+            # use a longer load_timeout for heavy tools
+            output_notebook(hide_banner=True, load_timeout=10000)
 
             # Don't need to manually start a server in the manner of
             # https://matthewrocklin.com/blog//work/2017/06/28/simple-bokeh-server

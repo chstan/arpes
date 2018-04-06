@@ -1,16 +1,13 @@
 import copy
 import warnings
 
-import holoviews as hv
 import numpy as np
-import xarray as xr
 from bokeh import events, palettes
 from bokeh.layouts import row, column, widgetbox, Spacer
 from bokeh.models import ColumnDataSource, HoverTool, widgets
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.widgets.markups import Div
 from bokeh.plotting import figure
-from holoviews import streams
 from skimage import exposure
 
 from .interactive_utils import BokehInteractiveTool
@@ -24,7 +21,7 @@ __all__ = ('ImageTool',)
 
 class ImageTool(BokehInteractiveTool):
     def __init__(self, app_main_size=600, app_marginal_size=300):
-        super(ImageTool, self).__init__()
+        super().__init__()
         self.app_main_size = app_main_size
         self.app_marginal_size = app_marginal_size
 
@@ -46,7 +43,7 @@ class ImageTool(BokehInteractiveTool):
     def tool_handler_2d(self, doc):
         arr = self.arr
         # Set up the data
-        x_coords, y_coords= arr.coords[arr.dims[0]], arr.coords[arr.dims[1]]
+        x_coords, y_coords = arr.coords[arr.dims[0]], arr.coords[arr.dims[1]]
 
         t0 = None
         fit_data = None
@@ -96,7 +93,7 @@ class ImageTool(BokehInteractiveTool):
         figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'], self.app_context[
             'widgets']
         self.app_context['cursor'] = [np.mean(self.app_context['data_range']['x']),
-                                      np.mean(self.app_context['data_range']['y'])] # Try a sensible default
+                                      np.mean(self.app_context['data_range']['y'])]  # Try a sensible default
 
         # create the main inset plot
         main_image = arr
@@ -159,6 +156,13 @@ class ImageTool(BokehInteractiveTool):
         def update_cursor(vert_x, horiz_y):
             horiz_y[0] = horiz_y[1] = self.app_context['cursor'][1]
             vert_x[0] = vert_x[1] = self.app_context['cursor'][0]
+            set_cursor_info()
+
+        app_widgets['cursor_info_div'] = Div(text='')
+
+        def set_cursor_info():
+            app_widgets['cursor_info_div'].text = '<h2>Cursor:</h2><span>({})</span>'.format(
+                ', '.join("{0:.3f}".format(c) for c in self.app_context['cursor']))
 
         update_cursor(vert_cursor_x, horiz_cursor_y)
 
@@ -270,6 +274,7 @@ class ImageTool(BokehInteractiveTool):
 
         main_color_range_slider = widgets.RangeSlider(
             start=0, end=100, value=(0, 100,), title='Color Range (Main)')
+
         layout = row(column(figures['main'], figures['bottom_marginal']),
                      column(figures['right_marginal'], Spacer(width=200, height=200)),
                      column(widgetbox(
@@ -281,6 +286,7 @@ class ImageTool(BokehInteractiveTool):
                                  main_color_range_slider,
                                  Div(text='<h2 style="padding-top: 30px;">General Settings:</h2>'),
                                  toggle,
+                                 app_widgets['cursor_info_div'],
                                  sizing_mode='scale_width'
                              ), title='Settings'),
                              widgets.Panel(child=widgetbox(
@@ -324,6 +330,7 @@ class ImageTool(BokehInteractiveTool):
                 'xs': [horiz_cursor_x, vert_cursor_x],
                 'ys': [horiz_cursor_y, vert_cursor_y],
             }
+
             right_marginal_data = arr.sel(**dict([[arr.dims[0], cursor[0]]]), method='nearest')
             bottom_marginal_data = arr.sel(**dict([[arr.dims[1], cursor[1]]]), method='nearest')
             plots['bottom_marginal'].data_source.data = {
@@ -473,16 +480,19 @@ class ImageTool(BokehInteractiveTool):
 
         if arr.dims[2] == 'eV':
             # Try to fit a Fermi edge and display it in the plot
-            fit_data = z_marginal_data.sel(eV=slice(-0.25, 0.2))
-            z_fit = GStepBModel().guess_fit(fit_data)
-            plots['z_fit'] = figures['z_marginal'].line(x=fit_data.coords['eV'].values, y=z_fit.best_fit,
+            try:
+                fit_data = z_marginal_data.sel(eV=slice(-0.25, 0.2))
+                z_fit = GStepBModel().guess_fit(fit_data)
+                plots['z_fit'] = figures['z_marginal'].line(x=fit_data.coords['eV'].values, y=z_fit.best_fit,
                                                         line_dash='dashed', line_color='red')
-            self.app_context['z_model'] = GStepBModel
+                self.app_context['z_model'] = GStepBModel
 
-            app_widgets['info_div'].text = info_formatter.format(
-                z_fit.params['center'].value * 1000,
-                z_fit.params['width'].value * 1000,
-            )
+                app_widgets['info_div'].text = info_formatter.format(
+                    z_fit.params['center'].value * 1000,
+                    z_fit.params['width'].value * 1000,
+                )
+            except:
+                pass
 
         elif arr.dims[2] == 'delay' and 't0' in arr.attrs:
             # Try to fit a decay constant to the data after t0
@@ -560,9 +570,16 @@ class ImageTool(BokehInteractiveTool):
         plots['right_marginal_err'] = figures['right_marginal'].patch(
             x=[], y=[], color=error_fill, fill_alpha=error_alpha, line_color=None)
 
+        app_widgets['cursor_info_div'] = Div(text='')
+
+        def set_cursor_info():
+            app_widgets['cursor_info_div'].text = '<h2>Cursor:</h2><span>({})</span>'.format(
+                ', '.join("{0:.3f}".format(c) for c in self.app_context['cursor']))
+
         def update_cursor(vert_x, horiz_y):
             horiz_y[0] = horiz_y[1] = self.app_context['cursor'][1]
             vert_x[0] = vert_x[1] = self.app_context['cursor'][0]
+            set_cursor_info()
 
         update_cursor(vert_cursor_x, horiz_cursor_y)
 
@@ -697,6 +714,7 @@ class ImageTool(BokehInteractiveTool):
                                  bottom_color_range_slider,
                                  Div(text='<h2 style="padding-top: 30px;">General Settings:</h2>'),
                                  toggle,
+                                 app_widgets['cursor_info_div'],
                                  sizing_mode='scale_width'
                              ), title='Settings'),
                              widgets.Panel(child=widgetbox(
@@ -736,6 +754,7 @@ class ImageTool(BokehInteractiveTool):
         def click_z_marginal(event):
             cursor = self.app_context['cursor']
             cursor[2] = event.x
+            set_cursor_info()
             main_image = arr.sel(**dict([[arr.dims[2], cursor[2]]]), method='nearest')
             plots['main'].data_source.data = {
                 'image': [self.prep_image(main_image).T]
