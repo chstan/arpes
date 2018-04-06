@@ -6,6 +6,8 @@ import xrft
 import scipy
 import numpy as np
 import pandas as pd
+import plotly.plotly as py
+import plotly.figure_factory as ff
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.ndimage as ndi
@@ -20,6 +22,7 @@ import arpes.config
 
 import arpes
 from arpes.analysis import *
+from arpes.fits import *
 from arpes.io import *
 from arpes.pipeline import compose
 from arpes.pipelines import *
@@ -34,6 +37,7 @@ from arpes.utilities import clean_xlsx_dataset, default_dataset, swap_reference_
 from arpes.utilities.conversion import *
 
 from bokeh.io import output_notebook
+from plotly.offline import download_plotlyjs, init_notebook_mode
 
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
