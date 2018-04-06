@@ -15,14 +15,16 @@ from skimage import feature
 
 import arpes.constants
 import arpes.materials
+from arpes.models.band import MultifitBand
 from arpes.io import load_dataset_attrs
 import arpes.plotting as plotting
-from arpes.plotting import ImageTool, CurvatureTool, BandTool
+from arpes.plotting import ImageTool, CurvatureTool, BandTool, FitCheckTool
 from arpes.utilities.conversion import slice_along_path
 from arpes.utilities import apply_dataarray
 from arpes.utilities.region import DesignatedRegions, normalize_region
+from utilities.math import shift_by
 
-__all__ = ['ARPESDataArrayAccessor', 'ARPESDatasetAccessor']
+__all__ = ['ARPESDataArrayAccessor', 'ARPESDatasetAccessor', 'ARPESFitToolsAccessor']
 
 
 def _iter_groups(grouped):
@@ -262,12 +264,14 @@ class ARPESAccessorBase(object):
 
     @property
     def original_parent_scan_name(self):
-        history = self.history
-        if len(history) >= 3:
-            first_modification = history[-3]
-            df = self._obj.attrs['df']
-            return df[df.id == first_modification['parent_id']].index[0]
-
+        try:
+            history = self.history
+            if len(history) >= 3:
+                first_modification = history[-3]
+                df = self._obj.attrs['df']
+                return df[df.id == first_modification['parent_id']].index[0]
+        except:
+            pass
         return ""
 
     @property
@@ -622,6 +626,18 @@ class ARPESAccessorBase(object):
         return normalized
 
     @property
+    def spectrometer_settings(self):
+        find_keys = {
+            'lens_mode',
+            'pass_energy',
+            'scan_mode',
+            'scan_region',
+            'slit',
+        }
+
+        return {k: v for k, v in self._obj.attrs.items() if k in find_keys}
+
+    @property
     def sample_pos(self):
         return (float(self._obj.attrs['x']),
                 float(self._obj.attrs['y']),
@@ -838,6 +854,20 @@ class GenericAccessorTools(object):
                          if sieve(c, self._obj.isel(**dict([[coordinate_name, i]])))])
         return self._obj.isel(**dict([[coordinate_name, mask]]))
 
+    def iterate_axis(self, axis_name_or_axes):
+        if isinstance(axis_name_or_axes, int):
+            axis_name_or_axes = self._obj.dims[axis_name_or_axes]
+
+        if isinstance(axis_name_or_axes, str):
+            axis_name_or_axes = [axis_name_or_axes]
+
+        coord_iterators = [self._obj.coords[d].values for d in axis_name_or_axes]
+        for indices in itertools.product(*[range(len(c)) for c in coord_iterators]):
+            cut_coords = [cs[index] for cs, index in zip(coord_iterators, indices)]
+            coords_dict = dict(zip(axis_name_or_axes, cut_coords))
+            yield coords_dict, self._obj.sel(method='nearest', **coords_dict)
+
+
     def map(self, fn):
         return apply_dataarray(self._obj, np.vectorize(fn))
 
@@ -847,7 +877,9 @@ class GenericAccessorTools(object):
             cut_coords = [cs[index] for cs, index in zip(coords_list, indices)]
             yield indices, dict(zip(self._obj.dims, cut_coords))
 
-    def iter_coords(self):
+    def iter_coords(self, dim_names=None):
+        if dim_names is None:
+            dim_names = self._obj.dims
         for ts in itertools.product(*[self._obj.coords[d].values for d in self._obj.dims]):
             yield dict(zip(self._obj.dims, ts))
 
@@ -871,8 +903,90 @@ class GenericAccessorTools(object):
 
         return dict(zip(dim_names, indexed_strides))
 
+    def shift_by(self, other, shift_axis=None, zero_nans=True, shift_coords=False):
+        # for now we only support shifting by a one dimensional array
+
+        data = self._obj
+        assert(len(other.dims) == 1)
+
+        if shift_coords:
+            mean_shift = np.mean(other)
+            other -= mean_shift
+
+        by_axis = other.dims[0]
+        if shift_axis is None:
+            option_dims = list(data.dims)
+            option_dims.remove(by_axis)
+            assert(len(option_dims) == 1)
+            shift_axis = option_dims[0]
+
+        shift_amount = -other.values / data.T.stride(generic_dim_names=False)[shift_axis]
+
+        shifted_data = shift_by(data.values, shift_amount,
+                     axis=list(data.dims).index(shift_axis),
+                     by_axis=list(data.dims).index(by_axis), order=1)
+
+        if zero_nans:
+            shifted_data[np.isnan(shifted_data)] = 0
+
+        coords = copy.deepcopy(data.coords)
+        if shift_coords:
+            coords[shift_axis] -= mean_shift
+
+        return xr.DataArray(
+            shifted_data,
+            coords,
+            data.dims,
+            attrs=data.attrs.copy(),
+        )
+
+
     def __init__(self, xarray_obj: DataType):
         self._obj = xarray_obj
+
+
+@xr.register_dataarray_accessor('F')
+class ARPESFitToolsAccessor(object):
+    _obj = None
+
+    def __init__(self, xarray_obj: DataType):
+        self._obj = xarray_obj
+
+    def show(self):
+        fit_diagnostic_tool = FitCheckTool()
+        return fit_diagnostic_tool.make_tool(self._obj)
+
+    @property
+    def bands(self):
+        """
+        This should probably instantiate appropriate types
+        :return:
+        """
+        band_names = self.band_names
+
+        bands = {l: MultifitBand(label=l, data=self._obj) for l in band_names}
+
+        return bands
+
+    @property
+    def band_names(self):
+        collected_band_names = set()
+
+        for item in self._obj.values.ravel():
+            if item is None:
+                continue
+
+            band_names = [k[:-6] for k in item.params.keys() if 'center' in k]
+            collected_band_names = collected_band_names.union(set(band_names))
+
+        return collected_band_names
+
+    def show_fit_diagnostic(self):
+        """
+        alias for ``.show``
+        :return:
+        """
+        return self.show()
 
 
 @xr.register_dataset_accessor('S')
@@ -894,6 +1008,8 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             spectrum = self._obj.spectrum
         elif 'raw' in self._obj.data_vars:
             spectrum = self._obj.raw
+        elif '__xarray_dataarray_variable__' in self._obj.data_vars:
+            spectrum = self._obj.__xarray_dataarray_variable__
 
         if spectrum is not None and 'df' not in spectrum.attrs:
             spectrum.attrs['df'] = self._obj.attrs.get('df', None)
@@ -1001,7 +1117,7 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             angle_integrated.S.fermi_edge_reference_plots(pattern=prefix + '{}.png', **kwargs)
 
     def __init__(self, xarray_obj):
-        super(ARPESDatasetAccessor, self).__init__(xarray_obj)
+        super().__init__(xarray_obj)
         self._spectrum = None
 
         # TODO consider how this should work
