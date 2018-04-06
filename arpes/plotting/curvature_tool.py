@@ -17,7 +17,7 @@ class CurvatureTool(BokehInteractiveTool):
     auto_rebin = False
 
     def __init__(self, app_main_size=600):
-        super(CurvatureTool, self).__init__()
+        super().__init__()
         self.app_main_size = app_main_size
 
     def tool_handler(self, doc):
