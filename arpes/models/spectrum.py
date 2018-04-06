@@ -209,6 +209,9 @@ def load_MC(metadata: dict=None, filename: str=None):
         column_shape = real_spectrum_shape[column_name]
 
         column_display = PREPPED_COLUMN_NAMES.get(column_name, column_name)
+        if 'Fixed_Spectra' in column_display:
+            column_display = 'spectrum'
+
         # sometimes if a scan is terminated early it can happen that the sizes do not match the expected value
         # as an example, if a beta map is supposed to have 401 slices, it might end up having only 260 if it were
         # terminated early
