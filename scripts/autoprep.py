@@ -18,7 +18,7 @@ try:
     from arpes.io import save_dataset, dataset_exists
 except ImportError as e:
     print('Did you forget to start your virtual environment?\nImport Error: {}'.format(e))
-    sys.exit(1)
+    raise(e)
 
 DESCRIPTION = """
 Command line tool for loading ARPES datasets from spreadsheet. Typical workflow is to call

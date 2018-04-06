@@ -7,7 +7,6 @@ import xarray as xr
 from scipy.spatial import distance
 
 import arpes.models.band
-from arpes.models.band import AffineBackgroundBand
 import arpes.utilities.math
 from arpes.utilities import enumerate_dataarray
 from utilities.jupyter_utils import wrap_tqdm
@@ -139,7 +138,7 @@ def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_w
 
 def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
                         fit_direction=None, avoid_crossings=None,
-                        stray=None, background=AffineBackgroundBand, preferred_k_direction=None,
+                        stray=None, background=True, preferred_k_direction=None,
                         interactive=True):
     """
     Fits bands and determines dispersion in some region of a spectrum.
@@ -162,6 +161,10 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
     :param direction_normal:
     :return:
     """
+
+    if background == True:
+        from arpes.models.band import AffineBackgroundBand
+        background = AffineBackgroundBand
 
     free_directions = list(arr.dims)
     free_directions.remove(fit_direction)
