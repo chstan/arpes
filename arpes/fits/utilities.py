@@ -8,7 +8,10 @@ from arpes.utilities import normalize_to_spectrum
 __all__ = ('broadcast_model',)
 
 
-def broadcast_model(model_cls: type, dataset: DataType, broadcast_dims, progress=True):
+def broadcast_model(model_cls: type, dataset: DataType, broadcast_dims, progress=True, constraints=None):
+    if constraints is None:
+        constraints = {}
+
     if isinstance(broadcast_dims, str):
         broadcast_dims = [broadcast_dims]
 
@@ -31,6 +34,9 @@ def broadcast_model(model_cls: type, dataset: DataType, broadcast_dims, progress
     for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting',
                                              total=n_fits):
         cut_data = data.sel(**cut_coords)
-        fit_results[[slice(i, i+1) for i in indices]] = model.guess_fit(cut_data)
+        fit_results[[slice(i, i+1) for i in indices]] = model.guess_fit(cut_data, params=constraints)
 
-    return xr.DataArray(fit_results, coords=cs, dims=broadcast_dims)
+    fit_results = xr.DataArray(fit_results, coords=cs, dims=broadcast_dims)
+    fit_results.attrs['original_data'] = data
+
+    return fit_results
