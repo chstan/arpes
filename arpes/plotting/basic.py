@@ -46,3 +46,4 @@ def make_reference_plots(df: pd.DataFrame=None, with_kspace=False):
         except Exception as e:
             print(str(e))
             warnings.warn('Cannot make plots for {}'.format(index))
+

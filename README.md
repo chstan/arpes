@@ -6,17 +6,29 @@ user experience better.
 
 #### Required Steps
 
+0. (Shell environment, windows users see section below)
 1. Python with managed environments
 2. Installation of this package
 3. Project dependencies
 4. Creation of a ```local_config.py``` file
+5. Installation of Jupyter
 
 #### Optional Steps
 
-1. Jupyter
-2. IPython Kernel Customization
-3. Setting up data, analysis notebooks, and datasets
+1. IPython Kernel Customization
+2. Setting up data, analysis notebooks, and datasets
 
+The rest of this document will guide you through the process of getting through the first set of steps. Additionally, example configuration files can be found in `example_configuration`.
+
+## Shell environment for Windows Users
+
+If you are running Windows 10 you can do the following
+
+1. Open PowerShell as administrator (right click menu)
+2. Run `Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux`
+3. Restart computer when prompted
+
+If you are not running Windows 10, install [MSYS2](https://www.msys2.org) or [Cygwin](https://www.cygwin.com/). MSYS2 is recommended.
 
 ## Installing Python through Conda
 
@@ -57,6 +69,8 @@ DATA_PATH = '/Users/chstansbury/Research/lanzara/data/'
 DATASET_CACHE_PATH = '/Users/chstansbury/Research/lanzara/data/cache/'
 ```
 
+These folders should actually exist on your system.
+
 ## Environment
 
 You need to make sure to export a variable ``ARPES_ROOT`` in order to run scripts. If you are on a UNIX-like system
@@ -77,6 +91,8 @@ alias arpes="cd $ARPES_ROOT && source activate python_arpes"
 alias arpesn="cd $ARPES_ROOT && source activate python_arpes && jupyter notebook"
 ```
 
+Similar commands should be placed in your `.bashrc`.
+
 ## Jupyter
 
 You should already have Jupyter if you created an environment with `conda` according to the above. Ask Conrad
@@ -89,12 +105,12 @@ runs imports when you first spin up a kernel. There are good directions for how 
 version is:
 
 1. Create an IPython profile, use this to start your notebooks
-2. In ``~/.ipython/{Your profile}/`` make a folder `startup`
-3. Add the files ``~/.ipython/{Your profile}/startup/00-add-arpes-path.py`` and 
+2. In ``~/.ipython/profile_default/`` make a folder `startup`
+3. Add the files ``~/.ipython/profile_default/startup/00-add-arpes-path.py`` and 
 ``~/.ipython/{Your profile}/startup/01-common-imports.ipy`` according to the templates in `ipython_templates`
 4. Customize to your liking
 
-Note that you can customize the default profile if you wish instead.
+Note that you can customize the default profile or a different if you wish instead.
 
 It is important that the filenames you put are such that ``-add-arpes-path`` is lexographically first, as this ensures
 that it is executed first. The ``.ipy`` extension on ``01-common-imports.ipy`` is also essential.
