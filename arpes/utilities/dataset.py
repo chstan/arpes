@@ -41,8 +41,13 @@ def infer_data_path(file, scan_desc, allow_soft_match=False):
         return scan_desc['path']
 
     assert('WORKSPACE' in arpes.config.CONFIG)
+    workspace = arpes.config.CONFIG['WORKSPACE']
+    workspace_path = None
+    if isinstance(workspace, dict):
+        workspace_path = os.path.join(workspace['path'], 'data')
+        workspace = workspace['name']
 
-    base_dir = os.path.join(arpes.config.DATA_PATH, arpes.config.CONFIG['WORKSPACE'])
+    base_dir = workspace_path or os.path.join(arpes.config.DATA_PATH, workspace)
     dir_options = [os.path.join(base_dir, option) for option in _SEARCH_DIRECTORIES]
 
     for dir in dir_options:
@@ -86,6 +91,9 @@ def default_dataset(workspace=None, match=None, **kwargs):
         arpes.config.CONFIG['WORKSPACE'] = workspace
 
     material_class = arpes.config.CONFIG['WORKSPACE']
+    if isinstance(material_class, dict):
+        material_class = material_class['name']
+
     if material_class is None:
         raise ConfigurationError('You need to set the WORKSPACE attribute on CONFIG!')
 
@@ -347,8 +355,12 @@ def clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=True, wa
     return ds.set_index('file')
 
 
-def walk_datasets(skip_cleaned=True):
-    for path, _, files in os.walk(os.getcwd()):
+def walk_datasets(skip_cleaned=True, use_workspace=False):
+    root = os.getcwd()
+    if use_workspace:
+        root = arpes.config.CONFIG['WORKSPACE']['path']
+
+    for path, _, files in os.walk(root):
         excel_files = [f for f in files if '.xlsx' in f or '.xlx' in f]
 
         for x in excel_files:

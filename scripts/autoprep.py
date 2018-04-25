@@ -16,6 +16,7 @@ try:
         clean_datavar_attribute_names
     from arpes.utilities.dataset import walk_datasets
     from arpes.io import save_dataset, dataset_exists
+    from arpes.utilities.autoprep import prepare_raw_files
 except ImportError as e:
     print('Did you forget to start your virtual environment?\nImport Error: {}'.format(e))
     raise(e)
@@ -32,30 +33,6 @@ parser.add_argument("-r", "--reload", help='Reload scans.', action='store_true')
 parser.add_argument("-f", "--file", help="specify the dataset that will be used. If it is already clean it will not be cleaned.")
 
 args = parser.parse_args()
+
 arpes.config.attempt_determine_workspace(args.workspace or os.getenv('WORKSPACE'))
-
-if args.file:
-    print("├{}".format(args.file))
-    files = [os.path.join(os.getcwd, args.file)]
-else:
-    files = walk_datasets()
-
-
-for dataset_path in files:
-    ds = modern_clean_xlsx_dataset(dataset_path, with_inferred_cols=False, write=True, allow_soft_match=True)
-
-    print('└┐')
-    for file, scan in ds.iterrows():
-        print(' ├{}'.format(file))
-        scan['file'] = scan.get('path', file)
-        if not dataset_exists(scan.get('id')) or args.reload:
-            try:
-                import arpes.xarray_extensions
-                data = load_scan(dict(scan))
-                data = rename_datavar_standard_attrs(data)
-                data = clean_datavar_attribute_names(data)
-                save_dataset(data, force=True)
-            except Exception as e:
-                print('Encountered Error {}. Skipping...'.format(e))
-
-    attach_extra_dataset_columns(dataset_path)
+prepare_raw_files(workspace=None, reload=args.reload, file=args.file)

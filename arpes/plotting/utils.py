@@ -21,6 +21,9 @@ def path_for_plot(desired_path):
     workspace = CONFIG['WORKSPACE']
     assert(workspace is not None)
 
+    if isinstance(workspace, dict):
+        workspace = workspace['name']
+
     filename = os.path.join(FIGURE_PATH, workspace,
                             datetime.date.today().isoformat(), desired_path)
     if not os.path.exists(os.path.dirname(filename)):

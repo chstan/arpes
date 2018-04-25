@@ -184,7 +184,7 @@ def load_dataset(dataset_uuid, df: pd.DataFrame = None):
 
     filename = _filename_for(dataset_uuid)
     if not os.path.exists(filename):
-        raise ValueError('%s is not cached on the FS')
+        raise ValueError('%s is not cached on the FS. Did you run `prepare_raw_data`?')
 
     try:
         arr = xr.open_dataset(filename)

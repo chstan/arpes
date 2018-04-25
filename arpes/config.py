@@ -8,6 +8,8 @@ import json
 import os.path
 import logging
 
+from pathlib import Path
+
 from arpes.exceptions import ConfigurationError
 import arpes.constants as consts
 
@@ -25,6 +27,8 @@ EXPERIMENT_PATH = os.path.join(SOURCE_PATH, 'exp')
 
 DATASET_ROOT_PATH = ARPES_ROOT
 # these are all set by ``update_configuration``
+
+DATASET_CACHE_PATH = os.path.join(ARPES_ROOT, 'cache')
 DATASET_CACHE_RECORD = None
 CLEAVE_RECORD = None
 CALIBRATION_RECORD = None
@@ -63,7 +67,28 @@ CONFIG = {
 def workspace_name_is_valid(workspace_name):
     return workspace_name in os.listdir(DATA_PATH)
 
+def workspace_matches(path):
+    files = os.listdir(path)
+    acceptable_suffixes = {'.xlx', '.xlsx'}
+
+    return 'data' in files and any(Path(f).suffix in acceptable_suffixes for f in files)
+
 def attempt_determine_workspace(value=None, permissive=False):
+    # first search upwards from the current directory at most three folders:
+    try:
+        current_path = os.getcwd()
+        for _ in range(3):
+            if workspace_matches(current_path):
+                CONFIG['WORKSPACE'] = {
+                    'path': current_path,
+                    'name': Path(current_path).name
+                }
+                return
+
+            current_path = Path(current_path).parent
+    except Exception:
+        pass
+
     if CONFIG['WORKSPACE'] is None:
         current_path = os.path.realpath(os.getcwd())
         option = None

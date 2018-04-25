@@ -3,6 +3,10 @@ datasets/
 exp
 SCRATCH.md
 
+cache/*.nc
+cache/*.json
+cache/*.keep
+
 .idea/
 
 local_config.py

@@ -13,7 +13,7 @@ scipy
 lmfit
 scikit-learn
 scikit-image
-xrft # You will need to get this one from the conda forge
+xrft # You will need to get this one from the conda forge with `conda install -c conda-forge xrft`
 # cvxgrp # Conda
 # cvxpy  # Conda
 # libgcc # Conda

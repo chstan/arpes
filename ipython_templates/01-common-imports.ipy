@@ -29,6 +29,7 @@ from arpes.pipelines import *
 from arpes.plotting import *
 from arpes.preparation import *
 from arpes.bootstrap import *
+from arpes.utilities.autoprep import prepare_raw_files
 
 import arpes.xarray_extensions # Ensure that extensions get loaded
 
