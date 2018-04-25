@@ -45,9 +45,9 @@ def update_configuration():
     global PIPELINE_SHELF
     global PIPELINE_JSON_SHELF
 
-    DATASET_CACHE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets','cache.json')
-    CLEAVE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets','cleaves.json')
-    CALIBRATION_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets','calibrations.json')
+    DATASET_CACHE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets', 'cache.json')
+    CLEAVE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets', 'cleaves.json')
+    CALIBRATION_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets', 'calibrations.json')
 
     # TODO use a real database here
     PIPELINE_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets','pipeline.shelf')
@@ -129,3 +129,12 @@ try:
 except:
     logging.warning("Could not find local configuration file. If you don't "
                   "have one, you can safely ignore this message.")
+
+
+# try to generate cache files if they do not exist
+for p in [DATASET_CACHE_RECORD, CLEAVE_RECORD, CALIBRATION_RECORD]:
+    fp = Path(p)
+    if not fp.exists():
+        with open(p, 'w') as f:
+            json.dump({}, f)
+
