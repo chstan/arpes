@@ -194,6 +194,7 @@ def load_MC(metadata: dict=None, filename: str=None):
 
     SKIP_COLUMN_NAMES = {
         'Phi',
+        'null',
         # insert more as needed
     }
 
@@ -261,9 +262,11 @@ def load_MC(metadata: dict=None, filename: str=None):
         )
 
     def prep_spectrum(data: xarray.DataArray):
+        # don't do center pixel inference because the main chamber
+        # at least consistently records the offset from the edge
+        # of the recorded window
         if 'pixel' in data.coords:
-            center_pixel = infer_center_pixel(data)
-            phi_axis = (data.coords['pixel'].values - center_pixel) * \
+            phi_axis = data.coords['pixel'].values * \
                        arpes.constants.SPECTROMETER_MC['rad_per_pixel']
             data = replace_coords(data, {
                 'phi': phi_axis
@@ -389,7 +392,8 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
             if desc is not None:
                 RECOGNIZED_DESCRIPTIONS = {
                     'eV': 'eV',
-                    'pixels': 'pixel'
+                    'pixels': 'pixel',
+                    'pixel': 'pixel',
                 }
 
                 if all(d in RECOGNIZED_DESCRIPTIONS for d in desc):
@@ -416,18 +420,21 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
             'Time_Spectra': ['time'],
             'Energy_Spectra': ['eV'],
             # MC hemisphere image, this can still be k-integrated, E-integrated, etc
-            'Fixed_Spectra4': infer_hemisphere_dimensions,
-            'Fixed_Spectra2': infer_hemisphere_dimensions,
             'wave':  ['time'],
             'targetPlus': ['time'],
             'targetMinus': ['time'],
+        }
+
+        spectra_types = {
+            'Fixed_Spectra',
+            'Swept_Spectra',
         }
 
         coord_names = None
         if spectrum_name not in coord_names_for_spectrum:
             # Don't remember what the MC ones were, so I will wait to do those again
             # Might have to add new items for new spectrometers as well
-            if 'Fixed_Spectra' in spectrum_name:
+            if any(s in spectrum_name for s in spectra_types):
                 coord_names = infer_hemisphere_dimensions
             else:
                 import pdb
