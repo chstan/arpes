@@ -153,8 +153,14 @@ def simple_load(fragment, df: pd.DataFrame = None):
 
     # find a soft match
     files = df.index
+    def strip_left_zeros(value):
+        if len(value) == 1:
+            return value
+
+        return value.lstrip('0')
+
     if isinstance(fragment, int):
-        numbers = [int(f) for f in [''.join(c for c in resolve_fragment(f) if c.isdigit()).lstrip('0')
+        numbers = [int(f) for f in [strip_left_zeros(''.join(c for c in resolve_fragment(f) if c.isdigit()))
                                     for f in files] if len(f)]
         index = numbers.index(fragment)
     else:
