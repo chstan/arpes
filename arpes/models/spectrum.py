@@ -6,8 +6,10 @@ import itertools
 import os.path
 import subprocess
 import warnings
+
 from ast import literal_eval
 from collections import Iterable
+from pathlib import Path
 
 import h5py
 import numpy
@@ -107,7 +109,10 @@ def load_MC(metadata: dict=None, filename: str=None):
     metadata = copy.deepcopy(metadata)
 
     data_loc = metadata.get('path', metadata.get('file'))
-    data_loc = data_loc if data_loc.startswith('/') else os.path.join(arpes.config.DATA_PATH, data_loc)
+    p = Path(data_loc)
+    if not p.exists(): 
+        data_loc = os.path.join(arpes.config.DATA_PATH, data_loc)
+
 
 
     # Use dimension labels instead of
