@@ -34,6 +34,7 @@ def prepare_raw_files(workspace=None, reload=False, file=None):
             scan['file'] = scan.get('path', file)
             if not dataset_exists(scan.get('id')) or reload:
                 try:
+                    
                     data = load_scan(dict(scan))
                     data = rename_datavar_standard_attrs(data)
                     data = clean_datavar_attribute_names(data)

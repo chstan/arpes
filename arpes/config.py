@@ -19,7 +19,7 @@ assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT en
                                   "variable defined.")
 
 SOURCE_PATH = ARPES_ROOT
-FIGURE_PATH = os.path.join(SOURCE_PATH, 'figures/')
+FIGURE_PATH = os.path.join(SOURCE_PATH, 'figures')
 
 DATASET_PATH = os.path.join(SOURCE_PATH, 'datasets')
 # don't really need this one, but you can set it if you want
@@ -45,13 +45,13 @@ def update_configuration():
     global PIPELINE_SHELF
     global PIPELINE_JSON_SHELF
 
-    DATASET_CACHE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets/cache.json')
-    CLEAVE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets/cleaves.json')
-    CALIBRATION_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets/calibrations.json')
+    DATASET_CACHE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets','cache.json')
+    CLEAVE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets','cleaves.json')
+    CALIBRATION_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets','calibrations.json')
 
     # TODO use a real database here
-    PIPELINE_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets/pipeline.shelf')
-    PIPELINE_JSON_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets/pipeline.shelf.json')
+    PIPELINE_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets','pipeline.shelf')
+    PIPELINE_JSON_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets','pipeline.shelf.json')
 
 update_configuration()
 
