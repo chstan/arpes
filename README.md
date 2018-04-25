@@ -17,6 +17,9 @@ user experience better.
 
 1. IPython Kernel Customization
 2. Setting up data, analysis notebooks, and datasets
+3. If you are using Jupyter Lab as opposed to Jupyter, installation
+   of the nbextensions: to do this install nodejs from nodejs.org and restart
+   Then open a terminal and run the labextension installation
 
 The rest of this document will guide you through the process of getting through the first set of steps. Additionally, example configuration files can be found in `example_configuration`.
 
