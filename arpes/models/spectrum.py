@@ -98,7 +98,6 @@ def load_MC(metadata: dict=None, filename: str=None):
     of the file
     :return:
     """
-
     if metadata is None and filename is None:
         warnings.warn('Attempting to make due without user associated metadata for the file')
         raise TypeError('Expected a dictionary of metadata with the location of the file')
@@ -112,8 +111,6 @@ def load_MC(metadata: dict=None, filename: str=None):
     p = Path(data_loc)
     if not p.exists(): 
         data_loc = os.path.join(arpes.config.DATA_PATH, data_loc)
-
-
 
     # Use dimension labels instead of
     hdulist = fits.open(data_loc, ignore_missing_end=True)

@@ -41,8 +41,8 @@ from bokeh.io import output_notebook
 from plotly.offline import download_plotlyjs, init_notebook_mode
 
 import matplotlib
-matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.unicode'] = True
-matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{xcolor}"]
+# matplotlib.rcParams['text.usetex'] = True
+# matplotlib.rcParams['text.latex.unicode'] = True
+# matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{xcolor}"]
 
 arpes.config.attempt_determine_workspace(permissive=True)

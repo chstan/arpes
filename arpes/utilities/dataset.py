@@ -56,8 +56,13 @@ def infer_data_path(file, scan_desc, allow_soft_match=False):
             for f in files:
                 if os.path.splitext(file)[0] == os.path.splitext(f)[0]:
                     return os.path.join(dir, f)
-                if allow_soft_match and file in os.path.splitext(f)[0]:
-                    return os.path.join(dir, f) # soft match
+                if allow_soft_match:
+                    matcher = os.path.splitext(f)[0].split('_')[-1]
+                    try:
+                        if int(matcher) == int(file):
+                            return os.path.join(dir, f) # soft match
+                    except ValueError:
+                        pass
 
         except FileNotFoundError:
             pass
