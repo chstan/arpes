@@ -60,8 +60,21 @@ class BokehInteractiveTool(ABC):
     def tool_handler(self, doc):
         pass
 
-    def make_tool(self, arr: Union[xr.DataArray, str], notebook_url='localhost:8888',
+    def make_tool(self, arr: Union[xr.DataArray, str], notebook_url=None,
                   notebook_handle=True, **kwargs):
+
+        def generate_url(port):
+            if port is None:
+                return 'localhost:8888'
+
+            return 'localhost:{}'.format(port)
+
+        if notebook_url is None:
+            if 'PORT' in arpes.config.CONFIG:
+                notebook_url = 'localhost:{}'.format(arpes.config.CONFIG['PORT'])
+            else:
+                notebook_url = 'localhost:8888'
+
         if isinstance(arr, str):
             arr = load_dataset(arr)
             if 'cycle' in arr.dims and len(arr.dims) > 3:
