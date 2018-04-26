@@ -341,9 +341,19 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
     remove_dims = ['eV', 'delay', 'cycle', 'T']
+
+    def unconvertible(dimension):
+        if dimension in remove_dims:
+            return True
+
+        if 'volt' in remove_dims:
+            return True
+
+        return False
+
     removed = []
     for to_remove in remove_dims:
-        if to_remove in old_dims:
+        if unconvertible(to_remove):
             removed.append(to_remove)
             old_dims.remove(to_remove)
 
