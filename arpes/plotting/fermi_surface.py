@@ -1,4 +1,3 @@
-import holoviews as hv
 import xarray as xr
 
 from arpes.provenance import save_plot_provenance
@@ -8,6 +7,7 @@ __all__ = ['fermi_surface_slices']
 
 @save_plot_provenance
 def fermi_surface_slices(arr: xr.DataArray, n_slices=9, ev_per_slice=0.02, bin=0.01, out=None, **kwargs):
+    import holoviews as hv
     slices = []
     for i in range(n_slices):
         high = - ev_per_slice * i

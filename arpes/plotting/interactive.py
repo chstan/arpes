@@ -2,6 +2,7 @@ import copy
 import warnings
 
 import numpy as np
+import colorcet as cc
 from bokeh import events, palettes
 from bokeh.layouts import row, column, widgetbox, Spacer
 from bokeh.models import ColumnDataSource, HoverTool, widgets
@@ -50,6 +51,9 @@ class ImageTool(BokehInteractiveTool):
 
         # Styling
         default_palette = palettes.magma(256)
+        if arr.S.is_subtracted:
+            default_palette = cc.coolwarm
+
         error_alpha = 0.3
         error_fill = '#3288bd'
 
@@ -381,6 +385,8 @@ class ImageTool(BokehInteractiveTool):
 
         # Styling
         default_palette = palettes.magma(256)
+        if arr.S.is_subtracted:
+            default_palette = cc.coolwarm
         error_alpha = 0.3
         error_fill = '#3288bd'
 

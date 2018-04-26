@@ -46,6 +46,13 @@ class ARPESAccessorBase(object):
         return slice_along_path(self._obj, directions, **kwargs)
 
     @property
+    def is_subtracted(self):
+        if 'subtracted' in self._obj.attrs:
+            return self._obj.attrs['subtracted']
+
+        return False
+
+    @property
     def is_kspace(self):
         """
         Infers whether the scan is k-space converted or not. Because of the way this is defined, it will return

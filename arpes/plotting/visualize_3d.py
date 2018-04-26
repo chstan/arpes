@@ -7,10 +7,6 @@ from arpes.provenance import save_plot_provenance
 from arpes.analysis import filters
 from mpl_toolkits.mplot3d import Axes3D # need this import to enable 3D axes
 
-import plotly.plotly as py
-import plotly.offline as pyo
-import plotly.graph_objs as go
-
 from .utils import *
 
 __all__ = ['plot_isosurface', 'plot_trisurf', 'plotly_trisurf']
@@ -51,6 +47,10 @@ def plot_isosurface(data, level=None, percentile=99.5, smoothing=None, out=None,
 
 
 def plotly_trisurf(data):
+    import plotly.plotly as py
+    import plotly.offline as pyo
+    import plotly.graph_objs as go
+
     x = data.coords[data.dims[0]].values
     y = data.coords[data.dims[1]].values
     plot_data = [

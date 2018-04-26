@@ -1,4 +1,3 @@
-import holoviews as hv
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import defaultdict
@@ -19,6 +18,7 @@ __all__ = ['plot_dispersion', 'labeled_fermi_surface',
 
 
 def band_path(band):
+    import holoviews as hv
     return hv.Path([band.center.values, band.coords[band.dims[0]].values])
 
 
@@ -350,6 +350,7 @@ def fancy_dispersion(data, title=None, ax=None, out=None, include_symmetry_point
         return path_for_plot(out)
 
     plt.show()
+    return ax
 
 
 @save_plot_provenance

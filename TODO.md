@@ -48,8 +48,7 @@ in reference maps in order to get offsets for subsequent scans
 1. Get something set up to test full analysis process against a test dataset
 2. Performance tests/benchmarks
 3. Tests should enforce API guarantees if more people start using this
-4. Finish writing test fixture
-s for setting up configuration
+4. Finish writing test fixtures for setting up configuration
 
 ## Today
 
