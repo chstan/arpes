@@ -6,6 +6,7 @@ import warnings
 import numpy as np
 import xarray as xr
 
+from analysis.band_analysis_utils import param_getter, param_stderr_getter
 from arpes.analysis import rebin
 from typing import Optional, Union
 from arpes.typing import DataType
@@ -973,6 +974,12 @@ class ARPESFitToolsAccessor(object):
     def show(self):
         fit_diagnostic_tool = FitCheckTool()
         return fit_diagnostic_tool.make_tool(self._obj)
+
+    def p(self, param_name):
+        return self._obj.T.map(param_getter(param_name))
+
+    def s(self, param_name):
+        return self._obj.T.map(param_stderr_getter(param_name))
 
     @property
     def bands(self):
