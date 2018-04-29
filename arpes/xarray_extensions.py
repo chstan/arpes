@@ -846,6 +846,17 @@ NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 class GenericAccessorTools(object):
     _obj = None
 
+    def as_movie(self, time_dim=None, pattern='{}.png', **kwargs):
+        if time_dim is None:
+            time_dim = self._obj.dims[-1]
+
+        out = kwargs.get('out')
+        if out is not None and isinstance(out, bool):
+            out = pattern.format('{}_animation'.format(self.label))
+            kwargs['out'] = out
+        return plotting.plot_movie(self._obj, time_dim, **kwargs)
+
+
     def filter_coord(self, coordinate_name, sieve):
         """
         Filters a dataset along a coordinate.

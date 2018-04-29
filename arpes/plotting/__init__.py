@@ -10,6 +10,8 @@ from .spin import *
 from .tarpes import *
 from .visualize_3d import *
 
+from .movie import *
+
 # 'Tools'
 from .interactive import *
 from .band_tool import *
