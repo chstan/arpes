@@ -92,9 +92,13 @@ def save_plot_provenance(plot_fn):
         if isinstance(path, str) and os.path.exists(path):
             workspace = arpes.config.CONFIG['WORKSPACE']
             assert(workspace is not None)
-            if isinstance(workspace, dict):
+
+            try:
                 workspace = workspace['name']
-            if arpes.config.CONFIG['WORKSPACE'] not in path:
+            except TypeError:
+                pass
+
+            if workspace not in path:
                 warnings.warn(('Plotting function {} appears not to abide by '
                                'practice of placing plots into designated workspaces.').format(plot_fn.__name__))
 
