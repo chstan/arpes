@@ -847,6 +847,13 @@ NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 class GenericAccessorTools(object):
     _obj = None
 
+    def clean_outliers(self, clip=0.5):
+        low, high = np.percentile(self._obj.values, [clip, 100 - clip])
+        copy = self._obj.copy(deep=True)
+        copy.values[copy.values < low] = low
+        copy.values[copy.values > high] = high
+        return copy
+
     def as_movie(self, time_dim=None, pattern='{}.png', **kwargs):
         if time_dim is None:
             time_dim = self._obj.dims[-1]
