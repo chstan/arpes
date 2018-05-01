@@ -1,14 +1,13 @@
-from bokeh import events, palettes
+from bokeh import events
 import numpy as np
 
 from arpes.models import band
-from arpes.plotting.interactive_utils import BokehInteractiveTool
+from arpes.plotting.interactive_utils import BokehInteractiveTool, CursorTool
 from exceptions import AnalysisError
 
 from bokeh.layouts import row, column, widgetbox
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models import widgets
-from bokeh.models.widgets.markups import Div
 from bokeh.plotting import figure
 
 from arpes.analysis.band_analysis import fit_patterned_bands
@@ -16,19 +15,22 @@ from arpes.analysis.band_analysis import fit_patterned_bands
 __all__ = ('BandTool',)
 
 
-class BandTool(BokehInteractiveTool):
+class BandTool(BokehInteractiveTool, CursorTool):
     """
     Two dimensional fitting band tool
     """
     auto_zero_nans = False
     auto_rebin = False
 
-    def __init__(self, app_main_size=600, app_marginal_size=300):
+    def __init__(self, **kwargs):
         super().__init__()
+
+        self.load_settings(**kwargs)
+
+        self.app_main_size = self.settings.get('app_main_size', 600)
+        self.app_marginal_size = self.settings.get('app_main_size', 300)
         self.active_band = None
         self.pointer_mode = 'band'
-        self.app_main_size = app_main_size
-        self.app_marginal_size = app_marginal_size
 
     def tool_handler(self, doc):
         if len(self.arr.shape) != 2:
@@ -37,7 +39,7 @@ class BandTool(BokehInteractiveTool):
         arr = self.arr
         x_coords, y_coords = arr.coords[arr.dims[0]], arr.coords[arr.dims[1]]
 
-        default_palette = palettes.magma(256)
+        default_palette = self.default_palette
 
         self.app_context.update({
             'bands': {},
@@ -53,26 +55,8 @@ class BandTool(BokehInteractiveTool):
 
         figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'],\
                                       self.app_context['widgets']
-        self.app_context['cursor'] = [np.mean(self.app_context['data_range']['x']),
-                                      np.mean(self.app_context['data_range']['y'])]
-
-        horiz_cursor_x = list(self.app_context['data_range']['x'])
-        horiz_cursor_y = [0, 0]
-        vert_cursor_x = [0, 0]
-        vert_cursor_y = list(self.app_context['data_range']['y'])
-
-        app_widgets['cursor_info_div'] = Div(text='')
-
-        def set_cursor_info():
-            app_widgets['cursor_info_div'].text = '<h2>Cursor:</h2><span>({})</span>'.format(
-                ', '.join("{0:.3f}".format(c) for c in self.app_context['cursor']))
-
-        def update_cursor(vert_x, horiz_y):
-            horiz_y[0] = horiz_y[1] = self.app_context['cursor'][1]
-            vert_x[0] = vert_x[1] = self.app_context['cursor'][0]
-            set_cursor_info()
-
-        update_cursor(vert_cursor_x, horiz_cursor_y)
+        self.cursor = [np.mean(self.app_context['data_range']['x']),
+                       np.mean(self.app_context['data_range']['y'])]
 
         self.app_context['color_maps']['main'] = LinearColorMapper(
             default_palette, low=np.min(arr.values), high=np.max(arr.values), nan_color='black')
@@ -102,9 +86,7 @@ class BandTool(BokehInteractiveTool):
             color_mapper=self.app_context['color_maps']['main'])
 
         # add lines
-        cursor_lines = figures['main'].multi_line(xs=[horiz_cursor_x, vert_cursor_x],
-                                                  ys=[horiz_cursor_y, vert_cursor_y],
-                                                  line_color='white', line_width=2, line_dash='dotted')
+        cursor_lines = self.add_cursor_lines(figures['main'])
         band_lines = figures['main'].multi_line(xs=[], ys=[], line_color='white', line_width=1)
 
         def append_point_to_band():
@@ -114,16 +96,7 @@ class BandTool(BokehInteractiveTool):
                 update_band_display()
 
         def click_main_image(event):
-            cursor = self.app_context['cursor']
-            cursor[0] = event.x
-            cursor[1] = event.y
-            update_cursor(vert_cursor_x, horiz_cursor_y)
-
-            cursor_lines.data_source.data = {
-                'xs': [horiz_cursor_x, vert_cursor_x],
-                'ys': [horiz_cursor_y, vert_cursor_y],
-            }
-
+            self.cursor = [event.x, event.y]
             if self.pointer_mode == 'band':
                 append_point_to_band()
 
@@ -328,7 +301,7 @@ class BandTool(BokehInteractiveTool):
                              center_float_copy
                          ),
                          widgetbox(
-                             app_widgets['cursor_info_div'],
+                             self._cursor_info,
                              main_color_range_slider,
                          )
                      ))

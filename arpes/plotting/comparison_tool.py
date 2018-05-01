@@ -4,7 +4,6 @@ import xarray as xr
 import colorcet as cc
 import numpy as np
 import scipy.ndimage.interpolation
-from bokeh import palettes
 from bokeh.layouts import row, column, widgetbox
 from bokeh.models import widgets
 from bokeh.models.mappers import LinearColorMapper
@@ -25,13 +24,16 @@ class ComparisonTool(BokehInteractiveTool):
     other = None
     compared = None
 
-    def __init__(self, other: DataType, app_main_size=600):
+    def __init__(self, other, **kwargs):
         super().__init__()
-        self.app_main_size = app_main_size
+
+        self.load_settings(**kwargs)
+
+        self.app_main_size = self.settings.get('app_main_size', 600)
         self.other = other
 
     def tool_handler(self, doc):
-        default_palette = palettes.viridis(256)
+        default_palette = self.default_palette
         difference_palette = cc.coolwarm
 
         intensity_slider = widgets.Slider(

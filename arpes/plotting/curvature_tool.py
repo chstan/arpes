@@ -1,5 +1,4 @@
 import numpy as np
-from bokeh import palettes
 from bokeh.layouts import row, column, widgetbox
 from bokeh.models import widgets
 from bokeh.models.mappers import LinearColorMapper
@@ -16,12 +15,14 @@ class CurvatureTool(BokehInteractiveTool):
     auto_zero_nans = False
     auto_rebin = False
 
-    def __init__(self, app_main_size=600):
+    def __init__(self, **kwargs):
         super().__init__()
-        self.app_main_size = app_main_size
+
+        self.load_settings(**kwargs)
+        self.app_main_size = self.settings.get('app_main_size', 600)
 
     def tool_handler(self, doc):
-        default_palette = palettes.viridis(256)
+        default_palette = self.default_palette
 
         x_coords, y_coords = self.arr.coords[self.arr.dims[1]], self.arr.coords[self.arr.dims[0]]
         self.app_context.update({

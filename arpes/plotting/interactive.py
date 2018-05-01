@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 import colorcet as cc
-from bokeh import events, palettes
+from bokeh import events
 from bokeh.layouts import row, column, widgetbox, Spacer
 from bokeh.models import ColumnDataSource, HoverTool, widgets
 from bokeh.models.mappers import LinearColorMapper
@@ -11,7 +11,7 @@ from bokeh.models.widgets.markups import Div
 from bokeh.plotting import figure
 from skimage import exposure
 
-from .interactive_utils import BokehInteractiveTool
+from .interactive_utils import BokehInteractiveTool, CursorTool
 
 from arpes.fits import GStepBModel, ExponentialDecayCModel
 from arpes.io import save_dataset
@@ -20,11 +20,14 @@ __all__ = ('ImageTool',)
 
 # TODO Implement alignment tool
 
-class ImageTool(BokehInteractiveTool):
-    def __init__(self, app_main_size=600, app_marginal_size=300):
+class ImageTool(BokehInteractiveTool, CursorTool):
+    def __init__(self, **kwargs):
         super().__init__()
-        self.app_main_size = app_main_size
-        self.app_marginal_size = app_marginal_size
+
+        self.load_settings(**kwargs)
+
+        self.app_main_size = self.settings.get('app_main_size', 600)
+        self.app_marginal_size = self.settings.get('app_main_size', 300)
 
     # TODO select path in image
     def prep_image(self, image_arr):
@@ -50,7 +53,7 @@ class ImageTool(BokehInteractiveTool):
         fit_data = None
 
         # Styling
-        default_palette = palettes.magma(256)
+        default_palette = self.default_palette
         if arr.S.is_subtracted:
             default_palette = cc.coolwarm
 
@@ -96,8 +99,8 @@ class ImageTool(BokehInteractiveTool):
 
         figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'], self.app_context[
             'widgets']
-        self.app_context['cursor'] = [np.mean(self.app_context['data_range']['x']),
-                                      np.mean(self.app_context['data_range']['y'])]  # Try a sensible default
+        self.cursor = [np.mean(self.app_context['data_range']['x']),
+                       np.mean(self.app_context['data_range']['y'])]  # Try a sensible default
 
         # create the main inset plot
         main_image = arr
@@ -129,13 +132,8 @@ class ImageTool(BokehInteractiveTool):
 
         app_widgets['info_div'] = Div(text='', width=self.app_marginal_size, height=100)
 
-        horiz_cursor_x = list(self.app_context['data_range']['x'])
-        horiz_cursor_y = [0, 0]
-        vert_cursor_x = [0, 0]
-        vert_cursor_y = list(self.app_context['data_range']['y'])
-
         # Create the bottom marginal plot
-        bottom_marginal = arr.sel(**dict([[arr.dims[1], self.app_context['cursor'][1]]]), method='nearest')
+        bottom_marginal = arr.sel(**dict([[arr.dims[1], self.cursor[1]]]), method='nearest')
         figures['bottom_marginal'] = figure(plot_width=self.app_main_size, plot_height=200,
                                             title=None, x_range=figures['main'].x_range,
                                             y_range=(
@@ -147,7 +145,7 @@ class ImageTool(BokehInteractiveTool):
             x=[], y=[], color=error_fill, fill_alpha=error_alpha, line_color=None)
 
         # Create the right marginal plot
-        right_marginal = arr.sel(**dict([[arr.dims[0], self.app_context['cursor'][0]]]), method='nearest')
+        right_marginal = arr.sel(**dict([[arr.dims[0], self.cursor[0]]]), method='nearest')
         figures['right_marginal'] = figure(plot_width=200, plot_height=self.app_main_size,
                                            title=None, y_range=figures['main'].y_range,
                                            x_range=(np.min(right_marginal.values), np.max(right_marginal.values)),
@@ -157,38 +155,20 @@ class ImageTool(BokehInteractiveTool):
         plots['right_marginal_err'] = figures['right_marginal'].patch(
             x=[], y=[], color=error_fill, fill_alpha=error_alpha, line_color=None)
 
-        def update_cursor(vert_x, horiz_y):
-            horiz_y[0] = horiz_y[1] = self.app_context['cursor'][1]
-            vert_x[0] = vert_x[1] = self.app_context['cursor'][0]
-            set_cursor_info()
-
-        app_widgets['cursor_info_div'] = Div(text='')
-
-        def set_cursor_info():
-            app_widgets['cursor_info_div'].text = '<h2>Cursor:</h2><span>({})</span>'.format(
-                ', '.join("{0:.3f}".format(c) for c in self.app_context['cursor']))
-
-        update_cursor(vert_cursor_x, horiz_cursor_y)
-
-        cursor_lines = figures['main'].multi_line(xs=[horiz_cursor_x, vert_cursor_x],
-                                                  ys=[horiz_cursor_y, vert_cursor_y],
-                                                  line_color='white', line_width=2, line_dash='dotted')
+        cursor_lines = self.add_cursor_lines(figures['main'])
 
         # Attach tools and callbacks
         toggle = widgets.Toggle(label="Show Stat. Variation", button_type="success", active=False)
 
         def set_show_stat_variation(should_show):
-            cursor = self.app_context['cursor']
             self.app_context['show_stat_variation'] = should_show
 
             if should_show:
-                main_image_data = arr.sel(**dict([[arr.dims[2], cursor[2]]]), method='nearest')
-                update_stat_variation('z', arr.sel(**dict([[arr.dims[0], cursor[0]], [arr.dims[1], cursor[1]]]),
-                                                   method='nearest'))
+                main_image_data = arr
                 update_stat_variation('bottom',
-                                      main_image_data.sel(**dict([[arr.dims[1], cursor[1]]]), method='nearest'))
+                                      main_image_data.sel(**dict([[arr.dims[1], self.cursor[1]]]), method='nearest'))
                 update_stat_variation('right',
-                                      main_image_data.sel(**dict([[arr.dims[0], cursor[0]]]), method='nearest'))
+                                      main_image_data.sel(**dict([[arr.dims[0], self.cursor[0]]]), method='nearest'))
                 plots['bottom_marginal_err'].visible = True
                 plots['right_marginal_err'].visible = True
             else:
@@ -224,10 +204,9 @@ class ImageTool(BokehInteractiveTool):
         def on_change_color_mode(attr, old, new_color_mode):
             self.app_context['color_mode'] = new_color_mode
             if old is None or old != new_color_mode:
-                cursor = self.app_context['cursor']
-                right_image_data = arr.sel(**dict([[arr.dims[0], cursor[0]]]), method='nearest')
-                bottom_image_data = arr.sel(**dict([[arr.dims[1], cursor[1]]]), method='nearest')
-                main_image_data = arr.sel(**dict([[arr.dims[2], cursor[2]]]), method='nearest')
+                right_image_data = arr.sel(**dict([[arr.dims[0], self.cursor[0]]]), method='nearest')
+                bottom_image_data = arr.sel(**dict([[arr.dims[1], self.cursor[1]]]), method='nearest')
+                main_image_data = arr
                 prepped_right_image = self.prep_image(right_image_data)
                 prepped_bottom_image = self.prep_image(bottom_image_data)
                 prepped_main_image = self.prep_image(main_image_data)
@@ -247,7 +226,7 @@ class ImageTool(BokehInteractiveTool):
             pass
 
         def place_symmetry_point():
-            cursor_dict = dict(zip(arr.dims, self.app_context['cursor']))
+            cursor_dict = dict(zip(arr.dims, self.cursor))
             skip_dimensions = {'eV', 'delay', 'cycle'}
             if 'symmetry_points' not in arr.attrs:
                 arr.attrs['symmetry_points'] = {}
@@ -290,7 +269,7 @@ class ImageTool(BokehInteractiveTool):
                                  main_color_range_slider,
                                  Div(text='<h2 style="padding-top: 30px;">General Settings:</h2>'),
                                  toggle,
-                                 app_widgets['cursor_info_div'],
+                                 self._cursor_info,
                                  sizing_mode='scale_width'
                              ), title='Settings'),
                              widgets.Panel(child=widgetbox(
@@ -326,17 +305,10 @@ class ImageTool(BokehInteractiveTool):
             print(event)
 
         def click_main_image(event):
-            cursor = self.app_context['cursor']
-            cursor[0] = event.x
-            cursor[1] = event.y
-            update_cursor(vert_cursor_x, horiz_cursor_y)
-            cursor_lines.data_source.data = {
-                'xs': [horiz_cursor_x, vert_cursor_x],
-                'ys': [horiz_cursor_y, vert_cursor_y],
-            }
+            self.cursor = [event.x, event.y, self.cursor[2]]
 
-            right_marginal_data = arr.sel(**dict([[arr.dims[0], cursor[0]]]), method='nearest')
-            bottom_marginal_data = arr.sel(**dict([[arr.dims[1], cursor[1]]]), method='nearest')
+            right_marginal_data = arr.sel(**dict([[arr.dims[0], self.cursor[0]]]), method='nearest')
+            bottom_marginal_data = arr.sel(**dict([[arr.dims[1], self.cursor[1]]]), method='nearest')
             plots['bottom_marginal'].data_source.data = {
                 'x': bottom_marginal_data.coords[arr.dims[0]].values,
                 'y': bottom_marginal_data.values,
@@ -384,7 +356,7 @@ class ImageTool(BokehInteractiveTool):
         }
 
         # Styling
-        default_palette = palettes.magma(256)
+        default_palette = self.default_palette
         if arr.S.is_subtracted:
             default_palette = cc.coolwarm
         error_alpha = 0.3
@@ -430,12 +402,12 @@ class ImageTool(BokehInteractiveTool):
 
         figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'], self.app_context[
             'widgets']
-        self.app_context['cursor'] = [np.mean(self.app_context['data_range']['x']),
-                                      np.mean(self.app_context['data_range']['y']),
-                                      np.mean(self.app_context['data_range']['z'])]  # Try a sensible default
+        self.cursor = [np.mean(self.data_range['x']),
+                       np.mean(self.data_range['y']),
+                       np.mean(self.data_range['z'])]
 
         # create the main inset plot
-        main_image = arr.sel(**dict([[arr.dims[2], self.app_context['cursor'][2]]]), method='nearest')
+        main_image = arr.sel(**dict([[arr.dims[2], self.cursor[2]]]), method='nearest')
         prepped_main_image = self.prep_image(main_image)
         self.app_context['color_maps']['main'] = LinearColorMapper(
             default_palette, low=np.min(prepped_main_image), high=np.max(prepped_main_image), nan_color='black')
@@ -459,7 +431,7 @@ class ImageTool(BokehInteractiveTool):
 
         # Create the z-selector
         z_marginal_data = arr.sel(
-            **dict([[arr.dims[0], self.app_context['cursor'][0]], [arr.dims[1], self.app_context['cursor'][1]]]),
+            **dict([[arr.dims[0], self.cursor[0]], [arr.dims[1], self.cursor[1]]]),
             method='nearest')
         z_hover_tool = HoverTool(
             tooltips=[
@@ -516,13 +488,8 @@ class ImageTool(BokehInteractiveTool):
             except Exception as e:
                 plots['z_fit'] = figures['z_marginal'].line(x=[], y=[], line_dash='dashed', line_color='red')
 
-        horiz_cursor_x = list(self.app_context['data_range']['x'])
-        horiz_cursor_y = [0, 0]
-        vert_cursor_x = [0, 0]
-        vert_cursor_y = list(self.app_context['data_range']['y'])
-
         # Create the bottom marginal plot
-        bottom_image = arr.sel(**dict([[arr.dims[1], self.app_context['cursor'][1]]]), method='nearest')
+        bottom_image = arr.sel(**dict([[arr.dims[1], self.cursor[1]]]), method='nearest')
         prepped_bottom_image = self.prep_image(bottom_image)
         self.app_context['color_maps']['bottom'] = LinearColorMapper(
             default_palette, low=np.min(prepped_bottom_image), high=np.max(prepped_bottom_image), nan_color='black')
@@ -539,7 +506,7 @@ class ImageTool(BokehInteractiveTool):
                                                   dh=self.app_context['data_range']['z'][1] -
                                                      self.app_context['data_range']['z'][0],
                                                   color_mapper=self.app_context['color_maps']['bottom'])
-        bottom_marginal = bottom_image.sel(**dict([[arr.dims[2], self.app_context['cursor'][2]]]), method='nearest')
+        bottom_marginal = bottom_image.sel(**dict([[arr.dims[2], self.cursor[2]]]), method='nearest')
         figures['bottom_marginal'] = figure(plot_width=self.app_main_size, plot_height=200,
                                             title=None, x_range=figures['main'].x_range,
                                             y_range=(
@@ -551,7 +518,7 @@ class ImageTool(BokehInteractiveTool):
             x=[], y=[], color=error_fill, fill_alpha=error_alpha, line_color=None)
 
         # Create the right marginal plot
-        right_image = arr.sel(**dict([[arr.dims[0], self.app_context['cursor'][0]]]), method='nearest')
+        right_image = arr.sel(**dict([[arr.dims[0], self.cursor[0]]]), method='nearest')
         prepped_right_image = self.prep_image(right_image)
         self.app_context['color_maps']['right'] = LinearColorMapper(
             default_palette, low=np.min(prepped_right_image), high=np.max(prepped_right_image), nan_color='black')
@@ -566,7 +533,7 @@ class ImageTool(BokehInteractiveTool):
                                                 dh=self.app_context['data_range']['y'][1] -
                                                    self.app_context['data_range']['y'][0],
                                                 color_mapper=self.app_context['color_maps']['right'])
-        right_marginal = right_image.sel(**dict([[arr.dims[2], self.app_context['cursor'][2]]]), method='nearest')
+        right_marginal = right_image.sel(**dict([[arr.dims[2], self.cursor[2]]]), method='nearest')
         figures['right_marginal'] = figure(plot_width=200, plot_height=self.app_main_size,
                                            title=None, y_range=figures['main'].y_range,
                                            x_range=(np.min(right_marginal.values), np.max(right_marginal.values)),
@@ -576,38 +543,22 @@ class ImageTool(BokehInteractiveTool):
         plots['right_marginal_err'] = figures['right_marginal'].patch(
             x=[], y=[], color=error_fill, fill_alpha=error_alpha, line_color=None)
 
-        app_widgets['cursor_info_div'] = Div(text='')
-
-        def set_cursor_info():
-            app_widgets['cursor_info_div'].text = '<h2>Cursor:</h2><span>({})</span>'.format(
-                ', '.join("{0:.3f}".format(c) for c in self.app_context['cursor']))
-
-        def update_cursor(vert_x, horiz_y):
-            horiz_y[0] = horiz_y[1] = self.app_context['cursor'][1]
-            vert_x[0] = vert_x[1] = self.app_context['cursor'][0]
-            set_cursor_info()
-
-        update_cursor(vert_cursor_x, horiz_cursor_y)
-
-        cursor_lines = figures['main'].multi_line(xs=[horiz_cursor_x, vert_cursor_x],
-                                                  ys=[horiz_cursor_y, vert_cursor_y],
-                                                  line_color='white', line_width=2, line_dash='dotted')
+        cursor_lines = self.add_cursor_lines(figures['main'])
 
         # Attach tools and callbacks
         toggle = widgets.Toggle(label="Show Stat. Variation", button_type="success", active=False)
 
         def set_show_stat_variation(should_show):
-            cursor = self.app_context['cursor']
             self.app_context['show_stat_variation'] = should_show
 
             if should_show:
-                main_image_data = arr.sel(**dict([[arr.dims[2], cursor[2]]]), method='nearest')
-                update_stat_variation('z', arr.sel(**dict([[arr.dims[0], cursor[0]], [arr.dims[1], cursor[1]]]),
+                main_image_data = arr.sel(**dict([[arr.dims[2], self.cursor[2]]]), method='nearest')
+                update_stat_variation('z', arr.sel(**dict([[arr.dims[0], self.cursor[0]], [arr.dims[1], self.cursor[1]]]),
                                                    method='nearest'))
                 update_stat_variation('bottom',
-                                      main_image_data.sel(**dict([[arr.dims[1], cursor[1]]]), method='nearest'))
+                                      main_image_data.sel(**dict([[arr.dims[1], self.cursor[1]]]), method='nearest'))
                 update_stat_variation('right',
-                                      main_image_data.sel(**dict([[arr.dims[0], cursor[0]]]), method='nearest'))
+                                      main_image_data.sel(**dict([[arr.dims[0], self.cursor[0]]]), method='nearest'))
                 plots['z_marginal_err'].visible = True
                 plots['bottom_marginal_err'].visible = True
                 plots['right_marginal_err'].visible = True
@@ -645,7 +596,7 @@ class ImageTool(BokehInteractiveTool):
         def on_change_color_mode(attr, old, new_color_mode):
             self.app_context['color_mode'] = new_color_mode
             if old is None or old != new_color_mode:
-                cursor = self.app_context['cursor']
+                cursor = self.cursor
                 right_image_data = arr.sel(**dict([[arr.dims[0], cursor[0]]]), method='nearest')
                 bottom_image_data = arr.sel(**dict([[arr.dims[1], cursor[1]]]), method='nearest')
                 main_image_data = arr.sel(**dict([[arr.dims[2], cursor[2]]]), method='nearest')
@@ -670,7 +621,7 @@ class ImageTool(BokehInteractiveTool):
             pass
 
         def place_symmetry_point():
-            cursor_dict = dict(zip(arr.dims, self.app_context['cursor']))
+            cursor_dict = dict(zip(arr.dims, self.cursor))
             skip_dimensions = {'eV', 'delay', 'cycle'}
             if 'symmetry_points' not in arr.attrs:
                 arr.attrs['symmetry_points'] = {}
@@ -720,7 +671,7 @@ class ImageTool(BokehInteractiveTool):
                                  bottom_color_range_slider,
                                  Div(text='<h2 style="padding-top: 30px;">General Settings:</h2>'),
                                  toggle,
-                                 app_widgets['cursor_info_div'],
+                                 self._cursor_info,
                                  sizing_mode='scale_width'
                              ), title='Settings'),
                              widgets.Panel(child=widgetbox(
@@ -758,9 +709,9 @@ class ImageTool(BokehInteractiveTool):
             print(event)
 
         def click_z_marginal(event):
-            cursor = self.app_context['cursor']
-            cursor[2] = event.x
-            set_cursor_info()
+            self.cursor = [self.cursor[0], self.cursor[1], event.x]
+            cursor = self.cursor
+
             main_image = arr.sel(**dict([[arr.dims[2], cursor[2]]]), method='nearest')
             plots['main'].data_source.data = {
                 'image': [self.prep_image(main_image).T]
@@ -785,14 +736,8 @@ class ImageTool(BokehInteractiveTool):
             figures['right_marginal'].x_range.end = np.max(right_marginal_data.values)
 
         def click_main_image(event):
-            cursor = self.app_context['cursor']
-            cursor[0] = event.x
-            cursor[1] = event.y
-            update_cursor(vert_cursor_x, horiz_cursor_y)
-            cursor_lines.data_source.data = {
-                'xs': [horiz_cursor_x, vert_cursor_x],
-                'ys': [horiz_cursor_y, vert_cursor_y],
-            }
+            self.cursor = [event.x, event.y, self.cursor[2]]
+            cursor = self.cursor
             right_image_data = arr.sel(**dict([[arr.dims[0], cursor[0]]]), method='nearest')
             bottom_image_data = arr.sel(**dict([[arr.dims[1], cursor[1]]]), method='nearest')
             prepped_right_image = self.prep_image(right_image_data)
