@@ -1,6 +1,6 @@
 # Data loading
 astropy
-xarray
+xarray==0.9.6
 h5py
 netCDF4
 colorcet
