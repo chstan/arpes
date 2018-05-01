@@ -971,6 +971,23 @@ class GenericAccessorTools(object):
         self._obj = xarray_obj
 
 
+@xr.register_dataset_accessor('F')
+class ARPESDatasetFitToolAccessor(object):
+    _obj = None
+
+    def __init__(self, xarray_obj: DataType):
+        self._obj = xarray_obj
+
+    def show(self):
+        fit_diagnostic_tool = FitCheckTool()
+        return fit_diagnostic_tool.make_tool(self._obj)
+
+    def p(self, param_name):
+        return self._obj.results.F.p(param_name)
+
+    def s(self, param_name):
+        return self._obj.results.F.s(param_name)
+
 @xr.register_dataarray_accessor('F')
 class ARPESFitToolsAccessor(object):
     _obj = None
@@ -981,6 +998,9 @@ class ARPESFitToolsAccessor(object):
     def show(self):
         fit_diagnostic_tool = FitCheckTool()
         return fit_diagnostic_tool.make_tool(self._obj)
+
+    def show_fit_diagnostic(self):
+        return self.show()
 
     def p(self, param_name):
         return self._obj.T.map(param_getter(param_name))
