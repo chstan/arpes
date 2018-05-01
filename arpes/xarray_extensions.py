@@ -610,7 +610,7 @@ class ARPESAccessorBase(object):
             widths = {}
 
         default_widths = {
-            'eV': 0.1,
+            'eV': 0.05,
             'phi': 2,
             'polar': 2,
             'kx': 0.02,
