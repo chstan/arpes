@@ -48,10 +48,13 @@ class ARPESAccessorBase(object):
 
     @property
     def is_subtracted(self):
-        if 'subtracted' in self._obj.attrs:
-            return self._obj.attrs['subtracted']
+        if self._obj.attrs.get('subtracted'):
+            return True
 
-        return False
+        if isinstance(self._obj, xr.DataArray):
+            # if at least 5% of the values are < 0 we should consider the data
+            # to be best represented by a coolwarm map
+            return (((self._obj < 0) * 1).mean() > 0.05).item()
 
     @property
     def is_kspace(self):
