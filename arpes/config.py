@@ -18,6 +18,14 @@ ARPES_ROOT = os.getenv('ARPES_ROOT')
 assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT environment "
                                   "variable defined.")
 
+SETTINGS = {
+    'interactive': {
+        'main_width': 600,
+        'marginal_width': 300,
+        'palette': 'magma',
+    },
+}
+
 SOURCE_PATH = ARPES_ROOT
 FIGURE_PATH = os.path.join(SOURCE_PATH, 'figures')
 
