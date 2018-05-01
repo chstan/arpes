@@ -90,7 +90,7 @@ class BandTool(BokehInteractiveTool, CursorTool):
         band_lines = figures['main'].multi_line(xs=[], ys=[], line_color='white', line_width=1)
 
         def append_point_to_band():
-            cursor = self.app_context['cursor']
+            cursor = self.cursor
             if self.active_band in self.app_context['bands']:
                 self.app_context['bands'][self.active_band]['points'].append(list(cursor))
                 update_band_display()
