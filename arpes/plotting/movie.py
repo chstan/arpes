@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
 
-
+from plotting.utils import path_for_plot
 from provenance import save_plot_provenance
 
 __all__ = ('plot_movie',)
@@ -47,8 +47,8 @@ def plot_movie(data: xr.DataArray, time_dim, interval=None,
     writer = Writer(fps=1000 / computed_interval, metadata=dict(artist='Me'), bitrate=1800)
 
     if out is not None:
-        anim.save(out, writer=writer)
-        return out
+        anim.save(path_for_plot(out), writer=writer)
+        return path_for_plot(out)
 
     plt.show()
     return anim
