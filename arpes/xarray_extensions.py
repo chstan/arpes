@@ -1033,6 +1033,20 @@ class ARPESFitToolsAccessor(object):
 
         return collected_band_names
 
+    @property
+    def parameter_names(self):
+        collected_parameter_names = set()
+
+        for item in self._obj.values.ravel():
+            if item is None:
+                continue
+
+            param_names = [k for k in item.params.keys()]
+            collected_parameter_names = collected_parameter_names.union(set(param_names))
+
+        return collected_parameter_names
+
+
     def show_fit_diagnostic(self):
         """
         alias for ``.show``
