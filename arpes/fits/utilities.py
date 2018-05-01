@@ -8,21 +8,24 @@ from arpes.utilities import normalize_to_spectrum
 __all__ = ('broadcast_model',)
 
 
-def broadcast_model(model_cls: type, dataset: DataType, broadcast_dims, progress=True, constraints=None):
+def broadcast_model(model_cls: type, data: DataType, broadcast_dims, progress=True, constraints=None, dataset=True):
     if constraints is None:
         constraints = {}
 
     if isinstance(broadcast_dims, str):
         broadcast_dims = [broadcast_dims]
 
-    data = normalize_to_spectrum(dataset)
+    data = normalize_to_spectrum(data)
     cs = {}
     for dim in broadcast_dims:
         cs[dim] = data.coords[dim]
 
     other_axes = set(data.dims).difference(set(broadcast_dims))
     template = data.sum(list(other_axes))
-    fit_results = np.ndarray(template.shape, dtype=np.object)
+    template.values = np.ndarray(template.shape, dtype=np.object)
+
+    residual = data.copy(deep=True)
+    residual.values = np.zeros(residual.shape)
 
     model = model_cls()
 
@@ -34,9 +37,17 @@ def broadcast_model(model_cls: type, dataset: DataType, broadcast_dims, progress
     for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting',
                                              total=n_fits):
         cut_data = data.sel(**cut_coords)
-        fit_results[[slice(i, i+1) for i in indices]] = model.guess_fit(cut_data, params=constraints)
+        fit_result = model.guess_fit(cut_data, params=constraints)
+        template.loc[cut_coords] = fit_result
+        residual.loc[cut_coords] = fit_result.residual
 
-    fit_results = xr.DataArray(fit_results, coords=cs, dims=broadcast_dims)
-    fit_results.attrs['original_data'] = data
+    if dataset:
+        return xr.Dataset({
+            'results': template,
+            'data': data,
+            'residual': residual,
+            'norm_residual': residual / data,
+        }, residual.coords)
 
-    return fit_results
+    template.attrs['original_data'] = data
+    return template

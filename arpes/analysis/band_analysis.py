@@ -139,7 +139,7 @@ def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_w
 def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
                         fit_direction=None, avoid_crossings=None,
                         stray=None, background=True, preferred_k_direction=None,
-                        interactive=True):
+                        interactive=True, dataset=True):
     """
     Fits bands and determines dispersion in some region of a spectrum.
 
@@ -159,7 +159,9 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
     :param band_set: dictionary with bands and points along the spectrum
     :param orientation: edc or mdc
     :param direction_normal:
-    :return:
+    :param preferred_k_direction:
+    :param dataset:
+    :return: Dataset or DataArray, as controlled by the parameter "dataset"
     """
 
     if background == True:
@@ -289,8 +291,25 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
         # populate models, sample code
         band_results.loc[coord_dict] = fit_result
 
-    band_results.attrs['original_data'] = arr
-    return band_results
+    if not dataset:
+        band_results.attrs['original_data'] = arr
+        return band_results
+
+    residual = arr.copy(deep=True)
+    residual.values = np.zeros(residual.shape)
+
+    for coords in band_results.T.iter_coords():
+        fit_item = band_results.sel(**coords).item()
+        if fit_item is None:
+            continue
+        residual.loc[coords] = fit_item.residual
+
+    return xr.Dataset({
+        'data': arr,
+        'residual': residual,
+        'results': band_results,
+        'norm_residual': residual / arr,
+    }, residual.coords)
 
 
 def fit_bands(arr: xr.DataArray, band_description, background=None,
