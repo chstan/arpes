@@ -302,7 +302,11 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
         fit_item = band_results.sel(**coords).item()
         if fit_item is None:
             continue
-        residual.loc[coords] = fit_item.residual
+
+        try:
+            residual.loc[coords] = fit_item.residual
+        except:
+            pass
 
     return xr.Dataset({
         'data': arr,
