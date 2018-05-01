@@ -1,5 +1,6 @@
 import xarray as xr
 import numpy as np
+import arpes.config
 
 from matplotlib import pyplot as plt
 from matplotlib import animation
@@ -19,7 +20,15 @@ def plot_movie(data: xr.DataArray, time_dim, interval=None,
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 7))
 
-    plot = data.mean(time_dim).plot(vmax=data.max().item(), vmin=data.min().item())
+    cmap = arpes.config.SETTINGS.get('interactive', {}).get('palette', 'viridis')
+    vmax = data.max().item()
+    vmin = data.min().item()
+    if data.S.is_subtracted:
+        cmap = 'RdBu'
+        vmax = np.max([np.abs(vmin), np.abs(vmax)])
+        vmin = -vmax
+
+    plot = data.mean(time_dim).transpose().plot(vmax=vmax, vmin=vmin, cmap=cmap)
 
     def init():
         plot.set_array(np.asarray([]))
@@ -30,7 +39,7 @@ def plot_movie(data: xr.DataArray, time_dim, interval=None,
     def animate(i):
         coordinate = animation_coords[i]
         data_for_plot = data.sel(**dict([[time_dim, coordinate]]))
-        plot.set_array(data_for_plot.values.ravel())
+        plot.set_array(data_for_plot.values.T.ravel())
         return plot,
 
     if interval:
@@ -50,5 +59,5 @@ def plot_movie(data: xr.DataArray, time_dim, interval=None,
         anim.save(path_for_plot(out), writer=writer)
         return path_for_plot(out)
 
-    plt.show()
+    #plt.show()
     return anim
