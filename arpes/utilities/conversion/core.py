@@ -352,6 +352,7 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
         return False
 
     removed = []
+
     for to_remove in arr.dims:
         if unconvertible(to_remove):
             removed.append(to_remove)

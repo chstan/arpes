@@ -391,11 +391,15 @@ class ARPESAccessorBase(object):
         # to select the active region and then to rebin into course steps in energy from 0
         # down to this region
         # we will then find the appropriate edge for each slice, and do a fit to the edge locations
+
         energy_edge = self.find_spectrum_energy_edges()
         low_edge = np.min(energy_edge) + 0.05
         high_edge = np.max(energy_edge) - 0.05
 
-        assert(high_edge - low_edge > 0.15)
+        if high_edge - low_edge < 0.15:
+            # Doesn't look like the automatic inference of the energy edge was valid
+            high_edge = 0
+            low_edge = np.min(self._obj.coords['eV'].values)
 
         angular_dim = 'pixel' if 'pixel' in self._obj.dims else 'phi'
         energy_cut = self._obj.sel(eV=slice(low_edge, high_edge)).S.sum_other(['eV', angular_dim])
