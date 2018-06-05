@@ -353,13 +353,14 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
         if dimension in remove_dims:
             return True
 
-        if 'volt' in remove_dims:
+        if 'volt' in dimension:
             return True
 
         return False
 
     removed = []
-    for to_remove in old_dims:
+
+    for to_remove in arr.dims:
         if unconvertible(to_remove):
             removed.append(to_remove)
             old_dims.remove(to_remove)
