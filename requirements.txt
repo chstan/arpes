@@ -1,5 +1,8 @@
 # Data loading
 astropy
+
+# Need to use pre 0.10.1 as this version introduced a change that forced all
+# assignment through Variable.get_compatible_data, coercing them to an array
 xarray==0.9.6
 h5py
 netCDF4

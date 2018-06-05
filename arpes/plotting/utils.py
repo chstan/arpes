@@ -3,15 +3,57 @@ import errno
 import itertools
 import os.path
 import numpy as np
+import matplotlib.offsetbox
+import matplotlib
+from matplotlib.lines import Line2D
 
 from collections import Counter
 
 import matplotlib.pyplot as plt
 
 from arpes.config import CONFIG, FIGURE_PATH
+from arpes.typing import DataType
+from utilities import normalize_to_spectrum
 
 __all__ = ['path_for_plot', 'path_for_holoviews', 'name_for_dim', 'label_for_colorbar', 'label_for_dim',
-           'label_for_symmetry_point', 'savefig']
+           'label_for_symmetry_point', 'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio']
+
+def calculate_aspect_ratio(data: DataType):
+    data = normalize_to_spectrum(data)
+
+    assert(len(data.dims) == 2)
+
+    x_extent = np.ptp(data.coords[data.dims[0]].values)
+    y_extent = np.ptp(data.coords[data.dims[1]].values)
+
+    return y_extent / x_extent
+
+class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
+    """ size: length of bar in data units
+        extent : height of bar ends in axes units """
+    def __init__(self, size=1, extent = 0.03, label="", loc=2, ax=None,
+                 pad=0.4, borderpad=0.5, ppad = 0, sep=2, prop=None,
+                 label_color=None,
+                 frameon=True, **kwargs):
+        if not ax:
+            ax = plt.gca()
+        trans = ax.get_xaxis_transform()
+
+        size_bar = matplotlib.offsetbox.AuxTransformBox(trans)
+        line = Line2D([0,size],[0,0], **kwargs)
+        vline1 = Line2D([0,0],[-extent/2.,extent/2.], **kwargs)
+        vline2 = Line2D([size,size],[-extent/2.,extent/2.], **kwargs)
+        size_bar.add_artist(line)
+        size_bar.add_artist(vline1)
+        size_bar.add_artist(vline2)
+        txt = matplotlib.offsetbox.TextArea(label, minimumdescent=False, textprops={
+            'color': label_color,
+        })
+        self.vpac = matplotlib.offsetbox.VPacker(children=[size_bar,txt],
+                                 align="center", pad=ppad, sep=sep)
+        matplotlib.offsetbox.AnchoredOffsetbox.__init__(self, loc, pad=pad,
+                 borderpad=borderpad, child=self.vpac, prop=prop, frameon=frameon)
+
 
 def savefig(desired_path, **kwargs):
     full_path = path_for_plot(desired_path)

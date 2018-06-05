@@ -443,15 +443,26 @@ class ARPESAccessorBase(object):
         return low_edges, high_edges, rebinned.coords['eV']
 
 
-    def zero_spectrometer_edges(self, edge_type='hard', cut_margin=None):
+    def zero_spectrometer_edges(self, edge_type='hard', cut_margin=None, interp_range=None, low=None, high=None):
         """
         At the moment we only provide hard edges. Soft edges would be smoothed
         with a logistic function or similar.
         :param edge_type:
+        :param inter_range: Range over which to extrapolate fit
         :return:
         """
 
+        if low is not None:
+            assert(high is not None)
+            assert(len(low) == len(high) == 2)
+
+            low_edges = low
+            high_edges = high
+
         low_edges, high_edges, rebinned_eV_coord = self.find_spectrum_angular_edges_full(indices=True)
+
+
+
 
         angular_dim = 'pixel' if 'pixel' in self._obj.dims else 'phi'
         if cut_margin is None:
@@ -463,6 +474,14 @@ class ARPESAccessorBase(object):
             if isinstance(cut_margin, float):
                 assert(angular_dim == 'phi')
                 cut_margin = int(cut_margin / self._obj.T.stride(generic_dim_names=False)[angular_dim])
+
+        if interp_range is not None:
+            low_edge = xr.DataArray(low_edges, coords={'eV': rebinned_eV_coord}, dims=['eV'])
+            high_edge = xr.DataArray(high_edges, coords={'eV': rebinned_eV_coord}, dims=['eV'])
+            low_edge = low_edge.sel(eV=interp_range)
+            high_edge = high_edge.sel(eV=interp_range)
+            import pdb
+            pdb.set_trace()
 
         other_dims = list(self._obj.dims)
         other_dims.remove('eV')

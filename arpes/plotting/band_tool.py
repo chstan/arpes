@@ -55,10 +55,10 @@ class BandTool(BokehInteractiveTool, CursorTool):
 
         figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'],\
                                       self.app_context['widgets']
-        self.cursor = [np.mean(self.app_context['data_range']['x']),
-                       np.mean(self.app_context['data_range']['y'])]
+        self.cursor = [np.mean(self.data_range['x']),
+                       np.mean(self.data_range['y'])]
 
-        self.app_context['color_maps']['main'] = LinearColorMapper(
+        self.color_maps['main'] = LinearColorMapper(
             default_palette, low=np.min(arr.values), high=np.max(arr.values), nan_color='black')
 
         main_tools = ["wheel_zoom", "tap", "reset"]
@@ -73,8 +73,8 @@ class BandTool(BokehInteractiveTool, CursorTool):
             tools=main_tools, plot_width=self.app_main_size, plot_height=self.app_main_size, min_border=10,
             min_border_left=50,
             toolbar_location='left', x_axis_location='below', y_axis_location='right',
-            title=main_title, x_range=self.app_context['data_range']['x'],
-            y_range=self.app_context['data_range']['y'])
+            title=main_title, x_range=self.data_range['x'],
+            y_range=self.data_range['y'])
         figures['main'].xaxis.axis_label = arr.dims[0]
         figures['main'].yaxis.axis_label = arr.dims[1]
         figures['main'].toolbar.logo = None
@@ -83,10 +83,11 @@ class BandTool(BokehInteractiveTool, CursorTool):
             [arr.values.T], x=self.app_context['data_range']['x'][0], y=self.app_context['data_range']['y'][0],
             dw=self.app_context['data_range']['x'][1] - self.app_context['data_range']['x'][0],
             dh=self.app_context['data_range']['y'][1] - self.app_context['data_range']['y'][0],
-            color_mapper=self.app_context['color_maps']['main'])
+            color_mapper=self.app_context['color_maps']['main']
+        )
 
         # add lines
-        cursor_lines = self.add_cursor_lines(figures['main'])
+        self.add_cursor_lines(figures['main'])
         band_lines = figures['main'].multi_line(xs=[], ys=[], line_color='white', line_width=1)
 
         def append_point_to_band():
@@ -100,19 +101,7 @@ class BandTool(BokehInteractiveTool, CursorTool):
             if self.pointer_mode == 'band':
                 append_point_to_band()
 
-        def update_colormap_for(plot_name):
-            # TODO refactor out duplicated code
-            def update_plot_colormap(attr, old, new):
-                plot_data = plots[plot_name].data_source.data['image']
-                low, high = np.min(plot_data), np.max(plot_data)
-                dynamic_range = high - low
-                self.app_context['color_maps'][plot_name].update(low=low + new[0] / 100 * dynamic_range,
-                                                                 high=low + new[1] / 100 * dynamic_range)
-
-            return update_plot_colormap
-
-        update_main_colormap = update_colormap_for('main')
-
+        update_main_colormap = self.update_colormap_for('main')
 
         POINTER_MODES = [
             ('Cursor', 'cursor',),
@@ -187,7 +176,8 @@ class BandTool(BokehInteractiveTool, CursorTool):
 
         pointer_dropdown = widgets.Dropdown(label='Pointer Mode', button_type='primary', menu=POINTER_MODES)
         direction_dropdown = widgets.Dropdown(label='Fit Direction', button_type='primary', menu=DIRECTIONS)
-        band_dropdown = widgets.Dropdown(label='Active Band', button_type='primary', menu=self.app_context['band_options'])
+        band_dropdown = widgets.Dropdown(label='Active Band', button_type='primary',
+                                         menu=self.app_context['band_options'])
         fit_mode_dropdown = widgets.Dropdown(label='Mode', button_type='primary', menu=FIT_MODES)
         band_type_dropdown = widgets.Dropdown(label='Band Type', button_type='primary', menu=BAND_TYPES)
 

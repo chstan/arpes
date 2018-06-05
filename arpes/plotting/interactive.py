@@ -288,17 +288,7 @@ class ImageTool(BokehInteractiveTool, CursorTool):
                              ), title='Preparation'),
                          ], width=400)))
 
-        def update_colormap_for(plot_name):
-            def update_plot_colormap(attr, old, new):
-                plot_data = plots[plot_name].data_source.data['image']
-                low, high = np.min(plot_data), np.max(plot_data)
-                dynamic_range = high - low
-                self.app_context['color_maps'][plot_name].update(low=low + new[0] / 100 * dynamic_range,
-                                                                 high=low + new[1] / 100 * dynamic_range)
-
-            return update_plot_colormap
-
-        update_main_colormap = update_colormap_for('main')
+        update_main_colormap = self.update_colormap_for('main')
 
         def on_click_save(event):
             save_dataset(arr)
@@ -690,19 +680,9 @@ class ImageTool(BokehInteractiveTool, CursorTool):
                              ), title='Preparation'),
                          ], width=400)))
 
-        def update_colormap_for(plot_name):
-            def update_plot_colormap(attr, old, new):
-                plot_data = plots[plot_name].data_source.data['image']
-                low, high = np.min(plot_data), np.max(plot_data)
-                dynamic_range = high - low
-                self.app_context['color_maps'][plot_name].update(low=low + new[0] / 100 * dynamic_range,
-                                                                 high=low + new[1] / 100 * dynamic_range)
-
-            return update_plot_colormap
-
-        update_main_colormap = update_colormap_for('main')
-        update_bottom_colormap = update_colormap_for('bottom')
-        update_right_colormap = update_colormap_for('right')
+        update_main_colormap = self.update_colormap_for('main')
+        update_bottom_colormap = self.update_colormap_for('bottom')
+        update_right_colormap = self.update_colormap_for('right')
 
         def on_click_save(event):
             save_dataset(arr)
