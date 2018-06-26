@@ -32,6 +32,7 @@ _RENAME_DIMS = {
     'Delay': 'delay',
     'Sample-X': 'cycle',
     'null': 'cycle',
+    'Mira': 'pump_power',
 }
 
 
@@ -191,6 +192,7 @@ def load_MC(metadata: dict=None, filename: str=None, **kwargs):
         'time': 'time',
         'Delay': 'delay-var', # these are named thus to avoid conflicts with the
         'Sample-X': 'cycle-var', # underlying coordinates
+        'Mira': 'pump_power',
         # insert more as needed
     }
 
