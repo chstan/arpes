@@ -1,5 +1,4 @@
 import arpes
-import argparse
 import os
 import arpes.config
 from arpes.models.spectrum import load_scan
