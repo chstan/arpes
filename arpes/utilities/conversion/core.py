@@ -45,7 +45,6 @@ import xarray as xr
 from arpes.provenance import provenance, update_provenance
 from exceptions import AnalysisError
 from utilities import normalize_to_spectrum
-from .forward import convert_to_kspace_forward
 from .kx_ky_conversion import *
 from .kz_conversion import *
 
@@ -343,7 +342,8 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
         arr.attrs.update(attrs)
 
     if forward:
-        return convert_to_kspace_forward(arr)
+        raise NotImplementedError('Forward conversion of datasets not supported. Coordinate conversion is. '
+                                  'See `arpes.utilities.conversion.forward.convert_coordinates_to_kspace_forward`')
 
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))

@@ -6,11 +6,47 @@ import arpes.constants
 __all__ = ('calculate_kp_kz_bounds', 'calculate_kx_ky_bounds', 'calculate_kp_bounds')
 
 
+def euler_to_kx(kinetic_energy, phi, polar, theta=0, slit_is_vertical=False):
+    if slit_is_vertical:
+        return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(polar) * np.cos(phi)
+    else:
+        return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(phi + theta)
+
+
+def euler_to_ky(kinetic_energy, phi, polar, theta=0, slit_is_vertical=False):
+    if slit_is_vertical:
+        return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * (
+            np.cos(theta) * np.sin(phi) + np.cos(polar) * np.cos(phi) * np.sin(theta)
+        )
+    else:
+        return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * (
+            np.cos(phi + theta) * np.sin(polar),
+        )
+
+def euler_to_kz(kinetic_energy, phi, polar, theta=0, inner_potential=10, slit_is_vertical=False):
+    if slit_is_vertical:
+        polar_term = -np.sin(theta) * np.sin(phi) + np.cos(theta) * np.cos(polar) * np.cos(phi)
+
+    else:
+        polar_term = np.cos(phi + theta) * np.cos(polar)
+
+    return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy * polar_term ** 2 + inner_potential)
+
 def spherical_to_kx(kinetic_energy, theta, phi):
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.cos(phi)
 
+def spherical_to_ky(kinetic_energy, theta, phi):
+    return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.sin(phi)
 
 def spherical_to_kz(kinetic_energy, theta, phi, inner_V):
+    """
+    K_INV_ANGSTROM encodes that k_z = \frac{\sqrt{2 * m * E_kin * \cos^2\theta + V_0}}{\hbar}
+    :param kinetic_energy:
+    :param theta:
+    :param phi:
+    :param inner_V:
+    :return:
+    """
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(
         kinetic_energy * np.cos(theta) ** 2 + inner_V)
 
