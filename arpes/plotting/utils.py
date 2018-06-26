@@ -16,7 +16,7 @@ from arpes.typing import DataType
 from utilities import normalize_to_spectrum
 
 __all__ = ['path_for_plot', 'path_for_holoviews', 'name_for_dim', 'label_for_colorbar', 'label_for_dim',
-           'label_for_symmetry_point', 'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio']
+           'label_for_symmetry_point', 'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio', 'unit_for_dim',]
 
 def calculate_aspect_ratio(data: DataType):
     data = normalize_to_spectrum(data)
@@ -55,9 +55,10 @@ class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
                  borderpad=borderpad, child=self.vpac, prop=prop, frameon=frameon)
 
 
-def savefig(desired_path, **kwargs):
+def savefig(desired_path, dpi=400, **kwargs):
     full_path = path_for_plot(desired_path)
-    plt.savefig(full_path, **kwargs)
+    plt.savefig(full_path, dpi=dpi, **kwargs)
+
 
 def path_for_plot(desired_path):
     workspace = CONFIG['WORKSPACE']
@@ -98,6 +99,7 @@ def name_for_dim(dim_name, escaped=True):
         'ky': r'$\textnormal{k}_\textnormal{y}$',
         'kz': r'$\textnormal{k}_\textnormal{z}$',
         'kp': r'$\textnormal{k}_\textnormal{\parallel}$',
+        'hv': r'$h\nu$'
     }.get(dim_name)
 
     if not escaped:
@@ -105,6 +107,22 @@ def name_for_dim(dim_name, escaped=True):
 
     return name
 
+def unit_for_dim(dim_name, escaped=True):
+    unit = {
+        'polar': r'rad',
+        'phi': r'rad',
+        'eV': r'eV',
+        'kx': r'$\AA^{-1}$',
+        'ky': r'$\AA^{-1}$',
+        'kz': r'$\AA^{-1}$',
+        'kp': r'$\AA^{-1}$',
+        'hv': r'eV'
+    }.get(dim_name)
+
+    if not escaped:
+        unit = unit.replace('$', '')
+
+    return unit
 
 def label_for_colorbar(data):
     if not data.S.is_differentiated:
