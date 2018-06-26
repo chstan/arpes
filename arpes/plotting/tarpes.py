@@ -10,7 +10,7 @@ import matplotlib.animation as manimation
 
 from .utils import *
 
-__all__ = ['plot_subtraction_reference']
+__all__ = ('plot_subtraction_reference',)
 
 @save_plot_provenance
 def plot_subtraction_reference(data, title=None, out=None, norm=None, **kwargs):
