@@ -53,7 +53,7 @@ class BandTool(BokehInteractiveTool, CursorTool):
             'fit_mode': 'mdc',
         })
 
-        figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'],\
+        figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'], \
                                       self.app_context['widgets']
         self.cursor = [np.mean(self.data_range['x']),
                        np.mean(self.data_range['y'])]
@@ -168,7 +168,8 @@ class BandTool(BokehInteractiveTool, CursorTool):
             dims.remove('eV')
             angular_direction = dims[0]
             return fit_patterned_bands(override_data or self.arr, packed_bands,
-                                       fit_direction='eV' if self.app_context['fit_mode'] == 'edc' else angular_direction,
+                                       fit_direction='eV' if self.app_context[
+                                                                 'fit_mode'] == 'edc' else angular_direction,
                                        direction_normal=self.app_context['direction_normal'])
 
         self.app_context['pack_bands'] = pack_bands

@@ -87,6 +87,7 @@ def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
 
     plt.show()
 
+
 @save_plot_provenance
 def fermi_edge_reference(data, title=None, ax=None, out=None, norm=None, **kwargs):
     warnings.warn('Not automatically correcting for slit shape distortions to the Fermi edge')

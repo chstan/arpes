@@ -5,4 +5,5 @@ from .filters import *
 from .general import *
 from .mask import *
 from .tarpes import *
-
+from .savitzky_golay import *
+from .xps import *

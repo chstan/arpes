@@ -62,10 +62,14 @@ def normalize_by_fermi_distribution(data, max_gain=None, rigid_shift=0, instrume
 
 
 #@update_provenance('Symmetrize axis')
-def symmetrize_axis(data, axis_name, flip_axes=None):
+def symmetrize_axis(data, axis_name, flip_axes=None, shift_axis=True):
+    data = data.copy(deep=True) # slow but make sure we don't bork axis on original
+    data.coords[axis_name].values = data.coords[axis_name].values - data.coords[axis_name].values[0]
+
     selector = {}
     selector[axis_name] = slice(None, None, -1)
     rev = data.sel(**selector).copy()
+
     rev.coords[axis_name].values = -rev.coords[axis_name].values
 
     if flip_axes is None:
