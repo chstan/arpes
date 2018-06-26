@@ -1,10 +1,10 @@
-from bokeh import events
 import numpy as np
 
 from analysis.mask import apply_mask
 from arpes.plotting.interactive_utils import BokehInteractiveTool, CursorTool
 from exceptions import AnalysisError
 
+from bokeh import events
 from bokeh.layouts import row, column, widgetbox
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models import widgets
