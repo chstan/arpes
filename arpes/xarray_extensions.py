@@ -8,6 +8,7 @@ import xarray as xr
 
 from analysis.band_analysis_utils import param_getter, param_stderr_getter
 from arpes.analysis import rebin
+from exceptions import AnalysisError
 from typing import Optional, Union
 from arpes.typing import DataType
 
@@ -46,6 +47,9 @@ class ARPESAccessorBase(object):
     def along(self, directions, **kwargs):
         return slice_along_path(self._obj, directions, **kwargs)
 
+    def find(self, name):
+        return [n for n in dir(self) if name in n]
+
     @property
     def is_subtracted(self):
         if self._obj.attrs.get('subtracted'):
@@ -66,6 +70,14 @@ class ARPESAccessorBase(object):
 
         dims = self._obj.dims
         return not any(d in {'phi', 'polar', 'angle'} for d in dims)
+
+    @property
+    def is_slit_vertical(self):
+        spectrometer = self.spectrometer
+        if spectrometer is not None:
+            return spectrometer['is_slit_vertical']
+
+        raise AnalysisError('Unknown spectrometer configuration.')
 
     @property
     def hv(self):
@@ -305,7 +317,7 @@ class ARPESAccessorBase(object):
 
     @property
     def label(self):
-        return self._obj.attrs.get('description', self.scan_name)
+        return str(self._obj.attrs.get('description', self.scan_name))
 
     @property
     def t0(self):
@@ -730,6 +742,9 @@ class ARPESAccessorBase(object):
 
         full_coords.update(dict(zip(['x', 'y', 'z'], self.sample_pos)))
         full_coords.update(dict(zip(['chi', 'phi', 'polar', 'theta'], self.sample_angles)))
+        full_coords.update({
+            'hv': self.hv,
+        })
 
         full_coords.update(self._obj.coords)
         return full_coords
@@ -760,6 +775,9 @@ class ARPESAccessorBase(object):
         df = self._obj.attrs['df']
         return df[(df.spectrum_type != 'map') & (df.ref_id == self._obj.id)]
 
+    def generic_fermi_surface(self, fermi_energy):
+        return self.fat_sel(eV=fermi_energy)
+
     @property
     def fermi_surface(self):
         return self.fat_sel(eV=0)
@@ -784,7 +802,7 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 
     def fs_plot(self, pattern='{}.png', **kwargs):
         out = kwargs.get('out')
-        if out is None and isinstance(out, bool):
+        if out is not None and isinstance(out, bool):
             out = pattern.format('{}_fs'.format(self.label))
             kwargs['out'] = out
         return plotting.labeled_fermi_surface(self._obj, **kwargs)
@@ -869,6 +887,7 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 
 NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 
+@xr.register_dataset_accessor('T')
 @xr.register_dataarray_accessor('T')
 class GenericAccessorTools(object):
     _obj = None
