@@ -1,6 +1,6 @@
 # Data loading
 astropy
-git+git://github.com/chstan/igorpy.git@41b184de97e323fbdef7d782122dbfa53cddd75c#egg=igor
+git+git://github.com/chstan/igorpy.git@b5f7ca45de17689ff9222ab9a4ae71c691fea669#egg=igor
 
 
 # Need to use pre 0.10.1 as this version introduced a change that forced all

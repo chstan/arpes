@@ -122,7 +122,6 @@ def wave_to_xarray(w: igor.Wave):
 
     # only need four because Igor only supports four dimensions!
     extra_names = iter(['W','X','Y','Z'])
-
     n_dims = len([a for a in w.axis if len(a)])
 
     def get_axis_name(index):
