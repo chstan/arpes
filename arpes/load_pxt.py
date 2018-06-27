@@ -151,7 +151,15 @@ def read_single_pxt(reference_path: Path):
     :return:
     """
 
-    loaded = igor.load(str(reference_path.absolute()))
+    loaded = None
+    for byte_order in ['>', '=', '<']:
+        try:
+            loaded = igor.load(str(reference_path.absolute()), initial_byte_order=byte_order)
+            break
+        except Exception:
+            # bad byte ordering probably
+            pass
+
     children = [c for c in loaded.children if isinstance(c, igor.Wave)]
 
     if len(children) > 1:
