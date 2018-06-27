@@ -79,6 +79,7 @@ def save_dataset(arr: DataType, force=False):
     df = arr.attrs.pop('df', None)
     arr = wrap_datavar_attrs(arr, original_data=arr)
     ref_attrs = arr.attrs.pop('ref_attrs', None)
+
     arr.to_netcdf(filename, engine='netcdf4')
     with open(attrs_filename, 'w') as f:
         json.dump(arr.attrs, f)

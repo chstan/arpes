@@ -314,6 +314,8 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
         if v is None:
             freeze_extra.append(k)
             attrs_copy[k] = json.dumps(v)
+        if isinstance(v, bool):
+            attrs_copy[k] = 1 if v else 0
 
     attrs_copy['freeze_extra'] = json.dumps(freeze_extra)
     return attrs_copy

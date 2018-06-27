@@ -1,5 +1,6 @@
 import arpes
 import os
+import sys
 import arpes.config
 from arpes.models.spectrum import load_scan
 from arpes.utilities import modern_clean_xlsx_dataset, \

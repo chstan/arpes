@@ -200,6 +200,9 @@ def load_MC(metadata: dict=None, filename: str=None, **kwargs):
     SKIP_COLUMN_NAMES = {
         'Phi',
         'null',
+        'X',
+        'Y',
+        'Z',
         # insert more as needed
     }
 
@@ -216,6 +219,9 @@ def load_MC(metadata: dict=None, filename: str=None, **kwargs):
 
         column_display = PREPPED_COLUMN_NAMES.get(column_name, column_name)
         if 'Fixed_Spectra' in column_display:
+            column_display = 'spectrum'
+
+        if 'Swept_Spectra' in column_display:
             column_display = 'spectrum'
 
         # sometimes if a scan is terminated early it can happen that the sizes do not match the expected value
@@ -257,7 +263,6 @@ def load_MC(metadata: dict=None, filename: str=None, **kwargs):
             # we also need to adjust the coordinates
             altered_dimension = dimension_for_column[0]
             built_coords[altered_dimension] = built_coords[altered_dimension][:n_slices]
-
 
         data_vars[column_display] = xarray.DataArray(
             resized_data,
@@ -309,6 +314,16 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF'):
     :return: (coordinates, dimensions, np shape of actual spectrum)
     """
     scan_coords, scan_dimension, scan_shape = extract_coords(attrs)
+
+    # bit of a hack to deal with the internal motor used for the swept spectra being considered as a cycle
+    if 'cycle' in scan_coords and len(scan_coords['cycle']) > 200:
+        idx = scan_dimension.index('cycle')
+
+        real_data_for_cycle = hdu.data.columns['null'].array
+
+        scan_coords['cycle'] = real_data_for_cycle
+        scan_shape[idx] = len(real_data_for_cycle)
+
     scan_dimension = [_RENAME_DIMS.get(s, s) for s in scan_dimension[::-1]]
     scan_coords = {_RENAME_DIMS.get(k, k): v for k, v in scan_coords.items()}
     extra_coords = {}
