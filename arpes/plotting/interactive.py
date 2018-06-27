@@ -108,7 +108,7 @@ class ImageTool(BokehInteractiveTool, CursorTool):
         self.app_context['color_maps']['main'] = LinearColorMapper(
             default_palette, low=np.min(prepped_main_image), high=np.max(prepped_main_image), nan_color='black')
 
-        main_tools = ["wheel_zoom", "tap", "reset"]
+        main_tools = ["wheel_zoom", "tap", "reset","save"]
         main_title = 'Bokeh Tool: WARNING Unidentified'
         try:
             main_title = "Bokeh Tool: %s" % arr.S.label[:60]
@@ -412,7 +412,7 @@ class ImageTool(BokehInteractiveTool, CursorTool):
         self.app_context['color_maps']['main'] = LinearColorMapper(
             default_palette, low=np.min(prepped_main_image), high=np.max(prepped_main_image), nan_color='black')
 
-        main_tools = ["wheel_zoom", "tap", "reset"]
+        main_tools = ["wheel_zoom", "tap", "reset","save"]
         figures['main'] = figure(
             tools=main_tools, plot_width=self.app_main_size, plot_height=self.app_main_size, min_border=10,
             min_border_left=50,

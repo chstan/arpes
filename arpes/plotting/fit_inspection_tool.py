@@ -91,7 +91,7 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
         self.app_context['color_maps']['main'] = LinearColorMapper(
             default_palette, low=np.min(raw_data.values), high=np.max(raw_data.values), nan_color='black')
 
-        main_tools = ["wheel_zoom", "tap", "reset"]
+        main_tools = ["wheel_zoom", "tap", "reset","save"]
         main_title = 'Fit Inspection Tool: WARNING Unidentified'
 
         try:

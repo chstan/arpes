@@ -73,6 +73,7 @@ def load_scan(scan_desc):
     location = case_insensitive_get(full_note, 'location')
 
     load_fn = {
+        'BL7' : load_MC,
         'BL403': load_SES,
         'BL4': load_SES,
         'ALG-MC': load_MC,

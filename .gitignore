@@ -3,6 +3,8 @@ datasets/
 exp
 SCRATCH.md
 
+experiment/
+
 cache/*.nc
 cache/*.json
 cache/*.keep
