@@ -44,7 +44,7 @@ import xarray as xr
 
 from arpes.provenance import provenance, update_provenance
 from exceptions import AnalysisError
-from .forward import convert_to_kspace_forward
+from utilities import normalize_to_spectrum
 from .kx_ky_conversion import *
 from .kz_conversion import *
 
@@ -335,8 +335,15 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
     :return:
     """
 
+    if isinstance(arr, xr.Dataset):
+        warnings.warn('Remember to use a DataArray not a Dataset, attempting to extract spectrum')
+        attrs = arr.attrs.copy()
+        arr = normalize_to_spectrum(arr)
+        arr.attrs.update(attrs)
+
     if forward:
-        return convert_to_kspace_forward(arr)
+        raise NotImplementedError('Forward conversion of datasets not supported. Coordinate conversion is. '
+                                  'See `arpes.utilities.conversion.forward.convert_coordinates_to_kspace_forward`')
 
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
@@ -346,13 +353,14 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
         if dimension in remove_dims:
             return True
 
-        if 'volt' in remove_dims:
+        if 'volt' in dimension:
             return True
 
         return False
 
     removed = []
-    for to_remove in old_dims:
+
+    for to_remove in arr.dims:
         if unconvertible(to_remove):
             removed.append(to_remove)
             old_dims.remove(to_remove)
@@ -384,7 +392,7 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
     }.get(tuple(old_dims))
     converter = convert_cls(arr, converted_dims)
 
-    n_kspace_coordinates = len(set(converted_dims).intersection('kp', 'kx', 'ky', 'kz'))
+    n_kspace_coordinates = len(set(converted_dims).intersection({'kp', 'kx', 'ky', 'kz'}))
     if n_kspace_coordinates > 1 and forward:
         raise AnalysisError('You cannot forward convert more than one momentum to k-space.')
 

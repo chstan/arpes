@@ -288,17 +288,7 @@ class ImageTool(BokehInteractiveTool, CursorTool):
                              ), title='Preparation'),
                          ], width=400)))
 
-        def update_colormap_for(plot_name):
-            def update_plot_colormap(attr, old, new):
-                plot_data = plots[plot_name].data_source.data['image']
-                low, high = np.min(plot_data), np.max(plot_data)
-                dynamic_range = high - low
-                self.app_context['color_maps'][plot_name].update(low=low + new[0] / 100 * dynamic_range,
-                                                                 high=low + new[1] / 100 * dynamic_range)
-
-            return update_plot_colormap
-
-        update_main_colormap = update_colormap_for('main')
+        update_main_colormap = self.update_colormap_for('main')
 
         def on_click_save(event):
             save_dataset(arr)
@@ -412,12 +402,18 @@ class ImageTool(BokehInteractiveTool, CursorTool):
         self.app_context['color_maps']['main'] = LinearColorMapper(
             default_palette, low=np.min(prepped_main_image), high=np.max(prepped_main_image), nan_color='black')
 
+        main_title = 'Bokeh Tool: WARNING Unidentified'
+        try:
+            main_title = "Bokeh Tool: %s" % arr.S.label[:60]
+        except:
+            pass
+
         main_tools = ["wheel_zoom", "tap", "reset","save"]
         figures['main'] = figure(
             tools=main_tools, plot_width=self.app_main_size, plot_height=self.app_main_size, min_border=10,
             min_border_left=50,
             toolbar_location='left', x_axis_location='below', y_axis_location='right',
-            title="Bokeh Tool: %s" % arr.S.label[:60], x_range=self.app_context['data_range']['x'],
+            title=main_title, x_range=self.app_context['data_range']['x'],
             y_range=self.app_context['data_range']['y'])
         figures['main'].xaxis.axis_label = arr.dims[0]
         figures['main'].yaxis.axis_label = arr.dims[1]
@@ -690,19 +686,9 @@ class ImageTool(BokehInteractiveTool, CursorTool):
                              ), title='Preparation'),
                          ], width=400)))
 
-        def update_colormap_for(plot_name):
-            def update_plot_colormap(attr, old, new):
-                plot_data = plots[plot_name].data_source.data['image']
-                low, high = np.min(plot_data), np.max(plot_data)
-                dynamic_range = high - low
-                self.app_context['color_maps'][plot_name].update(low=low + new[0] / 100 * dynamic_range,
-                                                                 high=low + new[1] / 100 * dynamic_range)
-
-            return update_plot_colormap
-
-        update_main_colormap = update_colormap_for('main')
-        update_bottom_colormap = update_colormap_for('bottom')
-        update_right_colormap = update_colormap_for('right')
+        update_main_colormap = self.update_colormap_for('main')
+        update_bottom_colormap = self.update_colormap_for('bottom')
+        update_right_colormap = self.update_colormap_for('right')
 
         def on_click_save(event):
             save_dataset(arr)

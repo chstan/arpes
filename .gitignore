@@ -11,6 +11,8 @@ cache/*.keep
 
 .idea/
 
+TODO.md
+
 local_config.py
 
 !datasets/Misc

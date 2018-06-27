@@ -20,6 +20,7 @@ from .dataset import *
 from .funcutils import *
 from .normalize import *
 from .region import *
+from .attrs import *
 
 
 def enumerate_dataarray(arr: xr.DataArray):

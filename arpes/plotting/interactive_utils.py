@@ -1,4 +1,5 @@
 import warnings
+import os
 
 import numpy as np
 import xarray as xr
@@ -18,6 +19,7 @@ from arpes.io import load_dataset
 from typing import Union
 
 __all__ = ('BokehInteractiveTool', 'CursorTool',)
+
 
 class CursorTool(object):
     _cursor = None
@@ -82,6 +84,16 @@ class BokehInteractiveTool(ABC):
     auto_rebin = True
     auto_zero_nans = True
     rebin_size = 800
+
+    def update_colormap_for(self, plot_name):
+        def update_plot_colormap(attr, old, new):
+            plot_data = self.plots[plot_name].data_source.data['image']
+            low, high = np.min(plot_data), np.max(plot_data)
+            dynamic_range = high - low
+            self.color_maps[plot_name].update(low=low + new[0] / 100 * dynamic_range,
+                                              high=low + new[1] / 100 * dynamic_range)
+
+        return update_plot_colormap
 
     def init_bokeh_server(self):
         if 'bokeh_configured' not in arpes.config.CONFIG:
@@ -182,3 +194,35 @@ class BokehInteractiveTool(ABC):
         show(app, notebook_url=notebook_url, notebook_handle=notebook_handle)
 
         return self.app_context
+
+
+class SaveableTool(BokehInteractiveTool):
+    def __init__(self, name=None):
+        super().__init__()
+        self.name = name
+
+    @property
+    def filename(self):
+        if self.name is None:
+            return None
+
+        return os.path.join(os.getcwd(), 'tools', '{}-tool.json'.format(self.name))
+
+    def internal_load_app(self):
+        if self.name is None or not os.path.exists(self.filename):
+            return
+
+        with open(self.filename, 'r'):
+            file_data = os.path.exists()
+            pass
+
+    def internal_save_app(self):
+        pass
+
+    def load_app(self):
+        pass
+
+    def save_app(self):
+        pass
+
+

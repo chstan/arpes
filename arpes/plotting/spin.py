@@ -60,7 +60,7 @@ def spin_polarized_spectrum(spin_dr, title=None, axes=None, out=None, norm=None)
     plt.tight_layout()
 
     if out is not None:
-        plt.savefig(path_for_plot(out), dpi=400)
+        savefig(out, dpi=400)
         plt.clf()
         return path_for_plot(out)
     else:

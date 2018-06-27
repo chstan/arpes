@@ -299,18 +299,7 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
 
                 on_change_main_view(None, None, self.selected_data)
 
-        def update_colormap_for(plot_name):
-            # TODO refactor out duplicated code
-            def update_plot_colormap(attr, old, new):
-                plot_data = plots[plot_name].data_source.data['image']
-                low, high = np.min(plot_data), np.max(plot_data)
-                dynamic_range = high - low
-                self.app_context['color_maps'][plot_name].update(low=low + new[0] / 100 * dynamic_range,
-                                                                 high=low + new[1] / 100 * dynamic_range)
-
-            return update_plot_colormap
-
-        update_main_colormap = update_colormap_for('main')
+        update_main_colormap = self.update_colormap_for('main')
         MAIN_CONTENT_OPTIONS = [
             ('Residual', 'residual'),
             ('Data', 'data'),

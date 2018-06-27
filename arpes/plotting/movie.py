@@ -23,12 +23,18 @@ def plot_movie(data: xr.DataArray, time_dim, interval=None,
     cmap = arpes.config.SETTINGS.get('interactive', {}).get('palette', 'viridis')
     vmax = data.max().item()
     vmin = data.min().item()
+
     if data.S.is_subtracted:
         cmap = 'RdBu'
         vmax = np.max([np.abs(vmin), np.abs(vmax)])
         vmin = -vmax
 
-    plot = data.mean(time_dim).transpose().plot(vmax=vmax, vmin=vmin, cmap=cmap)
+    if 'vmax' in kwargs:
+        vmax = kwargs.pop('vmax')
+    if 'vmin' in kwargs:
+        vmin = kwargs.pop('vmin')
+
+    plot = data.mean(time_dim).transpose().plot(vmax=vmax, vmin=vmin, cmap=cmap, **kwargs)
 
     def init():
         plot.set_array(np.asarray([]))

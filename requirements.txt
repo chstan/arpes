@@ -1,5 +1,10 @@
 # Data loading
 astropy
+git+git://github.com/chstan/igorpy.git@b5f7ca45de17689ff9222ab9a4ae71c691fea669#egg=igor
+
+
+# Need to use pre 0.10.1 as this version introduced a change that forced all
+# assignment through Variable.get_compatible_data, coercing them to an array
 xarray==0.9.6
 h5py
 netCDF4
@@ -17,7 +22,7 @@ xrft # You will need to get this one from the conda forge with `conda install -c
 # cvxgrp # Conda
 # cvxpy  # Conda
 # libgcc # Conda
-
+pymatgen
 
 # Plotting
 holoviews==1.8.4

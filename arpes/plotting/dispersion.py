@@ -258,7 +258,7 @@ def reference_scan_fermi_surface(data, out=None, **kwargs):
 @save_plot_provenance
 def labeled_fermi_surface(data, title=None, ax=None, hold=False,
                           include_symmetry_points=True, include_bz=True,
-                          out=None, **kwargs):
+                          out=None, fermi_energy=0, **kwargs):
     fig = None
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 7))
@@ -267,7 +267,7 @@ def labeled_fermi_surface(data, title=None, ax=None, hold=False,
         title = '{} Fermi Surface'.format(data.S.label.replace('_', ' '))
 
     if 'eV' in data.dims:
-        data = data.S.fermi_surface
+        data = data.S.generic_fermi_surface(fermi_energy)
 
     mesh = data.plot(ax=ax)
     mesh.colorbar.set_label(label_for_colorbar(data))
