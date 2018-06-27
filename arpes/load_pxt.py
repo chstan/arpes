@@ -1,11 +1,13 @@
+import warnings
 from pathlib import Path
 from arpes.utilities import rename_keys
+import igor.igorpy as igor
 import numpy as np
 import re
 
 import xarray as xr
 
-__all__ = ('pxt_to_hdf', 'read_single_pxt', 'read_separated_pxt',)
+__all__ = ('read_single_pxt', 'read_separated_pxt',)
 
 binary_header_bytes = 10
 
@@ -111,22 +113,85 @@ def read_header(header_bytes: bytes):
         'bl_energy': 'hv',
     })
 
-def read_single_pxt(reference_path: Path, separator=b'[BCS]'):
+def wave_to_xarray(w: igor.Wave):
+    """
+    Converts a wave to an xarray.DataArray
+    :param w:
+    :return:
+    """
+
+    # only need four because Igor only supports four dimensions!
+    extra_names = iter(['W','X','Y','Z'])
+
+    n_dims = len([a for a in w.axis if len(a)])
+
+    def get_axis_name(index):
+        unit = w.axis_units[index]
+        if unit:
+            return {
+                'eV': 'eV',
+                'deg': 'phi',
+            }.get(unit, unit)
+
+        return next(extra_names)
+
+    axis_names = [get_axis_name(i) for i in range(n_dims)]
+    coords = dict(zip(axis_names, w.axis))
+
+    return xr.DataArray(
+        w.data,
+        coords=coords,
+        dims=axis_names,
+        attrs=read_header(w.notes),
+    )
+
+def read_single_pxt(reference_path: Path):
+    """
+    Uses igor.igorpy to load a single .PXT or .PXP file
+    :return:
+    """
+
+    loaded = igor.load(str(reference_path.absolute()))
+    children = [c for c in loaded.children if isinstance(c, igor.Wave)]
+
+    if len(children) > 1:
+        warnings.warn('Igor PXT file contained {} waves. Ignoring all but first.', len(children))
+
+    return wave_to_xarray(children[0])
+
+
+def read_single_pxt_old(reference_path: Path, separator=None):
     bytes_for_file = reference_path.read_bytes()
 
-    content, header = bytes_for_file.split(separator)
+    fallbacks = [
+        b'[BCS]',
+        b'[SES]',
+    ]
+
+    if separator is None:
+        for fallback in fallbacks:
+            if fallback in bytes_for_file:
+                separator = fallback
+
+        if separator is None:
+            raise ValueError('Could not find appropriate separator for file.')
+
+    all_sections = bytes_for_file.split(separator)
+    content, header = all_sections[0], separator.join(all_sections[1:])
     header = read_header(header)
+
+    return content, header
     wave = read_igor_binary_wave(content[10:])
     wave.attrs.update(header)
     return wave
 
 
-def read_separated_pxt(reference_path: Path, separator=b'[BCS]'):
+def read_separated_pxt(reference_path: Path, separator=None):
     # determine if separated or not
     name_match = re.match(r'([\w+]+)S[0-9][0-9][0-9]\.pxt', reference_path.name)
 
     if name_match is None:
-        return read_single_pxt(reference_path)
+        return read_single_pxt(reference_path, separator)
 
     # otherwise need to collect all of the components
     fragment = name_match.groups()[0]
@@ -151,9 +216,3 @@ def read_separated_pxt(reference_path: Path, separator=b'[BCS]'):
 
     frames.sort(key=lambda x: x.coords[scan_coord])
     return xr.concat(frames, scan_coord)
-
-def pxt_to_hdf(reference_path: Path, separator=b'[BCS]'):
-    bytes_for_file = reference_path.read_bytes()
-
-    content, header = bytes_for_file.split(separator)
-    return content, read_header(header)
