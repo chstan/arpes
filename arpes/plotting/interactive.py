@@ -11,7 +11,7 @@ from bokeh.models.widgets.markups import Div
 from bokeh.plotting import figure
 from skimage import exposure
 
-from .interactive_utils import BokehInteractiveTool, CursorTool
+from .interactive_utils import SaveableTool, CursorTool
 
 from arpes.fits import GStepBModel, ExponentialDecayCModel
 from arpes.io import save_dataset
@@ -20,9 +20,9 @@ __all__ = ('ImageTool',)
 
 # TODO Implement alignment tool
 
-class ImageTool(BokehInteractiveTool, CursorTool):
+class ImageTool(SaveableTool, CursorTool):
     def __init__(self, **kwargs):
-        super().__init__()
+        super().__init__(name=kwargs.pop('name', None))
 
         self.load_settings(**kwargs)
 
@@ -295,7 +295,7 @@ class ImageTool(BokehInteractiveTool, CursorTool):
             print(event)
 
         def click_main_image(event):
-            self.cursor = [event.x, event.y, self.cursor[2]]
+            self.cursor = [event.x, event.y]
 
             right_marginal_data = arr.sel(**dict([[arr.dims[0], self.cursor[0]]]), method='nearest')
             bottom_marginal_data = arr.sel(**dict([[arr.dims[1], self.cursor[1]]]), method='nearest')
@@ -315,12 +315,25 @@ class ImageTool(BokehInteractiveTool, CursorTool):
             figures['right_marginal'].x_range.start = np.min(right_marginal_data.values)
             figures['right_marginal'].x_range.end = np.max(right_marginal_data.values)
 
+            self.save_app()
+
         figures['main'].on_event(events.Tap, click_main_image)
         main_color_range_slider.on_change('value', update_main_colormap)
 
         doc.add_root(layout)
         doc.title = "Bokeh Tool"
+        self.load_app()
+        self.save_app()
 
+    def serialize(self):
+        return {
+            'cursor_dict': self.cursor_dict,
+            'cursor': self.cursor,
+        }
+
+    def deserialize(self, json_data):
+        if 'cursor' in json_data:
+            self.cursor = json_data['cursor']
 
     def tool_handler_3d(self, doc):
         arr = self.arr
@@ -784,6 +797,8 @@ class ImageTool(BokehInteractiveTool, CursorTool):
                         'y': [],
                     }
 
+            self.save_app()
+
         figures['z_marginal'].on_event(events.Tap, click_z_marginal)
         figures['main'].on_event(events.Tap, click_main_image)
         main_color_range_slider.on_change('value', update_main_colormap)
@@ -792,3 +807,5 @@ class ImageTool(BokehInteractiveTool, CursorTool):
 
         doc.add_root(layout)
         doc.title = "Bokeh Tool"
+        self.load_app()
+        self.save_app()
