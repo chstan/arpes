@@ -119,6 +119,16 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
     :return:
     """
 
+    if isinstance(data, xr.Dataset):
+        new_vars = {
+            datavar: rebin(data[datavar], shape=shape, reduction=reduction, interpolate=interpolate, **kwargs)
+            for datavar in data.data_vars
+        }
+        new_coords = {}
+        for var in new_vars.values():
+            new_coords.update(var.coords)
+        return xr.Dataset(data_vars=new_vars, coords=new_coords, attrs=data.attrs)
+
     data = arpes.utilities.normalize_to_spectrum(data)
 
     if any(d in kwargs for d in data.dims):
