@@ -5,7 +5,7 @@ import xarray as xr
 
 from .axis_preparation import transform_dataarray_axis
 
-__all__ = ['build_KE_coords_to_time_pixel_coords', 'build_KE_coords_to_time_coords', 'process_DLD']
+__all__ = ['build_KE_coords_to_time_pixel_coords', 'build_KE_coords_to_time_coords', 'process_DLD', 'process_SToF',]
 
 
 def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
@@ -28,13 +28,13 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
     # This should be simplified
     # c = (0.5) * (9.11e-31) * self.mstar * (self.length ** 2) / (1.6e-19) * (1e18)
     # Removed factors of ten and substituted mstar = 0.5
-    c = (0.5) * (9.11e6) * 0.5 * (dataarray.S.spectrometer['length'] ** 2) / 1.6
+    c = (0.5) * (9.11e6) * dataarray.S.spectrometer['mstar'] * (dataarray.S.spectrometer['length'] ** 2) / 1.6
 
     new_dim_order = list(dataarray.dims)
     new_dim_order.remove('time')
     new_dim_order = ['time'] + new_dim_order
     dataarray.transpose(*new_dim_order)
-    new_dim_order[0] = 'KE'
+    new_dim_order[0] = 'kinetic'
 
     timing = dataarray.coords['time']
     assert(timing[1] > timing[0])
@@ -72,7 +72,7 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
 
     new_coords = dict(dataarray.coords)
     del new_coords['time']
-    new_coords['KE'] = kinetic_energy_axis
+    new_coords['kinetic'] = kinetic_energy_axis
 
     # Put provenance here
 
@@ -86,7 +86,7 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
 
 
 def build_KE_coords_to_time_pixel_coords(dataset: xr.Dataset, interpolation_axis):
-    conv = (0.5) * (9.11e6) * 0.5 * (dataset.S.spectrometer['length'] ** 2) / 1.6
+    conv = dataset.S.spectrometer['mstar'] * (9.11e6) * 0.5 * (dataset.S.spectrometer['length'] ** 2) / 1.6
     time_res = 0.17 # this is only approximate
 
     def KE_coords_to_time_pixel_coords(coords, axis=None):
@@ -108,7 +108,18 @@ def build_KE_coords_to_time_pixel_coords(dataset: xr.Dataset, interpolation_axis
 
 
 def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
-    conv = (0.5) * (9.11e6) * 0.5 * (dataset.S.spectrometer['length'] ** 2) / 1.6
+    """
+    Geometric transform assumes pixel -> pixel transformations, so we need to get the index associated
+    to the appropriate timing value
+    :param dataset:
+    :param interpolation_axis:
+    :return:
+    """
+    conv = dataset.S.spectrometer['mstar'] * (9.11e6) * 0.5 * (dataset.S.spectrometer['length'] ** 2) / 1.6
+    timing = dataset.coords['time']
+    photon_offset = dataset.attrs['laser_t0'] + dataset.S.spectrometer['length'] * (10 / 3)
+    low_offset = np.min(timing)
+    d_timing = timing[1] - timing[0]
 
     def KE_coords_to_time_coords(coords, axis=None):
         """
@@ -117,25 +128,34 @@ def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
         coordinate transform.
 
         All coordinates except for the energy coordinate are left untouched.
+
+        We do the same logic done implicitly in timeProcessX in order to get the part of the data that has time
+        coordinate less than the nominal t0. This is necessary because the recorded times are the time between electron
+        events and laser pulses, rather than the other way around.
+
         :param coords: tuple of coordinates
         :return: new tuple of converted coordinates
         """
-
         kinetic_energy = interpolation_axis[coords[axis]]
         real_timing = math.sqrt(conv / kinetic_energy)
-        real_timing = real_timing# - dataset.attrs['timing_offset']
+        real_timing = photon_offset - real_timing
         coords_list = list(coords)
-        coords_list[axis] = real_timing
+        coords_list[axis] = len(timing) - (real_timing - low_offset) / d_timing
         return tuple(coords_list)
 
     return KE_coords_to_time_coords
 
 
 def convert_SToF_to_energy(dataset: xr.Dataset):
+    """
+    Achieves the same computation as timeProcessX and t2energyProcessX in LoadTOF_3.51.ipf
+    :param dataset:
+    :return:
+    """
     e_min, e_max = 0.1, 10.
 
     # TODO, we can better infer a reasonable gridding here
-    spacing = 0.005 # 5meV gridding
+    spacing = 0.0001
     ke_axis = np.linspace(e_min, e_max, int((e_max - e_min) / spacing))
 
     drs = {k: v for k, v in dataset.data_vars.items() if 'time' in v.dims}
@@ -153,12 +173,34 @@ def convert_SToF_to_energy(dataset: xr.Dataset):
     return dataset
 
 
+def process_SToF(dataset: xr.Dataset):
+    e_min = dataset.attrs.get('E_min', 1)
+    e_max = dataset.attrs.get('E_max', 10)
+    de = dataset.attrs.get('dE', 0.001)
+    ke_axis = np.linspace(e_min, e_max, (e_max - e_min) / de)
+
+    dataset = transform_dataarray_axis(
+        build_KE_coords_to_time_coords(dataset, ke_axis),
+        'time', 'kinetic', ke_axis, dataset, lambda x: x,
+    )
+
+    if 'up' in dataset.data_vars:
+        # apply the sherman function corrections
+        sherman = dataset.attrs.get('sherman', 0.2)
+        polarization = 1/sherman * (dataset.up - dataset.down)/(dataset.up + dataset.down)
+        new_up = (dataset.up + dataset.down) * (1 + polarization)
+        new_down = (dataset.up + dataset.down)* (1 - polarization)
+        dataset = dataset.assign(up=new_up, down=new_down)
+
+    return dataset
+
+
 def process_DLD(dataset: xr.Dataset):
     e_min = 1
     ke_axis = np.linspace(e_min, dataset.attrs['E_max'], (dataset.attrs['E_max'] - e_min) / dataset.attrs['dE'])
     dataset = transform_dataarray_axis(
         build_KE_coords_to_time_pixel_coords(dataset, ke_axis),
-        't_pixels', 'KE', ke_axis, dataset, lambda x: 'KE_spectrum'
+        't_pixels', 'kinetic', ke_axis, dataset, lambda x: 'kinetic_spectrum'
     )
 
     return dataset

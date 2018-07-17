@@ -22,18 +22,17 @@ def spin_polarized_spectrum(spin_dr, title=None, axes=None, out=None, norm=None)
     ax_left = axes[0]
     ax_right = axes[1]
 
-    up = spin_dr.up.data
-    down = spin_dr.down.data
+    up = spin_dr.down.data
+    down = spin_dr.up.data
 
-    test_pol = test_polarization(up, down)
-    pol = polarization(up, down)
-    energies = spin_dr.coords['KE']
+    pol = polarization(spin_dr.up.data, spin_dr.down.data)
+    energies = spin_dr.coords['kinetic']
     min_e, max_e = np.min(energies), np.max(energies)
 
     # Plot the spectra
     ax_left.plot(energies, up, 'r')
     ax_left.plot(energies, down, 'b')
-    ax_left.set_title('Spin polarization {}'.format(spin_dr.S.label))
+    ax_left.set_title('Spin polarization {}'.format(''))
     ax_left.set_ylabel(r'\textbf{Spectrum Intensity}')
     ax_left.set_xlabel(r'\textbf{Kinetic energy} (eV)')
     ax_left.set_xlim(min_e, max_e)
@@ -46,15 +45,15 @@ def spin_polarized_spectrum(spin_dr, title=None, axes=None, out=None, norm=None)
     ax_right.plot(energies, pol, color='black')
     ax_right.fill_between(energies, 0, 1, facecolor='red', alpha=0.1)
     ax_right.fill_between(energies, -1, 0, facecolor='blue', alpha=0.1)
-    ax_right.fill_between(energies, pol - 3 * (test_pol + 0.005),
-                          pol + 3 * (test_pol + 0.005), facecolor='black', alpha=0.3)
+    #ax_right.fill_between(energies, pol - 3 * (test_pol + 0.005),
+    #                      pol + 3 * (test_pol + 0.005), facecolor='black', alpha=0.3)
     ax_right.set_title('Spin polarization')
     ax_right.set_ylabel(r'\textbf{Polarization}')
     ax_right.set_xlabel(r'\textbf{Kinetic Energy} (eV)')
     ax_right.set_xlim(min_e, max_e)
     ax_right.axhline(0, color='white', linestyle=':')
 
-    ax_right.set_ylim(-0.2, 0.2)
+    ax_right.set_ylim(-1, 1)
     ax_right.grid(True, axis='y')
 
     plt.tight_layout()
