@@ -788,16 +788,16 @@ class ARPESAccessorBase(object):
 
 @xr.register_dataarray_accessor('S')
 class ARPESDataArrayAccessor(ARPESAccessorBase):
-    def show(self):
-        image_tool = ImageTool()
+    def show(self, **kwargs):
+        image_tool = ImageTool(**kwargs)
         return image_tool.make_tool(self._obj)
 
-    def show_d2(self):
-        curve_tool = CurvatureTool()
+    def show_d2(self, **kwargs):
+        curve_tool = CurvatureTool(**kwargs)
         return curve_tool.make_tool(self._obj)
 
-    def show_band_tool(self):
-        band_tool = BandTool()
+    def show_band_tool(self, **kwargs):
+        band_tool = BandTool(**kwargs)
         return band_tool.make_tool(self._obj)
 
     def fs_plot(self, pattern='{}.png', **kwargs):
@@ -978,6 +978,7 @@ class GenericAccessorTools(object):
         # for now we only support shifting by a one dimensional array
 
         data = self._obj
+
         assert(len(other.dims) == 1)
 
         if shift_coords:
