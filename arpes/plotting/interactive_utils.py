@@ -1,5 +1,8 @@
 import warnings
 import os
+import json
+
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -13,6 +16,7 @@ from bokeh.io import show, output_notebook
 from abc import ABC, abstractmethod
 
 from arpes.analysis.general import rebin
+from arpes.utilities import deep_equals
 
 import arpes.config
 from arpes.io import load_dataset
@@ -200,29 +204,50 @@ class SaveableTool(BokehInteractiveTool):
     def __init__(self, name=None):
         super().__init__()
         self.name = name
+        self._last_save = None
+
+    def make_tool(self, arr: Union[xr.DataArray, str], notebook_url=None,
+                  notebook_handle=True, **kwargs):
+        super().make_tool(arr, notebook_url=notebook_url, notebook_handle=notebook_handle, **kwargs)
+        return self.app_context
 
     @property
     def filename(self):
         if self.name is None:
             return None
 
-        return os.path.join(os.getcwd(), 'tools', '{}-tool.json'.format(self.name))
+        return os.path.join(os.getcwd(), 'tools', 'tool-{}.json'.format(self.name))
 
-    def internal_load_app(self):
-        if self.name is None or not os.path.exists(self.filename):
-            return
-
-        with open(self.filename, 'r'):
-            file_data = os.path.exists()
-            pass
-
-    def internal_save_app(self):
-        pass
+    @property
+    def path(self):
+        return Path(self.filename)
 
     def load_app(self):
-        pass
+        if self.name is None:
+            return
+
+        if not self.path.exists():
+            return {}
+
+        self.path.parent.mkdir(exist_ok=True)
+        with open(self.filename, 'r') as f:
+            self.deserialize(json.load(f))
 
     def save_app(self):
+        if self.name is None:
+            return
+
+        data = self.serialize()
+        if deep_equals(data, self._last_save):
+            return
+
+        self.path.parent.mkdir(exist_ok=True)
+        with open(self.filename, 'w') as f:
+            self._last_save = data
+            json.dump(data, f)
+
+    def deserialize(self, json_data):
         pass
 
-
+    def serialize(self):
+        return {}
