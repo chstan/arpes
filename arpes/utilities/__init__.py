@@ -12,6 +12,7 @@ from math import sin, cos
 from operator import itemgetter
 from arpes.typing import DataType
 
+import pandas as pd
 import numpy as np
 import xarray as xr
 
@@ -21,6 +22,7 @@ from .funcutils import *
 from .normalize import *
 from .region import *
 from .attrs import *
+from .collections import *
 
 
 def enumerate_dataarray(arr: xr.DataArray):
@@ -301,14 +303,11 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
 
     for prop in FREEZE_PROPS:
         if prop not in original_data.attrs:
-            resolved = original_data.S if isinstance(original_data, xr.DataArray) else original_data.S.spectrum.S
+            resolved = normalize_to_spectrum(original_data).S
             try:
                 attrs_copy[prop] = getattr(resolved, prop)
             except AttributeError:
                 warnings.warn('Unresolvable attribute: {}'.format(prop))
-
-    if 'time' in attrs_copy:
-        attrs_copy['time'] = str(attrs_copy['time'])
 
     for k, v in attrs_copy.items():
         if v is None:
@@ -316,6 +315,14 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
             attrs_copy[k] = json.dumps(v)
         if isinstance(v, bool):
             attrs_copy[k] = 1 if v else 0
+        if isinstance(v, pd.Timestamp):
+            attrs_copy[k] = v.isoformat()
+
+    def clean_key(key: str):
+        return key.replace('#', 'num_')
+
+    attrs_copy = {k: v for k, v in attrs_copy.items() if len(k)}
+    attrs_copy = {clean_key(k): v for k, v in attrs_copy.items()}
 
     attrs_copy['freeze_extra'] = json.dumps(freeze_extra)
     return attrs_copy
