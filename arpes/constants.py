@@ -77,6 +77,7 @@ SPECTROMETER_MC_OLD = {
 SPECTROMETER_STRAIGHT_TOF = {
     'name': 'STRAIGHT_ToF',
     'length': STRAIGHT_TOF_LENGTH,
+    'mstar': 1.0,
     'type': 'tof',
     'dof': ['t'],
     'scan_dof': ['polar'],
@@ -85,9 +86,10 @@ SPECTROMETER_STRAIGHT_TOF = {
 SPECTROMETER_SPIN_TOF = {
     'name': 'SPIN_ToF',
     'length': SPIN_TOF_LENGTH,
+    'mstar': 0.5,
     'type': 'tof',
-    'dof': ['t', 'spin'],
-    'scan_dof': ['polar'],
+    'dof': ['time', 'spin'],
+    'scan_dof': ['polar', 'beta'],
 }
 
 SPECTROMETER_DLD = {
