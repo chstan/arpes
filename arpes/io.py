@@ -77,6 +77,7 @@ def save_dataset(arr: DataType, force=False):
             return
 
     df = arr.attrs.pop('df', None)
+    arr.attrs.pop('', None) # protect against totally stripped attribute names
     arr = wrap_datavar_attrs(arr, original_data=arr)
     ref_attrs = arr.attrs.pop('ref_attrs', None)
 

@@ -795,7 +795,6 @@ def load_SToF_fits(metadata: dict=None, filename: str=None):
     coords, dimensions, spectrum_shape = find_clean_coords(hdu, metadata)
 
     columns = hdu.columns
-    dataset = None
 
     column_renamings = {
         'TempA': 'temperature_cryo',
@@ -850,9 +849,6 @@ def load_SToF_fits(metadata: dict=None, filename: str=None):
     for var_name, data_arr in dataset.data_vars.items():
         if 'time' in data_arr.dims:
             data_arr.data = data_arr.sel(time=slice(None, None, -1)).data
-
-    if requires_conversion:
-        dataset = convert_SToF_to_energy(dataset)
 
     provenance_from_file(dataset, data_loc, {
         'what': 'Loaded Spin-ToF dataset',
