@@ -1,3 +1,5 @@
+import warnings
+
 import arpes
 import os
 import sys
@@ -12,7 +14,7 @@ from arpes.io import save_dataset, dataset_exists
 __all__ = ('prepare_raw_files',)
 
 
-def prepare_raw_files(workspace=None, reload=False, file=None, **kwargs):
+def prepare_raw_files(workspace=None, reload=False, file=None, quiet=False, **kwargs):
     import arpes.xarray_extensions
 
     arpes.config.attempt_determine_workspace(workspace)
@@ -34,7 +36,10 @@ def prepare_raw_files(workspace=None, reload=False, file=None, **kwargs):
             scan['file'] = scan.get('path', file)
             if not dataset_exists(scan.get('id')) or reload:
                 try:
-                    data = load_scan(dict(scan), **kwargs)
+                    with warnings.catch_warnings():
+                        if quiet:
+                            warnings.simplefilter('ignore')
+                        data = load_scan(dict(scan), **kwargs)
                     data = rename_datavar_standard_attrs(data)
                     data = clean_datavar_attribute_names(data)
                     save_dataset(data, force=True)
