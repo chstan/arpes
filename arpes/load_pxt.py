@@ -1,5 +1,7 @@
 import warnings
 from pathlib import Path
+
+import typing
 from arpes.utilities import rename_keys
 import igor.igorpy as igor
 import numpy as np
@@ -7,7 +9,7 @@ import re
 
 import xarray as xr
 
-__all__ = ('read_single_pxt', 'read_separated_pxt',)
+__all__ = ('read_single_pxt', 'read_separated_pxt', 'read_experiment',)
 
 binary_header_bytes = 10
 
@@ -144,16 +146,47 @@ def wave_to_xarray(w: igor.Wave):
         attrs=read_header(w.notes),
     )
 
-def read_single_pxt(reference_path: Path):
+
+def read_experiment(reference_path: typing.Union[Path, str], **kwargs):
+    """
+    Reads a whole experiment and translates all contained waves into xr.Dataset instances as appropriate
+
+    :param reference_path:
+    :return:
+    """
+
+    if isinstance(reference_path, Path):
+        reference_path = str(reference_path.absolute())
+
+    return igor.load(reference_path, **kwargs)
+
+
+def read_single_ibw(reference_path: typing.Union[Path, str]):
+    """
+    Currently igorpy does not support this though
+    Uses igor.igorpy to load an .ibw file
+    :param reference_path:
+    :return:
+    """
+    if isinstance(reference_path, Path):
+        reference_path = str(reference_path.absolute())
+    return igor.load(reference_path)
+
+
+def read_single_pxt(reference_path: typing.Union[Path, str]):
     """
     Uses igor.igorpy to load a single .PXT or .PXP file
     :return:
     """
 
+    if isinstance(reference_path, Path):
+        reference_path = str(reference_path.absolute())
+
     loaded = None
     for byte_order in ['>', '=', '<']:
         try:
-            loaded = igor.load(str(reference_path.absolute()), initial_byte_order=byte_order)
+
+            loaded = igor.load(reference_path, initial_byte_order=byte_order)
             break
         except Exception:
             # bad byte ordering probably
