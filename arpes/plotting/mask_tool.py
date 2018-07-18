@@ -1,7 +1,7 @@
 import numpy as np
 
 from analysis.mask import apply_mask
-from arpes.plotting.interactive_utils import BokehInteractiveTool, CursorTool
+from arpes.plotting.interactive_utils import CursorTool, SaveableTool
 from exceptions import AnalysisError
 
 from bokeh import events
@@ -16,7 +16,7 @@ from utilities import normalize_to_spectrum
 __all__ = ('MaskTool', 'mask')
 
 
-class MaskTool(BokehInteractiveTool, CursorTool):
+class MaskTool(SaveableTool, CursorTool):
     """
     Tool to allow masking data by drawing regions.
     """
@@ -25,7 +25,7 @@ class MaskTool(BokehInteractiveTool, CursorTool):
     auto_rebin = False
 
     def __init__(self, **kwargs):
-        super().__init__()
+        super().__init__(kwargs.pop('name', None))
 
         self.load_settings(**kwargs)
 
@@ -76,7 +76,7 @@ class MaskTool(BokehInteractiveTool, CursorTool):
         self.figures['main'].yaxis.axis_label = arr.dims[1]
 
         self.plots['main'] = self.figures['main'].image(
-            [arr.values.T], x=self.data_range['x'][0], y=self.data_range['y'][0],
+            [np.asarray(arr.values.T)], x=self.data_range['x'][0], y=self.data_range['y'][0],
             dw=self.data_range['x'][1] - self.data_range['x'][0],
             dh=self.data_range['y'][1] - self.data_range['y'][0],
             color_mapper=self.color_maps['main']
@@ -90,11 +90,12 @@ class MaskTool(BokehInteractiveTool, CursorTool):
                 self.regions[self.active_region]['points'].append(list(self.cursor))
                 update_region_display()
 
+            self.save_app()
+
         def click_main_image(event):
             self.cursor = [event.x, event.y]
             if self.pointer_mode == 'region':
                 add_point_to_region()
-
 
         POINTER_MODES = [
             ('Cursor', 'cursor',),
@@ -112,8 +113,10 @@ class MaskTool(BokehInteractiveTool, CursorTool):
         self.app_context['mask'] = None
 
         pointer_dropdown = widgets.Dropdown(label='Pointer Mode', button_type='primary', menu=POINTER_MODES)
-        region_dropdown = widgets.Dropdown(label='Active Region', button_type='primary',
-                                           menu=self.region_options)
+        self.region_dropdown = widgets.Dropdown(label='Active Region', button_type='primary',
+                                                menu=self.region_options)
+
+        edge_mask_button = widgets.Button(label='Edge Mask')
         region_name_input = widgets.TextInput(placeholder='Region name...')
         add_region_button = widgets.Button(label='Add Region')
 
@@ -123,10 +126,28 @@ class MaskTool(BokehInteractiveTool, CursorTool):
         main_color_range_slider = widgets.RangeSlider(
             start=0, end=100, value=(0, 100,), title='Color Range')
 
+        def on_click_edge_mask():
+            if self.active_region is not None and self.active_region in self.region_options:
+                old_points = self.regions[self.active_region]['points']
+                dims = [d for d in arr.dims if 'eV' != d]
+                other_dim = dims[0]
+                other_coord = arr.coords[other_dim].values
+                min_other, max_other = np.min(other_coord), np.max(other_coord)
+                min_e = np.min(arr.coords['eV'].values)
+
+                if arr.dims.index('eV') == 0:
+                    before = [[min_e, min_other], [0, min_other]]
+                    after = [[0, max_other], [min_e, max_other]]
+                else:
+                    before = [[min_other, min_e], [min_other, 0]]
+                    after = [[max_other, 0], [max_other, min_e]]
+                self.regions[self.active_region]['points'] = before + old_points + after
+                update_region_display()
+
         def add_region(region_name):
             if region_name not in self.regions:
                 self.region_options.append((region_name, region_name,))
-                region_dropdown.menu = self.region_options
+                self.region_dropdown.menu = self.region_options
                 self.regions[region_name] = {
                     'points': [],
                     'name': region_name,
@@ -135,13 +156,17 @@ class MaskTool(BokehInteractiveTool, CursorTool):
                 if self.active_region is None:
                     self.active_region = region_name
 
+                self.save_app()
+
         def on_change_active_region(attr, old_region_id, region_id):
             self.app_context['active_region'] = region_id
             self.active_region = region_id
+            self.save_app()
 
         def on_change_pointer_mode(attr, old_pointer_mode, pointer_mode):
             self.app_context['pointer_mode'] = pointer_mode
             self.pointer_mode = pointer_mode
+            self.save_app()
 
         def update_region_display():
             region_names = self.regions.keys()
@@ -155,6 +180,9 @@ class MaskTool(BokehInteractiveTool, CursorTool):
                 'xs': [[p[0] for p in self.regions[r]['points']] for r in region_names],
                 'ys': [[p[1] for p in self.regions[r]['points']] for r in region_names],
             }
+            self.save_app()
+
+        self.update_region_display = update_region_display
 
         def on_clear_region():
             if self.active_region in self.regions:
@@ -165,7 +193,7 @@ class MaskTool(BokehInteractiveTool, CursorTool):
             if self.active_region in self.regions:
                 del self.regions[self.active_region]
                 new_region_options = [b for b in self.region_options if b[0] != self.active_region]
-                region_dropdown.menu = new_region_options
+                self.region_dropdown.menu = new_region_options
                 self.region_options = new_region_options
                 self.active_region = None
                 update_region_display()
@@ -174,9 +202,10 @@ class MaskTool(BokehInteractiveTool, CursorTool):
         main_color_range_slider.on_change('value', self.update_colormap_for('main'))
 
         self.figures['main'].on_event(events.Tap, click_main_image)
-        region_dropdown.on_change('value', on_change_active_region)
+        self.region_dropdown.on_change('value', on_change_active_region)
         pointer_dropdown.on_change('value', on_change_pointer_mode)
         add_region_button.on_click(lambda: add_region(region_name_input.value))
+        edge_mask_button.on_click(on_click_edge_mask)
         clear_region_button.on_click(on_clear_region)
         remove_region_button.on_click(on_remove_region)
 
@@ -184,12 +213,13 @@ class MaskTool(BokehInteractiveTool, CursorTool):
                      column(
                          widgetbox(
                              pointer_dropdown,
-                             region_dropdown,
+                             self.region_dropdown,
                          ),
                          row(
                              region_name_input,
                              add_region_button,
                          ),
+                         edge_mask_button if 'eV' in arr.dims else None,
                          row(
                              clear_region_button,
                              remove_region_button,
@@ -202,10 +232,30 @@ class MaskTool(BokehInteractiveTool, CursorTool):
 
         doc.add_root(layout)
         doc.title = 'Mask Tool'
+        self.load_app()
+        self.save_app()
+
+    def serialize(self):
+        return {
+            'active_region': self.active_region,
+            'region_options': self.region_options,
+            'regions': self.regions,
+            'cursor': self.cursor,
+        }
+
+    def deserialize(self, json_data):
+        self.cursor = json_data.get('cursor', [0, 0])
+
+        self.app_context['regions'] = json_data.get('regions', {}) or {}
+        self.app_context['region_options'] = json_data.get('region_options', [])
+
+        self.region_dropdown.menu = self.app_context['region_options']
+
+        self.update_region_display()
 
 
-def mask(data: DataType):
+def mask(data: DataType, **kwargs):
     data = normalize_to_spectrum(data)
 
-    tool = MaskTool()
+    tool = MaskTool(**kwargs)
     return tool.make_tool(data)

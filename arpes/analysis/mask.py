@@ -22,7 +22,7 @@ def polys_to_mask(mask_dict, coords, shape, radius=None):
     mask = None
     for poly in polys:
         grid = Path(poly).contains_points(points, radius=radius or 0)
-        grid = grid.reshape(shape).T
+        grid = grid.reshape(list(shape)[::-1]).T
 
         if mask is None:
             mask = grid
@@ -36,7 +36,8 @@ def apply_mask(data: DataType, mask, replace=np.nan, radius=None):
     data = normalize_to_spectrum(data)
 
     if isinstance(mask, dict):
-        mask = polys_to_mask(mask, data.coords, data.shape, radius=radius)
+        dims = mask['dims']
+        mask = polys_to_mask(mask, data.coords, [s for i, s in enumerate(data.shape) if data.dims[i] in dims], radius=radius)
 
     masked_data = data.copy(deep=True)
     masked_data.values = masked_data.values * 1.0
