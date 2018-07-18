@@ -47,7 +47,7 @@ def delete_dataset(arr_or_uuid):
         os.remove(fname)
 
 
-def save_dataset(arr: DataType, force=False):
+def save_dataset(arr: DataType, filename=None, force=False):
     """
     Persists a dataset to disk. In order to serialize some attributes, you may need to modify wrap and unwrap arrs above
     in order to make sure a parameter is saved.
@@ -65,9 +65,14 @@ def save_dataset(arr: DataType, force=False):
     with open(DATASET_CACHE_RECORD, 'r') as cache_record:
         records = json.load(cache_record)
 
-    filename = _filename_for(arr)
-    attrs_filename = _filename_for_attrs(arr)
-    if arr.attrs['id'] in records:
+    filename = filename or _filename_for(arr)
+    if filename is None:
+        filename = _filename_for(arr)
+        attrs_filename = _filename_for_attrs(arr)
+    else:
+        attrs_filename = filename + '.attrs.json'
+
+    if 'id' in arr.attrs and arr.attrs['id'] in records:
         if force:
             if os.path.exists(filename):
                 os.replace(filename, filename + '.keep')
@@ -85,12 +90,14 @@ def save_dataset(arr: DataType, force=False):
     with open(attrs_filename, 'w') as f:
         json.dump(arr.attrs, f)
 
-    first_write = arr.attrs['id'] not in records
-
-    records[arr.attrs['id']] = {
-        'file': filename,
-        **{k: v for k, v in arr.attrs.items() if k in WHITELIST_KEYS}
-    }
+    if 'id' in arr.attrs:
+        first_write = arr.attrs['id'] not in records
+        records[arr.attrs['id']] = {
+            'file': filename,
+            **{k: v for k, v in arr.attrs.items() if k in WHITELIST_KEYS}
+        }
+    else:
+        first_write = False
 
     # this was a first write
     if first_write:
@@ -177,7 +184,7 @@ def simple_load(fragment, df: pd.DataFrame = None):
 
     return load_dataset(df.loc[df.index[index]], df)
 
-def load_dataset(dataset_uuid, df: pd.DataFrame = None):
+def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame=None):
     """
     You might want to prefer ``simple_load`` over calling this directly as it is more convenient.
 
@@ -190,7 +197,9 @@ def load_dataset(dataset_uuid, df: pd.DataFrame = None):
         from arpes.utilities import default_dataset  # break circular dependency
         df = default_dataset()
 
-    filename = _filename_for(dataset_uuid)
+    if filename is None:
+        filename = _filename_for(dataset_uuid)
+
     if not os.path.exists(filename):
         raise ValueError('%s is not cached on the FS. Did you run `prepare_raw_data`?')
 
