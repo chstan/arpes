@@ -173,7 +173,7 @@ def read_single_ibw(reference_path: typing.Union[Path, str]):
     return igor.load(reference_path)
 
 
-def read_single_pxt(reference_path: typing.Union[Path, str]):
+def read_single_pxt(reference_path: typing.Union[Path, str], byte_order=None):
     """
     Uses igor.igorpy to load a single .PXT or .PXP file
     :return:
@@ -183,14 +183,16 @@ def read_single_pxt(reference_path: typing.Union[Path, str]):
         reference_path = str(reference_path.absolute())
 
     loaded = None
-    for byte_order in ['>', '=', '<']:
-        try:
-
-            loaded = igor.load(reference_path, initial_byte_order=byte_order)
-            break
-        except Exception:
-            # bad byte ordering probably
-            pass
+    if byte_order is None:
+        for try_byte_order in ['>', '=', '<']:
+            try:
+                loaded = igor.load(reference_path, initial_byte_order=try_byte_order)
+                break
+            except Exception:
+                # bad byte ordering probably
+                pass
+    else:
+        loaded = igor.load(reference_path, initial_byte_order=byte_order)
 
     children = [c for c in loaded.children if isinstance(c, igor.Wave)]
 
@@ -226,19 +228,19 @@ def read_single_pxt_old(reference_path: Path, separator=None):
     return wave
 
 
-def read_separated_pxt(reference_path: Path, separator=None):
+def read_separated_pxt(reference_path: Path, separator=None, byte_order=None):
     # determine if separated or not
-    name_match = re.match(r'([\w+]+)S[0-9][0-9][0-9]\.pxt', reference_path.name)
+    name_match = re.match(r'([\w+]+)S?[0-9][0-9][0-9]\.pxt', reference_path.name)
 
     if name_match is None:
-        return read_single_pxt(reference_path, separator)
+        return read_single_pxt(reference_path, byte_order=byte_order)
 
     # otherwise need to collect all of the components
     fragment = name_match.groups()[0]
-    components = list(reference_path.parent.glob('{}S*.pxt'.format(fragment)))
+    components = list(reference_path.parent.glob('{}*.pxt'.format(fragment)))
     components.sort()
 
-    frames = [read_single_pxt(f) for f in components]
+    frames = [read_single_pxt(f, byte_order=byte_order) for f in components]
 
     scan_coords = ['hv', 'polar', 'timed_power', 'tilt',]
 
