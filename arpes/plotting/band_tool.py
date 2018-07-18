@@ -1,6 +1,7 @@
 from bokeh import events
 import numpy as np
 
+import xarray as xr
 from arpes.models import band
 from arpes.plotting.interactive_utils import CursorTool, SaveableTool
 from exceptions import AnalysisError
@@ -11,6 +12,7 @@ from bokeh.models import widgets
 from bokeh.plotting import figure
 
 from arpes.analysis.band_analysis import fit_patterned_bands
+from utilities import normalize_to_spectrum
 
 __all__ = ('BandTool',)
 
@@ -165,9 +167,12 @@ class BandTool(SaveableTool, CursorTool):
         def fit(override_data=None):
             packed_bands = pack_bands()
             dims = list(self.arr.dims)
-            dims.remove('eV')
+            if 'eV' in dims:
+                dims.remove('eV')
             angular_direction = dims[0]
-            return fit_patterned_bands(override_data or self.arr, packed_bands,
+            if isinstance(override_data, xr.Dataset):
+                override_data = normalize_to_spectrum(override_data)
+            return fit_patterned_bands(override_data if override_data is not None else self.arr, packed_bands,
                                        fit_direction='eV' if self.app_context[
                                                                  'fit_mode'] == 'edc' else angular_direction,
                                        direction_normal=self.app_context['direction_normal'])
