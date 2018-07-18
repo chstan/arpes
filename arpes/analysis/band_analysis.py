@@ -270,7 +270,7 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
 
         def instantiate_band(partial_band):
             phony_band = partial_band['band'](partial_band['name'])
-            built = phony_band.fit_cls(prefix=partial_band['name'])
+            built = phony_band.fit_cls(prefix=partial_band['name'], missing='drop')
             for constraint_coord, constraints in partial_band['constraints'].items():
                 if constraint_coord == 'stray':
                     continue

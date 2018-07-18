@@ -34,14 +34,18 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
         self.outlier_clip = 1
 
     def tool_handler(self, doc):
+        self.arr = self.arr.copy(deep=True)
+
         if not isinstance(self.arr, xr.Dataset):
             self.use_dataset = False
 
         residual = None
         if self.use_dataset:
             raw_data = self.arr.data
+            raw_data.values[np.isnan(raw_data.values)] = 0
             fit_results = self.arr.results
             residual = self.arr.residual
+            residual.values[np.isnan(residual.values)] = 0
         else:
             raw_data = self.arr.attrs['original_data']
             fit_results = self.arr
