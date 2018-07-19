@@ -182,7 +182,7 @@ def simple_load(fragment, df: pd.DataFrame = None):
                 fragment, [files[i] for i in matches]))
         index = matches[0]
 
-    return load_dataset(df.loc[df.index[index]], df)
+    return load_dataset(dataset_uuid=df.loc[df.index[index]], df=df)
 
 def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame=None):
     """

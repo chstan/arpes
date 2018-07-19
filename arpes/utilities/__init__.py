@@ -10,6 +10,9 @@ import re
 import warnings
 from math import sin, cos
 from operator import itemgetter
+
+import datetime
+
 from arpes.typing import DataType
 
 import pandas as pd
@@ -313,10 +316,12 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
         if v is None:
             freeze_extra.append(k)
             attrs_copy[k] = json.dumps(v)
-        if isinstance(v, bool):
+        elif isinstance(v, bool):
             attrs_copy[k] = 1 if v else 0
-        if isinstance(v, pd.Timestamp):
+        elif isinstance(v, (pd.Timestamp, datetime.time,)):
             attrs_copy[k] = v.isoformat()
+        elif not isinstance(v, (str, float,)):
+            print('Be careful about type: {}'.format(type(v)))
 
     def clean_key(key: str):
         return key.replace('#', 'num_')

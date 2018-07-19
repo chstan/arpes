@@ -159,7 +159,7 @@ def attach_extra_dataset_columns(path, **kwargs):
 
         print(row.id)
         try:
-            scan = load_dataset(row.id, ds)
+            scan = load_dataset(dataset_uuid=row.id, df=ds)
         except ValueError as e:
             logging.warning(str(e))
             logging.warning('Skipping {}! Unable to load scan.'.format(row.id))
