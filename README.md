@@ -1,6 +1,6 @@
 # Installation
 
-This library requires a copy of Python 3.5 in order  to function, as well as installation of the dependencies listed 
+This library requires a copy of Python 3.5 in order  to function, as well as installation of the dependencies listed
 in the ```requirements.txt``` file. Steps are outlined below for installation as well as optional steps to make the
 user experience better.
 
@@ -35,14 +35,14 @@ If you are not running Windows 10, install [MSYS2](https://www.msys2.org) or [Cy
 
 ## Installing Python through Conda
 
-1. Install `conda` through the directions listed at [Anaconda](https://www.anaconda.com/download/), you want the Python 
+1. Install `conda` through the directions listed at [Anaconda](https://www.anaconda.com/download/), you want the Python
 3 version.
-2. On UNIX like environments, create a Python 3.5 environment using the command ``conda create -n {name_of_your_env} python=3.5 scipy jupyter``. 
+2. On UNIX like environments, create a Python 3.5 environment using the command ``conda create -n {name_of_your_env} python=3.5 scipy jupyter``.
 You can find more details in the conda docs at the
 [Conda User Guide](https://conda.io/docs/user-guide/tasks/manage-environments.html). For Windows Users, launch Anaconda Navigator and create an environment.
-3. In order to use your new environment, you can use the scripts `source activate {name_of_your_env}` 
+3. In order to use your new environment, you can use the scripts `source activate {name_of_your_env}`
 and `source deactivate`. Do this in any session where you will run your analysis or Jupyter. For Windows Users or users of
-graphical conda, launch your environment from the Navigator. 
+graphical conda, launch your environment from the Navigator.
 
 ## Installation of this Package
 
@@ -54,16 +54,16 @@ Inside the cloned repository, after activating your environment, install depende
 
 1. Install `xrft` via `conda install -c conda-forge xrft`
 2. Run `pip install -r requirements.txt`. This will
-install all packages required by the code. If you ever want to add a new package you find elsewhere, just 
+install all packages required by the code. If you ever want to add a new package you find elsewhere, just
 `pip install {package_name}` and add it to `requirements.txt`. Conda Navigator users can get a terminal by launching Jupyter
 and requesting `> New > Terminal Session` from the Jupyter [chrome](https://en.wikipedia.org/wiki/Graphical_user_interface#User_interface_and_interaction_design).
 
 
 ## `local_config.py`
 
-The local configuration allows you to override the settings that are committed to the repository and therefore shared. 
-You can use this to change (somewhat) where data is stored, as well as adjust settings on various interactive tools. 
-For reference, Conrad's looks like  
+The local configuration allows you to override the settings that are committed to the repository and therefore shared.
+You can use this to change (somewhat) where data is stored, as well as adjust settings on various interactive tools.
+For reference, Conrad's looks like
 
 ```
 DATA_PATH = None
@@ -85,10 +85,10 @@ you can add the following to your ``.bashrc``, ``.bash_profile`` or equivalent:
 export ARPES_ROOT="/path/to/wherever/you/installed/this/project/"
 ```
 
-The value of ``ARPES_ROOT`` should be defined so that ``$ARPES_ROOT/README.md`` points to the file that you 
+The value of ``ARPES_ROOT`` should be defined so that ``$ARPES_ROOT/README.md`` points to the file that you
 are currently reading.
 
-To make using the code simpler, consider an alias to move to the data analysis location and to start the 
+To make using the code simpler, consider an alias to move to the data analysis location and to start the
 virtual environment. On Conrad's computer this looks like:
 
 ```bash
@@ -98,13 +98,13 @@ alias arpesn="cd $ARPES_ROOT && source activate python_arpes && jupyter notebook
 
 Similar commands should be placed in your `.bashrc`.
 
-Alternatively, you can effectively set an environment variable by creating a file in your `IPython` startup folders 
+Alternatively, you can effectively set an environment variable by creating a file in your `IPython` startup folders
 that sets it through `os.environ`. On Windows this might look like `00-set-env.py`:
 
 ```
 import os
 os.environ['ARPES_ROOT'] = r'C:\some\path\to\installation\of\python-arpes'
-```  
+```
 
 ## Jupyter
 
@@ -114,14 +114,14 @@ about good initial settings.
 ## IPython Kernel Customization
 
 If you don't want to have to import everything all the time, you should customize your IPython session so that it
-runs imports when you first spin up a kernel. There are good directions for how to do this online, but a short 
+runs imports when you first spin up a kernel. There are good directions for how to do this online, but a short
 version is:
 
 1. Create an IPython profile, use this to start your notebooks
 2. In ``~/.ipython/profile_default/`` make a folder `startup`
-3. Add the files ``~/.ipython/profile_default/startup/00-add-arpes-path.py`` and 
-``~/.ipython/{Your profile}/startup/01-common-imports.ipy`` according to the templates in `ipython_templates`. See in particular 
-note above about setting the environment variable using this file.  
+3. Add the files ``~/.ipython/profile_default/startup/00-add-arpes-path.py`` and
+``~/.ipython/{Your profile}/startup/01-common-imports.ipy`` according to the templates in `ipython_templates`. See in particular
+note above about setting the environment variable using this file.
 4. Customize to your liking
 
 Note that you can customize the default profile or a different if you wish instead.
@@ -132,4 +132,4 @@ Ask Conrad if any of this is confusing.
 
 # Getting Started with Analysis
 
-Ask Conrad! Also look in `datasets/example`.
+Ask Conrad! Also look in `datasets/example`. Also feel free to contribute examples.
