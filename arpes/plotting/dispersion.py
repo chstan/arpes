@@ -38,7 +38,7 @@ def plot_dispersion(spectrum: xr.DataArray, bands, out=None):
 
 
 @save_plot_provenance
-def cut_dispersion_plot(data, e_floor=None, title=None, ax=None, include_symmetry_points=True,
+def cut_dispersion_plot(data: xr.DataArray, e_floor=None, title=None, ax=None, include_symmetry_points=True,
                         out=None, quality='high', **kwargs):
     """
     Makes a 3D cut dispersion plot. At the moment this only supports rectangular BZs.
@@ -52,7 +52,6 @@ def cut_dispersion_plot(data, e_floor=None, title=None, ax=None, include_symmetr
     """
 
     # to get nice labeled edges you could use shapely
-
     sampling = {
         'paper': 400,
         'high': 100,
