@@ -210,8 +210,10 @@ clean_datavar_attribute_names = lift_datavar_attrs(clean_keys)
 ATTRS_MAP = {
     'PuPol': 'pump_pol',
     'PrPol': 'probe_pol',
+    'SFLNM0': 'lens_mode',
     'Lens Mode': 'lens_mode',
     'Excitation Energy': 'hv',
+    'SFPE_0': 'pass_energy',
     'Pass Energy': 'pass_energy',
     'Slit Plate': 'slit',
     'Number of Sweeps': 'n_sweeps',
@@ -320,7 +322,7 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
             attrs_copy[k] = 1 if v else 0
         elif isinstance(v, (pd.Timestamp, datetime.time,)):
             attrs_copy[k] = v.isoformat()
-        elif not isinstance(v, (str, float,)):
+        elif not isinstance(v, (str, float, int,)):
             print('Be careful about type: {}'.format(type(v)))
 
     def clean_key(key: str):

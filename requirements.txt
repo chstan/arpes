@@ -25,11 +25,11 @@ xrft # You will need to get this one from the conda forge with `conda install -c
 pymatgen
 
 # Plotting
-holoviews==1.8.4
+# holoviews==1.8.4
 matplotlib
 seaborn
 bokeh
-plotly
+# plotly # optional
 
 # Rendering and exploration
 # paraview

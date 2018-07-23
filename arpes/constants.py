@@ -62,7 +62,7 @@ K_INV_ANGSTROM = 0.5123
 
 SPECTROMETER_MC = {
     'name': 'MC',
-    'rad_per_pixel': 0.125 * (pi / 180),
+    'rad_per_pixel': (1/10) * (pi / 180),
     'type': 'hemisphere',
     'is_slit_vertical': False,
 }

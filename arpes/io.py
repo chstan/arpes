@@ -184,6 +184,7 @@ def simple_load(fragment, df: pd.DataFrame = None):
 
     return load_dataset(dataset_uuid=df.loc[df.index[index]], df=df)
 
+
 def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame=None):
     """
     You might want to prefer ``simple_load`` over calling this directly as it is more convenient.
@@ -194,8 +195,11 @@ def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame=None):
     :return:
     """
     if df is None:
-        from arpes.utilities import default_dataset  # break circular dependency
-        df = default_dataset()
+        try:
+            from arpes.utilities import default_dataset  # break circular dependency
+            df = default_dataset()
+        except Exception:
+            pass
 
     if filename is None:
         filename = _filename_for(dataset_uuid)
