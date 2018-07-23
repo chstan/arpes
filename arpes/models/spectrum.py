@@ -570,7 +570,9 @@ def load_SES(metadata: dict=None, filename: str=None, robust_dimension_labels=Fa
     metadata = copy.deepcopy(metadata)
 
     data_loc = metadata.get('path', metadata.get('file'))
-    data_loc = data_loc if data_loc.startswith('/') else os.path.join(arpes.config.DATA_PATH, data_loc)
+    p = Path(data_loc)
+    if not p.exists():
+        data_loc = os.path.join(arpes.config.DATA_PATH, data_loc)
 
     wave_note = shim_wave_note(data_loc)
     f = h5py.File(data_loc, 'r')
