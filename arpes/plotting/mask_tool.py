@@ -127,22 +127,29 @@ class MaskTool(SaveableTool, CursorTool):
             start=0, end=100, value=(0, 100,), title='Color Range')
 
         def on_click_edge_mask():
-            if self.active_region is not None and self.active_region in self.region_options:
+            if self.active_region in self.regions:
                 old_points = self.regions[self.active_region]['points']
                 dims = [d for d in arr.dims if 'eV' != d]
+                energy_index = arr.dims.index('eV')
+                max_energy = np.max([p[energy_index] for p in old_points])
+
                 other_dim = dims[0]
                 other_coord = arr.coords[other_dim].values
                 min_other, max_other = np.min(other_coord), np.max(other_coord)
                 min_e = np.min(arr.coords['eV'].values)
 
                 if arr.dims.index('eV') == 0:
-                    before = [[min_e, min_other], [0, min_other]]
-                    after = [[0, max_other], [min_e, max_other]]
+                    before = [[min_e - 3, min_other - 1], [0, min_other - 1]]
+                    after = [[0, max_other + 1], [min_e - 3, max_other + 1]]
                 else:
-                    before = [[min_other, min_e], [min_other, 0]]
-                    after = [[max_other, 0], [max_other, min_e]]
+                    before = [[min_other - 1, min_e - 3], [min_other - 1, 0]]
+                    after = [[max_other + 1, 0], [max_other + 1, min_e - 3]]
                 self.regions[self.active_region]['points'] = before + old_points + after
+                self.app_context['mask'] = self.app_context['mask'] or {}
+                self.app_context['mask']['fermi'] = max_energy
                 update_region_display()
+
+            self.save_app()
 
         def add_region(region_name):
             if region_name not in self.regions:
@@ -171,10 +178,12 @@ class MaskTool(SaveableTool, CursorTool):
         def update_region_display():
             region_names = self.regions.keys()
 
-            self.app_context['mask'] = {
+            if self.app_context['mask'] is None:
+                self.app_context['mask'] = {}
+            self.app_context['mask'].update({
                 'dims': arr.dims,
                 'polys': [r['points'] for r in self.regions.values()]
-            }
+            })
 
             region_patches.data_source.data = {
                 'xs': [[p[0] for p in self.regions[r]['points']] for r in region_names],
@@ -211,23 +220,25 @@ class MaskTool(SaveableTool, CursorTool):
 
         layout = row(column(self.figures['main']),
                      column(
-                         widgetbox(
-                             pointer_dropdown,
-                             self.region_dropdown,
-                         ),
-                         row(
-                             region_name_input,
-                             add_region_button,
-                         ),
-                         edge_mask_button if 'eV' in arr.dims else None,
-                         row(
-                             clear_region_button,
-                             remove_region_button,
-                         ),
-                         widgetbox(
-                             self._cursor_info,
-                             main_color_range_slider,
-                         )
+                         *[f for f in [
+                             widgetbox(
+                                 pointer_dropdown,
+                                 self.region_dropdown,
+                             ),
+                             row(
+                                 region_name_input,
+                                 add_region_button,
+                             ),
+                             edge_mask_button if 'eV' in arr.dims else None,
+                             row(
+                                 clear_region_button,
+                                 remove_region_button,
+                             ),
+                             widgetbox(
+                                 self._cursor_info,
+                                 main_color_range_slider,
+                             ),
+                         ] if f is not None]
                      ))
 
         doc.add_root(layout)
