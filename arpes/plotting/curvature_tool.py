@@ -1,6 +1,6 @@
 import numpy as np
 from bokeh.layouts import row, column, widgetbox
-from bokeh.models import widgets
+from bokeh.models import widgets, Spacer
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.plotting import figure
 
@@ -19,7 +19,7 @@ class CurvatureTool(BokehInteractiveTool):
         super().__init__()
 
         self.load_settings(**kwargs)
-        self.app_main_size = self.settings.get('app_main_size', 600)
+        self.app_main_size = self.settings.get('app_main_size', 400)
 
     def tool_handler(self, doc):
         default_palette = self.default_palette
@@ -278,7 +278,8 @@ class CurvatureTool(BokehInteractiveTool):
                 filter_select,
                 *smoothing_sliders,
                 n_smoothing_steps_slider,
-            )
+            ),
+            Spacer(height=100),
         )
 
         # Attach event handlers
