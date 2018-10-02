@@ -112,17 +112,28 @@ def apply_copper_fermi_edge_correction(arr: DataType, copper_ref: DataType, *arg
     return apply_quadratic_fermi_edge_correction(arr, quadratic_corr)
 
 
-def build_quadratic_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, plot=False) -> lf.model.ModelResult:
+def build_quadratic_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, eV_slice=None, plot=False) -> lf.model.ModelResult:
     # TODO improve robustness here by allowing passing in the location of the fermi edge guess
     # We could also do this automatically by using the same method we use for step detection to find the edge of the
     # spectrometer image
-    edge_fit = broadcast_model(GStepBModel, arr.sum(exclude_hemisphere_axes(arr.dims)).sel(eV=slice(-0.1, 0.1)), 'phi')
+
+    if eV_slice is None:
+        approximate_fermi_level = arr.S.find_spectrum_energy_edges().max()
+        eV_slice = slice(approximate_fermi_level-0.4, approximate_fermi_level+0.4)
+    else:
+        approximate_fermi_level = 0
+    sum_axes = exclude_hemisphere_axes(arr.dims)
+    edge_fit = broadcast_model(GStepBModel, arr.sum(sum_axes).sel(eV=eV_slice), 'phi', constraints={'center': {'value': approximate_fermi_level}})
+
+    size_phi = len(arr.coords['phi'])
+    not_nanny = (np.logical_not(np.isnan(arr)) * 1).sum('eV') > size_phi * 0.30
+    condition = np.logical_and(edge_fit.F.s('center') < fit_limit, not_nanny)
 
     quadratic_corr = QuadraticModel().guess_fit(
-        edge_fit.T.map(lambda x: x.params['center'].value),
-        weights=(edge_fit.T.map(lambda x: x.params['center'].stderr).values < fit_limit) * 1)
+        edge_fit.F.p('center'),
+        weights=condition * 1)
     if plot:
-        edge_fit.T.map(lambda x: x.params['center'].value).plot()
+        edge_fit.F.p('center').plot()
         plt.plot(arr.coords['phi'], quadratic_corr.best_fit)
 
     return quadratic_corr
@@ -167,7 +178,7 @@ def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None
 
     return corrected_arr
 
-def apply_quadratic_fermi_edge_correction(arr: xr.DataArray, correction: lf.model.ModelResult=None):
+def apply_quadratic_fermi_edge_correction(arr: xr.DataArray, correction: lf.model.ModelResult=None, offset=None):
     assert(isinstance(arr, xr.DataArray))
     if correction is None:
         correction = build_quadratic_fermi_edge_correction(arr)
@@ -181,7 +192,14 @@ def apply_quadratic_fermi_edge_correction(arr: xr.DataArray, correction: lf.mode
     dims = list(arr.dims)
     energy_axis = dims.index('eV')
     phi_axis = dims.index('phi')
-    shift_amount = -correction.best_fit / delta_E
+
+    shift_amount_E = correction.eval(x=arr.coords['phi'].values)
+
+    if offset is not None:
+        shift_amount_E = shift_amount_E - offset
+
+    shift_amount = -shift_amount_E / delta_E
+
     corrected_arr = xr.DataArray(
         shift_by(arr.values, shift_amount, axis=energy_axis, by_axis=phi_axis, order=1),
         arr.coords,
