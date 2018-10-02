@@ -80,6 +80,21 @@ class ARPESAccessorBase(object):
         raise AnalysisError('Unknown spectrometer configuration.')
 
     @property
+    def endstation(self):
+        return self._obj.attrs['location']
+
+    @property
+    def is_synchrotron(self):
+        endstation = self.endstation
+
+        synchrotron_endstations = {
+            'BL403',
+            'BL702',
+        }
+
+        return endstation in synchrotron_endstations
+
+    @property
     def hv(self):
         if 'hv' in self._obj.attrs:
             value = float(self._obj.attrs['hv'])
@@ -747,6 +762,16 @@ class ARPESAccessorBase(object):
         return normalized
 
     @property
+    def reference_settings(self):
+        settings = self.spectrometer_settings or {}
+
+        settings.update({
+            'hv': self.hv,
+        })
+
+        return settings
+
+    @property
     def spectrometer_settings(self):
         find_keys = {
             'lens_mode',
@@ -760,9 +785,24 @@ class ARPESAccessorBase(object):
 
     @property
     def sample_pos(self):
-        return (float(self._obj.attrs['x']),
-                float(self._obj.attrs['y']),
-                float(self._obj.attrs['z']),)
+        x, y, z = None, None, None
+        try:
+            x = self._obj.attrs['x']
+        except KeyError:
+            pass
+        try:
+            y = self._obj.attrs['y']
+        except KeyError:
+            pass
+        try:
+            z = self._obj.attrs['z']
+        except KeyError:
+            pass
+
+        def do_float(w):
+            return float(w) if w is not None else None
+
+        return (do_float(x), do_float(y), do_float(z))
 
     @property
     def chi(self):
@@ -793,7 +833,10 @@ class ARPESAccessorBase(object):
         Theta is always the manipulator angle DoF that lies along the analyzer slit.
         :return:
         """
-        return float(self._obj.attrs['theta'])
+        try:
+            return float(self._obj.attrs['theta'])
+        except KeyError:
+            return None
 
     @property
     def phi(self):
@@ -801,7 +844,10 @@ class ARPESAccessorBase(object):
         Phi is always the angle along the hemisphere
         :return:
         """
-        return self._obj.coords.get('phi')
+        try:
+            return float(self._obj.attrs['phi'])
+        except KeyError:
+            return None
 
     @property
     def polar(self):
@@ -809,7 +855,10 @@ class ARPESAccessorBase(object):
         Polar is always the angle perpendicular to the analyzer slit
         :return:
         """
-        return float(self._obj.attrs['polar'])
+        try:
+            return float(self._obj.attrs['polar'])
+        except KeyError:
+            return None
 
     @property
     def full_coords(self):
@@ -827,7 +876,12 @@ class ARPESAccessorBase(object):
     @property
     def temp(self):
         warnings.warn('This is not reliable. Fill in stub for normalizing the temperature appropriately on data load.')
-        return float(self._obj.attrs['TA'])
+        prefered_attrs = ['TA', 'ta', 't_a', 'T_A', 'T_1', 't_1', 't1', 'T1']
+        for attr in prefered_attrs:
+            if attr in self._obj.attrs:
+                return float(self._obj.attrs[attr])
+
+        raise AttributeError('Could not read temperature off any standard attr')
 
     @property
     def condensed_attrs(self):
@@ -1014,8 +1068,8 @@ class GenericAccessorTools(object):
             yield coords_dict, self._obj.sel(method='nearest', **coords_dict)
 
 
-    def map(self, fn):
-        return apply_dataarray(self._obj, np.vectorize(fn))
+    def map(self, fn, **kwargs):
+        return apply_dataarray(self._obj, np.vectorize(fn, **kwargs))
 
     def enumerate_iter_coords(self):
         coords_list = [self._obj.coords[d].values for d in self._obj.dims]
@@ -1124,10 +1178,10 @@ class ARPESFitToolsAccessor(object):
         return self.show()
 
     def p(self, param_name):
-        return self._obj.T.map(param_getter(param_name))
+        return self._obj.T.map(param_getter(param_name), otypes=[np.float])
 
     def s(self, param_name):
-        return self._obj.T.map(param_stderr_getter(param_name))
+        return self._obj.T.map(param_stderr_getter(param_name), otypes=[np.float])
 
     @property
     def bands(self):
