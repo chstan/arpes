@@ -33,15 +33,14 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
     new_dim_order = list(dataarray.dims)
     new_dim_order.remove('time')
     new_dim_order = ['time'] + new_dim_order
-    dataarray.transpose(*new_dim_order)
+    dataarray = dataarray.transpose(*new_dim_order)
     new_dim_order[0] = 'kinetic'
 
-    timing = dataarray.coords['time']
+    timing = dataarray.coords['time'].values
     assert(timing[1] > timing[0])
     t_min, t_max = np.min(timing), np.max(timing)
 
     # Prep arrays
-    #self.energies = np.linspace(E_min_R, E_max_R - self.dE, NE)
     d_energy = kinetic_energy_axis[1] - kinetic_energy_axis[0]
     time_index = 0 # after transpose
     new_shape = list(dataarray.data.shape)
@@ -155,7 +154,7 @@ def convert_SToF_to_energy(dataset: xr.Dataset):
     e_min, e_max = 0.1, 10.
 
     # TODO, we can better infer a reasonable gridding here
-    spacing = 0.0001
+    spacing = 0.005
     ke_axis = np.linspace(e_min, e_max, int((e_max - e_min) / spacing))
 
     drs = {k: v for k, v in dataset.data_vars.items() if 'time' in v.dims}
@@ -176,7 +175,7 @@ def convert_SToF_to_energy(dataset: xr.Dataset):
 def process_SToF(dataset: xr.Dataset):
     e_min = dataset.attrs.get('E_min', 1)
     e_max = dataset.attrs.get('E_max', 10)
-    de = dataset.attrs.get('dE', 0.001)
+    de = dataset.attrs.get('dE', 0.01)
     ke_axis = np.linspace(e_min, e_max, (e_max - e_min) / de)
 
     dataset = transform_dataarray_axis(
