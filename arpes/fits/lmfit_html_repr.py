@@ -3,7 +3,9 @@ For now we monkeypatch lmfit to make it easier to work with in Jupyter. We shoul
 or providing a pull at a later date after this settles down.
 """
 
+import numpy as np
 from lmfit import model
+
 
 def repr_html_ModelResult(self, **kwargs):
     template = """
@@ -65,17 +67,17 @@ def repr_html_Parameter(self, short=False):
         )
 
     template = """
-        <tr>
-            <th>{name}</th>
-            <th>{value:.3f}</th>
-            <th>{min:.3f}</th>
-            <th>{max:.3f}</th>
-            <th>{stderr:.3f}</th>
-            <th>{vary}</th>
-            <th>{expr}</th>
-            <th>{brute_step}</th>
-        </tr>
-        """
+            <tr>
+                <th>{name}</th>
+                <th>{value:.3f}</th>
+                <th>{min:.3f}</th>
+                <th>{max:.3f}</th>
+                <th>{stderr:.3f}</th>
+                <th>{vary}</th>
+                <th>{expr}</th>
+                <th>{brute_step}</th>
+            </tr>
+            """
     return template.format(
         name=self.name,
         value=self.value,
@@ -96,4 +98,3 @@ model.ModelResult._repr_html_ = repr_html_ModelResult
 model.Parameter.to_table_row = repr_html_Parameter
 
 __all__ = tuple()
-
