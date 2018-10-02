@@ -17,7 +17,7 @@ def attach_id(data):
         data.attrs['id'] = str(uuid.uuid1())
 
 
-def provenance_from_file(child_arr: xr.DataArray, file, record):
+def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file, record):
     if 'id' not in child_arr.attrs:
         attach_id(child_arr)
 
