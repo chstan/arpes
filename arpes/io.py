@@ -2,6 +2,9 @@ import json
 import os.path
 import uuid
 import warnings
+import numpy as np
+import pickle
+from pathlib import Path
 
 import pandas as pd
 import xarray as xr
@@ -11,8 +14,73 @@ from arpes.exceptions import ConfigurationError
 from arpes.typing import DataType
 from arpes.utilities import wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datavar_attrs, WHITELIST_KEYS, FREEZE_PROPS
 
-__all__ = ['simple_load', 'load_dataset', 'save_dataset', 'delete_dataset',
-           'dataset_exists', 'is_a_dataset', 'load_dataset_attrs']
+__all__ = (
+    'simple_load', 'load_dataset', 'save_dataset', 'delete_dataset',
+    'dataset_exists', 'is_a_dataset', 'load_dataset_attrs', 'easy_pickle',
+    'sld', 'stitch',
+)
+
+
+def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
+    """
+    Stitches together a sequence of scans or a DataFrame in order to provide a unified dataset along a specified axis
+
+    :param df_or_list: list of the files to load
+    :param attr_or_axis: coordinate or attribute in order to promote to an index. I.e. if 't_a' is specified,
+    we will create a new axis corresponding to the temperature and concatenate the data along this axis
+    :return:
+    """
+
+    list_of_files = None
+    if isinstance(df_or_list, (pd.DataFrame,)):
+        list_of_files = list(df_or_list.index)
+    else:
+        if not isinstance(df_or_list, (list, tuple,)):
+            raise TypeError('Expected an interable for a list of the scans to stitch together')
+
+        list_of_files = list(df_or_list)
+
+    if built_axis_name is None:
+        built_axis_name = attr_or_axis
+
+    loaded = [simple_load(f) for f in list_of_files]
+
+    for f in loaded:
+        value = None
+        if attr_or_axis in f.attrs:
+            value = f.attrs[attr_or_axis]
+        elif attr_or_axis in f.coords:
+            value = f.coords[attr_or_axis]
+
+        f.coords[built_axis_name] = value
+
+    if sort:
+        loaded.sort(key=lambda x: x.coords[built_axis_name])
+
+    return xr.concat(loaded, dim=built_axis_name)
+
+
+def file_for_pickle(name):
+    p = Path('picklejar', '{}.pickle'.format(name))
+    p.parent.mkdir(exist_ok=True)
+    return str(p)
+
+
+def load_pickle(name):
+    with open(file_for_pickle(name), 'rb') as f:
+        return pickle.load(f)
+
+
+def save_pickle(data, name):
+    pickle.dump(data, open(file_for_pickle(name), 'wb'))
+
+
+def easy_pickle(data_or_str, name=None):
+    if isinstance(data_or_str, str) or name is None:
+        return load_pickle(data_or_str)
+
+    assert (isinstance(name, str))
+    save_pickle(data_or_str, name)
 
 
 def _id_for(data):
@@ -82,7 +150,7 @@ def save_dataset(arr: DataType, filename=None, force=False):
             return
 
     df = arr.attrs.pop('df', None)
-    arr.attrs.pop('', None) # protect against totally stripped attribute names
+    arr.attrs.pop('', None)  # protect against totally stripped attribute names
     arr = wrap_datavar_attrs(arr, original_data=arr)
     ref_attrs = arr.attrs.pop('ref_attrs', None)
 
@@ -152,7 +220,7 @@ def load_dataset_attrs(dataset_uuid):
         return unwrap_attrs_dict(attrs)
 
 
-def simple_load(fragment, df: pd.DataFrame = None):
+def simple_load(fragment, df: pd.DataFrame = None, basic_prep=True):
     if df is None:
         from arpes.utilities import default_dataset  # break circular dependency
         df = default_dataset()
@@ -162,13 +230,14 @@ def simple_load(fragment, df: pd.DataFrame = None):
 
     # find a soft match
     files = df.index
+
     def strip_left_zeros(value):
         if len(value) == 1:
             return value
 
         return value.lstrip('0')
 
-    if isinstance(fragment, int):
+    if isinstance(fragment, (int, np.int32, np.int64,)):
         numbers = [int(f) for f in [strip_left_zeros(''.join(c for c in resolve_fragment(f) if c.isdigit()))
                                     for f in files] if len(f)]
         index = numbers.index(fragment)
@@ -182,10 +251,19 @@ def simple_load(fragment, df: pd.DataFrame = None):
                 fragment, [files[i] for i in matches]))
         index = matches[0]
 
-    return load_dataset(dataset_uuid=df.loc[df.index[index]], df=df)
+    data = load_dataset(dataset_uuid=df.loc[df.index[index]], df=df)
+
+    if basic_prep:
+        if 'cycle' in data.indexes and len(data.coords['cycle']) == 1:
+            data = data.sum('cycle', keep_attrs=True)
+
+    return data
 
 
-def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame=None):
+sld = simple_load
+
+
+def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame = None):
     """
     You might want to prefer ``simple_load`` over calling this directly as it is more convenient.
 
@@ -224,8 +302,6 @@ def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame=None):
         for k, v in cleaves.get(full_cleave_name, {}).items():
             if k not in skip_keys and k not in arr.attrs:
                 arr.attrs[k] = v
-    else:
-        warnings.warn('Could not fetch cleave information.')
 
     if 'ref_id' in arr.attrs:
         arr.attrs['ref_attrs'] = load_dataset_attrs(arr.attrs['ref_id'])
