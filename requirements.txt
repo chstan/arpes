@@ -11,6 +11,7 @@ netCDF4
 colorcet
 
 # Analysis
+pint # units
 pandas
 dask
 numpy
