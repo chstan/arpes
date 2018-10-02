@@ -55,14 +55,20 @@ class CursorTool(object):
         return self._cursor
 
     def add_cursor_lines(self, figure):
-        cursor_lines =  figure.multi_line(xs=[self._horiz_cursor_x, self._vert_cursor_x],
-                                          ys=[self._horiz_cursor_y, self._vert_cursor_y],
-                                          line_color='white', line_width=2, line_dash='dotted')
+        cursor_lines = figure.multi_line(xs=[self._horiz_cursor_x, self._vert_cursor_x],
+                                         ys=[self._horiz_cursor_y, self._vert_cursor_y],
+                                         line_color='white', line_width=2, line_dash='dotted')
         self._cursor_lines = cursor_lines
         return cursor_lines
 
     @cursor.setter
     def cursor(self, values):
+        if self._cursor_dims is None:
+            try:
+                self._cursor_dims = list(self.arr.dims)
+            except AttributeError:
+                pass
+
         self._cursor = values
         if self._cursor_info is None:
             self._cursor_info = Div(text='')
@@ -83,11 +89,32 @@ class CursorTool(object):
                 'ys': [self._horiz_cursor_y, self._vert_cursor_y],
             }
 
+        try:
+            self.app_context['cursor_dict'] = dict(zip(self._cursor_dims, self.cursor))
+            #self.app_context['full_cursor'] =
+        except AttributeError:
+            pass
+
 
 class BokehInteractiveTool(ABC):
     auto_rebin = True
     auto_zero_nans = True
     rebin_size = 800
+
+    _debug_div = None
+
+    @property
+    def debug_div(self):
+        if self._debug_div is None:
+            self._debug_div = Div(text='', width=300, height=100)
+
+        return self._debug_div
+
+    def __setattr__(self, name, value):
+        if name == 'debug_text':
+            self._debug_div.text = value
+
+        super().__setattr__(name, value)
 
     def update_colormap_for(self, plot_name):
         def update_plot_colormap(attr, old, new):
@@ -220,7 +247,7 @@ class SaveableTool(BokehInteractiveTool):
 
     @property
     def path(self):
-        return Path(self.filename)
+        return None if self.filename is None else Path(self.filename)
 
     def load_app(self):
         if self.name is None:

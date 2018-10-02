@@ -76,15 +76,25 @@ def plotly_trisurf(data):
     pyo.iplot(fig, filename='test-surface')
 
 
-def plot_trisurf(data, out=None, ax=None):
+def plot_trisurf(data, out=None, ax=None, angles=None):
     if ax is None:
         fig = plt.figure()
         ax = fig.gca(projection='3d')
 
     Xs, Ys = np.meshgrid(data.coords[data.dims[0]].values, data.coords[data.dims[1]].values)
-    ax.plot_trisurf(Xs.ravel(), Ys.ravel(), data.transpose().values.ravel(), antialiased=True, cmap=cm.coolwarm, linewidth=0)
+    triang = Triangulation(Xs.ravel(), Ys.ravel())
+    mask = np.any(np.isnan(data.transpose().values.ravel()[triang.triangles]), axis=1)
+    triang.set_mask(mask)
 
-    plt.show()
+    values = data.copy(deep=True).transpose().values
+    values[np.isnan(values)] = 0
+    ax.plot_trisurf(triang, values.ravel(), antialiased=True, cmap=cm.coolwarm, linewidth=0)
+
+    if angles is not None:
+        ax.view_init(*angles)
+
+    #plt.show()
+    return ax
 
 @save_plot_provenance
 def plot_trisurface(data, out=None, ax=None):

@@ -22,6 +22,7 @@ from .comparison_tool import *
 from .curvature_tool import *
 from .fit_inspection_tool import *
 from .mask_tool import *
+from .path_tool import *
 from .dyn_tool import *
 
 from .utils import savefig

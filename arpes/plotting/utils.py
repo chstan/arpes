@@ -5,18 +5,99 @@ import os.path
 import numpy as np
 import matplotlib.offsetbox
 import matplotlib
+import matplotlib.cm
 from matplotlib.lines import Line2D
 
 from collections import Counter
 
+from matplotlib import colors, colorbar
 import matplotlib.pyplot as plt
 
 from arpes.config import CONFIG, FIGURE_PATH
 from arpes.typing import DataType
 from utilities import normalize_to_spectrum
 
-__all__ = ['path_for_plot', 'path_for_holoviews', 'name_for_dim', 'label_for_colorbar', 'label_for_dim',
-           'label_for_symmetry_point', 'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio', 'unit_for_dim',]
+__all__ = (
+    'path_for_plot', 'path_for_holoviews', 'name_for_dim', 'label_for_colorbar', 'label_for_dim',
+    'label_for_symmetry_point', 'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio', 'unit_for_dim',
+    'polarization_colorbar',
+
+    # color related
+    'temperature_colormap',
+    'temperature_colormap_around',
+    'temperature_colorbar',
+    'temperature_colorbar_around',
+
+    'colorbarmaps_for_axis',
+)
+
+def delay_colormap(low=-1, high=1):
+    def get_color(value):
+        return matplotlib.cm.coolwarm(float((value - low) / (high - low)))
+
+    return get_color
+
+def temperature_colormap(high=300, low=0):
+    def get_color(value):
+        return matplotlib.cm.Blues_r(float((value - low) / (high - low)))
+
+    return get_color
+
+
+def temperature_colormap_around(central, range=50):
+    def get_color(value):
+        return matplotlib.cm.RdBu_r(float((value - central) / range))
+
+    return get_color
+
+
+def temperature_colorbar(high=300, low=0, ax=None, **kwargs):
+    extra_kwargs = {
+        'orientation': 'horizontal',
+        'label': 'Temperature (K)',
+        'ticks': [low, high],
+    }
+    extra_kwargs.update(kwargs)
+    cb = colorbar.ColorbarBase(ax, cmap='Blues_r', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
+    return cb
+
+
+def delay_colorbar(low=-1, high=1, ax=None, **kwargs):
+    # TODO make this nonsequential for use in case where you want to have a long time period after the
+    # delay or before
+    extra_kwargs = {
+        'orientation': 'horizontal',
+        'label': 'Probe Pulse Delay (ps)',
+        'ticks': [low, 0, high],
+    }
+    extra_kwargs.update(kwargs)
+    cb = colorbar.ColorbarBase(ax, cmap='coolwarm', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
+    return cb
+
+
+def temperature_colorbar_around(central, range=50, ax=None, **kwargs):
+    extra_kwargs = {
+        'orientation': 'horizontal',
+        'label': 'Temperature (K)',
+        'ticks': [central - range, central + range],
+    }
+    extra_kwargs.update(kwargs)
+    cb = colorbar.ColorbarBase(ax, cmap='RdBu_r', norm=colors.Normalize(vmin=central - range, vmax=central + range),
+                               **extra_kwargs)
+    return cb
+
+
+colorbarmaps_for_axis = {
+    'temp': (temperature_colorbar, temperature_colormap,),
+    'delay': (delay_colorbar, delay_colormap,),
+}
+
+
+def polarization_colorbar(ax=None):
+    cb = colorbar.ColorbarBase(ax, cmap='RdBu', norm=colors.Normalize(vmin=-1, vmax=1),
+                               orientation='horizontal', label='Polarization', ticks=[-1, 0, 1])
+    return cb
+
 
 def calculate_aspect_ratio(data: DataType):
     data = normalize_to_spectrum(data)
@@ -153,10 +234,12 @@ def label_for_colorbar(data):
 
 def label_for_dim(data, dim_name, escaped=True):
     raw_dim_names = {
+        'theta': r'$\theta$',
         'polar': r'$\theta$',
         'phi': r'$\varphi$',
         'eV': r'\textbf{eV}',
-        'angle': r'Interp. \textbf{Angle}'
+        'angle': r'Interp. \textbf{Angle}',
+        'kinetic': r'Kinetic Energy (\textbf{eV})',
     }
 
     if data.S.spectrometer.get('type') == 'hemisphere':
