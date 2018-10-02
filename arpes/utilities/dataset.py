@@ -2,6 +2,7 @@ from collections import namedtuple
 import os
 import uuid
 import logging
+import re
 
 import numpy as np
 import pandas as pd
@@ -15,8 +16,8 @@ __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
            'cleaned_dataset_exists', 'modern_clean_xlsx_dataset', 'cleaned_pair_paths']
 
 _DATASET_EXTENSIONS = {'.xlsx', '.xlx',}
-_SEARCH_DIRECTORIES = ('', 'hdf5', 'fits',)
-_TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits',}
+_SEARCH_DIRECTORIES = ('', 'hdf5', 'fits', '../Data', '../Data/hdf5', '../Data/fits',)
+_TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits', '.pxt'}
 
 
 
@@ -33,9 +34,9 @@ def is_blank(item):
     return False
 
 
-def infer_data_path(file, scan_desc, allow_soft_match=False):
+def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
     if not isinstance(file, str):
-        file = str(file)
+        file = str(int(file))
 
     if 'path' in scan_desc and not is_blank(scan_desc['path']):
         return scan_desc['path']
@@ -50,25 +51,37 @@ def infer_data_path(file, scan_desc, allow_soft_match=False):
     base_dir = workspace_path or os.path.join(arpes.config.DATA_PATH, workspace)
     dir_options = [os.path.join(base_dir, option) for option in _SEARCH_DIRECTORIES]
 
+    # another plugin related option here is we can restrict the number of regexes by allowing plugins
+    # to install regexes for particular endstations, if this is needed in the future it might be a good way
+    # of preventing clashes where there is ambiguity in file naming scheme across endstations
+    patterns = [r'[a-zA-Z0-9_\w]+_[0]+{}$'.format(file), r'[a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file)]
+    patterns = [re.compile(m) for m in patterns]
+
     for dir in dir_options:
         try:
             files = filter(lambda f: os.path.splitext(f)[1] in _TOLERATED_EXTENSIONS, os.listdir(dir))
             for f in files:
-                if os.path.splitext(file)[0] == os.path.splitext(f)[0]:
-                    return os.path.join(dir, f)
-                if allow_soft_match:
-                    matcher = os.path.splitext(f)[0].split('_')[-1]
-                    try:
-                        if int(matcher) == int(file):
-                            return os.path.join(dir, f) # soft match
-                    except ValueError:
-                        pass
+                if use_regex:
+                    for p in patterns:
+                        m = p.match(os.path.splitext(f)[0])
+                        if m is not None:
+                            return os.path.join(dir, f)
 
+                else:
+                    if os.path.splitext(file)[0] == os.path.splitext(f)[0]:
+                        return os.path.join(dir, f)
+                    if allow_soft_match:
+                        matcher = os.path.splitext(f)[0].split('_')[-1]
+                        try:
+                            if int(matcher) == int(file):
+                                return os.path.join(dir, f) # soft match
+                        except ValueError:
+                            pass
         except FileNotFoundError:
             pass
 
     if len(file) and file[0] == 'f': # try trimming the f off
-        return infer_data_path(file[1:], scan_desc, allow_soft_match=allow_soft_match)
+        return infer_data_path(file[1:], scan_desc, allow_soft_match=allow_soft_match, use_regex=use_regex)
 
     raise ConfigurationError('Could not find file associated to {}'.format(file))
 
@@ -105,6 +118,9 @@ def default_dataset(workspace=None, match=None, **kwargs):
     dir = os.path.join(arpes.config.SOURCE_PATH, 'datasets', material_class)
 
     def is_dataset(filename):
+        if filename.startswith('~$'):
+            # temporary files on Windows
+            return False
         rest, ext = os.path.splitext(filename)
         rest, internal_ext = os.path.splitext(rest)
 
@@ -242,10 +258,14 @@ def safe_read(path, **kwargs):
         return read.rename(index=str, columns=dict([read_snake(x) for x in list(read.columns)]))
 
     for skiprows in range(REATTEMPT_LIMIT):
-        read = pd.read_excel(path, skiprows=skiprows, **kwargs)
-        read = read.rename(index=str, columns=dict([read_snake(x) for x in list(read.columns)]))
-        if 'file' in read.columns:
-            return read
+        try:
+            read = pd.read_excel(path, skiprows=skiprows, **kwargs)
+            read = read.rename(index=str, columns=dict([read_snake(x) for x in list(read.columns)]))
+            if 'file' in read.columns:
+                return read
+        except TypeError:
+            # sometimes this happens due to what looks like a bug in pandas
+            pass
 
     raise ValueError('Could not safely read dataset. Supply a `skiprows` parameter and check '
                      'the validity of your data.')
