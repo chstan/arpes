@@ -3,6 +3,7 @@ import xarray as xr
 import typing
 from arpes.typing import DataType
 from collections import defaultdict
+import arpes.constants
 import arpes.models.band
 import arpes.utilities
 import arpes.utilities.math
@@ -10,6 +11,8 @@ import itertools
 
 from arpes.fits import GStepBModel, broadcast_model
 from arpes.provenance import update_provenance
+from arpes.utilities import normalize_to_spectrum
+from arpes.utilities.math import fermi_distribution
 from .filters import gaussian_filter_arr
 
 __all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis', 'condense', 'rebin',
@@ -28,7 +31,8 @@ def fit_fermi_edge(data, energy_range=None):
     return edge_fit
 
 @update_provenance('Normalized by the 1/Fermi Dirac Distribution at sample temp')
-def normalize_by_fermi_distribution(data, max_gain=None, rigid_shift=0, instrumental_broadening=None):
+def normalize_by_fermi_distribution(
+        data: DataType, max_gain=None, rigid_shift=0, instrumental_broadening=None, total_broadening=None):
     """
     Normalizes a scan by 1/the fermi dirac distribution. You can control the maximum gain with ``clamp``, and whether
     the Fermi edge needs to be shifted (this is for those desperate situations where you want something that
@@ -42,11 +46,17 @@ def normalize_by_fermi_distribution(data, max_gain=None, rigid_shift=0, instrume
     :param instrumental_broadening: Instrumental broadening to use for convolving the distribution
     :return: Normalized DataArray
     """
-    distrib = arpes.utilities.math.fermi_distribution(data.coords['eV'].values - rigid_shift, data.S.temp)
+    data = normalize_to_spectrum(data)
+
+    if total_broadening:
+        distrib = fermi_distribution(data.coords['eV'].values - rigid_shift,
+                                     total_broadening / arpes.constants.K_BOLTZMANN_EV_KELVIN)
+    else:
+        distrib = fermi_distribution(data.coords['eV'].values - rigid_shift, data.S.temp)
 
     # don't boost by more than 90th percentile of input, by default
     if max_gain is None:
-        max_gain = np.mean(data.values)
+        max_gain = min(np.mean(data.values), np.percentile(data.values, 10))
 
     distrib[distrib < 1/max_gain] = 1/max_gain
     distrib_arr = xr.DataArray(

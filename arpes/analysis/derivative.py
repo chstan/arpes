@@ -175,7 +175,7 @@ def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
 
     values = arr.values
     for _ in range(order):
-        values = np.gradient(smooth_fn(arr.values), d_axis, axis=axis_idx)
+        values = np.gradient(smooth_fn(values), d_axis, axis=axis_idx)
 
     dn_arr = xr.DataArray(
         values,
