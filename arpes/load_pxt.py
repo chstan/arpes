@@ -9,7 +9,8 @@ import re
 
 import xarray as xr
 
-__all__ = ('read_single_pxt', 'read_separated_pxt', 'read_experiment',)
+__all__ = ('read_single_pxt', 'read_separated_pxt', 'read_experiment',
+           'find_ses_files_associated',)
 
 binary_header_bytes = 10
 
@@ -228,21 +229,37 @@ def read_single_pxt_old(reference_path: Path, separator=None):
     return wave
 
 
-def read_separated_pxt(reference_path: Path, separator=None, byte_order=None):
-    # determine if separated or not
-    name_match = re.match(r'([\w+]+)S?[0-9][0-9][0-9]\.pxt', reference_path.name)
+def find_ses_files_associated(reference_path: Path):
+    """
+    SES Software creates a series of PXT files they are all sequenced with _S[0-9][0-9][0-9].pxt
+    `find_ses_files_associated` will collect all the files in the sequence
+    pointed to by `reference_path`
+    :param reference_path:
+    :return:
+    """
+    name_match = re.match(r'([\w+]+)S[0-9][0-9][0-9]\.pxt', reference_path.name)
 
     if name_match is None:
-        return read_single_pxt(reference_path, byte_order=byte_order)
+        return [reference_path]
 
     # otherwise need to collect all of the components
     fragment = name_match.groups()[0]
     components = list(reference_path.parent.glob('{}*.pxt'.format(fragment)))
     components.sort()
 
+    return components
+
+
+def read_separated_pxt(reference_path: Path, separator=None, byte_order=None):
+    # determine if separated or not
+    components = find_ses_files_associated(reference_path)
     frames = [read_single_pxt(f, byte_order=byte_order) for f in components]
 
-    scan_coords = ['hv', 'polar', 'timed_power', 'tilt',]
+    if len(frames) == 1:
+        return frames[0]
+
+    # adjust as needed
+    scan_coords = ['hv', 'polar', 'timed_power', 'tilt']
 
     scan_coord = None
     max_different_values = -np.inf
