@@ -1,11 +1,14 @@
+import numpy as np
+
 __all__ = ('deep_equals',)
 
 
 def deep_equals(a, b):
     if not isinstance(b, type(a)):
+        print(b, a)
         return False
 
-    if isinstance(a, (int, str, float,),):
+    if isinstance(a, (int, str, float, np.float, np.int, np.float64, np.int64,),):
         return a == b
 
     if a is None:
