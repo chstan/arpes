@@ -308,8 +308,8 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
 
     for prop in FREEZE_PROPS:
         if prop not in original_data.attrs:
-            resolved = normalize_to_spectrum(original_data).S
             try:
+                resolved = normalize_to_spectrum(original_data).S
                 attrs_copy[prop] = getattr(resolved, prop)
             except AttributeError:
                 warnings.warn('Unresolvable attribute: {}'.format(prop))
@@ -322,6 +322,8 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
             attrs_copy[k] = 1 if v else 0
         elif isinstance(v, (pd.Timestamp, datetime.time,)):
             attrs_copy[k] = v.isoformat()
+        elif isinstance(v, (datetime.datetime,)):
+            attrs_copy[k] = str(v)
         elif not isinstance(v, (str, float, int,)):
             print('Be careful about type: {}'.format(type(v)))
 

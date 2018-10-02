@@ -88,7 +88,7 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
 
     raw_coords = {
         'phi': arr.coords['phi'].values - arr.S.phi_offset,
-        'polar': arr.coords['polar'].values - arr.S.polar_offset,
+        'polar': (arr.coords['polar'].values or 0) - arr.S.polar_offset,
         'hv': arr.coords['hv'],
     }
 
@@ -146,9 +146,13 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
     # for now we are setting the theta angle to zero, this only has an effect for vertical slit analyzers,
     # and then only when the tilt angle is very large
     raw_translated = {
-        'kx': euler_to_kx(kinetic_energy, raw_coords['phi'], raw_coords['polar'], 0, arr.S.is_slit_vertical),
-        'ky': euler_to_ky(kinetic_energy, raw_coords['phi'], raw_coords['polar'], 0, arr.S.is_slit_vertical),
-        'kz': euler_to_kz(kinetic_energy, raw_coords['phi'], raw_coords['polar'], 0, arr.S.is_slit_vertical),
+        'kx': euler_to_kx(kinetic_energy, raw_coords['phi'], raw_coords['polar'], theta=0,
+                          slit_is_vertical=arr.S.is_slit_vertical),
+        'ky': euler_to_ky(kinetic_energy, raw_coords['phi'], raw_coords['polar'], theta=0,
+                          slit_is_vertical=arr.S.is_slit_vertical),
+        'kz': euler_to_kz(kinetic_energy, raw_coords['phi'], raw_coords['polar'], theta=0,
+                          slit_is_vertical=arr.S.is_slit_vertical,
+                          inner_potential=inner_potential),
     }
 
     if 'kp' in dest_coords:
@@ -156,7 +160,7 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
 
     data_vars = {}
     for dest_coord in dest_coords:
-        data_vars[dest_coord] = (full_old_dims, raw_translated[dest_coord])
+        data_vars[dest_coord] = (full_old_dims, np.squeeze(raw_translated[dest_coord]))
 
     return xr.Dataset(data_vars, coords=arr.indexes)
 

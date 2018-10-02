@@ -117,6 +117,10 @@ def grid_interpolator_from_dataarray(arr: xr.DataArray, fill_value=0.0, method='
 def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=None, resolution=None,
                      shift_gamma=True, extend_to_edge=False, **kwargs):
     """
+    TODO: There might be a little bug here where the last coordinate has a value of 0, causing the interpolation to loop
+    back to the start point. For now I will just deal with this in client code where I see it until I understand if it is
+    universal.
+
     Interpolates along a path through a volume. If the volume is higher dimensional than the desired path, the
     interpolation is broadcasted along the free dimensions. This allows one to specify a k-space path and receive
     the band structure along this path in k-space.
@@ -284,30 +288,31 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
     # Adjust this coordinate under special circumstances
     converted_coordinates[axis_name] = np.linspace(0, path_length, int(path_length / resolution)) - gamma_offset
 
-    converted_arr = convert_coordinates(
+    converted_ds = convert_coordinates(
         arr,
         converted_coordinates,
         {
             'dims': converted_dims,
             'transforms': dict(zip(arr.dims, [converter_for_coordinate_name(d) for d in arr.dims]))
-        }
+        },
+        as_dataset=True
     )
 
     if axis_name in arr.dims and len(parsed_interpolation_points) == 2:
         if parsed_interpolation_points[1][axis_name] < parsed_interpolation_points[0][axis_name]:
             # swap the sign on this axis as a convenience to the caller
-            converted_arr.coords[axis_name].data = -converted_arr.coords[axis_name].data
+            converted_ds.coords[axis_name].data = -converted_ds.coords[axis_name].data
 
+    if 'id' in converted_ds.attrs:
+        del converted_ds.attrs['id']
+        provenance(converted_ds, arr, {
+            'what': 'Slice along path',
+            'by': 'slice_along_path',
+            'parsed_interpolation_points': parsed_interpolation_points,
+            'interpolation_points': interpolation_points,
+        })
 
-    del converted_arr.attrs['id']
-    provenance(converted_arr, arr, {
-        'what': 'Slice along path',
-        'by': 'slice_along_path',
-        'parsed_interpolation_points': parsed_interpolation_points,
-        'interpolation_points': interpolation_points,
-    })
-
-    return converted_arr
+    return converted_ds
 
 
 @update_provenance('Automatically k-space converted')
@@ -401,10 +406,10 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
     return convert_coordinates(
         arr, converted_coordinates, {
             'dims': converted_dims,
-            'transforms': dict(zip(arr.dims, [converter.conversion_for(d) for d in arr.dims]))})
+            'transforms': dict(zip(arr.dims, [converter.conversion_for(d) for d in arr.dims]))})[0]
 
 
-def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transform):
+def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transform, as_dataset=False):
     ordered_source_dimensions = arr.dims
     grid_interpolator = grid_interpolator_from_dataarray(
         arr.transpose(*ordered_source_dimensions), fill_value=float('nan'))
@@ -415,13 +420,26 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
                                      indexing='ij')
     meshed_coordinates = [meshed_coord.ravel() for meshed_coord in meshed_coordinates]
 
+    old_coord_names = [dim for dim in arr.dims if dim not in target_coordinates]
+    old_coordinate_transforms = [coordinate_transform['transforms'][dim] for dim in arr.dims if dim not in target_coordinates]
+    old_dimensions = [np.reshape(tr(*meshed_coordinates), [len(target_coordinates[d]) for d in coordinate_transform['dims']], order='C')
+                      for tr in old_coordinate_transforms]
+
     ordered_transformations = [coordinate_transform['transforms'][dim] for dim in arr.dims]
     converted_volume = grid_interpolator(np.array([tr(*meshed_coordinates) for tr in ordered_transformations]).T)
 
     # Wrap it all up
-    return xr.DataArray(
+    data = xr.DataArray(
         np.reshape(converted_volume, [len(target_coordinates[d]) for d in coordinate_transform['dims']], order='C'),
         target_coordinates,
         coordinate_transform['dims'],
         attrs=arr.attrs
     )
+    old_mapped_coords = [xr.DataArray(values, target_coordinates, coordinate_transform['dims'], attrs=arr.attrs) for values in
+                         old_dimensions]
+    if as_dataset:
+        vars = {'data': data}
+        vars.update(dict(zip(old_coord_names, old_mapped_coords)))
+        return xr.Dataset(vars, attrs=arr.attrs)
+
+    return data, old_mapped_coords
