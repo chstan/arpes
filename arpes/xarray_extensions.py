@@ -129,6 +129,81 @@ class ARPESAccessorBase(object):
         history = self.short_history()
         return 'dn_along_axis' in history or 'curvature' in history
 
+    def select_around(self, point, radius=None, fast=False, safe=True, **kwargs):
+        """
+        Selects and integrates a region around a one dimensional point, useful to do a small
+        region integration, especially around points on a path of a k-point of interest.
+
+        If the fast flag is set, we will use the Manhattan norm, i.e. sum over square regions
+        rather than ellipsoids, as this is less costly.
+
+        If radii are not set, or provided through kwargs as 'eV_r' or 'phi_r' for instance,
+        then we will try to use reasonable default values; buyer beware.
+        :param point:
+        :param radius:
+        :param fast:
+        :return:
+        """
+
+        if isinstance(point, (tuple, list,)):
+            warnings.warn('Dangerous iterable point argument to `select_around`')
+            point = dict(zip(point, self._obj.dims))
+        if isinstance(point, xr.Dataset):
+            point = {k: point[k].item() for k in point.data_vars}
+
+        default_radii = {
+            'kp': 0.02,
+            'kz': 0.05,
+            'phi': 0.02,
+            'polar': 0.02,
+            'eV': 0.05,
+            'delay': 0.2,
+            'T': 2,
+        }
+
+        unspecified = 0.1
+
+        if isinstance(radius, float):
+            radius = {d: radius for d in point.keys()}
+        else:
+            collected_terms = set('{}_r'.format(k) for k in point.keys()).intersection(
+                set(kwargs.keys()))
+            if len(collected_terms):
+                radius = {d: kwargs.get('{}_r'.format(d), default_radii.get(d, unspecified))
+                          for d in point.keys()}
+            elif radius is None:
+                radius = {d: default_radii.get(d, unspecified) for d in point.keys()}
+
+        assert(isinstance(radius, dict))
+        radius = {d: radius.get(d, default_radii.get(d, unspecified)) for d in point.keys()}
+
+        # make sure we are taking at least one pixel along each
+        nearest_sel_params = {}
+        if safe:
+            stride = self._obj.T.stride(generic_dim_names=False)
+            for d, v in radius.items():
+                if v < stride[d]:
+                    nearest_sel_params[d] = point[d]
+
+            radius = {d: v for d, v in radius.items() if d not in nearest_sel_params}
+
+        if fast:
+            selection_slices = {d: slice(point[d] - radius[d], point[d] + radius[d])
+                                for d in point.keys() if d in radius}
+            selected = self._obj.sel(**selection_slices)
+        else:
+            # selected = self._obj
+            raise NotImplementedError()
+
+        if len(nearest_sel_params):
+            selected = selected.sel(**nearest_sel_params, method='nearest')
+
+        for d in nearest_sel_params:
+            # need to remove the extra dims from coords
+            del selected.coords[d]
+
+        return selected.sum(list(radius.keys()))
+
     def short_history(self, key='by'):
         return [h['record'][key] if isinstance(h, dict) else h for h in self.history]
 
@@ -390,7 +465,7 @@ class ARPESAccessorBase(object):
         embedded = ndi.gaussian_filter(embedded, embed_size / 3)
 
         edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
-                              low_threshold=0.2) * 1
+                              low_threshold=0.3) * 1
         edges = np.where(edges[int(embed_size / 2)] == 1)[0]
         if indices:
             return edges
