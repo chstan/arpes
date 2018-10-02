@@ -1,0 +1,4 @@
+sphinx
+sphinxcontrib-katex
+git+git://github.com/chstan/restbuilder.git@c2e0e22#egg=sphinxcontrib-restbuilder
+

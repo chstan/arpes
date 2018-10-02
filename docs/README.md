@@ -65,7 +65,7 @@ The local configuration allows you to override the settings that are committed t
 You can use this to change (somewhat) where data is stored, as well as adjust settings on various interactive tools.
 For reference, Conrad's looks like
 
-```
+```python
 DATA_PATH = None
 SETTINGS = {
     'interactive': {
@@ -101,7 +101,7 @@ Similar commands should be placed in your `.bashrc`.
 Alternatively, you can effectively set an environment variable by creating a file in your `IPython` startup folders
 that sets it through `os.environ`. On Windows this might look like `00-set-env.py`:
 
-```
+```python
 import os
 os.environ['ARPES_ROOT'] = r'C:\some\path\to\installation\of\python-arpes'
 ```
@@ -133,11 +133,3 @@ Ask Conrad if any of this is confusing.
 # Getting Started with Analysis
 
 Ask Conrad! Also look in `datasets/example`. Also feel free to contribute examples.
-
-# Generate Documentation
-
-1. Refresh Sphinx sources with `sphinx-apidoc`: `python -m sphinx.apidoc --separate -d 3 --tocfile toc -o source arpes --force`
-2. Build Sphinx documentation to ReStructuredText: `make clean && make rst`
-3. Convert ReStructuredText to Markdown: `./source/pandoc_convert.py`
-4. Run `docsify`: `docsify serve ./docs`
-5. As desired publish to docs site
