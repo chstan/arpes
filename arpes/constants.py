@@ -46,7 +46,9 @@ WORK_FUNCTION = 4.38
 HBAR = 1.05 * 10**(-34)
 HBAR_EV = 6.52 * 10**(-16)
 
+
 K_BOLTZMANN_EV_KELVIN = 8.61733e-5 # in units of eV / Kelvin
+K_BOLTZMANN_MEV_KELVIN = 1000 * K_BOLTZMANN_EV_KELVIN # meV / Kelvin
 
 HC = 1239.84172 # in units of eV * nm
 

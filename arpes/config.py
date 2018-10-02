@@ -13,6 +13,10 @@ from pathlib import Path
 from arpes.exceptions import ConfigurationError
 import arpes.constants as consts
 
+import pint
+
+ureg = pint.UnitRegistry()
+
 # ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES
 ARPES_ROOT = os.getenv('ARPES_ROOT')
 assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT environment "
@@ -20,8 +24,8 @@ assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT en
 
 SETTINGS = {
     'interactive': {
-        'main_width': 600,
-        'marginal_width': 300,
+        'main_width': 500,
+        'marginal_width': 200,
         'palette': 'magma',
     },
 }
@@ -77,7 +81,7 @@ def workspace_name_is_valid(workspace_name):
 
 def workspace_matches(path):
     files = os.listdir(path)
-    acceptable_suffixes = {'.xlx', '.xlsx'}
+    acceptable_suffixes = {'.xlx', '.xlsx', '.numbers'}
 
     return 'data' in files and any(Path(f).suffix in acceptable_suffixes for f in files)
 
@@ -86,6 +90,7 @@ def attempt_determine_workspace(value=None, permissive=False):
     try:
         current_path = os.getcwd()
         for _ in range(3):
+            print(current_path)
             if workspace_matches(current_path):
                 CONFIG['WORKSPACE'] = {
                     'path': current_path,
@@ -145,4 +150,29 @@ for p in [DATASET_CACHE_RECORD, CLEAVE_RECORD, CALIBRATION_RECORD]:
     if not fp.exists():
         with open(p, 'w') as f:
             json.dump({}, f)
+
+
+# load plugins
+def load_plugins():
+    import arpes.endstations.plugin as plugin
+    from arpes.endstations import add_endstation
+    import importlib
+    from pathlib import Path
+
+    skip_modules = {'__pycache__', '__init__'}
+    plugins_dir = str(Path(plugin.__file__).parent)
+    modules = os.listdir(plugins_dir)
+    modules = [m if os.path.isdir(os.path.join(plugins_dir, m))
+               else os.path.splitext(m)[0] for m in modules if m not in skip_modules]
+
+    endstation_classes = {}
+    for module in modules:
+        try:
+            loaded_module = importlib.import_module('arpes.endstations.plugin.{}'.format(module))
+            for item in loaded_module.__all__:
+                add_endstation(getattr(loaded_module, item))
+            #plugin_cls = loaded_module
+            #experiment_classes[module] = loaded_module.Experiment
+        except (AttributeError, ImportError) as e:
+            pass
 

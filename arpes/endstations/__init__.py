@@ -1,0 +1,467 @@
+"""
+Plugin facility to read+normalize information from different sources to a common format
+"""
+import warnings
+
+import numpy as np
+import h5py
+import numpy
+import xarray as xr
+from astropy.io import fits
+
+from pathlib import Path
+import typing
+import copy
+import arpes.config
+import arpes.constants
+import os.path
+
+from arpes.load_pxt import read_single_pxt, find_ses_files_associated
+from arpes.utilities import rename_keys, case_insensitive_get, rename_dataarray_attrs
+from arpes.preparation import replace_coords
+from arpes.provenance import provenance_from_file
+from arpes.endstations.fits_utils import find_clean_coords
+from arpes.endstations.igor_utils import shim_wave_note
+from repair import negate_energy
+
+__all__ = ('endstation_name_from_alias', 'endstation_from_alias', 'add_endstation', 'load_scan',
+           'EndstationBase', 'FITSEndstation', 'HemisphericalEndstation', 'SynchrotronEndstation',)
+
+_ENDSTATION_ALIASES = {}
+
+class EndstationBase(object):
+    ALIASES = []
+    PRINCIPAL_NAME = None
+
+    # adjust as needed
+    CONCAT_COORDS = ['hv', 'polar', 'timed_power', 'tilt']
+    SUMMABLE_NULL_DIMS = ['phi', 'cycle'] # phi because this happens sometimes at BL4 with core level scans
+
+    RENAME_KEYS = {}
+
+    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict=None):
+        if len(frames) == 0:
+            raise ValueError('Could not read any frames.')
+        elif len(frames) == 1:
+            return frames[0]
+        else:
+            # determine which axis to stitch them together along, and then do this
+            scan_coord = None
+            max_different_values = -np.inf
+            for possible_scan_coord in self.CONCAT_COORDS:
+                coordinates = [f.attrs.get(possible_scan_coord, None) for f in frames]
+                n_different_values = len(set(coordinates))
+                if n_different_values > max_different_values and None not in coordinates:
+                    max_different_values = n_different_values
+                    scan_coord = possible_scan_coord
+
+            assert (scan_coord is not None)
+
+            for f in frames:
+                f.coords[scan_coord] = f.attrs[scan_coord]
+
+            frames.sort(key=lambda x: x.coords[scan_coord])
+            return xr.concat(frames, scan_coord)
+
+    def resolve_frame_locations(self, scan_desc: dict=None):
+        return []
+
+    def load_single_frame(self, frame_path: str=None, scan_desc: dict=None, **kwargs):
+        return xr.Dataset()
+
+    def postprocess(self, frame: xr.Dataset):
+        frame = xr.Dataset({
+            k: rename_dataarray_attrs(v, self.RENAME_KEYS) for k, v in frame.data_vars.items()
+        }, attrs=rename_keys(frame.attrs, self.RENAME_KEYS))
+
+        sum_dims = []
+        for dim in frame.dims:
+            if len(frame.coords[dim]) == 1 and dim in self.SUMMABLE_NULL_DIMS:
+                sum_dims.append(dim)
+
+        if len(sum_dims):
+            frame = frame.sum(sum_dims, keep_attrs=True)
+
+        return frame
+
+    def load(self, scan_desc: dict=None, **kwargs):
+        """
+        Loads a scan from a single file or a sequence of files.
+
+        :param scan_desc:
+        :param kwargs:
+        :return:
+        """
+        resolved_frame_locations = self.resolve_frame_locations(scan_desc)
+        resolved_frame_locations = [f if isinstance(f, str) else str(f) for f in resolved_frame_locations]
+
+        frames = [self.load_single_frame(fpath, scan_desc, **kwargs) for fpath in resolved_frame_locations]
+        frames = [self.postprocess(f) for f in frames]
+        concatted = self.concatenate_frames(frames, scan_desc)
+
+        if 'id' in scan_desc:
+            concatted.attrs['id'] = scan_desc['id']
+
+        return concatted
+
+
+class SESEndstation(EndstationBase):
+    def resolve_frame_locations(self, scan_desc: dict=None):
+        if scan_desc is None:
+            raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
+
+        original_data_loc = scan_desc.get('path', scan_desc.get('file'))
+        p = Path(original_data_loc)
+        if not p.exists():
+            original_data_loc = os.path.join(arpes.config.DATA_PATH, original_data_loc)
+
+        p = Path(original_data_loc)
+        return find_ses_files_associated(p)
+
+    def load_single_frame(self, frame_path: str=None, scan_desc: dict=None, **kwargs):
+        name, ext = os.path.splitext(frame_path)
+
+        if 'nc' in ext:
+            # was converted to hdf5/NetCDF format with Conrad's Igor scripts
+            scan_desc = copy.deepcopy(scan_desc)
+            scan_desc['path'] = frame_path
+            return self.load_SES_nc(scan_desc=scan_desc, **kwargs)
+
+        # it's given by SES PXT files
+        pxt_data = negate_energy(read_single_pxt(frame_path))
+        return xr.Dataset({'spectrum': pxt_data}, attrs=pxt_data.attrs)
+
+    def postprocess(self, frame: xr.Dataset):
+        frame = super().postprocess(frame)
+        return frame.assign_attrs(frame.spectrum.attrs)
+
+    def load_SES_nc(self, scan_desc: dict=None, robust_dimension_labels=False, **kwargs):
+        """
+        Imports an hdf5 dataset exported from Igor that was originally generated by a Scienta spectrometer
+        in the SESb format. In order to understand the structure of these files have a look at Conrad's
+        saveSESDataset in Igor Pro.
+
+        :param scan_desc: Dictionary with extra information to attach to the xr.Dataset, must contain the location
+        of the file
+        :return: xr.Dataset
+        """
+
+        scan_desc = copy.deepcopy(scan_desc)
+
+        data_loc = scan_desc.get('path', scan_desc.get('file'))
+        p = Path(data_loc)
+        if not p.exists():
+            data_loc = os.path.join(arpes.config.DATA_PATH, data_loc)
+
+        wave_note = shim_wave_note(data_loc)
+        f = h5py.File(data_loc, 'r')
+
+        primary_dataset_name = list(f)[0]
+        # This is bugged for the moment in h5py due to an inability to read fixed length unicode strings
+        # wave_note = f['/' + primary_dataset_name].attrs['IGORWaveNote']
+
+        # Use dimension labels instead of
+        dimension_labels = list(f['/' + primary_dataset_name].attrs['IGORWaveDimensionLabels'][0])
+        if any(x == '' for x in dimension_labels):
+            print(dimension_labels)
+
+            if not robust_dimension_labels:
+                raise ValueError('Missing dimension labels. Use robust_dimension_labels=True to override')
+            else:
+                used_blanks = 0
+                for i in range(len(dimension_labels)):
+                    if dimension_labels[i] == '':
+                        dimension_labels[i] = 'missing{}'.format(used_blanks)
+                        used_blanks += 1
+
+                print(dimension_labels)
+
+        scaling = f['/' + primary_dataset_name].attrs['IGORWaveScaling'][-len(dimension_labels):]
+        raw_data = f['/' + primary_dataset_name][:]
+
+        scaling = [numpy.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
+                   for i, scale in enumerate(scaling)]
+
+        dataset_contents = {}
+        attrs = scan_desc.pop('note', {})
+        attrs.update(wave_note)
+
+        built_coords = dict(zip(dimension_labels, scaling))
+
+        phi_to_rad_coords = {'polar', 'phi'}
+        # the hemisphere axis is handled below
+        built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
+                        for k, c in built_coords.items()}
+
+        rad_to_phi_attrs = {'theta', 'polar', 'chi'}
+        for angle_attr in rad_to_phi_attrs:
+            if angle_attr in attrs:
+                attrs[angle_attr] = float(attrs[angle_attr]) * numpy.pi / 180
+
+        dataset_contents['spectrum'] = xr.DataArray(
+            raw_data,
+            coords=built_coords,
+            dims=dimension_labels,
+            attrs=attrs,
+        )
+
+        provenance_from_file(dataset_contents['spectrum'], data_loc, {
+            'what': 'Loaded SES dataset from HDF5.',
+            'by': 'load_SES'
+        })
+
+        return xr.Dataset(
+            dataset_contents,
+            attrs={**scan_desc, 'name': primary_dataset_name},
+        )
+
+
+class FITSEndstation(EndstationBase):
+    PREPPED_COLUMN_NAMES = {
+        'Fixed_Spectra4': 'spectrum',
+        'Fixed_Spectra2': 'spectrum',
+        'time': 'time',
+        'Delay': 'delay-var',  # these are named thus to avoid conflicts with the
+        'Sample-X': 'cycle-var',  # underlying coordinates
+        'Mira': 'pump_power',
+        # insert more as needed
+    }
+
+    SKIP_COLUMN_NAMES = {
+        'Phi',
+        'null',
+        'X',
+        'Y',
+        'Z',
+        # insert more as needed
+    }
+
+    RENAME_KEYS = {
+        'Phi': 'sample-phi',
+        'Beta': 'polar',
+        'Azimuth': 'chi',
+        'Pump_energy_uJcm2': 'pump_fluence',
+        'T0_ps': 't0_nominal',
+        'W_func': 'workfunction',
+        'Slit': 'slit',
+    }
+
+    def resolve_frame_locations(self, scan_desc: dict=None):
+        if scan_desc is None:
+            raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
+
+        original_data_loc = scan_desc.get('path', scan_desc.get('file'))
+        p = Path(original_data_loc)
+        if not p.exists():
+            original_data_loc = os.path.join(arpes.config.DATA_PATH, original_data_loc)
+
+        return [original_data_loc]
+
+    def load_single_frame(self, frame_path: str=None, scan_desc: dict=None, **kwargs):
+        # Use dimension labels instead of
+        hdulist = fits.open(frame_path, ignore_missing_end=True)
+        primary_dataset_name = None
+
+        # Clean the header because sometimes out LabView produces improper FITS files
+        for i in range(len(hdulist)):
+            # This looks a little stupid, but because of confusing astropy internals actually works
+            hdulist[i].header['UN_0_0'] = ''  # TODO This card is broken, this is not a good fix
+            del hdulist[i].header['UN_0_0']
+            hdulist[i].header['UN_0_0'] = ''
+            if 'TTYPE2' in hdulist[i].header and hdulist[i].header['TTYPE2'] == 'Delay':
+                hdulist[i].header['TUNIT2'] = ''
+                del hdulist[i].header['TUNIT2']
+                hdulist[i].header['TUNIT2'] = 'ps'
+
+            hdulist[i].verify('fix+warn')
+            hdulist[i].header.update()
+            # This actually requires substantially more work because it is lossy to information
+            # on the unit that was encoded
+
+        hdu = hdulist[1]
+
+        scan_desc = copy.deepcopy(scan_desc)
+        attrs = scan_desc.pop('note', scan_desc)
+        attrs.update(dict(hdulist[0].header))
+
+        drop_attrs = ['COMMENT', 'HISTORY', 'EXTEND', 'SIMPLE', 'SCANPAR', 'SFKE_0']
+        for dropped_attr in drop_attrs:
+            if dropped_attr in attrs:
+                del attrs[dropped_attr]
+
+        built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs, mode='MC')
+        attrs = rename_keys(attrs, self.RENAME_KEYS)
+        scan_desc = rename_keys(scan_desc, self.RENAME_KEYS)
+
+        def clean_key_name(k):
+            if '#' in k:
+                k = k.replace('#', 'num')
+
+            return k
+
+        attrs = {clean_key_name(k): v for k, v in attrs.items()}
+        scan_desc = {clean_key_name(k): v for k, v in scan_desc.items()}
+
+        # don't have phi because we need to convert pixels first
+        phi_to_rad_coords = {'polar', 'theta', 'sample-phi'}
+
+        # convert angular attributes to radians
+        for coord_name in phi_to_rad_coords:
+            if coord_name in attrs:
+                try:
+                    attrs[coord_name] = float(attrs[coord_name]) * (numpy.pi / 180)
+                except (TypeError, ValueError):
+                    pass
+            if coord_name in scan_desc:
+                try:
+                    scan_desc[coord_name] = float(scan_desc[coord_name]) * (numpy.pi / 180)
+                except (TypeError, ValueError):
+                    pass
+
+        data_vars = {}
+
+        built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
+                        for k, c in built_coords.items()}
+
+        for column_name in hdu.columns.names:
+            if column_name in self.SKIP_COLUMN_NAMES:
+                continue
+
+            # the hemisphere axis is handled below
+            dimension_for_column = dimensions[column_name]
+            column_shape = real_spectrum_shape[column_name]
+
+            column_display = self.PREPPED_COLUMN_NAMES.get(column_name, column_name)
+            if 'Fixed_Spectra' in column_display:
+                column_display = 'spectrum'
+
+            if 'Swept_Spectra' in column_display:
+                column_display = 'spectrum'
+
+            # sometimes if a scan is terminated early it can happen that the sizes do not match the expected value
+            # as an example, if a beta map is supposed to have 401 slices, it might end up having only 260 if it were
+            # terminated early
+            # If we are confident in our parsing code above, we can handle this case and take a subset of the coords
+            # so that the data matches
+            try:
+                resized_data = hdu.data.columns[column_name].array.reshape(column_shape)
+            except ValueError:
+                # if we could not resize appropriately, we will try to reify the shapes together
+                rest_column_shape = column_shape[1:]
+                n_per_slice = int(numpy.prod(rest_column_shape))
+                total_shape = hdu.data.columns[column_name].array.shape
+                total_n = numpy.prod(total_shape)
+
+                n_slices = total_n // n_per_slice
+                # if this isn't true, we can't recover
+                data_for_resize = hdu.data.columns[column_name].array
+                if (total_n // n_per_slice != total_n / n_per_slice):
+                    # the last slice was in the middle of writing when something hit the fan
+                    # we need to infer how much of the data to read, and then repeat the above
+                    # we need to cut the data
+
+                    # This can happen when the labview crashes during data collection,
+                    # we use column_shape[1] because of the row order that is used in the FITS file
+                    data_for_resize = data_for_resize[0:(total_n // n_per_slice) * column_shape[1]]
+                    warnings.warn(
+                        'Column {} was in the middle of slice when DAQ stopped. Throwing out incomplete slice...'.format(
+                            column_name))
+
+                column_shape = list(column_shape)
+                column_shape[0] = n_slices
+
+                try:
+                    resized_data = data_for_resize.reshape(column_shape)
+                except Exception:
+                    # sometimes for whatever reason FITS errors and cannot read the data
+                    continue
+
+                # we also need to adjust the coordinates
+                altered_dimension = dimension_for_column[0]
+                built_coords[altered_dimension] = built_coords[altered_dimension][:n_slices]
+
+            data_vars[column_display] = xr.DataArray(
+                resized_data,
+                coords={k: c for k, c in built_coords.items() if k in dimension_for_column},
+                dims=dimension_for_column,
+                attrs=attrs,
+            )
+
+        def prep_spectrum(data: xr.DataArray):
+            # don't do center pixel inference because the main chamber
+            # at least consistently records the offset from the edge
+            # of the recorded window
+            if 'pixel' in data.coords:
+                phi_axis = data.coords['pixel'].values * \
+                           arpes.constants.SPECTROMETER_MC['rad_per_pixel']
+                data = replace_coords(data, {
+                    'phi': phi_axis
+                }, [('pixel', 'phi',)])
+
+            # Always attach provenance
+            provenance_from_file(data, frame_path, {
+                'what': 'Loaded MC dataset from FITS.',
+                'by': 'load_MC',
+            })
+
+            return data
+
+        if 'spectrum' in data_vars:
+            data_vars['spectrum'] = prep_spectrum(data_vars['spectrum'])
+
+        return xr.Dataset(
+            data_vars,
+            attrs={**scan_desc, 'name': primary_dataset_name},
+        )
+
+
+class SynchrotronEndstation(EndstationBase):
+    RESOLUTION_TABLE = None
+
+class HemisphericalEndstation(EndstationBase):
+    """
+    An endstation definition for a hemispherical analyzer should include
+    everything needed to determine energy + k resolution, angle conversion,
+    and ideally correction databases for dead pixels + detector nonlinearity
+    information
+    """
+    ANALYZER_INFORMATION = None
+    SLIT_ORIENTATION = None
+    PIXELS_PER_DEG = None
+
+
+def endstation_name_from_alias(alias):
+    return _ENDSTATION_ALIASES[alias].PRINCIPAL_NAME
+
+
+def endstation_from_alias(alias):
+    return _ENDSTATION_ALIASES[alias]
+
+
+def add_endstation(endstation_cls):
+    # add the aliases
+    assert(endstation_cls.PRINCIPAL_NAME is not None)
+    for alias in endstation_cls.ALIASES:
+        assert alias not in _ENDSTATION_ALIASES
+        _ENDSTATION_ALIASES[alias] = endstation_cls
+
+    if endstation_cls.PRINCIPAL_NAME in _ENDSTATION_ALIASES and endstation_cls.PRINCIPAL_NAME not in endstation_cls.ALIASES:
+        # indicates it was added earlier, so there's an alias conflict
+        raise ValueError('Endstation name or alias conflicts with existing {}'.format(endstation_cls.PRINCIPAL_NAME))
+
+    _ENDSTATION_ALIASES[endstation_cls.PRINCIPAL_NAME] = endstation_cls
+
+
+def load_scan(scan_desc, **kwargs):
+    note = scan_desc.get('note', scan_desc)
+    full_note = copy.deepcopy(scan_desc)
+    full_note.update(note)
+
+    endstation_name = case_insensitive_get(full_note, 'location', case_insensitive_get(full_note, 'endstation'))
+    try:
+        endstation_cls = endstation_from_alias(endstation_name)
+        return endstation_cls().load(scan_desc, **kwargs)
+    except KeyError:
+        raise ValueError('Could not identify endstation. '
+                         'Did you set the endstation or location? Find a description of the available options '
+                         'in the endstations module.')
