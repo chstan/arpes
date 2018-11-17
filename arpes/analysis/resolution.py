@@ -6,9 +6,11 @@ import numpy as np
 
 from arpes.typing import DataType
 
-# all resolutions are given by (photon energy, x exit slit, y exit slit size)
+# all resolutions are given by (photon energy, entrance slit, exit slit size)
 from arpes.constants import K_BOLTZMANN_MEV_KELVIN
 from arpes.utilities import normalize_to_spectrum
+
+__all__ = ('total_resolution_estimate',)
 
 # all analyzer dimensions are given in millimeters for convenience as this
 # is how slit sizes are typically reported
@@ -33,13 +35,13 @@ SPECTROMETER_INFORMATION = {
 
 MERLIN_BEAMLINE_RESOLUTION = {
     'LEG': {
-        # 40 um by 40 um exit slits
+        # 40 um by 40 um slits
         (25, (40, 40)): 9.5,
         (30, (40, 40)): 13.5,
         (35, (40, 40)): 22.4,
     },
     'HEG': {
-        # 30 um by 30 um exit slits
+        # 30 um by 30 um slits
         (30, (30, 30)): 5.2,
         (35, (30, 30)): 5.4,
         (40, (30, 30)): 5.0,
@@ -122,7 +124,7 @@ ENDSTATIONS_BEAMLINE_RESOLUTION = {
 }
 
 
-def analyzer_resolution_estimate(data: DataType):
+def analyzer_resolution_estimate(data: DataType, meV=False):
     """
     For hemispherical analyzers, this can be determined by the slit
     and pass energy settings.
@@ -139,9 +141,10 @@ def analyzer_resolution_estimate(data: DataType):
     spectrometer_settings = data.S.spectrometer_settings
 
     return analyzer_resolution(spectrometer_info, slit_number=spectrometer_settings['slit'],
-                               pass_energy=spectrometer_settings['pass_energy'])
+                               pass_energy=spectrometer_settings['pass_energy']) * (1 if meV else 0.001)
 
-def energy_resolution_from_exit_slit(table, photon_energy, exit_slit_size):
+
+def energy_resolution_from_beamline_slit(table, photon_energy, exit_slit_size):
     """
     Assumes an exact match on the photon energy, though that interpolation
     could also be pulled into here...
@@ -158,17 +161,30 @@ def energy_resolution_from_exit_slit(table, photon_energy, exit_slit_size):
     slit_area = exit_slit_size[0] * exit_slit_size[1]
     by_area = {int(k[0] * k[1]): v for k, v in by_slits.items()}
 
-    low = max(k for k in by_area.keys() if k <= slit_area)
-    high = min(k for k in by_area.keys() if k >= slit_area)
+    if len(by_area) == 1:
+        return list(by_area.values())[0] * slit_area / (list(by_area.keys())[0])
+
+    try:
+        low = max(k for k in by_area.keys() if k <= slit_area)
+        high = min(k for k in by_area.keys() if k >= slit_area)
+    except ValueError:
+        if slit_area > max(by_area.keys()):
+            # use the largest and second largest
+            high = max(by_area.keys())
+            low = max(k for k in by_area.keys() if k < high)
+        else:
+            # use the smallest and second smallest
+            low = min(by_area.keys())
+            high = min(k for k in by_area.keys() if k > low)
 
     return by_area[low] + (by_area[high] - by_area[low]) * (slit_area - low) / (high - low)
 
 
-def beamline_resolution_estimate(data: DataType):
+def beamline_resolution_estimate(data: DataType, meV=False):
     data = normalize_to_spectrum(data)
     resolution_table = ENDSTATIONS_BEAMLINE_RESOLUTION[data.S.endstation]
 
-    if isinstance(resolution_table.keys()[0], str):
+    if isinstance(list(resolution_table.keys())[0], str):
         # need grating information
         settings = data.S.beamline_settings
         resolution_table = resolution_table[settings['grating']]
@@ -176,36 +192,32 @@ def beamline_resolution_estimate(data: DataType):
         all_keys = list(resolution_table.keys())
         hvs = set(k[0] for k in all_keys)
 
-        if settings['hv'] in hvs:
-            return energy_resolution_from_exit_slit(
-                resolution_table, settings['hv'], settings['exit_slit'])
+        low_hv = max(hv for hv in hvs if hv < settings['hv'])
+        high_hv = min(hv for hv in hvs if hv >= settings['hv'])
 
-        else:
-            low_hv = max(hv for hv in hvs if hv < settings['hv'])
-            high_hv = min(hv for hv in hvs if hv >= settings['hv'])
+        slit_size = (settings['entrance_slit'], settings['exit_slit'],)
+        low_hv_res = energy_resolution_from_beamline_slit(
+            resolution_table, low_hv, slit_size)
+        high_hv_res = energy_resolution_from_beamline_slit(
+            resolution_table, high_hv, slit_size)
 
-            low_hv_res = energy_resolution_from_exit_slit(
-                resolution_table, low_hv, settings['exit_slit'])
-            high_hv_res = energy_resolution_from_exit_slit(
-                resolution_table, high_hv, settings['exit_slit'])
-
-            # interpolate between nearest values
-            return low_hv_res + (high_hv_res - low_hv_res) * \
-                                (settings['hv'] - low_hv) / (high_hv - low_hv)
+        # interpolate between nearest values
+        return low_hv_res + (high_hv_res - low_hv_res) * \
+                            (settings['hv'] - low_hv) / (high_hv - low_hv) * (1000 if meV else 1)
 
     raise NotImplementedError()
 
 
-def thermal_broadening_estimate(data: DataType):
+def thermal_broadening_estimate(data: DataType, meV=False):
     """
     Simple Fermi-Dirac broadening
     :param data:
     :return:
     """
-    return normalize_to_spectrum(data).S.temp * K_BOLTZMANN_MEV_KELVIN
+    return normalize_to_spectrum(data).S.temp * K_BOLTZMANN_MEV_KELVIN * (1 if meV else 0.001)
 
 
-def total_resolution_estimate(data: DataType, include_thermal_broadening=False):
+def total_resolution_estimate(data: DataType, include_thermal_broadening=False, meV=False):
     """
     Gives the quadrature sum estimate of the resolution of an ARPES
     spectrum that is decorated with appropriate information.
@@ -217,9 +229,9 @@ def total_resolution_estimate(data: DataType, include_thermal_broadening=False):
 
     thermal_broadening = 0
     if include_thermal_broadening:
-        thermal_broadening = thermal_broadening_estimate(data)
+        thermal_broadening = thermal_broadening_estimate(data, meV=meV)
     return math.sqrt(
-        beamline_resolution_estimate(data) ** 2 +
-        analyzer_resolution_estimate(data) ** 2 +
+        beamline_resolution_estimate(data, meV=meV) ** 2 +
+        analyzer_resolution_estimate(data, meV=meV) ** 2 +
         thermal_broadening ** 2
     )
