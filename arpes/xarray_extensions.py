@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
 
 from analysis.band_analysis_utils import param_getter, param_stderr_getter
 from arpes.analysis import rebin
@@ -144,6 +145,105 @@ class ARPESAccessorBase(object):
         history = self.short_history()
         return 'dn_along_axis' in history or 'curvature' in history
 
+    def transpose_to_front(self, dim):
+        dims = list(self._obj.dims)
+        assert(dim in dims)
+        dims.remove(dim)
+        return self._obj.transpose(*([dim] + dims))
+
+    def select_around_data(self, points, radius=None, fast=False, safe=True, **kwargs):
+        """
+        Can be used to perform a selection along one axis as a function of another, integrating a region
+        in the other dimensions. As an example, suppose we have a dataset with dimensions ('eV', 'kp', 'T',)
+        and we also by fitting determined the Fermi momentum as a function of T, kp_F('T'), stored in the
+        dataarray kFs. Then we could select momentum integrated EDCs in a small window around the fermi momentum
+        for each temperature by using
+
+        ```python
+        edcs_at_fermi_momentum = full_data.S.select_around_data({'kp': kFs}, radius={'kp': 0.04}, fast=True)
+        ```
+
+        The resulting data will be EDCs for each T, in a region of radius 0.04 inverse angstroms around the
+        Fermi momentum.
+
+        :param points:
+        :param radius:
+        :param fast:
+        :param safe:
+        :param kwargs:
+        :return:
+        """
+
+        if isinstance(points, (tuple, list,)):
+            warnings.warn('Dangerous iterable points argument to `select_around`')
+            points = dict(zip(points, self._obj.dims))
+        if isinstance(points, xr.Dataset):
+            points = {k: points[k].item() for k in points.data_vars}
+
+        default_radii = {
+            'kp': 0.02,
+            'kz': 0.05,
+            'phi': 0.02,
+            'polar': 0.02,
+            'eV': 0.05,
+            'delay': 0.2,
+            'T': 2,
+            'temp': 2,
+        }
+
+        unspecified = 0.1
+
+        if isinstance(radius, float):
+            radius = {d: radius for d in points.keys()}
+        else:
+            collected_terms = set('{}_r'.format(k) for k in points.keys()).intersection(
+                set(kwargs.keys()))
+            if len(collected_terms):
+                radius = {d: kwargs.get('{}_r'.format(d), default_radii.get(d, unspecified))
+                          for d in points.keys()}
+            elif radius is None:
+                radius = {d: default_radii.get(d, unspecified) for d in points.keys()}
+
+        assert (isinstance(radius, dict))
+        radius = {d: radius.get(d, default_radii.get(d, unspecified)) for d in points.keys()}
+
+        along_dims = list(points.values())[0].dims
+        selected_dims = list(points.keys())
+
+        stride = self._obj.T.stride(generic_dim_names=False)
+
+        new_dim_order = [d for d in self._obj.dims if d not in along_dims] + list(along_dims)
+
+        data_for = self._obj.transpose(*new_dim_order)
+        new_data = data_for.sum(selected_dims, keep_attrs=True)
+        for coord, value in data_for.T.iterate_axis(along_dims):
+            nearest_sel_params = {}
+            if safe:
+                for d, v in radius.items():
+                    if v < stride[d]:
+                        nearest_sel_params[d] = points[d].sel(**coord)
+
+                radius = {d: v for d, v in radius.items() if d not in nearest_sel_params}
+
+            if fast:
+                selection_slices = {d: slice(points[d].sel(**coord) - radius[d], points[d].sel(**coord) + radius[d])
+                                    for d in points.keys() if d in radius}
+                selected = value.sel(**selection_slices)
+            else:
+                raise NotImplementedError()
+
+            if len(nearest_sel_params):
+                selected = selected.sel(**nearest_sel_params, method='nearest')
+
+            for d in nearest_sel_params:
+                # need to remove the extra dims from coords
+                del selected.coords[d]
+
+            new_data.loc[coord] = selected.sum(list(radius.keys())).values
+
+        return new_data
+
+
     def select_around(self, point, radius=None, fast=False, safe=True, **kwargs):
         """
         Selects and integrates a region around a one dimensional point, useful to do a small
@@ -189,7 +289,7 @@ class ARPESAccessorBase(object):
             elif radius is None:
                 radius = {d: default_radii.get(d, unspecified) for d in point.keys()}
 
-        assert(isinstance(radius, dict))
+        assert (isinstance(radius, dict))
         radius = {d: radius.get(d, default_radii.get(d, unspecified)) for d in point.keys()}
 
         # make sure we are taking at least one pixel along each
@@ -772,16 +872,45 @@ class ARPESAccessorBase(object):
         return settings
 
     @property
+    def beamline_settings(self):
+        find_keys = {
+            'entrance_slit': {'entrance_slit',},
+            'exit_slit': {'exit_slit',},
+            'hv': {'hv', 'photon_energy',},
+            'grating': {},
+        }
+        settings = {}
+        for key, options in find_keys.items():
+            for option in options:
+                if option in self._obj.attrs:
+                    settings[key] = self._obj.attrs[option]
+                    break
+
+        if self.endstation == 'BL403':
+            settings['grating'] = 'HEG' # for now assume we always use the first order light
+
+        return settings
+
+    @property
     def spectrometer_settings(self):
         find_keys = {
-            'lens_mode',
-            'pass_energy',
-            'scan_mode',
-            'scan_region',
-            'slit',
+            'lens_mode': {'lens_mode',},
+            'pass_energy': {'pass_energy', },
+            'scan_mode': {'scan_mode',},
+            'scan_region': {'scan_region',},
+            'slit': {'slit', 'slit_plate',},
         }
+        settings = {}
+        for key, options in find_keys.items():
+            for option in options:
+                if option in self._obj.attrs:
+                    settings[key] = self._obj.attrs[option]
+                    break
 
-        return {k: v for k, v in self._obj.attrs.items() if k in find_keys}
+        if isinstance(settings.get('slit'), (float, np.float32, np.float64)):
+            settings['slit'] = int(round(settings['slit']))
+
+        return settings
 
     @property
     def sample_pos(self):
@@ -875,8 +1004,13 @@ class ARPESAccessorBase(object):
 
     @property
     def temp(self):
+        """
+        TODO, agressively normalize attributes across different spectrometers
+        :return:
+        """
         warnings.warn('This is not reliable. Fill in stub for normalizing the temperature appropriately on data load.')
-        prefered_attrs = ['TA', 'ta', 't_a', 'T_A', 'T_1', 't_1', 't1', 'T1']
+        prefered_attrs = ['TA', 'ta', 't_a', 'T_A', 'T_1', 't_1', 't1', 'T1', 'temp', 'temp_sample', 'temp_cryotip',
+                          'temperature_sensor_b', 'temperature_sensor_a']
         for attr in prefered_attrs:
             if attr in self._obj.attrs:
                 return float(self._obj.attrs[attr])
@@ -917,6 +1051,10 @@ class ARPESAccessorBase(object):
 
 @xr.register_dataarray_accessor('S')
 class ARPESDataArrayAccessor(ARPESAccessorBase):
+    def plot(self, *args, **kwargs):
+        with plt.rc_context(rc={'text.usetex': False}):
+            self._obj.plot(*args, **kwargs)
+
     def show(self, **kwargs):
         image_tool = ImageTool(**kwargs)
         return image_tool.make_tool(self._obj)
@@ -1021,6 +1159,34 @@ NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 class GenericAccessorTools(object):
     _obj = None
 
+    def coordinatize(self, as_coordinate_name):
+        """
+        Remarkably, `coordinatize is a word`
+
+        :return:
+        """
+        assert(len(self._obj.dims) == 1)
+
+        d = self._obj.dims[0]
+        o = self._obj.rename(dict([[d, as_coordinate_name]])).copy(deep=True)
+        o.coords[as_coordinate_name] = o.values
+
+        return o
+
+    def to_arrays(self):
+        """
+        Useful for rapidly converting into a format than can be `plt.scatter`ed
+        or similar.
+
+        Ex:
+
+        plt.scatter(*data.T.as_arrays(), marker='s')
+        :return:
+        """
+        assert(len(self._obj.dims) == 1)
+
+        return [self._obj.coords[self._obj.dims[0]].values, self._obj.values]
+
     def clean_outliers(self, clip=0.5):
         low, high = np.percentile(self._obj.values, [clip, 100 - clip])
         copy = self._obj.copy(deep=True)
@@ -1067,6 +1233,23 @@ class GenericAccessorTools(object):
             coords_dict = dict(zip(axis_name_or_axes, cut_coords))
             yield coords_dict, self._obj.sel(method='nearest', **coords_dict)
 
+    def map_axes(self, axes, fn, **kwargs):
+        if isinstance(self._obj, xr.Dataset):
+            raise TypeError('map_axes can only work on xr.DataArrays for now because of '
+                            'how the type inference works')
+        obj = self._obj.copy(deep=True)
+
+        type_assigned = False
+        for coord, value in self.iterate_axis(axes):
+            new_value = fn(value, coord)
+
+            if not type_assigned:
+                obj.values = np.ndarray(shape=obj.values.shape, dtype=new_value.data.dtype)
+                type_assigned = True
+
+            obj.loc[coord] = new_value.values
+
+        return obj
 
     def map(self, fn, **kwargs):
         return apply_dataarray(self._obj, np.vectorize(fn, **kwargs))
@@ -1163,12 +1346,25 @@ class ARPESDatasetFitToolAccessor(object):
     def s(self, param_name):
         return self._obj.results.F.s(param_name)
 
+    def plot_param(self, param_name, **kwargs):
+        return self._obj.results.F.plot_param(param_name, **kwargs)
+
+
 @xr.register_dataarray_accessor('F')
 class ARPESFitToolsAccessor(object):
     _obj = None
 
     def __init__(self, xarray_obj: DataType):
         self._obj = xarray_obj
+
+    def plot_param(self, param_name, **kwargs):
+        plotting.plot_parameter(self._obj, param_name, **kwargs)
+
+    def param_as_dataset(self, param_name):
+        return xr.Dataset({
+            'value': self.p(param_name),
+            'error': self.s(param_name),
+        })
 
     def show(self):
         fit_diagnostic_tool = FitCheckTool()
