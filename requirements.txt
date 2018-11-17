@@ -27,7 +27,7 @@ pymatgen
 
 # Plotting
 # holoviews==1.8.4
-matplotlib
+matplotlib==3.0.0
 seaborn
 bokeh
 # plotly # optional
