@@ -30,7 +30,6 @@ from arpes.utilities.autoprep import prepare_raw_files
 
 import arpes.xarray_extensions # Ensure that extensions get loaded
 
-from arpes.models import load_scan
 from arpes.utilities import clean_xlsx_dataset, default_dataset, swap_reference_map
 from arpes.utilities.conversion import *
 
