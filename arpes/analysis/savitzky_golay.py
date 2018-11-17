@@ -14,18 +14,23 @@ __all__ = ('savitzky_golay',)
 
 
 @update_provenance('Savitzky Golay Filter')
-def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, order, deriv=0, rate=1):
+def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, order, deriv=0, rate=1, dim=None):
     if isinstance(data, (list, np.ndarray,)):
         return savitzky_golay_array(data, window_size, order, deriv, rate)
 
     if len(data.dims) == 1:
         transformed_data = savitzky_golay_array(data.values, window_size, order, deriv, rate)
     else:
-        # only 1D and 2D supported for the moment
-        assert(len(data.dims) == 2)
+        # only 1D, 2D, 3D supported for the moment
+        assert(len(data.dims) <= 3)
 
         if deriv == 0:
             deriv = None
+
+        if len(data.dims) == 3:
+            if dim is None:
+                dim = data.dims[-1]
+            return data.T.map_axes(dim, lambda d: savitzky_golay(d, window_size, order, deriv, rate))
 
         transformed_data = savitzky_golay_2d(data.values, window_size, order, derivative=deriv)
 
