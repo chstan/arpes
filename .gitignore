@@ -6,13 +6,12 @@ SCRATCH.md
 experiment/
 
 # Generated Files
-docs/arpes.*.md
-docs/arpes.md
-docs/_sidebar.md
-docs/index.md
 source/arpes.md
 source/toc.md
 source/arpes.*.md
+source/arpes.*.rst
+source/arpes.rst
+source/modules.rst
 docs/toc.rst.md
 
 # Sphinx
