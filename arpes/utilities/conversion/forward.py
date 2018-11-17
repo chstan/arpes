@@ -1,3 +1,5 @@
+import warnings
+
 import xarray as xr
 import numpy as np
 
@@ -36,6 +38,13 @@ def fill_coords(arr: xr.DataArray):
     else:
         pass
 
+    if 'eV' not in arr.coords:
+        warnings.warn('Assuming data is taken at the chemical potential. '
+                      'Setting missing binding energy coordinate to 0.')
+
+        arr.coords['eV'] = 0
+
+
 def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
     """
     Forward converts all the individual coordinates of the data array
@@ -43,6 +52,8 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
     :param kwargs:
     :return:
     """
+
+    arr = arr.copy(deep=True)
 
     skip = {'eV', 'cycle', 'delay', 'T'}
     keep = {'eV', }
