@@ -83,10 +83,10 @@ def repr_html_Parameter(self, short=False):
         value=self.value,
         min=self.min,
         max=self.max,
-        stderr=self.stderr,
+        stderr=self.stderr or np.inf,
         vary=self.vary,
-        expr=self.expr,
-        brute_step=self.brute_step,
+        expr=self.expr or '',
+        brute_step=self.brute_step or ''
     )
 
 
