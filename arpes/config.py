@@ -176,3 +176,8 @@ def load_plugins():
         except (AttributeError, ImportError) as e:
             pass
 
+
+
+def use_tex(rc_text_should_use=False):
+    import matplotlib
+    matplotlib.rcParams['text.usetex'] = rc_text_should_use
