@@ -58,7 +58,7 @@ def flat_stack_plot(data: DataType, stack_axis=None, fermi_level=True, cbarmap=N
 
     # meat of the plotting
     for coord_dict, marginal in list(data.T.iterate_axis(stack_axis)):
-        marginal.plot(ax=ax, color=cmap(coord_dict[stack_axis]))
+        marginal.plot(ax=ax, color=cmap(coord_dict[stack_axis]), **kwargs)
 
     ax.set_xlabel(label_for_dim(data, ax.get_xlabel()))
     ax.set_ylabel('Spectrum Intensity (arb).')
@@ -83,6 +83,7 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
                           color=None, c=None,
                           label=None,
                           shift=0,
+                          no_scatter=False,
                           negate=False, s=1, scale_factor=None, linewidth=1, palette=None, **kwargs):
     data = normalize_to_spectrum(data)
 
@@ -163,10 +164,14 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
             labeled = True
             label_for = label
 
-        if isinstance(colors, (str, tuple)):
-            ax.plot(xs, ys, linewidth=linewidth, color=colors, label=label_for, **kwargs)
+        color_for_plot = colors
+        if callable(color_for_plot):
+            color_for_plot = color_for_plot(coord_value)
+
+        if isinstance(colors, (str, tuple)) or no_scatter:
+            ax.plot(xs, ys, linewidth=linewidth, color=color_for_plot, label=label_for, **kwargs)
         else:
-            ax.scatter(xs, ys, color=colors, s=s, label=label_for, **kwargs)
+            ax.scatter(xs, ys, color=color_for_plot, s=s, label=label_for, **kwargs)
 
     x_label = other_axis
     y_label = stack_axis

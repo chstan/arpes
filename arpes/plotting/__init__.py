@@ -6,6 +6,7 @@ from .dispersion import *
 from .fermi_edge import *
 from .fermi_surface import *
 from .dos import *
+from .parameter import *
 
 from .stack_plot import *
 

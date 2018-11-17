@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.offsetbox
 import matplotlib
 import matplotlib.cm
+import collections
 from matplotlib.lines import Line2D
 
 from collections import Counter
@@ -29,7 +30,83 @@ __all__ = (
     'temperature_colorbar_around',
 
     'colorbarmaps_for_axis',
+
+    # insets related
+    'inset_cut_locator',
 )
+
+def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=None, **kwargs):
+    """
+    Plots a reference cut location
+    :param data:
+    :param reference_data:
+    :param ax:
+    :param location:
+    :param kwargs:
+    :return:
+    """
+    quad = data.plot(ax=ax)
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    try:
+        quad.colorbar.remove()
+    except Exception:
+        pass
+
+    # add more as necessary
+    missing_dim_resolvers = {
+        'polar': lambda: reference_data.S.polar,
+        'phi': lambda: reference_data.S.phi,
+    }
+
+    missing_dims = [d for d in data.dims if d not in location]
+    missing_values = {d: missing_dim_resolvers[d]() for d in missing_dims}
+    ordered_selector = [location.get(d, missing_values.get(d)) for d in data.dims]
+
+    n = 200
+    def resolve(name, value):
+        if isinstance(value, slice):
+            low = value.start
+            high = value.stop
+
+            if low is None:
+                low = data.coords[name].min().item()
+            if high is None:
+                high = data.coords[name].max().item()
+
+            return np.linspace(low, high, n)
+
+        return np.ones((n,)) * value
+
+    n_cut_dims = len([d for d in ordered_selector if isinstance(d, (collections.Iterable, slice))])
+    ordered_selector = [resolve(d, v) for d, v in zip(data.dims, ordered_selector)]
+
+    if len(missing_dims):
+        assert(reference_data is not None)
+        print(missing_dims)
+
+    if n_cut_dims == 2:
+        # a region cut, illustrate with a rect or by suppressing background
+        return
+    if color is None:
+        color = 'red'
+
+    if n_cut_dims == 1:
+        # a line cut, illustrate with a line
+        ax.plot(*ordered_selector[::-1], color=color, **kwargs)
+        pass
+    elif n_cut_dims == 0:
+        # a single point cut, illustrate with a marker
+
+        pass
+
+
+def phase_angle_colormap(low=0, high=np.pi * 2):
+    def get_color(value):
+        return matplotlib.cm.twilight_shifted(float((value - low) / (high - low)))
+
+    return get_color
+
 
 def delay_colormap(low=-1, high=1):
     def get_color(value):
@@ -37,9 +114,13 @@ def delay_colormap(low=-1, high=1):
 
     return get_color
 
-def temperature_colormap(high=300, low=0):
+
+def temperature_colormap(high=300, low=0, cmap=None):
+    if cmap is None:
+        cmap = matplotlib.cm.Blues_r
+
     def get_color(value):
-        return matplotlib.cm.Blues_r(float((value - low) / (high - low)))
+        return cmap(float((value - low) / (high - low)))
 
     return get_color
 
@@ -51,14 +132,28 @@ def temperature_colormap_around(central, range=50):
     return get_color
 
 
-def temperature_colorbar(high=300, low=0, ax=None, **kwargs):
+def phase_angle_colorbar(high=np.pi * 2, low=0, ax=None, **kwargs):
+    extra_kwargs = {
+        'orientation': 'horizontal',
+        'label': 'Angle',
+        'ticks': ['0', r'$\pi$', r'$2\pi$']
+    }
+    extra_kwargs.update(kwargs)
+    cb = colorbar.ColorbarBase(ax, cmap='twilight_shifted', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
+    return cb
+
+
+def temperature_colorbar(high=300, low=0, ax=None, cmap=None, **kwargs):
+    if cmap is None:
+        cmap = 'Blues_r'
+
     extra_kwargs = {
         'orientation': 'horizontal',
         'label': 'Temperature (K)',
         'ticks': [low, high],
     }
     extra_kwargs.update(kwargs)
-    cb = colorbar.ColorbarBase(ax, cmap='Blues_r', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
+    cb = colorbar.ColorbarBase(ax, cmap=cmap, norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
     return cb
 
 
@@ -90,6 +185,7 @@ def temperature_colorbar_around(central, range=50, ax=None, **kwargs):
 colorbarmaps_for_axis = {
     'temp': (temperature_colorbar, temperature_colormap,),
     'delay': (delay_colorbar, delay_colormap,),
+    'theta': (phase_angle_colorbar, phase_angle_colormap,),
 }
 
 
@@ -232,7 +328,7 @@ def label_for_colorbar(data):
                      for item, n in c.items()])+ '}$ (arb.)'
 
 
-def label_for_dim(data, dim_name, escaped=True):
+def label_for_dim(data=None, dim_name=None, escaped=True):
     raw_dim_names = {
         'theta': r'$\theta$',
         'polar': r'$\theta$',
@@ -240,16 +336,36 @@ def label_for_dim(data, dim_name, escaped=True):
         'eV': r'\textbf{eV}',
         'angle': r'Interp. \textbf{Angle}',
         'kinetic': r'Kinetic Energy (\textbf{eV})',
+        'temp': r'\textbf{Temperature}',
     }
 
-    if data.S.spectrometer.get('type') == 'hemisphere':
-        raw_dim_names['phi'] = r'$\varphi$ (Hemisphere Acceptance)'
+    if data is not None:
+        if data.S.spectrometer.get('type') == 'hemisphere':
+            raw_dim_names['phi'] = r'$\varphi$ (Hemisphere Acceptance)'
 
     if dim_name in raw_dim_names:
         return raw_dim_names.get(dim_name)
 
     # Next we will look at the listed symmetry_points to try to infer the appropriate way to display the axis
-    return r'$\boldsymbol{\Gamma}\rightarrow \textbf{X}$'
+    return dim_name
+
+
+def fancy_labels(ax_or_ax_set, data=None):
+    if isinstance(ax_or_ax_set, (list, tuple, set, np.ndarray)):
+        for ax in ax_or_ax_set:
+            fancy_labels(ax)
+        return
+
+    ax = ax_or_ax_set
+    try:
+        ax.set_xlabel(label_for_dim(data=data, dim_name=ax.get_xlabel()))
+    except Exception:
+        pass
+
+    try:
+        ax.set_ylabel(label_for_dim(data=data, dim_name=ax.get_ylabel()))
+    except Exception:
+        pass
 
 
 def label_for_symmetry_point(point_name):
