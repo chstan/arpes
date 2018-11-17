@@ -4,5 +4,5 @@ __all__ = ('ALGMainChamber',)
 
 class ALGMainChamber(HemisphericalEndstation, FITSEndstation):
     PRINCIPAL_NAME = 'ALG-Main'
-    ALIASES = ['ALG-Main', 'ALG-MC', 'ALG-Hemisphere', 'ALG-Main Chamber',]
+    ALIASES = ['MC', 'ALG-Main', 'ALG-MC', 'ALG-Hemisphere', 'ALG-Main Chamber',]
 
