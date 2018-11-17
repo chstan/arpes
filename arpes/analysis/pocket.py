@@ -202,7 +202,7 @@ def edcs_along_pocket(data: DataType, kf_method=None, select_radius=None,
         kf_method = find_kf_by_mdc
 
     if sel is None:
-        sel = {'eV': slice(-0.03, 0.05)}
+        sel = {'eV': slice(-0.05, 0.05)}
 
     kfs = [kf_method(s if sel is None else s.sel(**sel), **(method_kwargs or {})) for s in slices]
 
