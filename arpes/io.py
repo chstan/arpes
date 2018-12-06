@@ -16,6 +16,7 @@ from arpes.utilities import wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datava
 
 __all__ = (
     'simple_load', 'load_dataset', 'save_dataset', 'delete_dataset',
+    'save_dataset_for_export',
     'dataset_exists', 'is_a_dataset', 'load_dataset_attrs', 'easy_pickle',
     'sld', 'stitch',
 )
@@ -178,6 +179,13 @@ def save_dataset(arr: DataType, filename=None, force=False):
     arr = unwrap_datavar_attrs(arr)
     if df is not None:
         arr.attrs['df'] = df
+
+
+def save_dataset_for_export(arr: DataType, index, **kwargs):
+    filename = Path('./export/{}.nc'.format(index))
+    filename.parent.mkdir(exist_ok=True)
+
+    save_dataset(arr, str(filename), **kwargs)
 
 
 def is_a_dataset(dataset):

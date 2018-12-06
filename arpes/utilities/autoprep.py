@@ -9,12 +9,12 @@ from arpes.utilities import modern_clean_xlsx_dataset, \
     attach_extra_dataset_columns, rename_datavar_standard_attrs, \
     clean_datavar_attribute_names
 from arpes.utilities.dataset import walk_datasets
-from arpes.io import save_dataset, dataset_exists
+from arpes.io import save_dataset, save_dataset_for_export, dataset_exists
 
 __all__ = ('prepare_raw_files',)
 
 
-def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quiet=False, **kwargs):
+def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quiet=False, export=False, **kwargs):
     import arpes.xarray_extensions
 
     arpes.config.attempt_determine_workspace(workspace)
@@ -33,7 +33,7 @@ def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quie
         ds = modern_clean_xlsx_dataset(dataset_path, with_inferred_cols=False, write=True)
 
         print('└┐')
-        for file, scan in ds.iterrows():
+        for iter_index, (file, scan) in enumerate(ds.iterrows()):
             print(' ├{}'.format(file))
             scan['file'] = scan.get('path', file)
             if not dataset_exists(scan.get('id')) or reload:
@@ -44,7 +44,17 @@ def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quie
                         data = load_scan(dict(scan), **kwargs)
                     data = rename_datavar_standard_attrs(data)
                     data = clean_datavar_attribute_names(data)
-                    save_dataset(data, force=True)
+                    if export:
+                        index = scan['file']
+                        try:
+                            index = int(index)
+                        except ValueError:
+                            pass
+                        if not isinstance(index, int):
+                            index = iter_index + 1
+                        save_dataset_for_export(data, index, force=True)
+                    else:
+                        save_dataset(data, force=True)
                 except Exception as e:
                     if debug:
                         import pdb
