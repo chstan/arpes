@@ -21,13 +21,16 @@ __all__ = ('ImageTool',)
 # TODO Implement alignment tool
 
 class ImageTool(SaveableTool, CursorTool):
-    def __init__(self, **kwargs):
+    def __init__(self, curs=None, **kwargs):
         super().__init__(name=kwargs.pop('name', None))
 
         self.load_settings(**kwargs)
 
         self.app_main_size = self.settings.get('main_width', 600)
         self.app_marginal_size = self.settings.get('marginal_width', 300)
+        
+        if curs is not None:
+            self.cursor_default = curs
 
     # TODO select path in image
     def prep_image(self, image_arr):
@@ -99,8 +102,12 @@ class ImageTool(SaveableTool, CursorTool):
 
         figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'], self.app_context[
             'widgets']
-        self.cursor = [np.mean(self.app_context['data_range']['x']),
-                       np.mean(self.app_context['data_range']['y'])]  # Try a sensible default
+        
+        if self.cursor_default is not None and len(self.cursor_default) == 2:
+            self.cursor = self.cursor_default
+        else:
+            self.cursor = [np.mean(self.app_context['data_range']['x']),
+                           np.mean(self.app_context['data_range']['y'])] # try a sensible default
 
         # create the main inset plot
         main_image = arr
@@ -405,9 +412,13 @@ class ImageTool(SaveableTool, CursorTool):
 
         figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'], self.app_context[
             'widgets']
-        self.cursor = [np.mean(self.data_range['x']),
-                       np.mean(self.data_range['y']),
-                       np.mean(self.data_range['z'])]
+        
+        if self.cursor_default is not None and len(self.cursor_default) == 3:
+            self.cursor = self.cursor_default
+        else:
+            self.cursor = [np.mean(self.data_range['x']),
+                           np.mean(self.data_range['y']),
+                           np.mean(self.data_range['z'])] # try a sensible default
 
         # create the main inset plot
         main_image = arr.sel(**dict([[arr.dims[2], self.cursor[2]]]), method='nearest')
