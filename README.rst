@@ -1,7 +1,6 @@
 |Banner|
 
 .. |Banner| image:: PyPES-Banner.png
-            :scale: 15%
             :alt: PyPES Banner
 
 +-----------------------+
