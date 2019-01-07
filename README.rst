@@ -1,9 +1,11 @@
 
+|Banner|
+
 .. |Banner| image:: PyPES-Banner.png
             :alt: PyPES Banner
 
 +-----------------------+
-| **``Documentation``** |
+| **Documentation**     |
 +=======================+
 | |Documentation|       |
 +-----------------------+
@@ -20,18 +22,19 @@ as:
 
 .. code::bash
 
-pip install --process-dependency-links -e
+    pip install --process-dependency-links -e
 
 
 Once this project is published on PyPI, you can install by using
 
 .. code::bash
 
-pip install --process-dependency-links pypes
+    pip install --process-dependency-links pypes
 
 
 You will need to install into a Python interpreter with version 3.5 or higher. Note that the
-`--process-dependency-links`
+`--process-dependency-links` directive appears in both commands and is necessary in order to
+include a patched version of the Igor interop library.
 
 
 Alternative Installation Directions
