@@ -2,6 +2,7 @@
 |Banner|
 
 .. |Banner| image:: PyPES-Banner.png
+            :width: 500px
             :alt: PyPES Banner
 
 +-----------------------+
