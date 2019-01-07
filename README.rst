@@ -1,8 +1,6 @@
-.. image:: PyPES-Banner.png
-   :height: 350x
-   :width: 150px
-   :alt: PyPES Banner
-   :align: center
+
+.. |Banner| image:: PyPES-Banner.png
+            :alt: PyPES Banner
 
 +-----------------------+
 | **``Documentation``** |
@@ -45,22 +43,22 @@ of `README.legacy.rst`.
 
 
 Additional Suggested Steps
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------
 
-0. Clone or duplicate the folder structure in the repository `arpes-analysis-scaffold`,
+1. Clone or duplicate the folder structure in the repository `arpes-analysis-scaffold`,
    skipping the example folder and data if you like
-1. Install and configure standard tools like Jupyter_.
-2. Follow instructions for import below
-3. Explore the documentation and example notebooks at `the documentation site`_.
+2. Install and configure standard tools like Jupyter_.
+3. Follow instructions for import below
+4. Explore the documentation and example notebooks at `the documentation site`_.
 
 .. _Jupyter: https://jupyter.org/
 .. _the documentation site: https://stupefied-bhabha-ce8a9f.netlify.com/
 
 
 Optional Steps
-^^^^^^^^^^^^^^
+--------------
 
-0. If you are using Jupyter Lab as opposed to Jupyter, installation of
+1. If you are using Jupyter Lab as opposed to Jupyter, installation of
    the nbextensions: to do this install nodejs from nodejs.org and
    restart Then open a terminal and run the labextension installation
 
@@ -145,3 +143,5 @@ Copyright
 =========
 
 Copyright |copy| 2018 by Conrad Stansbury, all rights reserved.
+
+.. |copy|   unicode:: U+000A9 .. COPYRIGHT SIGN
