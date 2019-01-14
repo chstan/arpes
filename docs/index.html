@@ -11,7 +11,7 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
-    gtag('config', 'UA-55955707-2');
+    gtag('config', 'UA-55955707-2', {'page_path': '/'});
   </script>
 
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
@@ -22,23 +22,15 @@
 <body>
   <div id="app"></div>
   <script>
-    (function(history){
-      var pushState = history.pushState;
-      history.pushState = function(state) {
-        if (typeof history.onPushState == "function") {
-          history.onPushState({state: state});
-        }
-        // ... whatever else you want to do
-        // maybe call onhashchange e.handler
-        return pushState.apply(history, arguments);
-      };
-    })(window.history);
-
-    window.history.onPushState = function(state) {
+    window.addEventListener("hashchange", function () {
       setTimeout(function () {
-        gtag('config', 'UA-55955707-2', {'page_path': window.location.pathname});
+        var path = window.location.hash.substr(2);
+        if (path.length === 0) {
+          path = '/';
+        }
+        gtag('config', 'UA-55955707-2', {'page_path': path});
       }, 5);
-    };
+    }, false);
   </script>
   <script>
     window.$docsify = {
@@ -46,7 +38,6 @@
       repo: 'https://gitlab.com/lanzara-group/python-arpes',
       loadSidebar: true,
       search: 'auto',
-      routerMode: 'history',
       notFoundPage: 'README.md',
     }
   </script>
