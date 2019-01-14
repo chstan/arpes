@@ -3,6 +3,7 @@ import copy
 import os.path
 import xarray as xr
 import numpy as np
+import itertools
 
 import h5py
 
@@ -10,9 +11,9 @@ import arpes.config
 
 from astropy.io import fits
 from arpes.endstations import EndstationBase
-from endstations import find_clean_coords
-from provenance import provenance_from_file
-from utilities import rename_keys
+from arpes.endstations import find_clean_coords
+from arpes.provenance import provenance_from_file
+from arpes.utilities import rename_keys
 
 __all__ = ('SpinToFEndstation',)
 
@@ -32,11 +33,13 @@ class SpinToFEndstation(EndstationBase):
         'Current': 'photocurrent',
         'ALS_Beam_mA': 'beam_current',
         'Energy_Spectra': 'spectrum',
-        'targetPlus': 'up',
-        'targetMinus': 'down',
+        'targetPlus': 't_up',
+        'targetMinus': 't_down',
         'wave': 'spectrum',  # this should not occur simultaneously with 'Energy_Spectra'
-        'Time_Target_Up': 'up',
-        'Time_Target_Down': 'down',
+        'Time_Target_Up': 't_up',
+        'Time_Target_Down': 't_down',
+        'Energy_Target_Up': 'up',
+        'Energy_Target_Down': 'down',
     }
 
     def load_SToF_hdf5(self, scan_desc: dict=None, **kwargs):
@@ -131,7 +134,7 @@ class SpinToFEndstation(EndstationBase):
         hdulist.close()
 
         relevant_dimensions = {k for k in coords.keys() if k in
-                               set(np.itertools.chain(*[l[0] for l in data_vars.values()]))}
+                               set(itertools.chain(*[l[0] for l in data_vars.values()]))}
         relevant_coords = {k: v for k, v in coords.items() if k in relevant_dimensions}
 
         dataset = xr.Dataset(

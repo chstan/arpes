@@ -1,5 +1,4 @@
 import typing
-import numpy as np
 import xarray as xr
 import re
 from pathlib import Path
@@ -21,7 +20,9 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         'Tilt': 'theta', 'Polar': 'polar', 'Azimuth': 'chi',
         'Sample X': 'x', 'Sample Y (Vert)': 'y', 'Sample Z': 'z',
         'Temperature Sensor A': 'temp_cryotip',
+        'temperature_sensor_a': 'temp_cryotip',
         'Temperature Sensor B': 'temp',
+        'temperature_sensor_b': 'temp',
         'Cryostat Temp A': 'temp_cryotip',
         'Cryostat Temp B': 'temp',
     }

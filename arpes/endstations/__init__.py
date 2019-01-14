@@ -22,10 +22,11 @@ from arpes.preparation import replace_coords
 from arpes.provenance import provenance_from_file
 from arpes.endstations.fits_utils import find_clean_coords
 from arpes.endstations.igor_utils import shim_wave_note
-from repair import negate_energy
+from arpes.repair import negate_energy
 
 __all__ = ('endstation_name_from_alias', 'endstation_from_alias', 'add_endstation', 'load_scan',
-           'EndstationBase', 'FITSEndstation', 'HemisphericalEndstation', 'SynchrotronEndstation',)
+           'EndstationBase', 'FITSEndstation', 'HemisphericalEndstation', 'SynchrotronEndstation',
+           'SingleFileEndstation', 'load_scan_for_endstation',)
 
 _ENDSTATION_ALIASES = {}
 
@@ -63,10 +64,10 @@ class EndstationBase(object):
             frames.sort(key=lambda x: x.coords[scan_coord])
             return xr.concat(frames, scan_coord)
 
-    def resolve_frame_locations(self, scan_desc: dict=None):
+    def resolve_frame_locations(self, scan_desc: dict = None):
         return []
 
-    def load_single_frame(self, frame_path: str=None, scan_desc: dict=None, **kwargs):
+    def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
         return xr.Dataset()
 
     def postprocess(self, frame: xr.Dataset):
@@ -84,7 +85,38 @@ class EndstationBase(object):
 
         return frame
 
-    def load(self, scan_desc: dict=None, **kwargs):
+    def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
+        # attach the 'spectrum_type'
+        # TODO move this logic into xarray extensions and customize here
+        # only as necessary
+        coord_names = tuple(sorted([c for c in data.coords.keys() if c != 'cycle']))
+
+        spectrum_type = None
+        if 'X' in coord_names or 'Y' in coord_names or 'Z' in coord_names:
+            coord_names = tuple(c for c in coord_names if c not in {'X', 'Y', 'Z'})
+            spectrum_types = {
+                ('eV',): 'spem',
+                ('eV', 'phi',): 'ucut',
+            }
+            spectrum_type = spectrum_types.get(coord_names)
+        else:
+            spectrum_types = {
+                ('eV',): 'xps',
+                ('eV', 'phi', 'polar',): 'map',
+                ('Slit Defl', 'eV', 'phi'): 'map',
+                ('eV', 'hv', 'phi',): 'hv_map',
+                ('eV', 'phi'): 'cut',
+            }
+            spectrum_type = spectrum_types.get(coord_names)
+
+        if spectrum_type is not None:
+            data.attrs['spectrum_type'] = spectrum_type
+            if 'spectrum' in data.data_vars:
+                data.spectrum.attrs['spectrum_type'] = spectrum_type
+
+        return data
+
+    def load(self, scan_desc: dict = None, **kwargs):
         """
         Loads a scan from a single file or a sequence of files.
 
@@ -98,11 +130,26 @@ class EndstationBase(object):
         frames = [self.load_single_frame(fpath, scan_desc, **kwargs) for fpath in resolved_frame_locations]
         frames = [self.postprocess(f) for f in frames]
         concatted = self.concatenate_frames(frames, scan_desc)
+        concatted = self.postprocess_final(concatted, scan_desc)
 
         if 'id' in scan_desc:
             concatted.attrs['id'] = scan_desc['id']
 
         return concatted
+
+
+class SingleFileEndstation(EndstationBase):
+    def resolve_frame_locations(self, scan_desc: dict=None):
+        if scan_desc is None:
+            raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
+
+        original_data_loc = scan_desc.get('path', scan_desc.get('file'))
+        p = Path(original_data_loc)
+        if not p.exists():
+            original_data_loc = os.path.join(arpes.config.DATA_PATH, original_data_loc)
+
+        p = Path(original_data_loc)
+        return [p]
 
 
 class SESEndstation(EndstationBase):
@@ -442,15 +489,26 @@ def add_endstation(endstation_cls):
     # add the aliases
     assert(endstation_cls.PRINCIPAL_NAME is not None)
     for alias in endstation_cls.ALIASES:
-        assert alias not in _ENDSTATION_ALIASES
+        if alias in _ENDSTATION_ALIASES:
+            continue
+            print('Alias ({}) already registered. Skipping...'.format(alias))
+
         _ENDSTATION_ALIASES[alias] = endstation_cls
 
     if endstation_cls.PRINCIPAL_NAME in _ENDSTATION_ALIASES and endstation_cls.PRINCIPAL_NAME not in endstation_cls.ALIASES:
         # indicates it was added earlier, so there's an alias conflict
-        raise ValueError('Endstation name or alias conflicts with existing {}'.format(endstation_cls.PRINCIPAL_NAME))
+        if False:
+            warnings.warn('Endstation name or alias conflicts with existing {}'.format(endstation_cls.PRINCIPAL_NAME))
 
     _ENDSTATION_ALIASES[endstation_cls.PRINCIPAL_NAME] = endstation_cls
 
+
+def load_scan_for_endstation(scan_desc, endstation_cls, **kwargs):
+    note = scan_desc.get('note', scan_desc)
+    full_note = copy.deepcopy(scan_desc)
+    full_note.update(note)
+
+    return endstation_cls().load(scan_desc, **kwargs)
 
 def load_scan(scan_desc, **kwargs):
     note = scan_desc.get('note', scan_desc)

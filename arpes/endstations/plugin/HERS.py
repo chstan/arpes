@@ -12,7 +12,7 @@ import arpes.config
 from arpes.endstations import SynchrotronEndstation, HemisphericalEndstation
 from arpes.endstations import find_clean_coords
 from arpes.provenance import provenance_from_file
-from utilities import rename_keys
+from arpes.utilities import rename_keys
 
 __all__ = ('HERSEndstation',)
 

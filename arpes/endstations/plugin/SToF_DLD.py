@@ -10,7 +10,7 @@ import arpes.config
 
 
 from arpes.endstations import EndstationBase
-from provenance import provenance_from_file
+from arpes.provenance import provenance_from_file
 
 __all__ = ('SToFDLDEndstation',)
 
