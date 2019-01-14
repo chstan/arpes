@@ -39,6 +39,7 @@ ipyvolume
 
 # Dependencies
 xlrd
+titlecase
 openpyxl
 
 # Testing
