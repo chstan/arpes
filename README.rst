@@ -19,14 +19,14 @@ The simplest way to install the package is using pip. While this repository
 is private, you can install with pip by pointing pip to the URL of the repository
 as:
 
-.. code::bash
+::
 
    pip install --process-dependency-links -e
 
 
 Once this project is published on PyPI, you can install by using
 
-.. code::bash
+::
 
    pip install --process-dependency-links pypes
 
@@ -65,7 +65,7 @@ committed to the repository and therefore shared. You can use this to
 as adjust settings on various interactive tools. For reference, Conrad’s
 looks like:
 
-.. code::python
+::
 
    SETTINGS = {
        'interactive': {
