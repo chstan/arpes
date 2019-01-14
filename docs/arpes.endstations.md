@@ -12,6 +12,8 @@
                     module](arpes.endstations.plugin.ALG_spin_ToF)
                   - [arpes.endstations.plugin.HERS
                     module](arpes.endstations.plugin.HERS)
+                  - [arpes.endstations.plugin.MAESTRO
+                    module](arpes.endstations.plugin.MAESTRO)
                   - [arpes.endstations.plugin.SToF\_DLD
                     module](arpes.endstations.plugin.SToF_DLD)
                   - [arpes.endstations.plugin.merlin
@@ -72,6 +74,9 @@ a common format
 > 
 > **postprocess(frame: xarray.core.dataset.Dataset)**
 > 
+> **postprocess\_final(data: xarray.core.dataset.Dataset, scan\_desc:
+> dict = None)**
+> 
 > **resolve\_frame\_locations(scan\_desc: dict = None)**
 
 **class arpes.endstations.FITSEndstation**
@@ -110,3 +115,12 @@ a common format
 > Bases:
 > 
 > `RESOLUTION_TABLE = None`
+
+**class arpes.endstations.SingleFileEndstation**
+
+> Bases:
+> 
+> **resolve\_frame\_locations(scan\_desc: dict = None)**
+
+**arpes.endstations.load\_scan\_for\_endstation(scan\_desc,
+endstation\_cls,**kwargs)\*\*

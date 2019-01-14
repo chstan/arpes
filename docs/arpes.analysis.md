@@ -9,6 +9,7 @@
   - [arpes.analysis.fft module](arpes.analysis.fft)
   - [arpes.analysis.filters module](arpes.analysis.filters)
   - [arpes.analysis.fs module](arpes.analysis.fs)
+  - [arpes.analysis.gap module](arpes.analysis.gap)
   - [arpes.analysis.general module](arpes.analysis.general)
   - [arpes.analysis.kfermi module](arpes.analysis.kfermi)
   - [arpes.analysis.mask module](arpes.analysis.mask)

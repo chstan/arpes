@@ -38,7 +38,7 @@ xarray.core.dataset.Dataset\], \*args,**kwargs)\*\*
 
 **arpes.corrections.fermi\_edge\_corrections.build\_direct\_fermi\_edge\_correction(arr:
 xarray.core.dataarray.DataArray, fit\_limit=0.001, energy\_range=None,
-plot=False)**
+plot=False, along='phi')**
 
 > Builds a direct fermi edge correction stencil.
 > 

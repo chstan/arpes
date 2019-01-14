@@ -31,6 +31,10 @@ xarray.core.dataset.Dataset\], filename=None, force=False)**
 
 **arpes.io.delete\_dataset(arr\_or\_uuid)**
 
+**arpes.io.save\_dataset\_for\_export(arr:
+Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
+index,**kwargs)\*\*
+
 **arpes.io.dataset\_exists(dataset)**
 
 **arpes.io.is\_a\_dataset(dataset)**

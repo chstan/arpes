@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>python-arpes - Data analysis utilities for ARPES in Python</title>
+  <title>PyPES - Data analysis utilities for ARPES and spectroscopic physics in Python</title>
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <meta name="description" content="Data analysis utilities for ARPES in Python">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
@@ -12,14 +12,18 @@
   <div id="app"></div>
   <script>
     window.$docsify = {
-      name: 'python-arpes',
-      repo: 'git@gitlab.com:lanzara-group/python-arpes',
+      name: 'PyPES',
+      repo: 'https://gitlab.com/lanzara-group/python-arpes',
       loadSidebar: true,
       search: 'auto',
     }
   </script>
   <style>
     .sidebar-nav h1 { border-bottom: 1px solid rgba(0,0,0,.07); padding-left: 1rem; }
+    .sidebar ul li.active>a { border-right: 4px solid; }
+    .sidebar a.app-name-link { font-weight: 500; }
+    .sidebar-nav h1 a:not(:hover) { text-decoration: none; color: rgb(52, 73, 94); }
+    .sidebar-nav h1 a:hover { color: rgb(52, 73, 94); }
   </style>
   <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
   <script src="//unpkg.com/prismjs/components/prism-python.min.js"></script>

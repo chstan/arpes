@@ -39,7 +39,7 @@
   - [arpes.utilities.math module](arpes.utilities.math)
   - [arpes.utilities.normalize module](arpes.utilities.normalize)
   - [arpes.utilities.region module](arpes.utilities.region)
-  - [arpes.utilities.str module](arpes.utilities.str)
+  - [arpes.utilities.string module](arpes.utilities.string)
 
 ## Module contents
 

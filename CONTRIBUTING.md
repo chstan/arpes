@@ -24,4 +24,3 @@ Some sense of authorship of various parts of the analysis code are automatically
 If you use (or contribute) a large amount of new work that ends up being a substantial part of someone elses' analysis effort, please consider citing (requesting citation) or including the author (requesting authorship) of the analysis code you used as a coauthor, as you would in other situations.
 
 If you would like or feel that it would be beneficial as far as users seeking help, you can also put authorship information into the docstring, but note that the docstring should **not** become a record of changes to a piece of analysis code.
- 

@@ -6,7 +6,7 @@
 > [arpes.endstations.HemisphericalEndstation](arpes.endstations#arpes.endstations.HemisphericalEndstation),
 > [arpes.endstations.FITSEndstation](arpes.endstations#arpes.endstations.FITSEndstation)
 > 
-> `ALIASES = ['ALG-Main', 'ALG-MC', 'ALG-Hemisphere', 'ALG-Main
+> `ALIASES = ['MC', 'ALG-Main', 'ALG-MC', 'ALG-Hemisphere', 'ALG-Main
 > Chamber']`
 > 
 > `PRINCIPAL_NAME = 'ALG-Main'`

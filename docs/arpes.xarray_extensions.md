@@ -14,6 +14,8 @@
 > 
 > **isosurface\_plot(pattern='{}.png',**kwargs)\*\*
 > 
+> **plot(\*args,**kwargs)\*\*
+> 
 > **reference\_plot(**kwargs)\*\*
 > 
 > **show(**kwargs)\*\*
@@ -29,6 +31,11 @@
 > Bases: `arpes.xarray_extensions.ARPESAccessorBase`
 > 
 > `degrees_of_freedom`
+> 
+> `is_spatial`
+> 
+> > Infers whether a given scan has real-space dimensions and
+> > corresponds to SPEM or u/nARPES. :return:
 > 
 > **make\_spectrum\_reference\_plots(prefix='',**kwargs)\*\*
 > 
@@ -58,6 +65,11 @@
 > >         over scan DoF, i.e. cycle vs scan DOF integrated over E, phi
 > >         3.  For delay scans:
 > > 
+> > 4.    - For spatial scans: i. energy/angle integrated spatial maps  
+> >         with subsequent measurements indicated 2. energy/angle
+> >         integrated FS spatial maps with subsequent measurements
+> >         indicated
+> > 
 > > <!-- end list -->
 > > 
 > >   - Parameters  
@@ -86,7 +98,11 @@ Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\])**
 > 
 > **p(param\_name)**
 > 
+> **param\_as\_dataset(param\_name)**
+> 
 > `parameter_names`
+> 
+> **plot\_param(param\_name,**kwargs)\*\*
 > 
 > **s(param\_name)**
 > 

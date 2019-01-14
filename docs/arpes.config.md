@@ -17,6 +17,8 @@ permissive=False)**
 
 **arpes.config.update\_configuration()**
 
+**arpes.config.use\_tex(rc\_text\_should\_use=False)**
+
 **arpes.config.workspace\_matches(path)**
 
 **arpes.config.workspace\_name\_is\_valid(workspace\_name)**

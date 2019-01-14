@@ -5,7 +5,7 @@ param\_names=None, missing='none', prefix='', name=None,**kws)\*\*
 
 > Bases: `lmfit.model.Model`
 > 
-> **guess\_fit(data, params=None,**kwargs)\*\*
+> **guess\_fit(data, params=None, weights=None,**kwargs)\*\*
 > 
 > > Params allows you to pass in hints as to what the values and bounds
 > > on parameters should be. Look at the lmfit docs to get hints about

@@ -8,6 +8,8 @@
     module](arpes.endstations.plugin.ALG_spin_ToF)
   - [arpes.endstations.plugin.HERS
     module](arpes.endstations.plugin.HERS)
+  - [arpes.endstations.plugin.MAESTRO
+    module](arpes.endstations.plugin.MAESTRO)
   - [arpes.endstations.plugin.SToF\_DLD
     module](arpes.endstations.plugin.SToF_DLD)
   - [arpes.endstations.plugin.merlin
