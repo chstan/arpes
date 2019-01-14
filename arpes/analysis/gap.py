@@ -8,11 +8,11 @@ import lmfit as lf
 import numpy as np
 from lmfit.models import update_param_vals
 from scipy.ndimage import gaussian_filter
-from arpes.analysis.resolution import total_resolution_estimate
+
 from arpes.typing import DataType
 from arpes.fits import XModelMixin
 from arpes.constants import K_BOLTZMANN_EV_KELVIN
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('normalize_by_fermi_dirac', 'determine_broadened_fermi_distribution', 'AffineBroadenedFD',
            'symmetrize')

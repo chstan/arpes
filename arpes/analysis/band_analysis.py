@@ -9,7 +9,7 @@ from scipy.spatial import distance
 import arpes.models.band
 import arpes.utilities.math
 from arpes.utilities import enumerate_dataarray
-from utilities.jupyter_utils import wrap_tqdm
+from arpes.utilities.jupyter_utils import wrap_tqdm
 
 __all__ = ('fit_bands',)
 

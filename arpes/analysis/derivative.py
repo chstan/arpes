@@ -6,7 +6,7 @@ import xarray as xr
 
 from arpes.typing import DataType
 from arpes.provenance import provenance
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('curvature', 'dn_along_axis', 'd2_along_axis', 'd1_along_axis', 'minimum_gradient', 'vector_diff')
 

@@ -5,8 +5,8 @@ import arpes.config
 from matplotlib import pyplot as plt
 from matplotlib import animation
 
-from plotting.utils import path_for_plot
-from provenance import save_plot_provenance
+from arpes.plotting.utils import path_for_plot
+from arpes.provenance import save_plot_provenance
 
 __all__ = ('plot_movie',)
 

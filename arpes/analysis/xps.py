@@ -1,9 +1,9 @@
 import numpy as np
 
-from analysis.savitzky_golay import *
-from analysis.general import rebin
+from arpes.analysis.savitzky_golay import *
+from arpes.analysis.general import rebin
 from arpes.typing import DataType
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('approximate_core_levels',)
 

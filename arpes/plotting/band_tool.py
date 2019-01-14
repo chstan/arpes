@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from arpes.models import band
 from arpes.plotting.interactive_utils import CursorTool, SaveableTool
-from exceptions import AnalysisError
+from arpes.exceptions import AnalysisError
 
 from bokeh.layouts import row, column, widgetbox
 from bokeh.models.mappers import LinearColorMapper
@@ -12,7 +12,7 @@ from bokeh.models import widgets
 from bokeh.plotting import figure
 
 from arpes.analysis.band_analysis import fit_patterned_bands
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('BandTool',)
 

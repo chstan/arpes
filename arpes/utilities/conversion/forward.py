@@ -3,7 +3,7 @@ import warnings
 import xarray as xr
 import numpy as np
 
-from utilities.conversion.bounds_calculations import euler_to_kx, euler_to_ky, euler_to_kz
+from arpes.utilities.conversion.bounds_calculations import euler_to_kx, euler_to_ky, euler_to_kz
 
 __all__ = ('convert_coordinates_to_kspace_forward',)
 

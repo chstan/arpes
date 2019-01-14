@@ -6,11 +6,11 @@ import warnings
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-
-from analysis.band_analysis_utils import param_getter, param_stderr_getter
-from arpes.analysis import rebin
-from exceptions import AnalysisError
 from typing import Optional, Union
+
+from arpes.analysis.band_analysis_utils import param_getter, param_stderr_getter
+from arpes.analysis import rebin
+from arpes.exceptions import AnalysisError
 from arpes.typing import DataType
 
 from scipy import ndimage as ndi
@@ -25,7 +25,7 @@ from arpes.plotting import ImageTool, CurvatureTool, BandTool, FitCheckTool
 from arpes.utilities.conversion import slice_along_path
 from arpes.utilities import apply_dataarray
 from arpes.utilities.region import DesignatedRegions, normalize_region
-from utilities.math import shift_by
+from arpes.utilities.math import shift_by
 
 __all__ = ['ARPESDataArrayAccessor', 'ARPESDatasetAccessor', 'ARPESFitToolsAccessor']
 

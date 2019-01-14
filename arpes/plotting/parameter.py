@@ -1,7 +1,7 @@
 import xarray as xr
 
 import matplotlib.pyplot as plt
-from provenance import save_plot_provenance
+from arpes.provenance import save_plot_provenance
 
 __all__ = ('plot_parameter',)
 

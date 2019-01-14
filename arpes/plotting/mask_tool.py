@@ -1,8 +1,8 @@
 import numpy as np
 
-from analysis.mask import apply_mask
+from arpes.analysis.mask import apply_mask
 from arpes.plotting.interactive_utils import CursorTool, SaveableTool
-from exceptions import AnalysisError
+from arpes.exceptions import AnalysisError
 
 from bokeh import events
 from bokeh.layouts import row, column, widgetbox
@@ -11,7 +11,7 @@ from bokeh.models import widgets
 from bokeh.plotting import figure
 
 from arpes.typing import DataType
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('MaskTool', 'mask')
 

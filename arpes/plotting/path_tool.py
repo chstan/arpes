@@ -1,9 +1,9 @@
 import numpy as np
 import xarray as xr
 
-from analysis.path import select_along_path
+from arpes.analysis.path import select_along_path
 from arpes.plotting.interactive_utils import CursorTool, SaveableTool
-from exceptions import AnalysisError
+from arpes.exceptions import AnalysisError
 
 from bokeh import events
 from bokeh.layouts import row, column, widgetbox
@@ -12,7 +12,7 @@ from bokeh.models import widgets, warnings
 from bokeh.plotting import figure
 
 from arpes.typing import DataType
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('PathTool', 'path_tool',)
 

@@ -1,7 +1,7 @@
-from analysis import rebin
+from arpes.analysis import rebin
 from arpes.typing import DataType
-from utilities.normalize import normalize_to_spectrum
-from fits import broadcast_model, GStepBModel
+from arpes.utilities.normalize import normalize_to_spectrum
+from arpes.fits import broadcast_model, GStepBModel
 
 __all__ = ('fs_gap',)
 

@@ -3,11 +3,11 @@ import matplotlib.colors
 from matplotlib import cm
 import numpy as np
 
-from analysis import rebin
+from arpes.analysis import rebin
 from arpes.typing import DataType
-from plotting.utils import *
-from provenance import save_plot_provenance
-from utilities import normalize_to_spectrum
+from arpes.plotting.utils import *
+from arpes.provenance import save_plot_provenance
+from arpes.utilities import normalize_to_spectrum
 from arpes.plotting.utils import colorbarmaps_for_axis
 
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes

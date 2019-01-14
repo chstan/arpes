@@ -17,10 +17,11 @@ import pint
 
 ureg = pint.UnitRegistry()
 
-# ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES
+# ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES, or via `setup`
 ARPES_ROOT = os.getenv('ARPES_ROOT')
+SOURCE_ROOT = str(Path(__file__).parent)
 assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT environment "
-                                  "variable defined.")
+                                  "variable defined, or call `setup`.")
 
 SETTINGS = {
     'interactive': {
@@ -30,20 +31,19 @@ SETTINGS = {
     },
 }
 
-SOURCE_PATH = ARPES_ROOT
-FIGURE_PATH = os.path.join(SOURCE_PATH, 'figures')
+USER_PATH = ARPES_ROOT
+FIGURE_PATH = os.path.join(USER_PATH, 'figures')
 
-DATASET_PATH = os.path.join(SOURCE_PATH, 'datasets')
+DATASET_PATH = os.path.join(USER_PATH, 'datasets')
 # don't really need this one, but you can set it if you want
-EXPERIMENT_PATH = os.path.join(SOURCE_PATH, 'exp')
 
-DATASET_ROOT_PATH = ARPES_ROOT
+DATASET_ROOT_PATH = USER_PATH
 # these are all set by ``update_configuration``
 
-DATASET_CACHE_PATH = os.path.join(ARPES_ROOT, 'cache')
-DATASET_CACHE_RECORD = None
+DATASET_CACHE_PATH = os.path.join(USER_PATH, 'cache')
+DATASET_CACHE_RECORD = None # .json file that holds normalized files
+# .json file that records which files are linked to the same physical sample, currently unused
 CLEAVE_RECORD = None
-CALIBRATION_RECORD = None
 
 PIPELINE_SHELF = None
 PIPELINE_JSON_SHELF = None
@@ -52,14 +52,12 @@ def update_configuration():
     global DATASET_ROOT_PATH
     global DATASET_CACHE_RECORD
     global CLEAVE_RECORD
-    global CALIBRATION_RECORD
 
     global PIPELINE_SHELF
     global PIPELINE_JSON_SHELF
 
     DATASET_CACHE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets', 'cache.json')
     CLEAVE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets', 'cleaves.json')
-    CALIBRATION_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets', 'calibrations.json')
 
     # TODO use a real database here
     PIPELINE_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets','pipeline.shelf')
@@ -90,7 +88,7 @@ def attempt_determine_workspace(value=None, permissive=False):
     try:
         current_path = os.getcwd()
         for _ in range(3):
-            print(current_path)
+            print('Checking: {}'.format(current_path))
             if workspace_matches(current_path):
                 CONFIG['WORKSPACE'] = {
                     'path': current_path,
@@ -111,11 +109,6 @@ def attempt_determine_workspace(value=None, permissive=False):
             path_fragment = current_path.split(os.path.realpath(DATASET_PATH))[1]
             option = [x for x in path_fragment.split('/') if len(x) and x not in skip_dirs][0]
             # we are in a dataset, we can use the folder name in order to configure
-
-        elif os.path.realpath(EXPERIMENT_PATH) in current_path:
-            # this doesn't quite work because of symlinks
-            path_fragment = current_path.split(os.path.realpath(EXPERIMENT_PATH))[1]
-            option = [x for x in path_fragment.split('/') if len(x) and x not in skip_dirs][0]
 
         if value is not None:
             option = value
@@ -145,12 +138,11 @@ except:
 
 
 # try to generate cache files if they do not exist
-for p in [DATASET_CACHE_RECORD, CLEAVE_RECORD, CALIBRATION_RECORD]:
+for p in [DATASET_CACHE_RECORD, CLEAVE_RECORD]:
     fp = Path(p)
     if not fp.exists():
         with open(p, 'w') as f:
             json.dump({}, f)
-
 
 # load plugins
 def load_plugins():
@@ -175,7 +167,6 @@ def load_plugins():
             #experiment_classes[module] = loaded_module.Experiment
         except (AttributeError, ImportError) as e:
             pass
-
 
 
 def use_tex(rc_text_should_use=False):

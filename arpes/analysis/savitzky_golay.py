@@ -8,7 +8,7 @@ import numpy as np
 from math import factorial
 
 from arpes.typing import DataType
-from provenance import update_provenance
+from arpes.provenance import update_provenance
 
 __all__ = ('savitzky_golay',)
 

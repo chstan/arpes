@@ -5,7 +5,7 @@ import numpy as np
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.collections import LineCollection
 
-from analysis.sarpes import to_intensity_polarization
+from arpes.analysis.sarpes import to_intensity_polarization
 from arpes.provenance import save_plot_provenance
 from arpes.utilities.math import (
     polarization,
@@ -115,7 +115,7 @@ def spin_polarized_spectrum(spin_dr, title=None, axes=None, out=None, norm=None)
     down = spin_dr.up.data
 
     pol = polarization(spin_dr.up.data, spin_dr.down.data)
-    energies = spin_dr.coords['kinetic']
+    energies = spin_dr.coords['eV']
     min_e, max_e = np.min(energies), np.max(energies)
 
     # Plot the spectra

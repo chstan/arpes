@@ -3,7 +3,7 @@ import warnings
 import pandas as pd
 from arpes.utilities import default_dataset
 from arpes.preparation import normalize_dim
-from arpes.io import load_dataset
+from arpes.io import simple_load
 from arpes.pipelines import convert_scan_to_kspace
 
 import xarray as xr

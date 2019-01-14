@@ -9,7 +9,7 @@ import pandas as pd
 
 import arpes.config
 from arpes.exceptions import ConfigurationError
-from utilities.str import snake_case
+from arpes.utilities.string import snake_case
 
 __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
            'attach_extra_dataset_columns', 'swap_reference_map',

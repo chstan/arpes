@@ -3,8 +3,8 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib import colors, gridspec
 
-from provenance import save_plot_provenance
-from utilities import normalize_to_spectrum
+from arpes.provenance import save_plot_provenance
+from arpes.utilities import normalize_to_spectrum
 from arpes.analysis.xps import approximate_core_levels
 from .utils import *
 

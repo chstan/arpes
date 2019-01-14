@@ -1,7 +1,7 @@
 import numpy as np
 
 from arpes.typing import DataType
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('remove_incoherent_background',)
 

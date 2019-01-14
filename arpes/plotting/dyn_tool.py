@@ -8,7 +8,7 @@ from bokeh.models.mappers import LinearColorMapper
 from bokeh.models import widgets
 from bokeh.plotting import figure
 
-from exceptions import AnalysisError
+from arpes.exceptions import AnalysisError
 from arpes.plotting.interactive_utils import BokehInteractiveTool, CursorTool
 from arpes.utilities import normalize_to_spectrum, Debounce
 from arpes.typing import DataType

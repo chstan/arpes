@@ -100,4 +100,4 @@ def select_along_path(path: xr.Dataset, data: DataType, radius=None, n_points=No
     for _, view in new_path.T.iterate_axis('index'):
         selections.append(data.S.select_around(view, radius=radius, fast=fast, **kwargs))
 
-    return xr.merge(xr.concat(selections, new_path.index))
+    return xr.concat(selections, new_path.index)

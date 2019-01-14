@@ -1,8 +1,8 @@
 import xarray as xr
 
 from arpes.typing import DataType
-from utilities import normalize_to_dataset
-from utilities.math import polarization
+from arpes.utilities import normalize_to_dataset
+from arpes.utilities.math import polarization
 
 __all__ = ('to_intensity_polarization',)
 

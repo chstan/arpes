@@ -1,8 +1,8 @@
 import numpy as np
 import xarray as xr
 from arpes.typing import DataType
-from utilities import normalize_to_spectrum
-from utilities.conversion import slice_along_path
+from arpes.utilities import normalize_to_spectrum
+from arpes.utilities.conversion import slice_along_path
 from arpes.fits.fit_models import LorentzianModel, AffineBackgroundModel
 from sklearn.decomposition import PCA
 

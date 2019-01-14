@@ -3,7 +3,7 @@ from matplotlib.path import Path
 
 import numpy as np
 
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('polys_to_mask', 'apply_mask',)
 

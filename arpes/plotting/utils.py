@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from arpes.config import CONFIG, FIGURE_PATH
 from arpes.typing import DataType
-from utilities import normalize_to_spectrum
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = (
     'path_for_plot', 'path_for_holoviews', 'name_for_dim', 'label_for_colorbar', 'label_for_dim',
