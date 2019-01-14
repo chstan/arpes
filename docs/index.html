@@ -11,9 +11,9 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
-    gtag('config', 'UA-55955707-1');
+    gtag('config', 'UA-55955707-2');
   </script>
-  
+
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <meta name="description" content="Data analysis utilities for ARPES in Python">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
@@ -21,14 +21,31 @@
 </head>
 <body>
   <div id="app"></div>
+  <script>
+    (function(history){
+      var pushState = history.pushState;
+      history.pushState = function(state) {
+        if (typeof history.onPushState == "function") {
+          history.onPushState({state: state});
+        }
+        // ... whatever else you want to do
+        // maybe call onhashchange e.handler
+        return pushState.apply(history, arguments);
+      };
+    })(window.history);
 
+    window.history.onPushState = function(state) {
+      setTimeout(function () {
+        gtag('config', 'UA-55955707-2', {'page_path': window.location.pathname});
+      }, 5);
+    };
+  </script>
   <script>
     window.$docsify = {
       name: 'PyPES',
       repo: 'https://gitlab.com/lanzara-group/python-arpes',
       loadSidebar: true,
       search: 'auto',
-      ga: 'UA-55955707-2',
       routerMode: 'history',
     }
   </script>
