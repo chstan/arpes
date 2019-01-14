@@ -1,0 +1,36 @@
+# Largely overrides to Seaborn-White style sheet
+
+# Seaborn common parameters
+# .15 = dark_gray
+# .8 = light_gray
+figure.facecolor: white
+text.color: .15
+axes.labelcolor: .15
+legend.frameon: False
+legend.numpoints: 1
+legend.scatterpoints: 1
+xtick.direction: out
+ytick.direction: out
+xtick.color: .15
+ytick.color: .15
+axes.axisbelow: True
+image.cmap: Greys
+font.family: sans-serif
+font.sans-serif: cm, Arial, Liberation Sans, DejaVu Sans, Bitstream Vera Sans, sans-serif
+
+axes.grid: True
+axes.facecolor: white
+axes.edgecolor: .15
+axes.linewidth: 1.25
+grid.color: .8
+xtick.major.size: 4
+ytick.major.size: 4
+xtick.minor.size: 0
+ytick.minor.size: 0
+
+axes.labelsize: 16
+axes.titlesize: 20
+xtick.labelsize: 12
+ytick.labelsize: 12
+xtick.major.width: 2
+ytick.major.width: 2
