@@ -4,13 +4,16 @@
   <meta charset="UTF-8">
   <title>PyPES - Data analysis utilities for ARPES and spectroscopic physics in Python</title>
 
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-55955707-1"></script>
   <script>
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-  </script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
 
+    gtag('config', 'UA-55955707-1');
+  </script>
+  
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <meta name="description" content="Data analysis utilities for ARPES in Python">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
@@ -18,12 +21,15 @@
 </head>
 <body>
   <div id="app"></div>
+
   <script>
     window.$docsify = {
       name: 'PyPES',
       repo: 'https://gitlab.com/lanzara-group/python-arpes',
       loadSidebar: true,
       search: 'auto',
+      ga: 'UA-55955707-2',
+      routerMode: 'history',
     }
   </script>
   <style>
@@ -33,11 +39,9 @@
     .sidebar-nav h1 a:not(:hover) { text-decoration: none; color: rgb(52, 73, 94); }
     .sidebar-nav h1 a:hover { color: rgb(52, 73, 94); }
   </style>
-  <script src="//unpkg.com/docsify/lib/docsify.min.js" data-ga="UA-55955707-2"></script>
+  <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
   <script src="//unpkg.com/prismjs/components/prism-python.min.js"></script>
   <script src="//unpkg.com/prismjs/components/prism-bash.min.js"></script>
   <script src="//unpkg.com/docsify/lib/plugins/search.min.js"></script>
-
-  <script src="//unpkg.com/docsify/lib/plugins/ga.min.js"></script>
 </body>
 </html>
