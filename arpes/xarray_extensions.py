@@ -62,15 +62,25 @@ class ARPESAccessorBase(object):
             return (((self._obj < 0) * 1).mean() > 0.05).item()
 
     @property
+    def is_spatial(self):
+        """
+        Infers whether a given scan has real-space dimensions and corresponds to
+        SPEM or u/nARPES.
+        :return:
+        """
+        if self.spectrum_type in {'ucut', 'spem'}:
+            return True
+
+        return any(d in {'X', 'Y', 'Z'} for d in self._obj.dims)
+
+    @property
     def is_kspace(self):
         """
         Infers whether the scan is k-space converted or not. Because of the way this is defined, it will return
         true for XPS spectra, which I suppose is true but trivially.
         :return:
         """
-
-        dims = self._obj.dims
-        return not any(d in {'phi', 'polar', 'angle'} for d in dims)
+        return not any(d in {'phi', 'polar', 'angle'} for d in self._obj.dims)
 
     @property
     def is_slit_vertical(self):
@@ -124,6 +134,9 @@ class ARPESAccessorBase(object):
 
     @property
     def spectrum_type(self):
+        if 'spectrum_type' in self._obj.attrs and self._obj.attrs['spectrum_type']:
+            return self._obj.attrs['spectrum_type']
+
         dim_types = {
             ('eV',): 'xps_spectrum',
             ('eV', 'phi'): 'spectrum',
@@ -151,7 +164,7 @@ class ARPESAccessorBase(object):
         dims.remove(dim)
         return self._obj.transpose(*([dim] + dims))
 
-    def select_around_data(self, points, radius=None, fast=False, safe=True, **kwargs):
+    def select_around_data(self, points, radius=None, fast=False, safe=True, mode='sum', **kwargs):
         """
         Can be used to perform a selection along one axis as a function of another, integrating a region
         in the other dimensions. As an example, suppose we have a dataset with dimensions ('eV', 'kp', 'T',)
@@ -173,6 +186,11 @@ class ARPESAccessorBase(object):
         :param kwargs:
         :return:
         """
+        if isinstance(self._obj, xr.Dataset):
+            raise TypeError('Cannot use select_around on Datasets only DataArrays!')
+
+        if mode not in {'sum', 'mean'}:
+            raise ValueError('mode parameter should be either sum or mean.')
 
         if isinstance(points, (tuple, list,)):
             warnings.warn('Dangerous iterable points argument to `select_around`')
@@ -239,12 +257,15 @@ class ARPESAccessorBase(object):
                 # need to remove the extra dims from coords
                 del selected.coords[d]
 
-            new_data.loc[coord] = selected.sum(list(radius.keys())).values
+            if mode == 'sum':
+                new_data.loc[coord] = selected.sum(list(radius.keys())).values
+            elif mode == 'mean':
+                new_data.loc[coord] = selected.mean(list(radius.keys())).values
 
         return new_data
 
 
-    def select_around(self, point, radius=None, fast=False, safe=True, **kwargs):
+    def select_around(self, point, radius=None, fast=False, safe=True, mode='sum', **kwargs):
         """
         Selects and integrates a region around a one dimensional point, useful to do a small
         region integration, especially around points on a path of a k-point of interest.
@@ -259,6 +280,11 @@ class ARPESAccessorBase(object):
         :param fast:
         :return:
         """
+        if isinstance(self._obj, xr.Dataset):
+            raise TypeError('Cannot use select_around on Datasets only DataArrays!')
+
+        if mode not in {'sum', 'mean'}:
+            raise ValueError('mode parameter should be either sum or mean.')
 
         if isinstance(point, (tuple, list,)):
             warnings.warn('Dangerous iterable point argument to `select_around`')
@@ -317,7 +343,10 @@ class ARPESAccessorBase(object):
             # need to remove the extra dims from coords
             del selected.coords[d]
 
-        return selected.sum(list(radius.keys()))
+        if mode == 'sum':
+            return selected.sum(list(radius.keys()))
+        elif mode == 'mean':
+            return selected.mean(list(radius.keys()))
 
     def short_history(self, key='by'):
         return [h['record'][key] if isinstance(h, dict) else h for h in self.history]
@@ -486,6 +515,43 @@ class ARPESAccessorBase(object):
         except:
             pass
         return ""
+
+    @property
+    def scan_row(self):
+        df = self._obj.attrs['df']
+        sdf = df[df.path == self._obj.attrs['file']]
+        return list(sdf.iterrows())[0]
+
+    @property
+    def df_index(self):
+        return self.scan_row[0]
+
+    @property
+    def df_after(self):
+        return self._obj.attrs['df'][self._obj.attrs['df'].index > self.df_index]
+
+    def df_until_type(self, df=None, spectrum_type=None):
+        if df is None:
+            df = self.df_after
+
+        if spectrum_type is None:
+            spectrum_type = (self.spectrum_type,)
+
+        if isinstance(spectrum_type, str):
+            spectrum_type = (spectrum_type,)
+
+        try:
+            indices = [df[df['spectrum_type'].eq(s)] for s in spectrum_type]
+            indices = [d.index[0] for d in indices if not d.empty]
+
+            if len(indices) == 0:
+                raise IndexError()
+
+            min_index = min(indices)
+            return df[df.index < min_index]
+        except IndexError:
+            # nothing
+            return df
 
     @property
     def scan_name(self):
@@ -1033,10 +1099,13 @@ class ARPESAccessorBase(object):
         :return:
         """
 
-        assert(self.spectrum_type == 'map')
-
-        df = self._obj.attrs['df']
-        return df[(df.spectrum_type != 'map') & (df.ref_id == self._obj.id)]
+        if self.spectrum_type == 'map':
+            df = self._obj.attrs['df']
+            return df[(df.spectrum_type != 'map') & (df.ref_id == self._obj.id)]
+        else:
+            assert(self.spectrum_type in {'ucut', 'spem'})
+            df = self.df_until_type(spectrum_type=('ucut', 'spem',))
+            return df
 
     def generic_fermi_surface(self, fermi_energy):
         return self.fat_sel(eV=fermi_energy)
@@ -1112,6 +1181,17 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 
         return plotting.fermi_edge.fermi_edge_reference(self._obj, **kwargs)
 
+
+    def _referenced_scans_for_spatial_plot(self, use_id=True, pattern='{}.png', **kwargs):
+        out = kwargs.get('out')
+        label = self._obj.attrs['id'] if use_id else self.label
+        if out is not None and isinstance(out, bool):
+            out = pattern.format('{}_reference_scan_fs'.format(label))
+            kwargs['out'] = out
+
+        return plotting.reference_scan_spatial(self._obj, **kwargs)
+
+
     def _referenced_scans_for_map_plot(self, use_id=True, pattern='{}.png', **kwargs):
         out = kwargs.get('out')
         label = self._obj.attrs['id'] if use_id else self.label
@@ -1147,6 +1227,10 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
             return self._referenced_scans_for_hv_map_plot(**kwargs)
         elif self.spectrum_type == 'spectrum':
             return self._simple_spectrum_reference_plot(**kwargs)
+        elif self.spectrum_type in {'ucut', 'spem'}:
+            return self._referenced_scans_for_spatial_plot(**kwargs)
+        elif self.spectrum_type in {'cut'}:
+            return None
         else:
             import pdb
             pdb.set_trace()
@@ -1172,6 +1256,27 @@ class GenericAccessorTools(object):
         o.coords[as_coordinate_name] = o.values
 
         return o
+
+    def ravel(self):
+        """
+        Converts to a flat representation where the coordinate values are also present.
+        Extremely valuable for plotting a dataset with coordinates, X, Y and values Z(X,Y)
+        on a scatter plot in 3D.
+
+        By default the data is listed under the key 'data'.
+
+        :return:
+        """
+
+        assert(isinstance(self._obj, xr.DataArray))
+
+        dims = self._obj.dims
+        coords_as_list = [self._obj.coords[d].values for d in dims]
+        raveled_coordinates = dict(zip(dims, [cs.ravel() for cs in np.meshgrid(*coords_as_list)]))
+        assert('data' not in raveled_coordinates)
+        raveled_coordinates['data'] = self._obj.values.ravel()
+
+        return raveled_coordinates
 
     def to_arrays(self):
         """
@@ -1524,9 +1629,7 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             return plotting.scan_var_reference_plot(
                 data_var, title='Reference {}'.format(name), out=out)
 
-
         # may also want to make reference figures summing over cycle, or summing over beta
-
 
         # make photocurrent normalized figures
         try:
