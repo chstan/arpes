@@ -16,7 +16,8 @@ __all__ = ('broadcast_model',)
 TypeIterable = typing.Union[typing.List[type], typing.Tuple[type]]
 
 def broadcast_model(model_cls: typing.Union[type, TypeIterable],
-                    data: DataType, broadcast_dims, constraints=None, progress=True, dataset=True):
+                    data: DataType, broadcast_dims, constraints=None, progress=True, dataset=True,
+                    weights=None):
     if constraints is None:
         constraints = {}
 
@@ -58,7 +59,10 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting',
                                              total=n_fits):
         cut_data = data.sel(**cut_coords)
-        fit_result = model.guess_fit(cut_data, params=constraints)
+        weights_for = None
+        if weights is not None:
+            weights_for = weights.sel(**cut_coords)
+        fit_result = model.guess_fit(cut_data, params=constraints, weights=weights_for)
 
         template.loc[cut_coords] = fit_result
         residual.loc[cut_coords] = fit_result.residual if fit_result is not None else None

@@ -53,10 +53,11 @@ def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args
 
     shift_amount = -correction / arr.T.stride(generic_dim_names=False)['eV']
     energy_axis = list(arr.dims).index('eV')
-    phi_axis = list(arr.dims).index('phi')
+
+    correction_axis = list(arr.dims).index(correction.dims[0])
 
     corrected_arr = xr.DataArray(
-        shift_by(arr.values, shift_amount, axis=energy_axis, by_axis=phi_axis, order=1),
+        shift_by(arr.values, shift_amount, axis=energy_axis, by_axis=correction_axis, order=1),
         arr.coords,
         arr.dims,
         attrs=arr.attrs
@@ -73,7 +74,8 @@ def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args
 
     return corrected_arr
 
-def build_direct_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, energy_range=None, plot=False):
+def build_direct_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, energy_range=None, plot=False,
+                                       along='phi'):
     """
     Builds a direct fermi edge correction stencil.
 
@@ -90,12 +92,15 @@ def build_direct_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, energ
 
     if energy_range is None:
         energy_range = slice(-0.1, 0.1)
-    edge_fit = broadcast_model(GStepBModel, arr.sum(exclude_hemisphere_axes(arr.dims)).sel(eV=energy_range), 'phi')
+
+    exclude_axes = ['eV', along]
+    others = [d for d in arr.dims if d not in exclude_axes]
+    edge_fit = broadcast_model(GStepBModel, arr.sum(others).sel(eV=energy_range), along).results
 
     def sieve(c, v):
         return v.item().params['center'].stderr < 0.001
 
-    corrections = edge_fit.T.filter_coord('phi', sieve).T.map(lambda x: x.params['center'].value)
+    corrections = edge_fit.T.filter_coord(along, sieve).T.map(lambda x: x.params['center'].value)
 
     if plot:
         corrections.plot()
