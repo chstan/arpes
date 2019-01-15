@@ -54,7 +54,12 @@ def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
     # another plugin related option here is we can restrict the number of regexes by allowing plugins
     # to install regexes for particular endstations, if this is needed in the future it might be a good way
     # of preventing clashes where there is ambiguity in file naming scheme across endstations
-    patterns = [r'[a-zA-Z0-9_\w]+_[0]+{}$'.format(file), r'[a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file)]
+    patterns = [
+        r'[a-zA-Z0-9_\w]+_[0]+{}$'.format(file),
+        r'[a-zA-Z0-9_\w]+_{}$'.format(file),
+        r'[a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
+        r'[a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file)
+    ]
     patterns = [re.compile(m) for m in patterns]
 
     for dir in dir_options:
@@ -115,7 +120,7 @@ def default_dataset(workspace=None, match=None, **kwargs):
     if material_class is None:
         raise ConfigurationError('You need to set the WORKSPACE attribute on CONFIG!')
 
-    dir = os.path.join(arpes.config.SOURCE_PATH, 'datasets', material_class)
+    dir = os.path.join(arpes.config.DATASET_PATH, material_class)
 
     def is_dataset(filename):
         if filename.startswith('~$'):
@@ -389,6 +394,9 @@ def walk_datasets(skip_cleaned=True, use_workspace=False):
         excel_files = [f for f in files if '.xlsx' in f or '.xlx' in f]
 
         for x in excel_files:
+            if x[0] == '~':
+                continue
+
             if skip_cleaned and 'cleaned' in os.path.join(path, x):
                 continue
 
