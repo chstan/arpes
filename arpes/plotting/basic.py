@@ -23,7 +23,7 @@ def make_reference_plots(df: pd.DataFrame=None, with_kspace=False):
     # Make scans indicating cut locations
     for index, row in df.iterrows():
         try:
-            scan = load_dataset(row.id, df)
+            scan = simple_load(index)
 
             if isinstance(scan, xr.Dataset):
                 # make plot series normalized by current:

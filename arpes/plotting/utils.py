@@ -7,11 +7,12 @@ import matplotlib.offsetbox
 import matplotlib
 import matplotlib.cm
 import collections
+from titlecase import titlecase
 from matplotlib.lines import Line2D
 
 from collections import Counter
 
-from matplotlib import colors, colorbar
+from matplotlib import colors, colorbar, gridspec
 import matplotlib.pyplot as plt
 
 from arpes.config import CONFIG, FIGURE_PATH
@@ -29,11 +30,50 @@ __all__ = (
     'temperature_colorbar',
     'temperature_colorbar_around',
 
+    'dos_axes',
+    'fancy_labels',
+
     'colorbarmaps_for_axis',
 
     # insets related
     'inset_cut_locator',
 )
+
+def dos_axes(orientation='horiz', figsize=None, with_cbar=True):
+    """
+    Orientation option should be 'horiz' or 'vert'
+
+    :param orientation:
+    :param figsize:
+    :param with_cbar:
+    :return:
+    """
+    if figsize is None:
+        figsize = (12,9,) if orientation == 'vert' else (9, 9)
+
+    fig = plt.figure(figsize=figsize)
+
+
+    outer_grid = gridspec.GridSpec(4, 4, wspace=0.0, hspace=0.0)
+
+    if orientation == 'horiz':
+        fig.subplots_adjust(hspace=0.00)
+        gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+
+        ax0 = plt.subplot(gs[0])
+        axes = (ax0, plt.subplot(gs[1], sharex=ax0))
+        plt.setp(axes[0].get_xticklabels(), visible=False)
+    else:
+        fig.subplots_adjust(wspace=0.00)
+        gs = gridspec.GridSpec(1, 2, width_ratios=[1, 4])
+
+        ax0 = plt.subplot(gs[1])
+        axes = (ax0, plt.subplot(gs[0], sharey=ax0))
+        plt.setp(axes[0].get_yticklabels(), visible=False)
+
+    return fig, axes
+
+
 
 def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=None, **kwargs):
     """
@@ -206,8 +246,14 @@ def calculate_aspect_ratio(data: DataType):
     return y_extent / x_extent
 
 class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
-    """ size: length of bar in data units
-        extent : height of bar ends in axes units """
+    """
+    modified from https://stackoverflow.com/questions/43258638/ as alternate
+    to the one provided through matplotlib
+
+    size: length of bar in data units
+    extent : height of bar ends in axes units
+    """
+
     def __init__(self, size=1, extent = 0.03, label="", loc=2, ax=None,
                  pad=0.4, borderpad=0.5, ppad = 0, sep=2, prop=None,
                  label_color=None,
@@ -347,10 +393,18 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
         return raw_dim_names.get(dim_name)
 
     # Next we will look at the listed symmetry_points to try to infer the appropriate way to display the axis
-    return dim_name
+    return titlecase(dim_name.replace('_', ' '))
 
 
 def fancy_labels(ax_or_ax_set, data=None):
+    """
+    Attaches better display axis labels for all axes that can be traversed in the
+    passed figure or axes.
+
+    :param ax_or_ax_set:
+    :param data:
+    :return:
+    """
     if isinstance(ax_or_ax_set, (list, tuple, set, np.ndarray)):
         for ax in ax_or_ax_set:
             fancy_labels(ax)

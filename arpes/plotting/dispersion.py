@@ -296,7 +296,7 @@ def labeled_fermi_surface(data, title=None, ax=None, hold=False,
             ax.plot(*coords, marker='.', color=marker_color)
             ax.annotate(label_for_symmetry_point(point_name), coords, color=marker_color,
                         xycoords='data', textcoords='offset points', xytext=(0, -10),
-                        va='top', ha='center')
+                        va='top', ha='center', fontsize=14)
 
     if out is not None:
         plt.savefig(path_for_plot(out), dpi=400)

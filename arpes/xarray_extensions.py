@@ -1439,6 +1439,13 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
         return plotting.spin_polarized_spectrum(self._obj, **kwargs)
 
     @property
+    def is_spatial(self):
+        try:
+            return self.spectrum.S.is_spatial
+        except Exception as e:
+            return False
+
+    @property
     def spectrum(self) -> Optional[xr.DataArray]:
         spectrum = None
         if 'spectrum' in self._obj.data_vars:
@@ -1489,7 +1496,9 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
            iii. For delay scans:
              1. Fermi location as a function of scan DoF, integrated over phi
              2. Subtraction scans
-
+        4. For spatial scans:
+           i. energy/angle integrated spatial maps with subsequent measurements indicated
+           2. energy/angle integrated FS spatial maps with subsequent measurements indicated
 
         :param kwargs:
         :return:
@@ -1539,6 +1548,10 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
           2. Subtraction scans
         """
         self.spectrum.S.reference_plot(pattern=prefix + '{}.png', **kwargs)
+
+        if self.is_spatial:
+            referenced = self.referenced_scans
+
         if 'cycle' in self._obj.coords:
             integrated_over_scan = self._obj.sum(*list(self.spectrum_degrees_of_freedom))
             integrated_over_scan.S.spectrum.S.reference_plot(pattern=prefix + 'sum_spec_DoF_{}.png', **kwargs)
