@@ -99,7 +99,7 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
 
     raw_coords = {
         'phi': arr.coords['phi'].values - arr.S.phi_offset,
-        'polar': (arr.coords['polar'].values or 0) - arr.S.polar_offset,
+        'polar': (0 if arr.coords['polar'] is None else arr.coords['polar'].values) - arr.S.polar_offset,
         'hv': arr.coords['hv'],
     }
 
