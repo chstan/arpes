@@ -8,6 +8,13 @@ __all__ = ('to_intensity_polarization',)
 
 
 def to_intensity_polarization(data: DataType):
+    """
+    Converts to intensity and polarization, rather than the spin components.
+
+    TODO, make this also work with the timing signals
+    :param data:
+    :return:
+    """
     data = normalize_to_dataset(data)
 
     assert('up' in data.data_vars and 'down' in data.data_vars)
