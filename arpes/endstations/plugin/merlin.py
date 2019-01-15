@@ -1,4 +1,5 @@
 import typing
+import numpy as np
 import xarray as xr
 import re
 from pathlib import Path
@@ -25,6 +26,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         'temperature_sensor_b': 'temp',
         'Cryostat Temp A': 'temp_cryotip',
         'Cryostat Temp B': 'temp',
+        'BL Energy': 'hv',
     }
 
     def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict=None):
@@ -55,3 +57,19 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
                 pass
 
         return super().concatenate_frames(frames)
+
+    def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
+        deg_to_rad_coords = {'polar', 'phi'}
+
+        for c in deg_to_rad_coords:
+            if c in data.dims:
+                data.coords[c] = data.coords[c] * np.pi / 180
+
+        deg_to_rad_attrs = {'theta', 'polar', 'chi'}
+        for angle_attr in deg_to_rad_attrs:
+            if angle_attr in data.attrs:
+                data.attrs[angle_attr] = float(data.attrs[angle_attr]) * np.pi / 180
+
+        data = super().postprocess_final(data, scan_desc)
+
+        return data

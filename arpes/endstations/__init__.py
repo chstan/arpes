@@ -235,13 +235,14 @@ class SESEndstation(EndstationBase):
 
         built_coords = dict(zip(dimension_labels, scaling))
 
-        phi_to_rad_coords = {'polar', 'phi'}
+        deg_to_rad_coords = {'polar', 'phi'}
+
         # the hemisphere axis is handled below
-        built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
+        built_coords = {k: c * (numpy.pi / 180) if k in deg_to_rad_coords else c
                         for k, c in built_coords.items()}
 
-        rad_to_phi_attrs = {'theta', 'polar', 'chi'}
-        for angle_attr in rad_to_phi_attrs:
+        deg_to_rad_attrs = {'theta', 'polar', 'chi'}
+        for angle_attr in deg_to_rad_attrs:
             if angle_attr in attrs:
                 attrs[angle_attr] = float(attrs[angle_attr]) * numpy.pi / 180
 
