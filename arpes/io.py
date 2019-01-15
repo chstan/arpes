@@ -44,7 +44,11 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
     if built_axis_name is None:
         built_axis_name = attr_or_axis
 
-    loaded = [simple_load(f) for f in list_of_files]
+    if len(list_of_files) == 0:
+        raise ValueError('Must supply at least one file to stitch')
+
+    loaded = [f if isinstance(f, (xr.DataArray, xr.Dataset)) else simple_load(f)
+              for f in list_of_files]
 
     for f in loaded:
         value = None
