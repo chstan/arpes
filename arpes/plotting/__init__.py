@@ -13,6 +13,7 @@ from .stack_plot import *
 from .spin import *
 from .tarpes import *
 from .visualize_3d import *
+from .spatial import *
 
 from .movie import *
 

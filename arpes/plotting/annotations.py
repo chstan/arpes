@@ -47,13 +47,15 @@ def annotate_point(ax, location, label, delta=None, **kwargs):
     if delta is None:
         delta = (-0.05, 0.05,)
 
+    c = kwargs.pop('color', 'red')
+
     if len(delta) == 2:
         dx, dy = tuple(delta)
         x, y = tuple(location)
-        ax.plot([x], [y], 'o', c='red')
-        ax.text(x + dx, y + dy, label, color='red', **kwargs)
+        ax.plot([x], [y], 'o', c=c)
+        ax.text(x + dx, y + dy, label, color=c, **kwargs)
     else:
         dx, dy, dz = tuple(delta)
         x, y, z = tuple(location)
-        ax.plot([x], [y], [z], 'o', c='red')
-        ax.text(x + dx, y + dy, z + dz, label, color='red', **kwargs)
+        ax.plot([x], [y], [z], 'o', c=c)
+        ax.text(x + dx, y + dy, z + dz, label, color=c, **kwargs)
