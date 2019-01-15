@@ -34,7 +34,7 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
     new_dim_order.remove('time')
     new_dim_order = ['time'] + new_dim_order
     dataarray = dataarray.transpose(*new_dim_order)
-    new_dim_order[0] = 'kinetic'
+    new_dim_order[0] = 'eV'
 
     timing = dataarray.coords['time'].values
     assert(timing[1] > timing[0])
@@ -71,7 +71,7 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
 
     new_coords = dict(dataarray.coords)
     del new_coords['time']
-    new_coords['kinetic'] = kinetic_energy_axis
+    new_coords['eV'] = kinetic_energy_axis
 
     # Put provenance here
 
@@ -154,25 +154,29 @@ def convert_SToF_to_energy(dataset: xr.Dataset):
     e_min, e_max = 0.1, 10.
 
     # TODO, we can better infer a reasonable gridding here
-    spacing = 0.005
+    spacing = dataset.attrs.get('dE', 0.005)
     ke_axis = np.linspace(e_min, e_max, int((e_max - e_min) / spacing))
 
     drs = {k: v for k, v in dataset.data_vars.items() if 'time' in v.dims}
 
     new_dataarrays = [convert_to_kinetic_energy(dr, ke_axis) for dr in drs.values()]
 
-    for k in drs.keys():
-        old_dr = dataset[k]
-        del dataset[k]
-        dataset[old_dr.name + '_time'] = old_dr.rename(old_dr.name + '_time')
-
     for v in new_dataarrays:
-        dataset[v.name] = v
+        dataset[v.name.replace('t_', '')] = v
 
     return dataset
 
 
 def process_SToF(dataset: xr.Dataset):
+    """
+    This isn't the best unit conversion function because it doesn't properly
+    take into account the Jacobian of the coordinate conversion. This can
+    be fixed by multiplying each channel by the appropriate ammount, but it might still
+    be best to use the alternative method.
+
+    :param dataset:
+    :return:
+    """
     e_min = dataset.attrs.get('E_min', 1)
     e_max = dataset.attrs.get('E_max', 10)
     de = dataset.attrs.get('dE', 0.01)
@@ -180,8 +184,10 @@ def process_SToF(dataset: xr.Dataset):
 
     dataset = transform_dataarray_axis(
         build_KE_coords_to_time_coords(dataset, ke_axis),
-        'time', 'kinetic', ke_axis, dataset, lambda x: x,
+        'time', 'eV', ke_axis, dataset, lambda x: x,
     )
+
+    dataset = dataset.rename({'t_up': 'up', 't_down': 'down'})
 
     if 'up' in dataset.data_vars:
         # apply the sherman function corrections
