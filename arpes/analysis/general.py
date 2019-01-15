@@ -135,6 +135,7 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
             for datavar in data.data_vars
         }
         new_coords = {}
+
         for var in new_vars.values():
             new_coords.update(var.coords)
         return xr.Dataset(data_vars=new_vars, coords=new_coords, attrs=data.attrs)
@@ -152,6 +153,9 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
     if isinstance(reduction, int):
         reduction = {d: reduction for d in data.dims}
 
+    if reduction is None:
+        reduction = {}
+
     # we standardize by computing reduction from shape is shape was supplied.
     if shape is not None:
         reduction = {k: len(data.coords[k]) // v for k, v in shape.items()}
@@ -159,6 +163,9 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
     # since we are not interpolating, we need to clip each dimension so that the reduction
     # factor evenly divides the real shape of the input data.
     slices = defaultdict(lambda: slice(None))
+
+    if len(data.dims) == 0:
+        return data
 
     for dim, reduction_factor in reduction.items():
         remainder = len(data.coords[dim]) % reduction_factor
