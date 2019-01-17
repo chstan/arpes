@@ -1220,6 +1220,18 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 
         return plotting.fancy_dispersion(self._obj, **kwargs)
 
+    def nan_to_num(self, x=0):
+        """
+        xarray version of numpy.nan_to_num
+        :param x:
+        :return:
+        """
+
+        data = self._obj.copy(deep=True)
+        assert(isinstance(data, xr.DataArray))
+        data.values[np.isnan(data.values)] = x
+        return data
+
     def reference_plot(self, **kwargs):
         if self.spectrum_type == 'map':
             return self._referenced_scans_for_map_plot(**kwargs)
