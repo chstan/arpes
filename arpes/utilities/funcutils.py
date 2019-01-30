@@ -1,7 +1,46 @@
 import functools
+import xarray as xr
 import time
 
-__all__ = ['Debounce']
+from arpes.typing import DataType
+
+__all__ = ['Debounce', 'lift_dataarray_to_generic']
+
+
+def lift_dataarray_to_generic(f):
+    """
+    A functorial decorator that lifts functions with the signature
+
+    (xr.DataArray, *args, **kwargs) -> xr.DataArray
+
+    to one with signature
+
+    A = typing.Union[xr.DataArray, xr.Dataset]
+    (A, *args, **kwargs) -> A
+
+    i.e. one that will operate either over xr.DataArrays or xr.Datasets.
+    :param f:
+    :return:
+    """
+    @functools.wraps(f)
+    def func_wrapper(data: DataType, *args, **kwargs):
+        if isinstance(data, xr.DataArray):
+            return f(data, *args, **kwargs)
+        else:
+            assert(isinstance(data, xr.Dataset))
+            new_vars = {
+                datavar: f(data[datavar], *args, **kwargs) for datavar in data.data_vars
+            }
+
+            for var_name, var in new_vars.items():
+                if isinstance(var, xr.DataArray) and var.name is None:
+                    var.name = var_name
+
+            merged = xr.merge(new_vars.values())
+            return merged.assign_attrs(data.attrs)
+
+    return func_wrapper
+
 
 class Debounce(object):
     def __init__(self, period):
