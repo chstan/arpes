@@ -1255,6 +1255,28 @@ NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 class GenericAccessorTools(object):
     _obj = None
 
+    def drop_nan(self):
+        assert(len(self._obj.dims) == 1)
+
+        mask = np.logical_not(np.isnan(self._obj.values))
+        return self._obj.isel(**dict([[self._obj.dims[0], mask]]))
+
+    def filter_vars(self, f):
+        return xr.Dataset(data_vars={
+            k: v for k, v in self._obj.data_vars.items() if f(v, k)
+        }, attrs=self._obj.attrs)
+
+    def var_startswith(self, fragment):
+        return self.filter_vars(lambda _, k: k.startswith(fragment))
+
+    def var_contains(self, fragment):
+        """
+        Filters a dataset's variables based on whether the name contains the fragment
+        :param fragment:
+        :return:
+        """
+        return self.filter_vars(lambda _, k: fragment in k)
+
     def coordinatize(self, as_coordinate_name):
         """
         Remarkably, `coordinatize is a word`
@@ -1452,6 +1474,9 @@ class ARPESDatasetFitToolAccessor(object):
 
     def __init__(self, xarray_obj: DataType):
         self._obj = xarray_obj
+
+    def eval(self, *args, **kwargs):
+        return self._obj.results.T.map(lambda x: x.eval(*args, **kwargs))
 
     def show(self):
         fit_diagnostic_tool = FitCheckTool()
