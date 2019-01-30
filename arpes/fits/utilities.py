@@ -17,7 +17,7 @@ TypeIterable = typing.Union[typing.List[type], typing.Tuple[type]]
 
 def broadcast_model(model_cls: typing.Union[type, TypeIterable],
                     data: DataType, broadcast_dims, constraints=None, progress=True, dataset=True,
-                    weights=None):
+                    weights=None, safe=False):
     if constraints is None:
         constraints = {}
 
@@ -38,7 +38,7 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
 
     new_params = None
     if isinstance(model_cls, (list, tuple)):
-        models = [m(prefix='{}_'.format(ascii_lowercase[i])) for i, m in enumerate(model_cls)]
+        models = [m(prefix='{}_'.format(ascii_lowercase[i]), nan_policy='omit') for i, m in enumerate(model_cls)]
         if isinstance(constraints, (list, tuple)):
             for cs, m in zip(constraints, models):
                 for name, constraints_for_name in cs.items():
@@ -59,13 +59,25 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting',
                                              total=n_fits):
         cut_data = data.sel(**cut_coords)
+        if safe:
+            cut_data = cut_data.T.drop_nan()
+
         weights_for = None
         if weights is not None:
             weights_for = weights.sel(**cut_coords)
-        fit_result = model.guess_fit(cut_data, params=constraints, weights=weights_for)
+
+        try:
+            fit_result = model.guess_fit(cut_data, params=constraints, weights=weights_for)
+        except ValueError:
+            fit_result = None
 
         template.loc[cut_coords] = fit_result
-        residual.loc[cut_coords] = fit_result.residual if fit_result is not None else None
+
+        try:
+            residual.loc[cut_coords] = fit_result.residual if fit_result is not None else None
+        except ValueError as e:
+            if not safe:
+                raise e
 
     if dataset:
         return xr.Dataset({
