@@ -10,6 +10,7 @@ from arpes.utilities.normalize import normalize_to_spectrum
 from scipy.ndimage import geometric_transform
 
 from arpes.provenance import provenance
+from arpes.utilities import lift_dataarray_to_generic
 
 __all__ = ('flip_axis', 'normalize_dim', 'dim_normalizer', 'transform_dataarray_axis',
            'normalize_total', 'sort_axis',)
@@ -63,6 +64,7 @@ def soft_normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False, amp_limit=
 
     return to_return
 
+@lift_dataarray_to_generic
 def normalize_dim(arr: DataType, dim_or_dims, keep_id=False):
     """
     Normalizes the intensity so that all values along arr.sum(dims other than those in ``dim_or_dims``)
@@ -71,8 +73,6 @@ def normalize_dim(arr: DataType, dim_or_dims, keep_id=False):
     :param dim_name:
     :return:
     """
-
-    arr = normalize_to_spectrum(arr)
 
     dims = dim_or_dims
     if isinstance(dim_or_dims, str):
