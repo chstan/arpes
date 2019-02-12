@@ -23,7 +23,7 @@ class SpinToFEndstation(EndstationBase):
     ALIASES = ['ALG-SToF', 'SToF', 'Spin-ToF', 'ALG-SpinToF']
     SKIP_ATTR_FRAGMENTS = {
         'MMX', 'TRVAL', 'TRDELT', 'COMMENT', 'OFFSET', 'SMOTOR', 'TUNIT', 'PMOTOR',
-        'LMOTOR', 'TDESC', 'NAXIS', 'TTYPE', 'TFORM', 'XTENSION', 'BITPIX', 'TDELT',
+        'TDESC', 'NAXIS', 'TTYPE', 'TFORM', 'XTENSION', 'BITPIX', 'TDELT',
         'TRPIX',
     }
 
@@ -42,6 +42,18 @@ class SpinToFEndstation(EndstationBase):
         'Energy_Target_Down': 'down',
         'Photocurrent_Up': 'photocurrent_up',
         'Photocurrent_Down': 'photocurrent_down',
+        'Phi': 'phi',
+    }
+
+    RENAME_KEYS = {
+        'LMOTOR0': 'x',
+        'LMOTOR1': 'y',
+        'LMOTOR2': 'z',
+        'LMOTOR3': 'polar',
+        'LMOTOR4': 'tilt',
+        'LMOTOR5': 'sample-phi',
+        'LMOTOR6': 'delay',
+        'Phi': 'phi',
     }
 
     def load_SToF_hdf5(self, scan_desc: dict=None, **kwargs):
@@ -101,6 +113,8 @@ class SpinToFEndstation(EndstationBase):
                 del scan_desc[dropped_attr]
 
         coords, dimensions, spectrum_shape = find_clean_coords(hdu, scan_desc)
+        dimensions = {k: [SpinToFEndstation.RENAME_KEYS.get(n, n) for n in v] for k, v in dimensions.items()}
+        coords = rename_keys(coords, SpinToFEndstation.RENAME_KEYS)
 
         columns = hdu.columns
 
@@ -116,13 +130,11 @@ class SpinToFEndstation(EndstationBase):
         # it would slightly improve accuracy though
         spectra_names = [name for name in take_columns if name in columns.names]
 
-        skip_frags = {'MMX', 'TRVAL', 'TRDELT', 'COMMENT', 'OFFSET', 'SMOTOR', 'TUNIT', 'PMOTOR',
-                      'LMOTOR', 'TDESC', 'NAXIS', 'TTYPE', 'TFORM', 'XTENSION', 'BITPIX', 'TDELT',
-                      'TRPIX', }
-        skip_predicates = {lambda k: any(s in k for s in skip_frags), }
+        skip_predicates = {lambda k: any(s in k for s in self.SKIP_ATTR_FRAGMENTS), }
 
         scan_desc = {k: v for k, v in scan_desc.items()
                     if not any(pred(k) for pred in skip_predicates)}
+        scan_desc = rename_keys(scan_desc, SpinToFEndstation.RENAME_KEYS)
 
         # TODO, we should try to unify this with the FITS file loader, but there are a few current inconsistencies
         data_vars = {}
@@ -170,7 +182,7 @@ class SpinToFEndstation(EndstationBase):
 
             data_vars[spectrum_name] = (dimensions[spectrum_name], resized_data, scan_desc,)
 
-        data_vars = rename_keys(data_vars, self.COLUMN_RENAMINGS)
+        data_vars = rename_keys(data_vars, SpinToFEndstation.COLUMN_RENAMINGS)
         if 'beam_current' in data_vars and np.all(data_vars['beam_current'][1] == 0):
             # Wasn't taken at a beamline
             del data_vars['beam_current']
