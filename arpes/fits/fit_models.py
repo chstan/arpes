@@ -14,7 +14,7 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel','GStepBModel', 'QuadraticModel'
            'gaussian_convolve', 'TwoGaussianModel', "TwoLorModel")
 
 class XModelMixin(lf.Model):
-    def guess_fit(self, data, params=None, weights=None, **kwargs):
+    def guess_fit(self, data, params=None, weights=None, debug=False, **kwargs):
         """
         Params allows you to pass in hints as to what the values and bounds on parameters
         should be. Look at the lmfit docs to get hints about structure
@@ -46,7 +46,9 @@ class XModelMixin(lf.Model):
         try:
             result = super().fit(real_data, guessed_params, x=x, weights=real_weights, **kwargs)
         except Exception as e:
-            pass # Hook for PDB
+            if debug:
+                import pdb
+                pdb.post_mortem(e.__traceback__)
         finally:
             return result
 

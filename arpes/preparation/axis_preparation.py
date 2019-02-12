@@ -12,7 +12,18 @@ from scipy.ndimage import geometric_transform
 from arpes.provenance import provenance
 
 __all__ = ('flip_axis', 'normalize_dim', 'dim_normalizer', 'transform_dataarray_axis',
-           'normalize_total')
+           'normalize_total', 'sort_axis',)
+
+
+def sort_axis(data: xr.DataArray, axis_name):
+    assert(isinstance(data, xr.DataArray))
+    copied = data.copy(deep=True)
+    coord = data.coords[axis_name].values
+    order = np.argsort(coord)
+    print(order)
+    copied.values = np.take(copied.values, order, axis=list(data.dims).index(axis_name))
+    copied.coords[axis_name] = np.sort(copied.coords[axis_name])
+    return copied
 
 
 def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):

@@ -18,6 +18,7 @@ import pint
 ureg = pint.UnitRegistry()
 
 # ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES, or via `setup`
+DATA_PATH = None
 ARPES_ROOT = os.getenv('ARPES_ROOT')
 SOURCE_ROOT = str(Path(__file__).parent)
 assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT environment "

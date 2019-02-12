@@ -30,9 +30,13 @@ def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, 
         if len(data.dims) == 3:
             if dim is None:
                 dim = data.dims[-1]
-            return data.T.map_axes(dim, lambda d: savitzky_golay(d, window_size, order, deriv, rate))
+            return data.T.map_axes(dim, lambda d, _: savitzky_golay(d, window_size, order, deriv, rate))
 
-        transformed_data = savitzky_golay_2d(data.values, window_size, order, derivative=deriv)
+        if len(data.dims) == 2:
+            if dim is None:
+                transformed_data = savitzky_golay_2d(data.values, window_size, order, derivative=deriv)
+            else:
+                return data.T.map_axes(dim, lambda d, _: savitzky_golay(d, window_size, order, deriv=deriv or 0, rate=rate, dim=None))
 
     return xr.DataArray(transformed_data, data.coords, data.dims, attrs=data.attrs.copy())
 

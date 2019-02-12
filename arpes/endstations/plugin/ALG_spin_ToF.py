@@ -40,6 +40,8 @@ class SpinToFEndstation(EndstationBase):
         'Time_Target_Down': 't_down',
         'Energy_Target_Up': 'up',
         'Energy_Target_Down': 'down',
+        'Photocurrent_Up': 'photocurrent_up',
+        'Photocurrent_Down': 'photocurrent_down',
     }
 
     def load_SToF_hdf5(self, scan_desc: dict=None, **kwargs):
@@ -103,7 +105,7 @@ class SpinToFEndstation(EndstationBase):
         columns = hdu.columns
 
         spin_column_names = {'targetMinus', 'targetPlus', 'Time_Target_Up', 'Time_Target_Down', 'Energy_Target_Up',
-                             'Energy_Target_Down'}
+                             'Energy_Target_Down', 'Photocurrent_Up', 'Photocurrent_Down'}
 
         is_spin_resolved = any(cname in columns.names for cname in spin_column_names)
         spin_columns = ['Current' 'TempA', 'TempB', 'ALS_Beam_mA'] + list(spin_column_names)
@@ -113,7 +115,6 @@ class SpinToFEndstation(EndstationBase):
         # We could do our own spectrum conversion too, but that would be more annoying
         # it would slightly improve accuracy though
         spectra_names = [name for name in take_columns if name in columns.names]
-        # }, column_renamings)
 
         skip_frags = {'MMX', 'TRVAL', 'TRDELT', 'COMMENT', 'OFFSET', 'SMOTOR', 'TUNIT', 'PMOTOR',
                       'LMOTOR', 'TDESC', 'NAXIS', 'TTYPE', 'TFORM', 'XTENSION', 'BITPIX', 'TDELT',
@@ -123,8 +124,51 @@ class SpinToFEndstation(EndstationBase):
         scan_desc = {k: v for k, v in scan_desc.items()
                     if not any(pred(k) for pred in skip_predicates)}
 
-        data_vars = {k: (dimensions[k], hdu.data[k].reshape(spectrum_shape[k]), scan_desc)
-                     for k in spectra_names}
+        # TODO, we should try to unify this with the FITS file loader, but there are a few current inconsistencies
+        data_vars = {}
+
+        for spectrum_name in spectra_names:
+            column_shape = spectrum_shape[spectrum_name]
+            data_for_resize = hdu.data.columns[spectrum_name].array
+
+            try:
+                # best possible case is that we have identically all of the data
+                resized_data = data_for_resize.reshape(column_shape)
+            except ValueError:
+                # if we stop scans early, the header is already written and so the size of the data will be small along
+                # the experimental axes
+                rest_column_shape = column_shape[1:]
+                n_per_slice = int(np.prod(rest_column_shape))
+                total_shape = data_for_resize.shape
+                total_n = np.prod(total_shape)
+
+                n_slices = total_n // n_per_slice
+
+                if (total_n // n_per_slice != total_n / n_per_slice):
+                    # the last slice was in the middle of writing when something hit the fan
+                    # we need to infer how much of the data to read, and then repeat the above
+                    # we need to cut the data
+
+                    # This can happen when the labview crashes during data collection,
+                    # we use column_shape[1] because of the row order that is used in the FITS file
+                    data_for_resize = data_for_resize[0:(total_n // n_per_slice) * column_shape[1]]
+                    warnings.warn(
+                        'Column {} was in the middle of slice when DAQ stopped. Throwing out incomplete slice...'.format(
+                            spectrum_name))
+
+                column_shape = list(column_shape)
+                column_shape[0] = n_slices
+
+                try:
+                    resized_data = data_for_resize.reshape(column_shape)
+                except Exception:
+                    # we should probably zero pad in the case where the slices are not the right size
+                    continue
+
+                altered_dimension = dimensions[spectrum_name][0]
+                coords[altered_dimension] = coords[altered_dimension][:n_slices]
+
+            data_vars[spectrum_name] = (dimensions[spectrum_name], resized_data, scan_desc,)
 
         data_vars = rename_keys(data_vars, self.COLUMN_RENAMINGS)
         if 'beam_current' in data_vars and np.all(data_vars['beam_current'][1] == 0):

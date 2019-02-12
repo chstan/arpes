@@ -44,7 +44,7 @@ REQUIRED = [
     'igor==0.3.1', # patched on GitHub
     'xarray==0.9.6',
     'h5py==2.7.0',
-    'netCDF4',
+    'netCDF4==1.3.0', # some dependency bugs here and in h5py, so fix the versions
     'colorcet',
 
     # Analysis

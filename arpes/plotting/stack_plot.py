@@ -18,7 +18,7 @@ __all__ = ('stack_dispersion_plot', 'flat_stack_plot',)
 
 @save_plot_provenance
 def flat_stack_plot(data: DataType, stack_axis=None, fermi_level=True, cbarmap=None, ax=None,
-                    title=None, out=None, **kwargs):
+                    mode='line', title=None, out=None, transpose=False, **kwargs):
 
     data = normalize_to_spectrum(data)
     if len(data.dims) != 2:
@@ -54,11 +54,26 @@ def flat_stack_plot(data: DataType, stack_axis=None, fermi_level=True, cbarmap=N
             pass
 
     if 'eV' in data.dims and 'eV' != stack_axis and fermi_level:
-        ax.axvline(0, color='red', alpha=0.8, linestyle='--', linewidth=1)
+        if transpose:
+            ax.axhline(0, color='red', alpha=0.8, linestyle='--', linewidth=1)
+        else:
+            ax.axvline(0, color='red', alpha=0.8, linestyle='--', linewidth=1)
 
     # meat of the plotting
     for coord_dict, marginal in list(data.T.iterate_axis(stack_axis)):
-        marginal.plot(ax=ax, color=cmap(coord_dict[stack_axis]), **kwargs)
+        if transpose:
+            if mode == 'line':
+                ax.plot(marginal.values, marginal.coords[marginal.dims[0]].values, color=cmap(coord_dict[stack_axis]), **kwargs)
+            else:
+                assert(mode == 'scatter')
+                raise NotImplementedError()
+        else:
+            if mode == 'line':
+                marginal.plot(ax=ax, color=cmap(coord_dict[stack_axis]), **kwargs)
+            else:
+                assert(mode == 'scatter')
+                raise NotImplementedError()
+
 
     ax.set_xlabel(label_for_dim(data, ax.get_xlabel()))
     ax.set_ylabel('Spectrum Intensity (arb).')

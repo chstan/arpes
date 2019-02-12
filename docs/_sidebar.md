@@ -15,6 +15,7 @@
           - [Custom `.S` Functionality](/dot-S-functionality)
           - [Custom `.T` Functionality](/dot-T-functionality)
       - [Curve Fitting](/curve-fitting)
+      - [K-space Conversion](/k-space-conversion)
       - [Fermi Edge Corrections](/fermi-edge-corrections)
       - [Interactive Analysis Tools](/interactive)
       - [Advanced Plotting](/advanced-plotting)
