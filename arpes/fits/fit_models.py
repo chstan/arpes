@@ -11,7 +11,7 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel','GStepBModel', 'QuadraticModel'
            'ExponentialDecayCModel', 'LorentzianModel', 'GaussianModel', 'VoigtModel',
            'ConstantModel', 'LinearModel', 'GStepBStandardModel', 'AffineBackgroundModel',
            'FermiDiracModel', 'BandEdgeBModel',
-           'gaussian_convolve',)
+           'gaussian_convolve', 'TwoGaussianModel', "TwoLorModel")
 
 class XModelMixin(lf.Model):
     def guess_fit(self, data, params=None, weights=None, **kwargs):
@@ -159,8 +159,14 @@ def exponential_decay_c(x, amp, tau, t0, const_bkg):
 def lorentzian(x, gamma, center, amplitude):
     return amplitude * (1/(2*np.pi))* gamma /((x-center)**2+(.5*gamma)**2)
 
+def twolorentzian(x, gamma, t_gamma, center, t_center, amp, t_amp, lin_bkg, const_bkg):
+    L1 = lorentzian(x, gamma, center, amp)
+    L2 = lorentzian(x, t_gamma, t_center, t_amp)
+    AB = affine_bkg(x, lin_bkg, const_bkg)
+    return L1 + L2 + AB
+
 def gstepb_mult_lorentzian(x, center=0, width=1, erf_amp=1, lin_bkg=0, const_bkg=0, gamma=1, lorcenter=0):
-    return gstepb(x, center, width, erf_amp, lin_bkg, const_bkg)*lorentzian(x, gamma, lorcenter)
+    return gstepb(x, center, width, erf_amp, lin_bkg, const_bkg)*lorentzian(x, gamma, lorcenter, 1)
 
 def fermi_dirac(x, center=0, width=0.05, scale=1):
     # Fermi edge
@@ -173,6 +179,16 @@ def fermi_dirac_bkg(x, center=0, width=0.05, lin_bkg=0, const_bkg=0, scale=1):
 def band_edge_bkg(x, center=0, width=0.05, amplitude=1, gamma=0.1, lor_center=0, offset=0, lin_bkg=0, const_bkg=0):
     # Lorentzian plus affine background multiplied into fermi edge with overall offset
     return (lorentzian(x, gamma, lor_center, amplitude) + lin_bkg * x + const_bkg) * fermi_dirac(x, center, width) + offset
+
+def lorentzian_affine(x, gamma=1, lor_center=0, amplitude=1, lin_bkg=0, const_bkg=0):
+    return (lorentzian(x, gamma, lor_center, amplitude) + lin_bkg * x + const_bkg) 
+
+def gaussian(x, center=0, sigma=1, amplitude=1):
+    return amplitude*np.exp(-(x-center)**2/(2*sigma**2))
+
+def twogaussian(x, center=0, t_center=0, width=1, t_width=1, amp=1, t_amp=1, lin_bkg=0, const_bkg=0):
+    return gaussian(x, center, width, amp) + gaussian(x, t_center, t_width, t_amp) + affine_bkg(x, lin_bkg, const_bkg)
+
 
 class FermiLorentzianModel(XModelMixin):
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
@@ -426,7 +442,71 @@ class AffineBackgroundModel(XModelMixin):
 
         return update_param_vals(pars, self.prefix, **kwargs)
 
+class TwoGaussianModel(XModelMixin):
+    """
+    A model for two gaussian functions with a linear background
+    """
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(twogaussian, **kwargs)
+
+        self.set_param_hint('amp', min=0.)
+        self.set_param_hint('width', min=0)
+        self.set_param_hint('t_amp', min=0.)
+        self.set_param_hint('t_width', min=0)
+        self.set_param_hint('lin_bkg', min=-10, max=10)
+        self.set_param_hint('const_bkg', min=-50, max=50)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%scenter' % self.prefix].set(value=0)
+        pars['%st_center' % self.prefix].set(value=0)
+        pars['%slin_bkg' % self.prefix].set(value=0)
+        pars['%sconst_bkg' % self.prefix].set(value=data.min())
+        pars['%swidth' % self.prefix].set(0.02)  # TODO we can do better than this
+        pars['%st_width' % self.prefix].set(0.02)
+        pars['%samp' % self.prefix].set(value=data.mean() - data.min())
+        pars['%st_amp' % self.prefix].set(value=data.mean() - data.min())
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
     
+class TwoLorModel(XModelMixin):
+    """
+    A model for two gaussian functions with a linear background
+    """
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(twolorentzian, **kwargs)
+
+        self.set_param_hint('amp', min=0.)
+        self.set_param_hint('gamma', min=0)
+        self.set_param_hint('t_amp', min=0.)
+        self.set_param_hint('t_gamma', min=0)
+        self.set_param_hint('lin_bkg', min=-10, max=10)
+        self.set_param_hint('const_bkg', min=-50, max=50)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%scenter' % self.prefix].set(value=0)
+        pars['%st_center' % self.prefix].set(value=0)
+        pars['%slin_bkg' % self.prefix].set(value=0)
+        pars['%sconst_bkg' % self.prefix].set(value=data.min())
+        pars['%sgamma' % self.prefix].set(0.02)  # TODO we can do better than this
+        pars['%st_gamma' % self.prefix].set(0.02)
+        pars['%samp' % self.prefix].set(value=data.mean() - data.min())
+        pars['%st_amp' % self.prefix].set(value=data.mean() - data.min())
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+
 class LorentzianModel(XModelMixin, lf.models.LorentzianModel):
     pass
 
@@ -437,6 +517,7 @@ class VoigtModel(XModelMixin, lf.models.VoigtModel):
 
 class GaussianModel(XModelMixin, lf.models.GaussianModel):
     pass
+
 
 
 class ConstantModel(XModelMixin, lf.models.ConstantModel):
