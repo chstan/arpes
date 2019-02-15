@@ -55,24 +55,28 @@ def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
     # to install regexes for particular endstations, if this is needed in the future it might be a good way
     # of preventing clashes where there is ambiguity in file naming scheme across endstations
     patterns = [
+        r'[a-zA-Z0-9_\w+]+scan_[0]*{}_[0-9][0-9][0-9]'.format(file),
+        r'[a-zA-Z0-9_\w+]+scan_[0]*{}'.format(file),
         r'[a-zA-Z0-9_\w]+_[0]+{}$'.format(file),
         r'[a-zA-Z0-9_\w]+_{}$'.format(file),
         r'[a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
         r'[a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file)
     ]
+
     patterns = [re.compile(m) for m in patterns]
 
     for dir in dir_options:
         try:
-            files = filter(lambda f: os.path.splitext(f)[1] in _TOLERATED_EXTENSIONS, os.listdir(dir))
-            for f in files:
-                if use_regex:
-                    for p in patterns:
+            files = list(filter(lambda f: os.path.splitext(f)[1] in _TOLERATED_EXTENSIONS, os.listdir(dir)))
+            if use_regex:
+                for p in patterns:
+                    for f in files:
                         m = p.match(os.path.splitext(f)[0])
                         if m is not None:
-                            return os.path.join(dir, f)
-
-                else:
+                            if m.string == os.path.splitext(f)[0]:
+                                return os.path.join(dir, f)
+            else:
+                for f in files:
                     if os.path.splitext(file)[0] == os.path.splitext(f)[0]:
                         return os.path.join(dir, f)
                     if allow_soft_match:
