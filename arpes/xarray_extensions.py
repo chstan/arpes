@@ -1427,15 +1427,14 @@ class GenericAccessorTools(object):
         
         if len(args):
             if len(args) == 1:
-                try:
-                    iter_check = iter(args[0])
-                    # if passed list or other iterable as argument
+                if not isinstance(args[0],str):
+                    # if passed list of strs as argument
                     result = [result[selected_names] for selected_names in args[0]]
-                except TypeError:
+                else:
                     # if passed single name as argument
                     result = result[args[0]]
             else:
-                # if passed several name arguments
+                # if passed several names as arguments
                 result = [result[selected_names] for selected_names in args]
             
         return result
