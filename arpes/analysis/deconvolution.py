@@ -1,6 +1,6 @@
 import numpy as np
 
-__all__ = ('deconvolve_ice')
+__all__ = ('deconvolve_ice',)
 
 def _convolve(original_data, convolution_kernel):
     conv_kern_norm = convolution_kernel / np.sum(convolution_kernel)
@@ -12,8 +12,16 @@ def _convolve(original_data, convolution_kernel):
     result = (convolved[n_offset:])[:n_points]
     return result
 
-# deconvolution by iterated-convolution extrapolation
 def deconvolve_ice(spectrum,psf,n_iterations=5,deg=None):
+    """Deconvolve a spectrum by a given point spread function.
+    
+    :param spectrum -- numpy.ndarray:
+    :param psf:
+    :param n_iterations -- the number of convolutions to use for the fit (default 5):
+    :param deg -- the degree of the fitting polynominal (default n_iterations-3):
+    :return numpy.ndarray:
+    """
+    
     if deg is None:
         deg = n_iterations - 3
     iteration_steps = list(range(1,n_iterations+1))
@@ -22,7 +30,7 @@ def deconvolve_ice(spectrum,psf,n_iterations=5,deg=None):
     color_list = np.linspace(0,0.9,n_iterations+1)[1:]
 
     for i in range(n_iterations-1):
-        iteration_list.append(convolve(iteration_list[-1],psf))
+        iteration_list.append(_convolve(iteration_list[-1],psf))
     iteration_list = np.asarray(iteration_list)
 
     restoration = spectrum*0
