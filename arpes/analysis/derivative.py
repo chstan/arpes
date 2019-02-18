@@ -47,25 +47,25 @@ def vector_diff(arr, delta, n=1):
     return arr[slice1] - arr[slice2]
 
 
-def minimum_gradient(data: DataType):
+def minimum_gradient(data: DataType,delta=1):
     arr = normalize_to_spectrum(data)
-    new = arr / gradient_modulus(arr)
+    new = arr / gradient_modulus(arr,delta=delta)
     new.values[np.isnan(new.values)] = 0
     return new
 
-def gradient_modulus(data: DataType):
+def gradient_modulus(data: DataType, delta=1):
     spectrum = normalize_to_spectrum(data)
     values = spectrum.values
     gradient_vector = np.zeros(shape=(8,) + values.shape)
 
-    gradient_vector[0,:-1,:] = vector_diff(values, (1, 0,))
-    gradient_vector[1,:,:-1] = vector_diff(values, (0, 1,))
-    gradient_vector[2,1:,:] = vector_diff(values, (-1, 0,))
-    gradient_vector[3,:,1:] = vector_diff(values, (0, -1,))
-    gradient_vector[4,:-1,:-1] = vector_diff(values, (1, 1,))
-    gradient_vector[5,:-1,1:] = vector_diff(values, (1, -1,))
-    gradient_vector[6,1:,:-1] = vector_diff(values, (-1, 1,))
-    gradient_vector[7,1:,1:] = vector_diff(values, (-1, -1,))
+    gradient_vector[0,:-delta,:] = vector_diff(values, (delta, 0,))
+    gradient_vector[1,:,:-delta] = vector_diff(values, (0, delta,))
+    gradient_vector[2,delta:,:] = vector_diff(values, (-delta, 0,))
+    gradient_vector[3,:,delta:] = vector_diff(values, (0, -delta,))
+    gradient_vector[4,:-delta,:-delta] = vector_diff(values, (delta, delta,))
+    gradient_vector[5,:-delta,delta:] = vector_diff(values, (delta, -delta,))
+    gradient_vector[6,delta:,:-delta] = vector_diff(values, (-delta, delta,))
+    gradient_vector[7,delta:,delta:] = vector_diff(values, (-delta, -delta,))
 
     data_copy = spectrum.copy(deep=True)
     data_copy.values = np.linalg.norm(gradient_vector, axis=0)

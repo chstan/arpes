@@ -1512,7 +1512,7 @@ class GenericAccessorTools(object):
 
         return dict(zip(dim_names, indexed_ranges))
 
-    def stride(self, generic_dim_names=True):
+    def stride(self, *args, generic_dim_names=True):
         indexed_coords = [self._obj.coords[d] for d in self._obj.dims]
         indexed_strides = [coord.values[1] - coord.values[0] for coord in indexed_coords]
 
@@ -1520,7 +1520,21 @@ class GenericAccessorTools(object):
         if generic_dim_names:
             dim_names = NORMALIZED_DIM_NAMES[:len(dim_names)]
 
-        return dict(zip(dim_names, indexed_strides))
+        result = dict(zip(dim_names, indexed_strides))
+        
+        if len(args):
+            if len(args) == 1:
+                if not isinstance(args[0],str):
+                    # if passed list of strs as argument
+                    result = [result[selected_names] for selected_names in args[0]]
+                else:
+                    # if passed single name as argument
+                    result = result[args[0]]
+            else:
+                # if passed several names as arguments
+                result = [result[selected_names] for selected_names in args]
+            
+        return result
 
     def shift_by(self, other, shift_axis=None, zero_nans=True, shift_coords=False):
         # for now we only support shifting by a one dimensional array

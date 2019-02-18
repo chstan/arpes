@@ -14,6 +14,9 @@ from arpes.fits import XModelMixin
 from arpes.constants import K_BOLTZMANN_EV_KELVIN
 from arpes.utilities import normalize_to_spectrum
 
+import xarray as xr
+import warnings
+
 __all__ = ('normalize_by_fermi_dirac', 'determine_broadened_fermi_distribution', 'AffineBroadenedFD',
            'symmetrize')
 
@@ -157,10 +160,70 @@ def normalize_by_fermi_dirac(data: DataType, reference_data: DataType=None, plot
     divided.coords['eV'].values = divided.coords['eV'].values - broadening_fit.params['fd_center'].value
     return divided
 
-
+"""
 def symmetrize(data: DataType):
     data = normalize_to_spectrum(data).S.transpose_to_front('eV')
 
+    above = data.sel(eV=slice(0, None))
+    below = data.sel(eV=slice(None, 0)).copy(deep=True)
+
+    l = len(above.coords['eV'])
+
+    zeros = below.values * 0
+    print(zeros.shape)
+    zeros[-l:] = above.values[::-1]
+
+    below.values = below.values + zeros
+
+    return below
+"""
+
+def _shift_energy_interpolate(data: DataType,shift=None):
+    if shift is not None:
+        pass
+        # raise NotImplementedError("arbitrary shift not yet implemented")
+        
+    data = normalize_to_spectrum(data).S.transpose_to_front('eV')
+    
+    new_data = data.copy(deep=True)
+    new_axis = new_data.coords['eV']
+    new_values = new_data.values * 0
+    
+    if shift is None:
+        closest_to_zero = data.coords['eV'].sel(eV=0,method='nearest')
+        shift = -closest_to_zero
+    
+    stride = data.T.stride('eV',generic_dim_names=False)
+    
+    if np.abs(shift) >= stride:
+        n_strides = int(shift / stride)
+        new_axis = new_axis + n_strides * stride
+        
+        shift = shift - stride * n_strides
+    
+    new_axis = new_axis + shift
+    
+    weight = float(shift / stride)
+    
+    new_values = new_values + data.values * (1 - weight)
+    if shift > 0:
+        new_values[1:] = new_values[1:] + data.values[:-1] * weight
+    if shift < 0:
+        new_values[:-1] = new_values[:-1] + data.values[1:] * weight
+    
+    new_data.coords['eV'] = new_axis
+    new_data.values = new_values
+    
+    return new_data
+
+def symmetrize(data: DataType,subpixel=False,full_spectrum=False):
+    data = normalize_to_spectrum(data).S.transpose_to_front('eV')
+    
+    if subpixel or full_spectrum:
+        data = _shift_energy_interpolate(data)
+
+    new_data = data * 0
+    
     above = data.sel(eV=slice(0, None))
     below = data.sel(eV=slice(None, 0)).copy(deep=True)
 
@@ -171,4 +234,19 @@ def symmetrize(data: DataType):
 
     below.values = below.values + zeros
 
-    return below
+    if full_spectrum:
+        if not subpixel:
+            warnings.warn("full spectrum symmetrization uses subpixel correction")
+            
+        full_data = below.copy(deep=True)
+
+        new_above = full_data.copy(deep=True)[::-1]
+        new_above.coords['eV'] = (new_above.coords['eV'] * -1)
+
+        full_data = xr.concat([full_data,new_above[1:]],dim='eV')
+        
+        result = full_data
+    else:
+        result = below
+        
+    return result
