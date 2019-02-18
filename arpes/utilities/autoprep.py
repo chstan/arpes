@@ -17,6 +17,11 @@ __all__ = ('prepare_raw_files',)
 def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quiet=False, export=False, **kwargs):
     import arpes.xarray_extensions
 
+    stop_debug = False
+    if debug == 'first':
+        stop_debug = True
+        debug = True
+
     arpes.config.attempt_determine_workspace(workspace)
     assert(isinstance(arpes.config.CONFIG['WORKSPACE'], dict))
     workspace_path = arpes.config.CONFIG['WORKSPACE']['path']
@@ -57,6 +62,9 @@ def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quie
                         save_dataset(data, force=True)
                 except Exception as e:
                     if debug:
+                        if stop_debug:
+                            debug = False
+
                         import pdb
                         pdb.post_mortem(e.__traceback__)
                     else:
