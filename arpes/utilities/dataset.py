@@ -59,6 +59,8 @@ def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
         r'[a-zA-Z0-9_\w+]+scan_[0]*{}'.format(file),
         r'[a-zA-Z0-9_\w]+_[0]+{}$'.format(file),
         r'[a-zA-Z0-9_\w]+_{}$'.format(file),
+        r'[a-zA-Z0-9_\w]+{}$'.format(file),
+        r'[a-zA-Z0-9_\w]+[0]{}$'.format(file),
         r'[a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
         r'[a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file)
     ]
