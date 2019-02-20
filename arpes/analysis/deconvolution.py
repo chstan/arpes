@@ -56,31 +56,64 @@ def deconvolve_ice(data: DataType,psf,n_iterations=5,deg=None):
         result.values = deconv
     return result
 
-def deconvolve_rl(data: DataType,psf,n_iterations=50):
+def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None):
     """Deconvolves data by a given point spread function using the Richardson-Lucy method.
     
     :param data:
     :param psf:
     :param n_iterations -- the number of convolutions to use for the fit (default 50):
+    :param axis:
     :return DataArray or numpy.ndarray -- based on input type:
     """
     
     arr = normalize_to_spectrum(data)
     if type(data) is np.ndarray:
+        # only handles one dimension
+        if len(data.shape) > 1:
+            raise NotImplementedError
         pass
     else:
         arr = arr.values
-    
-    u = [arr]
-    
-    for i in range(n_iterations):
-        c = _convolve(u[-1],psf)
-        u.append(u[-1] * _convolve(arr/c,psf))
-    
-    if type(data) is np.ndarray:
-        result = u[-1]
-    else:
+
+    if type(data) is not np.ndarray and len(data.dims) > 1:
+        # choose axis to convolve for 1D convolution
+        if axis is not None:
+            if axis not in data.dims:
+                # problem!
+                raise KeyError
+        elif 'eV' in data.dims:
+            axis = 'eV'
+        else:
+            axis = data.dims[0]
+
         result = normalize_to_spectrum(data).copy(deep=True)
-        result.values = u[-1]
+
+        # not sure this is the best way to do this
+        if len(data.dims) == 2:
+            axis_index = list(data.dims).index(axis)
+            axis_other = list(data.dims)[1-axis_index]
+            
+            if axis_index == 0:
+                new_arr = arr.copy()
+                for i, (coord,edc) in enumerate(data.T.iterate_axis(axis_other)):
+                    new_arr[i] = deconvolve_rl(edc.spectrum.values,psf=psf,n_iterations=n_iterations)
+                result.values = new_arr
+            elif axis_index == 1:
+                new_arr = arr.copy().T
+                for i, (coord,edc) in enumerate(data.T.iterate_axis(axis_other)):
+                    new_arr[i] = deconvolve_rl(edc.spectrum.values,psf=psf,n_iterations=n_iterations)
+                result.values = new_arr.T
+    else:
+        u = [arr]
+
+        for i in range(n_iterations):
+            c = _convolve(u[-1],psf)
+            u.append(u[-1] * _convolve(arr/c,psf))
+
+        if type(data) is np.ndarray:
+            result = u[-1]
+        else:
+            result = normalize_to_spectrum(data).copy(deep=True)
+            result.values = u[-1]
     
     return result
