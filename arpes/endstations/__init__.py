@@ -5,7 +5,6 @@ import warnings
 
 import numpy as np
 import h5py
-import numpy
 import xarray as xr
 from astropy.io import fits
 
@@ -173,7 +172,7 @@ class SESEndstation(EndstationBase):
             scan_desc = copy.deepcopy(scan_desc)
             scan_desc['path'] = frame_path
             return self.load_SES_nc(scan_desc=scan_desc, **kwargs)
-
+        
         # it's given by SES PXT files
         pxt_data = negate_energy(read_single_pxt(frame_path))
         return xr.Dataset({'spectrum': pxt_data}, attrs=pxt_data.attrs)
@@ -226,7 +225,7 @@ class SESEndstation(EndstationBase):
         scaling = f['/' + primary_dataset_name].attrs['IGORWaveScaling'][-len(dimension_labels):]
         raw_data = f['/' + primary_dataset_name][:]
 
-        scaling = [numpy.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
+        scaling = [np.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
                    for i, scale in enumerate(scaling)]
 
         dataset_contents = {}
@@ -238,13 +237,13 @@ class SESEndstation(EndstationBase):
         deg_to_rad_coords = {'polar', 'phi'}
 
         # the hemisphere axis is handled below
-        built_coords = {k: c * (numpy.pi / 180) if k in deg_to_rad_coords else c
+        built_coords = {k: c * (np.pi / 180) if k in deg_to_rad_coords else c
                         for k, c in built_coords.items()}
 
         deg_to_rad_attrs = {'theta', 'polar', 'chi'}
         for angle_attr in deg_to_rad_attrs:
             if angle_attr in attrs:
-                attrs[angle_attr] = float(attrs[angle_attr]) * numpy.pi / 180
+                attrs[angle_attr] = float(attrs[angle_attr]) * np.pi / 180
 
         dataset_contents['spectrum'] = xr.DataArray(
             raw_data,
@@ -357,18 +356,18 @@ class FITSEndstation(EndstationBase):
         for coord_name in phi_to_rad_coords:
             if coord_name in attrs:
                 try:
-                    attrs[coord_name] = float(attrs[coord_name]) * (numpy.pi / 180)
+                    attrs[coord_name] = float(attrs[coord_name]) * (np.pi / 180)
                 except (TypeError, ValueError):
                     pass
             if coord_name in scan_desc:
                 try:
-                    scan_desc[coord_name] = float(scan_desc[coord_name]) * (numpy.pi / 180)
+                    scan_desc[coord_name] = float(scan_desc[coord_name]) * (np.pi / 180)
                 except (TypeError, ValueError):
                     pass
 
         data_vars = {}
 
-        built_coords = {k: c * (numpy.pi / 180) if k in phi_to_rad_coords else c
+        built_coords = {k: c * (np.pi / 180) if k in phi_to_rad_coords else c
                         for k, c in built_coords.items()}
 
         for column_name in hdu.columns.names:
@@ -396,9 +395,9 @@ class FITSEndstation(EndstationBase):
             except ValueError:
                 # if we could not resize appropriately, we will try to reify the shapes together
                 rest_column_shape = column_shape[1:]
-                n_per_slice = int(numpy.prod(rest_column_shape))
+                n_per_slice = int(np.prod(rest_column_shape))
                 total_shape = hdu.data.columns[column_name].array.shape
-                total_n = numpy.prod(total_shape)
+                total_n = np.prod(total_shape)
 
                 n_slices = total_n // n_per_slice
                 # if this isn't true, we can't recover
