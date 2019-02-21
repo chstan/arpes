@@ -1,4 +1,5 @@
 from .band_analysis import *
+from .deconvolution import *
 from .derivative import *
 from .fft import *
 from .filters import *

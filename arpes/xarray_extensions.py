@@ -52,6 +52,40 @@ class ARPESAccessorBase(object):
         return [n for n in dir(self) if name in n]
 
     @property
+    def sherman_function(self):
+        return 0.2
+
+        for option in ['sherman', 'sherman_function', 'SHERMAN']:
+            if option in self._obj.attrs:
+                return self._obj.attrs[option]
+
+        return 0.2
+
+    @property
+    def experimental_conditions(self):
+        return {
+            'hv': self.hv,
+            'polarization': self.polarization,
+            'temp': self.temp,
+        }
+
+    @property
+    def polarization(self):
+        if 'epu_pol' in self._obj.attrs:
+            # merlin: TODO normalize these
+            # check and complete
+            try:
+                return {
+                    0: 'p',
+                    1: 'rc',
+                    2: 's',
+                }.get(int(self._obj.attrs['epu_pol']))
+            except ValueError:
+                return self._obj.attrs['epu_pol']
+
+        return 's'
+
+    @property
     def is_subtracted(self):
         if self._obj.attrs.get('subtracted'):
             return True
@@ -1261,6 +1295,51 @@ class GenericAccessorTools(object):
         mask = np.logical_not(np.isnan(self._obj.values))
         return self._obj.isel(**dict([[self._obj.dims[0], mask]]))
 
+    def shift_coords(self, dims, shift):
+        if not isinstance(shift, np.ndarray):
+            shift = np.ones((len(dims),)) * shift
+
+        def transform(data):
+            new_shift = shift
+            for _ in range(len(dims)):
+                new_shift = np.expand_dims(new_shift, 0)
+
+            return data + new_shift
+
+        return self.transform_coords(dims, transform)
+
+    def scale_coords(self, dims, scale):
+        if not isinstance(scale, np.ndarray):
+            n_dims = len(dims)
+            scale = np.identity(n_dims) * scale
+        elif len(scale.shape) == 1:
+            scale = np.diag(scale)
+
+        return self.transform_coords(dims, scale)
+
+    def transform_coords(self, dims, transform):
+        """
+        Transforms the given coordinate values according to transform, should either be a function
+        from a len(dims) x size of raveled coordinate array to len(dims) x size of raveled_coordinate
+        array or a linear transformation as a matrix which is multiplied into such an array.
+        :param dims: List of dimensions that should be transformed
+        :param transform: The transformation to apply, can either be a function, or a matrix
+        :return:
+        """
+        as_array = np.stack([self._obj.data_vars[d].values for d in dims], axis=-1)
+
+        if isinstance(transform, np.ndarray):
+            transformed = np.dot(as_array, transform)
+        else:
+            transformed = transform(as_array)
+
+        copy = self._obj.copy(deep=True)
+
+        for d, arr in zip(dims, np.split(transformed, transformed.shape[-1], axis=-1)):
+            copy.data_vars[d].values = np.squeeze(arr, axis=-1)
+
+        return copy
+
     def filter_vars(self, f):
         return xr.Dataset(data_vars={
             k: v for k, v in self._obj.data_vars.items() if f(v, k)
@@ -1291,7 +1370,7 @@ class GenericAccessorTools(object):
 
         return o
 
-    def ravel(self):
+    def ravel(self, as_dataset=False):
         """
         Converts to a flat representation where the coordinate values are also present.
         Extremely valuable for plotting a dataset with coordinates, X, Y and values Z(X,Y)
@@ -1302,15 +1381,33 @@ class GenericAccessorTools(object):
         :return:
         """
 
-        assert(isinstance(self._obj, xr.DataArray))
+        assert (isinstance(self._obj, xr.DataArray))
 
         dims = self._obj.dims
         coords_as_list = [self._obj.coords[d].values for d in dims]
         raveled_coordinates = dict(zip(dims, [cs.ravel() for cs in np.meshgrid(*coords_as_list)]))
-        assert('data' not in raveled_coordinates)
+        assert ('data' not in raveled_coordinates)
         raveled_coordinates['data'] = self._obj.values.ravel()
 
         return raveled_coordinates
+
+    def meshgrid(self, as_dataset=False):
+        assert (isinstance(self._obj, xr.DataArray))
+
+        dims = self._obj.dims
+        coords_as_list = [self._obj.coords[d].values for d in dims]
+        meshed_coordinates = dict(zip(dims, [cs for cs in np.meshgrid(*coords_as_list)]))
+        assert ('data' not in meshed_coordinates)
+        meshed_coordinates['data'] = self._obj.values
+
+        if as_dataset:
+            # this could use a bit of cleaning up
+            faked = ['x', 'y', 'z', 'w']
+            meshed_coordinates = {k: (faked[:len(v.shape)], v) for k, v in meshed_coordinates.items() if k != 'data'}
+
+            return xr.Dataset(meshed_coordinates)
+
+        return meshed_coordinates
 
     def to_arrays(self):
         """
@@ -1415,7 +1512,7 @@ class GenericAccessorTools(object):
 
         return dict(zip(dim_names, indexed_ranges))
 
-    def stride(self, generic_dim_names=True):
+    def stride(self, *args, generic_dim_names=True):
         indexed_coords = [self._obj.coords[d] for d in self._obj.dims]
         indexed_strides = [coord.values[1] - coord.values[0] for coord in indexed_coords]
 
@@ -1423,7 +1520,21 @@ class GenericAccessorTools(object):
         if generic_dim_names:
             dim_names = NORMALIZED_DIM_NAMES[:len(dim_names)]
 
-        return dict(zip(dim_names, indexed_strides))
+        result = dict(zip(dim_names, indexed_strides))
+        
+        if len(args):
+            if len(args) == 1:
+                if not isinstance(args[0],str):
+                    # if passed list of strs as argument
+                    result = [result[selected_names] for selected_names in args[0]]
+                else:
+                    # if passed single name as argument
+                    result = result[args[0]]
+            else:
+                # if passed several names as arguments
+                result = [result[selected_names] for selected_names in args]
+            
+        return result
 
     def shift_by(self, other, shift_axis=None, zero_nans=True, shift_coords=False):
         # for now we only support shifting by a one dimensional array
