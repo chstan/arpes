@@ -3,19 +3,25 @@ from arpes.typing import DataType
 from arpes.typing import xr_types
 from arpes.utilities import normalize_to_spectrum
 
+import scipy
 from skimage import restoration
 
 __all__ = ('deconvolve_ice','deconvolve_rl')
 
+"""
 def _convolve(original_data, convolution_kernel):
-    conv_kern_norm = convolution_kernel / np.sum(convolution_kernel)
-    n_points = min(len(original_data), len(conv_kern_norm))
-    padding = np.ones(n_points)
-    temp = np.concatenate((padding * original_data[0], original_data, padding * original_data[-1]))
-    convolved = np.convolve(temp, conv_kern_norm, mode='valid')
-    n_offset = int((len(convolved) - n_points) / 2)
-    result = (convolved[n_offset:])[:n_points]
+    if len(convolution_kernel.shape) == 1:
+        conv_kern_norm = convolution_kernel / np.sum(convolution_kernel)
+        n_points = min(len(original_data), len(conv_kern_norm))
+        padding = np.ones(n_points)
+        temp = np.concatenate((padding * original_data[0], original_data, padding * original_data[-1]))
+        convolved = np.convolve(temp, conv_kern_norm, mode='valid')
+        n_offset = int((len(convolved) - n_points) / 2)
+        result = (convolved[n_offset:])[:n_points]
+    elif len(convolution_kernel.shape) == 2:
+        raise NotImplementedError
     return result
+"""
 
 def deconvolve_ice(data: DataType,psf,n_iterations=5,deg=None):
     """Deconvolves data by a given point spread function using the iterative convolution extrapolation method.
@@ -40,7 +46,7 @@ def deconvolve_ice(data: DataType,psf,n_iterations=5,deg=None):
     iteration_list = [arr]
 
     for i in range(n_iterations-1):
-        iteration_list.append(_convolve(iteration_list[-1],psf))
+        iteration_list.append(scipy.ndimage.convolve(iteration_list[-1],psf))
     iteration_list = np.asarray(iteration_list)
 
     deconv = arr*0
@@ -107,8 +113,8 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None):
         u = [arr]
 
         for i in range(n_iterations):
-            c = _convolve(u[-1],psf)
-            u.append(u[-1] * _convolve(arr/c,psf))
+            c = scipy.ndimage.convolve(u[-1],psf)
+            u.append(u[-1] * scipy.ndimage.convolve(arr/c,psf))
 
         if type(data) is np.ndarray:
             result = u[-1]
