@@ -34,6 +34,8 @@ __all__ = (
     'fancy_labels',
 
     'colorbarmaps_for_axis',
+    
+    'remove_colorbars',
 
     # insets related
     'inset_cut_locator',
@@ -227,6 +229,15 @@ colorbarmaps_for_axis = {
     'delay': (delay_colorbar, delay_colormap,),
     'theta': (phase_angle_colorbar, phase_angle_colormap,),
 }
+
+def remove_colorbars(fig=None):
+    # TODO after colorbar removal, plots should be relaxed/rescaled to occupy space previously allocated to colorbars
+    try:
+        for ax in fig.axes:
+            if ax.get_aspect() == 20:  # a bit of a hack
+                ax.remove()
+    except Exception:
+        pass
 
 
 def polarization_colorbar(ax=None):
