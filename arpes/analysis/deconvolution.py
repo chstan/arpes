@@ -62,7 +62,7 @@ def deconvolve_ice(data: DataType,psf,n_iterations=5,deg=None):
         result.values = deconv
     return result
 
-def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None):
+def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None,mode='reflect'):
     """Deconvolves data by a given point spread function using the Richardson-Lucy method.
     
     :param data:
@@ -73,15 +73,21 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None):
     """
     
     arr = normalize_to_spectrum(data)
-    if type(data) is np.ndarray:
-        # only handles one dimension
-        if len(data.shape) > 1:
-            raise NotImplementedError
-        pass
-    else:
+    
+    if type(arr) is not np.ndarray:
         arr = arr.values
 
-    if type(data) is not np.ndarray and len(data.dims) > 1:
+    if axis is None:
+        u = [arr]
+
+        for i in range(n_iterations):
+            c = scipy.ndimage.convolve(u[-1],psf,mode=mode)
+            u.append(u[-1] * scipy.ndimage.convolve(arr/c,psf,mode=mode))
+
+        result = u[-1]
+    elif len(data.dims) > 1:
+        raise NotImplementedError
+        """
         # choose axis to convolve for 1D convolution
         if axis is not None:
             if axis not in data.dims:
@@ -98,7 +104,7 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None):
         if len(data.dims) == 2:
             axis_index = list(data.dims).index(axis)
             axis_other = list(data.dims)[1-axis_index]
-            
+
             if axis_index == 0:
                 new_arr = arr.copy()
                 for i, (coord,edc) in enumerate(data.T.iterate_axis(axis_other)):
@@ -109,17 +115,18 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None):
                 for i, (coord,edc) in enumerate(data.T.iterate_axis(axis_other)):
                     new_arr[i] = deconvolve_rl(edc.spectrum.values,psf=psf,n_iterations=n_iterations)
                 result.values = new_arr.T
+        """
     else:
         u = [arr]
 
         for i in range(n_iterations):
             c = scipy.ndimage.convolve(u[-1],psf)
-            u.append(u[-1] * scipy.ndimage.convolve(arr/c,psf))
+            u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf)))  # not yet tested to ensure flip correct for asymmetric psf
 
         if type(data) is np.ndarray:
-            result = u[-1]
+            result = u[-1].copy()
         else:
             result = normalize_to_spectrum(data).copy(deep=True)
             result.values = u[-1]
-    
+            
     return result
