@@ -77,16 +77,17 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None,mode='reflect'):
     if type(arr) is not np.ndarray:
         arr = arr.values
 
-    if axis is None:
-        u = [arr]
+    if len(data.dims) > 1:
+        if axis is None:
+            u = [arr]
 
-        for i in range(n_iterations):
-            c = scipy.ndimage.convolve(u[-1],psf,mode=mode)
-            u.append(u[-1] * scipy.ndimage.convolve(arr/c,psf,mode=mode))
+            for i in range(n_iterations):
+                c = scipy.ndimage.convolve(u[-1],psf,mode=mode)
+                u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf),mode=mode))
 
-        result = u[-1]
-    elif len(data.dims) > 1:
-        raise NotImplementedError
+            result = u[-1]
+        else:
+            raise NotImplementedError
         """
         # choose axis to convolve for 1D convolution
         if axis is not None:
@@ -120,8 +121,8 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None,mode='reflect'):
         u = [arr]
 
         for i in range(n_iterations):
-            c = scipy.ndimage.convolve(u[-1],psf)
-            u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf)))  # not yet tested to ensure flip correct for asymmetric psf
+            c = scipy.ndimage.convolve(u[-1],psf,mode=mode)
+            u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf),mode=mode))  # not yet tested to ensure flip correct for asymmetric psf
 
         if type(data) is np.ndarray:
             result = u[-1].copy()
