@@ -232,6 +232,7 @@ colorbarmaps_for_axis = {
 
 def remove_colorbars(fig=None):
     # TODO after colorbar removal, plots should be relaxed/rescaled to occupy space previously allocated to colorbars
+    # for now, can follow this with plt.tight_layout()
     try:
         for ax in fig.axes:
             if ax.get_aspect() == 20:  # a bit of a hack
