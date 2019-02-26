@@ -83,10 +83,59 @@ def deconvolve_rl(data: DataType,psf=None,n_iterations=10,axis=None,sigma=None,m
     arr = normalize_to_spectrum(data)
     
     if psf is None and axis is not None and sigma is not None:
+        # if no psf is provided and we have the information to make a 1d one
+        # note: this assumes gaussian psf
         psf = make_psf1d(data=arr,dim=axis,sigma=sigma)
     
     if len(data.dims) > 1:
-        if axis is None:
+        if axis is not None:
+            # perform one-dimensional deconvolution of multidimensional data
+            
+            # support for progress bars
+            wrap_progress = lambda x, *args, **kwargs: x
+            if progress:
+                wrap_progress = lambda x, *args, **kwargs: tqdm_notebook(x, *args, **kwargs)
+            
+            # dimensions over which to iterate
+            other_dim = list(data.dims)
+            other_dim.remove(axis)
+            
+            if len(other_dim) == 1:
+                # two-dimensional data
+                other_dim = other_dim[0]
+                result = arr.copy(deep=True).transpose(other_dim,axis)  # not sure why the dims only seems to work in this order. seems like I should be able to swap it to (axis,other_dim) and also change the data collection to result[x_ind,y_ind], but this gave different results
+                
+                for i,(od,iteration) in wrap_progress(enumerate(arr.T.iterate_axis(other_dim)),desc="Iterating " + other_dim,total=len(arr[other_dim])):  # TODO tidy this gross-looking loop
+                    # indices of data being deconvolved
+                    x_ind = xr.DataArray(list(range(len(arr[axis]))),dims=[axis])
+                    y_ind = xr.DataArray([i] * len(x_ind),dims=[other_dim])
+                    # perform deconvolution on this one-dimensional piece
+                    deconv = deconvolve_rl(data=iteration,psf=psf,n_iterations=n_iterations,axis=None,mode=mode)
+                    # build results out of these pieces
+                    result[y_ind,x_ind] = deconv.values
+            elif len(other_dim) == 2:
+                # three-dimensional data
+                result = arr.copy(deep=True).transpose(*other_dim,axis)  # not sure why the dims only seems to work in this order. seems like I should be able to swap it to (axis,*other_dim) and also change the data collection to result[x_ind,y_ind,z_ind], but this gave different results
+                for i,(od0,iteration0) in wrap_progress(enumerate(arr.T.iterate_axis(other_dim[0])),desc="Iterating " + other_dim[0],total=len(arr[other_dim[0]])):  # TODO tidy this gross-looking loop
+                    for j,(od1,iteration1) in wrap_progress(enumerate(iteration0.T.iterate_axis(other_dim[1])),desc="Iterating " + other_dim[1],total=len(arr[other_dim[1]]),leave=False):  # TODO tidy this gross-looking loop
+                        # indices of data being deconvolved
+                        x_ind = xr.DataArray(list(range(len(arr[axis]))),dims=[axis])
+                        y_ind = xr.DataArray([i] * len(x_ind),dims=[other_dim[0]])
+                        z_ind = xr.DataArray([j] * len(x_ind),dims=[other_dim[1]])
+                        # perform deconvolution on this one-dimensional piece
+                        deconv = deconvolve_rl(data=iteration1,psf=psf,n_iterations=n_iterations,axis=None,mode=mode)
+                        # build results out of these pieces
+                        result[y_ind,z_ind,x_ind] = deconv.values
+            elif len(other_dim) >= 3:
+                # four- or higher-dimensional data
+                # TODO find way to compactify the different dimensionalities rather than having separate code
+                raise NotImplementedError("high-dimensional data not yet supported")
+                
+        elif axis is None:
+            # crude attempt to perform multidimensional deconvolution. not clear if this is currently working
+            # TODO may be able to do this as a sequence of one-dimensional deconvolutions, assuming that the psf is separable (which I think it should be, if we assume it is a multivariate gaussian with principle axes aligned with the dimensions)
+            raise NotImplementedError("multi-dimensional convolutions not yet supported")
+            
             if type(arr) is not np.ndarray:
                 arr = arr.values
 
@@ -97,64 +146,6 @@ def deconvolve_rl(data: DataType,psf=None,n_iterations=10,axis=None,sigma=None,m
                 u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf),mode=mode))
 
             result = u[-1]
-        else:
-            wrap_progress = lambda x, *args, **kwargs: x
-            if progress:
-                wrap_progress = lambda x, *args, **kwargs: tqdm_notebook(x, *args, **kwargs)
-                
-            other_dim = list(data.dims)  # data->arr?
-            other_dim.remove(axis)
-            if len(other_dim) == 1:
-                other_dim = other_dim[0]
-                result = arr.copy(deep=True).transpose(other_dim,axis)
-                for i,(od,iteration) in wrap_progress(enumerate(arr.T.iterate_axis(other_dim)),desc="Iterating " + other_dim,total=len(arr[other_dim])):
-                    x_ind = xr.DataArray(list(range(len(arr[axis]))),dims=[axis])
-                    y_ind = xr.DataArray([i] * len(x_ind),dims=[other_dim])
-                    deconv = deconvolve_rl(data=iteration,psf=psf,n_iterations=n_iterations,axis=None,mode=mode)
-                    result[y_ind,x_ind] = deconv.values
-            elif len(other_dim) == 2:
-                # raise NotImplementedError
-                # pass
-                result = arr.copy(deep=True).transpose(*other_dim,axis)
-                for i,(od0,iteration0) in wrap_progress(enumerate(arr.T.iterate_axis(other_dim[0])),desc="Iterating " + other_dim[0],total=len(arr[other_dim[0]])):
-                    for j,(od1,iteration1) in wrap_progress(enumerate(iteration0.T.iterate_axis(other_dim[1])),desc="Iterating " + other_dim[1],total=len(arr[other_dim[1]]),leave=False):
-                        x_ind = xr.DataArray(list(range(len(arr[axis]))),dims=[axis])
-                        y_ind = xr.DataArray([i] * len(x_ind),dims=[other_dim[0]])
-                        z_ind = xr.DataArray([j] * len(x_ind),dims=[other_dim[1]])
-                        deconv = deconvolve_rl(data=iteration1,psf=psf,n_iterations=n_iterations,axis=None,mode=mode)
-                        result[y_ind,z_ind,x_ind] = deconv.values
-            else:
-                raise NotImplementedError
-            
-        """
-        # choose axis to convolve for 1D convolution
-        if axis is not None:
-            if axis not in data.dims:
-                # problem!
-                raise KeyError
-        elif 'eV' in data.dims:
-            axis = 'eV'
-        else:
-            axis = data.dims[0]
-
-        result = normalize_to_spectrum(data).copy(deep=True)
-
-        # not sure this is the best way to do this
-        if len(data.dims) == 2:
-            axis_index = list(data.dims).index(axis)
-            axis_other = list(data.dims)[1-axis_index]
-
-            if axis_index == 0:
-                new_arr = arr.copy()
-                for i, (coord,edc) in enumerate(data.T.iterate_axis(axis_other)):
-                    new_arr[i] = deconvolve_rl(edc.spectrum.values,psf=psf,n_iterations=n_iterations)
-                result.values = new_arr
-            elif axis_index == 1:
-                new_arr = arr.copy().T
-                for i, (coord,edc) in enumerate(data.T.iterate_axis(axis_other)):
-                    new_arr[i] = deconvolve_rl(edc.spectrum.values,psf=psf,n_iterations=n_iterations)
-                result.values = new_arr.T
-        """
     else:
         if type(arr) is not np.ndarray:
             arr = arr.values
@@ -170,6 +161,11 @@ def deconvolve_rl(data: DataType,psf=None,n_iterations=10,axis=None,sigma=None,m
         else:
             result = normalize_to_spectrum(data).copy(deep=True)
             result.values = u[-1]
+            
+    try:
+        result = result.transpose(*arr.dims)
+    except:
+        pass
             
     return result
 
