@@ -231,12 +231,21 @@ colorbarmaps_for_axis = {
 }
 
 def remove_colorbars(fig=None):
+    """Removes colorbars from given (or, if no given figure, current) matplotlib figure.
+    
+    :param fig (default plt.gcf()):
+    """
+    
+    
     # TODO after colorbar removal, plots should be relaxed/rescaled to occupy space previously allocated to colorbars
     # for now, can follow this with plt.tight_layout()
     try:
-        for ax in fig.axes:
-            if ax.get_aspect() == 20:  # a bit of a hack
-                ax.remove()
+        if fig is not None:
+            for ax in fig.axes:
+                if ax.get_aspect() == 20:  # a bit of a hack
+                    ax.remove()
+        else:
+            remove_colorbars(plt.gcf())
     except Exception:
         pass
 
