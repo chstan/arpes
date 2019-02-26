@@ -3,10 +3,15 @@ from arpes.typing import DataType
 from arpes.typing import xr_types
 from arpes.utilities import normalize_to_spectrum
 
+from arpes.fits.fit_models import gaussian
+import xarray as xr
+
 import scipy
 from skimage import restoration
 
-__all__ = ('deconvolve_ice','deconvolve_rl')
+from tqdm import tqdm_notebook
+
+__all__ = ('deconvolve_ice','deconvolve_rl','make_psf1d',)
 
 """
 def _convolve(original_data, convolution_kernel):
@@ -62,23 +67,29 @@ def deconvolve_ice(data: DataType,psf,n_iterations=5,deg=None):
         result.values = deconv
     return result
 
-def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None,mode='reflect'):
+def deconvolve_rl(data: DataType,psf=None,n_iterations=10,axis=None,sigma=None,mode='reflect',progress=True):
     """Deconvolves data by a given point spread function using the Richardson-Lucy method.
     
     :param data:
-    :param psf:
+    :param psf -- for 1d, if not specified, must specify axis and sigma:
     :param n_iterations -- the number of convolutions to use for the fit (default 50):
     :param axis:
+    :param sigma:
+    :param mode:
+    :param progress:
     :return DataArray or numpy.ndarray -- based on input type:
     """
     
     arr = normalize_to_spectrum(data)
     
-    if type(arr) is not np.ndarray:
-        arr = arr.values
-
+    if psf is None and axis is not None and sigma is not None:
+        psf = make_psf1d(data=arr,dim=axis,sigma=sigma)
+    
     if len(data.dims) > 1:
         if axis is None:
+            if type(arr) is not np.ndarray:
+                arr = arr.values
+
             u = [arr]
 
             for i in range(n_iterations):
@@ -87,7 +98,34 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None,mode='reflect'):
 
             result = u[-1]
         else:
-            raise NotImplementedError
+            wrap_progress = lambda x, *args, **kwargs: x
+            if progress:
+                wrap_progress = lambda x, *args, **kwargs: tqdm_notebook(x, *args, **kwargs)
+                
+            other_dim = list(data.dims)  # data->arr?
+            other_dim.remove(axis)
+            if len(other_dim) == 1:
+                other_dim = other_dim[0]
+                result = arr.copy(deep=True).transpose(other_dim,axis)
+                for i,(od,iteration) in wrap_progress(enumerate(arr.T.iterate_axis(other_dim)),desc="Iterating " + other_dim,total=len(arr[other_dim])):
+                    x_ind = xr.DataArray(list(range(len(arr[axis]))),dims=[axis])
+                    y_ind = xr.DataArray([i] * len(x_ind),dims=[other_dim])
+                    deconv = deconvolve_rl(data=iteration,psf=psf,n_iterations=n_iterations,axis=None,mode=mode)
+                    result[y_ind,x_ind] = deconv.values
+            elif len(other_dim) == 2:
+                # raise NotImplementedError
+                # pass
+                result = arr.copy(deep=True).transpose(*other_dim,axis)
+                for i,(od0,iteration0) in wrap_progress(enumerate(arr.T.iterate_axis(other_dim[0])),desc="Iterating " + other_dim[0],total=len(arr[other_dim[0]])):
+                    for j,(od1,iteration1) in wrap_progress(enumerate(iteration0.T.iterate_axis(other_dim[1])),desc="Iterating " + other_dim[1],total=len(arr[other_dim[1]]),leave=False):
+                        x_ind = xr.DataArray(list(range(len(arr[axis]))),dims=[axis])
+                        y_ind = xr.DataArray([i] * len(x_ind),dims=[other_dim[0]])
+                        z_ind = xr.DataArray([j] * len(x_ind),dims=[other_dim[1]])
+                        deconv = deconvolve_rl(data=iteration1,psf=psf,n_iterations=n_iterations,axis=None,mode=mode)
+                        result[y_ind,z_ind,x_ind] = deconv.values
+            else:
+                raise NotImplementedError
+            
         """
         # choose axis to convolve for 1D convolution
         if axis is not None:
@@ -118,6 +156,9 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None,mode='reflect'):
                 result.values = new_arr.T
         """
     else:
+        if type(arr) is not np.ndarray:
+            arr = arr.values
+
         u = [arr]
 
         for i in range(n_iterations):
@@ -131,3 +172,63 @@ def deconvolve_rl(data: DataType,psf,n_iterations=10,axis=None,mode='reflect'):
             result.values = u[-1]
             
     return result
+
+def make_psf1d(data: DataType,dim,sigma):
+    """Produces a 1-dimensional gaussian point spread function for use in deconvolve_rl.
+    
+    :param data:
+    :param dim:
+    :param sigma:
+    :return DataArray:
+    """
+    
+    
+    arr = normalize_to_spectrum(data)
+    dims = arr.dims
+    
+    psf = arr.copy(deep=True) * 0 + 1
+    
+    other_dims = list(arr.dims)
+    other_dims.remove(dim)
+
+    for od in other_dims:
+        psf = psf[{od:0}]
+
+    psf = psf * gaussian(psf.coords[dim],np.mean(psf.coords[dim]),sigma)
+
+    return psf
+
+def make_psf(data: DataType,sigmas):
+    """Not yet operational; produces an n-dimensional gaussian point spread function for use in deconvolve_rl.
+    
+    :param data:
+    :param dim:
+    :param sigma:
+    :return DataArray:
+    """
+    
+    raise NotImplementedError
+    
+    arr = normalize_to_spectrum(data)
+    dims = arr.dims
+    
+    psf = arr.copy(deep=True) * 0 + 1
+    
+    for dim in dims:
+        other_dims = list(arr.dims)
+        other_dims.remove(dim)
+        
+        psf1d = arr.copy(deep=True) * 0 + 1
+        for od in other_dims:
+            psf1d = psf1d[{od:0}]
+        
+        if sigmas[dim] == 0:
+            # TODO may need to do subpixel correction for when the dimension has an even length
+            psf1d = psf1d * 0
+            # psf1d[{dim:np.mean(psf1d.coords[dim])}] = 1
+            psf1d[{dim:len(psf1d.coords[dim])/2}] = 1
+        else:
+            psf1d = psf1d * gaussian(psf1d.coords[dim],np.mean(psf1d.coords[dim]),sigmas[dim])
+        
+        psf = psf * psf1d
+    return psf
