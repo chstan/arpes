@@ -28,3 +28,4 @@ from .path_tool import *
 from .dyn_tool import *
 
 from .utils import savefig
+from .utils import remove_colorbars
