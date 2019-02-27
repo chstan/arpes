@@ -7,6 +7,7 @@ import matplotlib.offsetbox
 import matplotlib
 import matplotlib.cm
 import collections
+import xarray as xr
 from titlecase import titlecase
 from matplotlib.lines import Line2D
 
@@ -30,10 +31,15 @@ __all__ = (
     'temperature_colorbar',
     'temperature_colorbar_around',
 
+    'generic_colorbarmap',
+    'generic_colorbarmap_for_data',
+
     'dos_axes',
     'fancy_labels',
 
     'colorbarmaps_for_axis',
+    
+    'remove_colorbars',
 
     # insets related
     'inset_cut_locator',
@@ -141,6 +147,12 @@ def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=N
         pass
 
 
+def generic_colormap(low, high):
+    def get_color(value):
+        return matplotlib.cm.gnuplot(float((value - low) / (high - low)))
+
+    return get_color
+
 def phase_angle_colormap(low=0, high=np.pi * 2):
     def get_color(value):
         return matplotlib.cm.twilight_shifted(float((value - low) / (high - low)))
@@ -170,6 +182,19 @@ def temperature_colormap_around(central, range=50):
         return matplotlib.cm.RdBu_r(float((value - central) / range))
 
     return get_color
+
+
+def generic_colorbar(low, high, label='', ax=None, ticks=None, **kwargs):
+    extra_kwargs = {
+        'orientation': 'horizontal',
+        'label': label,
+        'ticks': ticks if ticks is not None else [low, high],
+    }
+    extra_kwargs.update(kwargs)
+    cb = colorbar.ColorbarBase(
+        ax, cmap='gnuplot', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
+
+    return cb
 
 
 def phase_angle_colorbar(high=np.pi * 2, low=0, ax=None, **kwargs):
@@ -227,6 +252,39 @@ colorbarmaps_for_axis = {
     'delay': (delay_colorbar, delay_colormap,),
     'theta': (phase_angle_colorbar, phase_angle_colormap,),
 }
+
+def remove_colorbars(fig=None):
+    """Removes colorbars from given (or, if no given figure, current) matplotlib figure.
+    
+    :param fig (default plt.gcf()):
+    """
+    
+    
+    # TODO after colorbar removal, plots should be relaxed/rescaled to occupy space previously allocated to colorbars
+    # for now, can follow this with plt.tight_layout()
+    try:
+        if fig is not None:
+            for ax in fig.axes:
+                if ax.get_aspect() == 20:  # a bit of a hack
+                    ax.remove()
+        else:
+            remove_colorbars(plt.gcf())
+    except Exception:
+        pass
+
+
+generic_colorbarmap = (generic_colorbar, generic_colormap,)
+
+
+def generic_colorbarmap_for_data(data: xr.DataArray, keep_ticks=True, ax=None, **kwargs):
+    low, high = data.min().item(), data.max().item()
+    ticks = None
+    if keep_ticks:
+        ticks = data.values
+    return (
+        generic_colorbar(low=low, high=high, ax=ax, ticks=kwargs.get('ticks', ticks)),
+        generic_colormap(low=low, high=high),
+    )
 
 
 def polarization_colorbar(ax=None):
@@ -383,6 +441,9 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
         'angle': r'Interp. \textbf{Angle}',
         'kinetic': r'Kinetic Energy (\textbf{eV})',
         'temp': r'\textbf{Temperature}',
+        'kp': r'$\textbf{k}_\parallel$',
+        'kz': r'$\textbf{k}_\perp$',
+        'hv': 'Photon Energy'
     }
 
     if data is not None:
