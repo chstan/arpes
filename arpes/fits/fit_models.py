@@ -212,7 +212,7 @@ def gaussian(x, center=0, sigma=1, amplitude=1):
 def twogaussian(x, center=0, t_center=0, width=1, t_width=1, amp=1, t_amp=1, lin_bkg=0, const_bkg=0):
     return gaussian(x, center, width, amp) + gaussian(x, t_center, t_width, t_amp) + affine_bkg(x, lin_bkg, const_bkg)
 
-<<<<<<< HEAD
+
 def twolorentzian(x, gamma, t_gamma, center, t_center, amp, t_amp, lin_bkg, const_bkg):
     L1 = lorentzian(x, gamma, center, amp)
     L2 = lorentzian(x, t_gamma, t_center, t_amp)
@@ -223,7 +223,7 @@ def twolorentzian_gstep(x, gamma, t_gamma, center, t_center, amp, t_amp, lin_bkg
     TL = twolorentzian(x, gamma, t_gamma, center, t_center, amp, t_amp, lin_bkg, const_bkg)
     GS = gstep(x, g_center, sigma, erf_amp)
     return TL*GS
-=======
+
 def affine_broadened_fd(x, fd_center=0, fd_width=0.003, conv_width=0.02, const_bkg=1, lin_bkg=0, offset=0):
     """
     Fermi function convoled with a Gaussian together with affine background
@@ -272,9 +272,6 @@ class AffineBroadenedFD(XModelMixin):
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
-
-
->>>>>>> ef5bf3d81a216d15a1b99f3c1a9807cd988fcf4b
 
 class FermiLorentzianModel(XModelMixin):
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
