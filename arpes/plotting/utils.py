@@ -38,6 +38,8 @@ __all__ = (
     'fancy_labels',
 
     'colorbarmaps_for_axis',
+    
+    'remove_colorbars',
 
     # insets related
     'inset_cut_locator',
@@ -250,6 +252,25 @@ colorbarmaps_for_axis = {
     'delay': (delay_colorbar, delay_colormap,),
     'theta': (phase_angle_colorbar, phase_angle_colormap,),
 }
+
+def remove_colorbars(fig=None):
+    """Removes colorbars from given (or, if no given figure, current) matplotlib figure.
+    
+    :param fig (default plt.gcf()):
+    """
+    
+    
+    # TODO after colorbar removal, plots should be relaxed/rescaled to occupy space previously allocated to colorbars
+    # for now, can follow this with plt.tight_layout()
+    try:
+        if fig is not None:
+            for ax in fig.axes:
+                if ax.get_aspect() == 20:  # a bit of a hack
+                    ax.remove()
+        else:
+            remove_colorbars(plt.gcf())
+    except Exception:
+        pass
 
 
 generic_colorbarmap = (generic_colorbar, generic_colormap,)

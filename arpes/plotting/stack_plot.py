@@ -202,7 +202,7 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
                           label=None,
                           shift=0,
                           no_scatter=False,
-                          negate=False, s=1, scale_factor=None, linewidth=1, palette=None, **kwargs):
+                          negate=False, s=1, scale_factor=None, linewidth=1, palette=None, zero_offset=False, uniform = False, **kwargs):
     data = normalize_to_spectrum(data)
 
     if stack_axis is None:
@@ -237,6 +237,8 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
 
             if use_constant_correction:
                 true_ys = (marginal_values - marginal_offset)
+            elif zero_offset:
+                true_ys = marginal_values 
             else:
                 true_ys = (marginal_values - np.linspace(marginal_offset, right_marginal_offset, len(marginal_values)))
 
@@ -258,6 +260,12 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
             offset = right_marginal_offset if correction_side == 'right' else marginal_offset
             true_ys = (marginal_values - offset) / max_over_stacks
             ys = scale_factor * true_ys + coord_value
+        elif zero_offset:
+            true_ys = marginal_values / max_over_stacks
+            ys = scale_factor * true_ys + coord_value
+        elif uniform:
+            true_ys = marginal_values / max_over_stacks
+            ys = scale_factor * true_ys + i            
         else:
             true_ys = (marginal_values - np.linspace(marginal_offset, right_marginal_offset, len(marginal_values))) \
                       / max_over_stacks
