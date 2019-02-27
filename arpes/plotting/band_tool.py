@@ -153,14 +153,14 @@ class BandTool(SaveableTool, CursorTool):
                     'name': band_name,
                     'band': band_classes.get(band_description['type'], band.Band),
                     'dims': self.arr.dims,
-                    'constraints': {
+                    'params': {
                         'amplitude': {'min': 0},
                     },
                     'points': band_description['points'],
                 }
 
                 if stray is not None:
-                    packed_bands[band_name]['constraints']['stray'] = stray
+                    packed_bands[band_name]['params']['stray'] = stray
 
             return packed_bands
 

@@ -128,7 +128,7 @@ def build_quadratic_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, eV
     else:
         approximate_fermi_level = 0
     sum_axes = exclude_hemisphere_axes(arr.dims)
-    edge_fit = broadcast_model(GStepBModel, arr.sum(sum_axes).sel(eV=eV_slice), 'phi', constraints={'center': {'value': approximate_fermi_level}})
+    edge_fit = broadcast_model(GStepBModel, arr.sum(sum_axes).sel(eV=eV_slice), 'phi', params={'center': {'value': approximate_fermi_level}})
 
     size_phi = len(arr.coords['phi'])
     not_nanny = (np.logical_not(np.isnan(arr)) * 1).sum('eV') > size_phi * 0.30

@@ -98,7 +98,7 @@ def reduce_model_with_operators(model):
         return left / right
 
 
-def compile_model(model, constraints=None):
+def compile_model(model, params=None):
     """
     Takes a model sequence, i.e. a Model class, a list of such classes, or a list
     of such classes with operators and instantiates an appropriate model.
@@ -108,8 +108,8 @@ def compile_model(model, constraints=None):
 
     warnings.warn('Beware of equal operator precedence.')
 
-    if constraints is None:
-        constraints = {}
+    if params is None:
+        params = {}
 
     try:
         if issubclass(model, lmfit.Model):
@@ -119,12 +119,12 @@ def compile_model(model, constraints=None):
 
     if isinstance(model, (list, tuple)) and all([isinstance(token, type) for token in model]):
         models = [m(prefix='{}_'.format(ascii_lowercase[i]), nan_policy='omit') for i, m in enumerate(model)]
-        if isinstance(constraints, (list, tuple)):
-            for cs, m in zip(constraints, models):
-                for name, constraints_for_name in cs.items():
-                    m.set_param_hint(name, **constraints_for_name)
+        if isinstance(params, (list, tuple)):
+            for cs, m in zip(params, models):
+                for name, params_for_name in cs.items():
+                    m.set_param_hint(name, **params_for_name)
 
-            constraints = {}
+            params = {}
 
         built = functools.reduce(operator.add, models)
     else:
@@ -136,10 +136,10 @@ def compile_model(model, constraints=None):
 
 
 def broadcast_model(model_cls: typing.Union[type, TypeIterable],
-                    data: DataType, broadcast_dims, constraints=None, progress=True, dataset=True,
+                    data: DataType, broadcast_dims, params=None, progress=True, dataset=True,
                     weights=None, safe=False):
-    if constraints is None:
-        constraints = {}
+    if params is None:
+        params = {}
 
     if isinstance(broadcast_dims, str):
         broadcast_dims = [broadcast_dims]
@@ -156,9 +156,9 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     residual = data.copy(deep=True)
     residual.values = np.zeros(residual.shape)
 
-    model = compile_model(parse_model(model_cls), constraints=constraints)
-    if isinstance(constraints, (list, tuple)):
-        constraints = {}
+    model = compile_model(parse_model(model_cls), params=params)
+    if isinstance(params, (list, tuple)):
+        params = {}
 
     new_params = model.make_params()
 
@@ -178,7 +178,7 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
             weights_for = weights.sel(**cut_coords)
 
         try:
-            fit_result = model.guess_fit(cut_data, params=constraints, weights=weights_for)
+            fit_result = model.guess_fit(cut_data, params=params, weights=weights_for)
         except ValueError:
             fit_result = None
 
