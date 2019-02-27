@@ -4,72 +4,18 @@
 
 .. moduleauthor:: Conrad Stansbury <chstan@berkeley.edu>
 """
-import lmfit as lf
 import numpy as np
-from lmfit.models import update_param_vals
-from scipy.ndimage import gaussian_filter
 
 from arpes.typing import DataType
-from arpes.fits import XModelMixin
 from arpes.constants import K_BOLTZMANN_EV_KELVIN
 from arpes.utilities import normalize_to_spectrum
+from arpes.fits.fit_models import AffineBroadenedFD
 
 import xarray as xr
 import warnings
 
-__all__ = ('normalize_by_fermi_dirac', 'determine_broadened_fermi_distribution', 'AffineBroadenedFD',
+__all__ = ('normalize_by_fermi_dirac', 'determine_broadened_fermi_distribution',
            'symmetrize')
-
-def affine_broadened_fd(x, fd_center=0, fd_width=0.003, conv_width=0.02, const_bkg=1, lin_bkg=0, offset=0):
-    """
-    Fermi function convoled with a Gaussian together with affine background
-    :param x: value to evaluate function at
-    :param center: center of the step
-    :param width: width of the step
-    :param erf_amp: height of the step
-    :param lin_bkg: linear background slope
-    :param const_bkg: constant background
-    :return:
-    """
-    dx = x - fd_center
-    x_scaling = x[1] - x[0]
-    fermi = 1 / (np.exp(dx / fd_width) + 1)
-    return gaussian_filter(
-        (const_bkg + lin_bkg * dx) * fermi,
-        sigma=conv_width / x_scaling
-    ) + offset
-
-
-class AffineBroadenedFD(XModelMixin):
-    """
-    A model for fitting an affine density of states with resolution broadened Fermi-Dirac occupation
-    """
-
-    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
-        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
-        super().__init__(affine_broadened_fd, **kwargs)
-
-        self.set_param_hint('offset', min=0.)
-        self.set_param_hint('fd_width', min=0.)
-        self.set_param_hint('conv_width', min=0.)
-
-    def guess(self, data, x=None, **kwargs):
-        pars = self.make_params()
-
-        pars['%sfd_center' % self.prefix].set(value=0)
-        pars['%slin_bkg' % self.prefix].set(value=0)
-        pars['%sconst_bkg' % self.prefix].set(value=data.mean().item() * 2)
-        pars['%soffset' % self.prefix].set(value=data.min().item())
-
-        pars['%sfd_width' % self.prefix].set(0.005)  # TODO we can do better than this
-        pars['%sconv_width' % self.prefix].set(0.02)
-
-        return update_param_vals(pars, self.prefix, **kwargs)
-
-    __init__.doc = lf.models.COMMON_INIT_DOC
-    guess.__doc__ = lf.models.COMMON_GUESS_DOC
-
-
 
 def determine_broadened_fermi_distribution(reference_data: DataType, fixed_temperature=True):
     """

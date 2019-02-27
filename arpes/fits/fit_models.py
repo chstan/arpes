@@ -6,10 +6,12 @@ from scipy import stats
 from lmfit.models import update_param_vals
 from scipy.special import erfc
 from scipy.signal import convolve
+from scipy.ndimage import gaussian_filter
 
 __all__ = ('XModelMixin', 'FermiLorentzianModel','GStepBModel', 'QuadraticModel',
            'ExponentialDecayCModel', 'LorentzianModel', 'GaussianModel', 'VoigtModel',
            'ConstantModel', 'LinearModel', 'GStepBStandardModel', 'AffineBackgroundModel',
+           'AffineBroadenedFD',
            'FermiDiracModel', 'BandEdgeBModel',
            'gaussian_convolve', 'TwoGaussianModel', "TwoLorModel")
 
@@ -67,8 +69,27 @@ class XModelMixin(lf.Model):
         """+"""
         return XAdditiveCompositeModel(self, other, operator.add)
 
+    def __mul__(self, other):
+        """*"""
+        return XMultiplicativeCompositeModel(self, other, operator.mul)
+
 
 class XAdditiveCompositeModel(lf.CompositeModel, XModelMixin):
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+        guessed = {}
+        for c in self.components:
+            guessed.update(c.guess(data, x=x, **kwargs))
+
+        for k, v in guessed.items():
+            pars[k] = v
+
+        return pars
+
+class XMultiplicativeCompositeModel(lf.CompositeModel, XModelMixin):
+    """
+    Currently this just copies +, might want to adjust things!
+    """
     def guess(self, data, x=None, **kwargs):
         pars = self.make_params()
         guessed = {}
@@ -190,6 +211,56 @@ def gaussian(x, center=0, sigma=1, amplitude=1):
 
 def twogaussian(x, center=0, t_center=0, width=1, t_width=1, amp=1, t_amp=1, lin_bkg=0, const_bkg=0):
     return gaussian(x, center, width, amp) + gaussian(x, t_center, t_width, t_amp) + affine_bkg(x, lin_bkg, const_bkg)
+
+def affine_broadened_fd(x, fd_center=0, fd_width=0.003, conv_width=0.02, const_bkg=1, lin_bkg=0, offset=0):
+    """
+    Fermi function convoled with a Gaussian together with affine background
+    :param x: value to evaluate function at
+    :param center: center of the step
+    :param width: width of the step
+    :param erf_amp: height of the step
+    :param lin_bkg: linear background slope
+    :param const_bkg: constant background
+    :return:
+    """
+    dx = x - fd_center
+    x_scaling = x[1] - x[0]
+    fermi = 1 / (np.exp(dx / fd_width) + 1)
+    return gaussian_filter(
+        (const_bkg + lin_bkg * dx) * fermi,
+        sigma=conv_width / x_scaling
+    ) + offset
+
+
+class AffineBroadenedFD(XModelMixin):
+    """
+    A model for fitting an affine density of states with resolution broadened Fermi-Dirac occupation
+    """
+
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(affine_broadened_fd, **kwargs)
+
+        self.set_param_hint('offset', min=0.)
+        self.set_param_hint('fd_width', min=0.)
+        self.set_param_hint('conv_width', min=0.)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%sfd_center' % self.prefix].set(value=0)
+        pars['%slin_bkg' % self.prefix].set(value=0)
+        pars['%sconst_bkg' % self.prefix].set(value=data.mean().item() * 2)
+        pars['%soffset' % self.prefix].set(value=data.min().item())
+
+        pars['%sfd_width' % self.prefix].set(0.005)  # TODO we can do better than this
+        pars['%sconv_width' % self.prefix].set(0.02)
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
 
 
 class FermiLorentzianModel(XModelMixin):
