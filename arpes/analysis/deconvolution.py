@@ -1,13 +1,11 @@
 import numpy as np
 from arpes.typing import DataType
-from arpes.typing import xr_types
 from arpes.utilities import normalize_to_spectrum
 
 from arpes.fits.fit_models import gaussian
 import xarray as xr
 
 import scipy
-from skimage import restoration
 
 from tqdm import tqdm_notebook
 
@@ -67,7 +65,8 @@ def deconvolve_ice(data: DataType,psf,n_iterations=5,deg=None):
         result.values = deconv
     return result
 
-def deconvolve_rl(data: DataType,psf=None,n_iterations=10,axis=None,sigma=None,mode='reflect',progress=True):
+def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
+                  sigma=None, mode='reflect', progress=True):
     """Deconvolves data by a given point spread function using the Richardson-Lucy method.
     
     :param data:
@@ -136,7 +135,7 @@ def deconvolve_rl(data: DataType,psf=None,n_iterations=10,axis=None,sigma=None,m
             # TODO may be able to do this as a sequence of one-dimensional deconvolutions, assuming that the psf is separable (which I think it should be, if we assume it is a multivariate gaussian with principle axes aligned with the dimensions)
             raise NotImplementedError("multi-dimensional convolutions not yet supported")
             
-            if type(arr) is not np.ndarray:
+            if not isinstance(arr, np.ndarray):
                 arr = arr.values
 
             u = [arr]
