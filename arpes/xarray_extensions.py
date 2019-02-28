@@ -14,7 +14,6 @@ from arpes.exceptions import AnalysisError
 from arpes.typing import DataType
 
 from scipy import ndimage as ndi
-from skimage import feature
 
 import arpes.constants
 import arpes.materials
@@ -679,6 +678,7 @@ class ARPESAccessorBase(object):
         embedded[:] = energy_marginal.values
         embedded = ndi.gaussian_filter(embedded, embed_size / 3)
 
+        from skimage import feature  # try to avoid dependency conflict with numpy v0.16
         edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
                               low_threshold=0.3) * 1
         edges = np.where(edges[int(embed_size / 2)] == 1)[0]
@@ -722,6 +722,7 @@ class ARPESAccessorBase(object):
             embedded[:] = values
             embedded = ndi.gaussian_filter(embedded, embed_size / 1.5)
 
+            from skimage import feature  # try to avoid dependency conflict with numpy v0.16
             edges = feature.canny(embedded, sigma=4, use_quantiles=False,
                                   low_threshold=0.7, high_threshold=1.5) * 1
             edges = np.where(edges[int(embed_size / 2)] == 1)[0]
@@ -824,6 +825,7 @@ class ARPESAccessorBase(object):
         embedded[:] = near_ef.values
         embedded = ndi.gaussian_filter(embedded, embed_size / 3)
 
+        from skimage import feature  # try to avoid dependency conflict with numpy v0.16
         edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
                               low_threshold=0.2) * 1
         edges = np.where(edges[int(embed_size / 2)] == 1)[0]
