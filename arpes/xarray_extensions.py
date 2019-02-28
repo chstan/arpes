@@ -516,6 +516,7 @@ class ARPESAccessorBase(object):
                 'ALG-MC': arpes.constants.SPECTROMETER_MC,
                 'BL403': arpes.constants.SPECTROMETER_BL4,
                 'ALG-SToF': arpes.constants.SPECTROMETER_STRAIGHT_TOF,
+                'Kaindl': arpes.constants.SPECTROMETER_KAINDL,
             }.get(ds.attrs['location'])
 
         try:

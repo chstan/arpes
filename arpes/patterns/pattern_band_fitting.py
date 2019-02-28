@@ -53,7 +53,7 @@ def band_plot():
             'kp': slice(0.05, 0.12),
         }, 'edc', [
             {
-                'constraints': {
+                'params': {
                     'lin_bkg': {'max': 0.1, 'min': -0.1, 'value': 0},
                     'const_bkg': {'max': 0.1, 'min': -0.1, 'value': 0},
                     'center': {'min': -0.15, 'max': 0.05, 'value': -0.05},

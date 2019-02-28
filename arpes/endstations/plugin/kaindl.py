@@ -56,6 +56,7 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
         internal_match = re.match(r'([a-zA-Z0-9\w+_]+)_[0-9][0-9][0-9]\.pxt', Path(original_filename).name)
         if len(internal_match.groups()):
             motors_path = str(Path(original_filename).parent / '{}_Motor_Pos.txt'.format(internal_match.groups()[0]))
+            AI_path = str(Path(original_filename).parent / '{}_AI.txt'.format(internal_match.groups()[0]))
             try:
                 with open(motors_path, 'r') as f:
                     lines = f.readlines()
