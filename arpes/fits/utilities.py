@@ -106,8 +106,6 @@ def compile_model(model, constraints=None):
     :return:
     """
 
-    warnings.warn('Beware of equal operator precedence.')
-
     if constraints is None:
         constraints = {}
 
@@ -124,10 +122,9 @@ def compile_model(model, constraints=None):
                 for name, constraints_for_name in cs.items():
                     m.set_param_hint(name, **constraints_for_name)
 
-            constraints = {}
-
         built = functools.reduce(operator.add, models)
     else:
+        warnings.warn('Beware of equal operator precedence.')
         prefix = iter(ascii_lowercase)
         model = [m if isinstance(m, str) else (m, next(prefix)) for m in model]
         built = reduce_model_with_operators(_parens_to_nested(model))
@@ -135,9 +132,41 @@ def compile_model(model, constraints=None):
     return built
 
 
+def unwrap_constraints(constraints, iter_coordinate):
+    """
+    Inspects constraints to see if any are array like and extracts the appropriate value to use for the current
+    iteration point.
+    :param constraints:
+    :param iter_coordinate:
+    :return:
+    """
+    def transform_or_walk(v):
+        if isinstance(v, dict):
+            return unwrap_constraints(v, iter_coordinate)
+
+        if isinstance(v, xr.DataArray):
+            return v.sel(**iter_coordinate, method='nearest').item()
+
+        return v
+
+    return {k: transform_or_walk(v) for k, v in constraints.items()}
+
+
 def broadcast_model(model_cls: typing.Union[type, TypeIterable],
                     data: DataType, broadcast_dims, constraints=None, progress=True, dataset=True,
                     weights=None, safe=False):
+    """
+    Perform a fit across a number of dimensions. Allows composite models.
+    :param model_cls:
+    :param data:
+    :param broadcast_dims:
+    :param constraints:
+    :param progress:
+    :param dataset:
+    :param weights:
+    :param safe:
+    :return:
+    """
     if constraints is None:
         constraints = {}
 
@@ -167,8 +196,9 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     if progress:
         wrap_progress = lambda x, *args, **kwargs: tqdm_notebook(x, *args, **kwargs)
 
-    for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting',
-                                             total=n_fits):
+    for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting', total=n_fits):
+        current_constraints = unwrap_constraints(constraints, cut_coords)
+
         cut_data = data.sel(**cut_coords)
         if safe:
             cut_data = cut_data.T.drop_nan()
@@ -178,7 +208,7 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
             weights_for = weights.sel(**cut_coords)
 
         try:
-            fit_result = model.guess_fit(cut_data, params=constraints, weights=weights_for)
+            fit_result = model.guess_fit(cut_data, params=current_constraints, weights=weights_for)
         except ValueError:
             fit_result = None
 
