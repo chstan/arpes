@@ -2,7 +2,92 @@ from arpes.utilities.conversion.forward import convert_coordinates_to_kspace_for
 from arpes.plotting.utils import unit_for_dim, name_for_dim
 import numpy as np
 
-__all__ = ('annotate_cuts', 'annotate_point',)
+__all__ = ('annotate_cuts', 'annotate_point', 'annotate_experimental_conditions',)
+
+def annotate_experimental_conditions(ax, data, desc, show=False, orientation='top', **kwargs):
+    """
+    Renders information about the experimental conditions onto a set of axes,
+    also adjust the axes limits and hides the axes.
+
+    data should be the dataset described, and desc should be one of
+
+    'temp',
+    'photon',
+    'photon polarization',
+    'polarization',
+    or a number to act as a spacer in units of the axis coordinates
+
+    or a list of such items
+
+    :param ax:
+    :param data:
+    :param desc:
+    :return:
+    """
+
+    if isinstance(desc, (str, int, float,)):
+        desc = [desc]
+
+    ax.grid(False)
+    ax.set_ylim([0, 100])
+    ax.set_xlim([0, 100])
+    if not show:
+        ax.set_axis_off()
+        ax.patch.set_alpha(0)
+
+    delta = -1
+    current = 100
+    if orientation == 'bottom':
+        delta = 1
+        current = 0
+
+    fontsize = kwargs.pop('fontsize', 16)
+    delta = fontsize * delta
+
+    conditions = data.S.experimental_conditions
+
+    def render_polarization(c):
+        pol = c['polarization']
+        if pol in ['lc', 'rc']:
+            return '\\textbf{' + pol.upper() + '}'
+
+        symbol_pol = {
+            's': '\\updownarrow',
+            'p': '\\leftrightarrow',
+            's-p': '',
+            'p-s': '',
+        }
+
+        prefix = ''
+        if pol in ['s-p', 'p-s']:
+            prefix = '\\textbf{Linear Dichroism, }'
+
+        symbol = symbol_pol[pol]
+        if len(symbol):
+            return prefix + '$' + symbol + '$/\\textbf{' + pol + '}'
+
+        return prefix + '\\textbf{' + pol + '}'
+
+    def render_photon(c):
+        return '\\textbf{' + str(c['hv']) + ' eV'
+
+    renderers = {
+        'temp': lambda c: '\\textbf{T = ' + '{:.2g}'.format(c['temp']) + ' K}',
+        'photon': render_photon,
+        'photon polarization': lambda c: render_photon(c) + ', ' + render_polarization(c),
+        'polarization': render_polarization,
+    }
+
+    for item in desc:
+        if isinstance(item, (float, int)):
+            current += item + delta
+            continue
+
+        item = item.replace('_', ' ').lower()
+
+        ax.text(0, current, renderers[item](conditions), fontsize=fontsize, **kwargs)
+        current += delta
+
 
 def annotate_cuts(ax, data, plotted_axes, include_text_labels=False, **kwargs):
     """
