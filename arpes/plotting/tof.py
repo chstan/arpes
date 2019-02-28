@@ -6,6 +6,7 @@ electrons that arrived in that channel.
 Plotting routines here are ones that include statistical errorbars. Generally for datasets in PyPES, an xr.Dataset
 will hold the standard deviation data for a given variable on `{var_name}_std`.
 """
+import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -16,12 +17,21 @@ from arpes.plotting.utils import *
 __all__ = ('plot_with_std', 'scatter_with_std',)
 
 @save_plot_provenance
+def jitterplot(data: xr.Dataset, jitter_dimension=None):
+    if jitter_dimension is None:
+        jitter_dimension = 'bootstrap'
+
+    assert(jitter_dimension in data.coords)
+
+
+
+@save_plot_provenance
 def plot_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs):
     if name_to_plot is None:
         var_names = [k for k in data.data_vars.keys() if '_std' not in k]
-        assert(len(var_names) == 1)
+        assert (len(var_names) == 1)
         name_to_plot = var_names[0]
-        assert((name_to_plot + '_std') in data.data_vars.keys())
+        assert ((name_to_plot + '_std') in data.data_vars.keys())
 
     fig = None
     if ax is None:
@@ -43,7 +53,7 @@ def plot_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs
 
 
 @save_plot_provenance
-def scatter_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs):
+def scatter_with_std(data: DataType, name_to_plot=None, ax=None, fmt='o', out=None, **kwargs):
     if name_to_plot is None:
         var_names = [k for k in data.data_vars.keys() if '_std' not in k]
         assert(len(var_names) == 1)
@@ -57,7 +67,7 @@ def scatter_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwa
     x, y = data.data_vars[name_to_plot].T.to_arrays()
 
     std = data.data_vars[name_to_plot + '_std'].values
-    ax.errorbar(x, y, yerr=std, fmt='o', markeredgecolor='black', **kwargs)
+    ax.errorbar(x, y, yerr=std, fmt=fmt, markeredgecolor='black', **kwargs)
 
     if out is not None:
         plt.savefig(path_for_plot(out), dpi=400)

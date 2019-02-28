@@ -9,7 +9,6 @@ from bokeh.models import ColumnDataSource, HoverTool, widgets
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.widgets.markups import Div
 from bokeh.plotting import figure
-from skimage import exposure
 
 from .interactive_utils import SaveableTool, CursorTool
 
@@ -39,6 +38,7 @@ class ImageTool(SaveableTool, CursorTool):
             if self.app_context['color_mode'] == 'linear':
                 return image_arr.values
 
+            from skimage import exposure  # avoid dependency conflict with numpy v0.16 for now
             return exposure.equalize_adapthist(image_arr.values, clip_limit=0.03)
 
     def tool_handler(self, doc):
