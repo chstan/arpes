@@ -57,7 +57,7 @@ REQUIRED = [
     'lmfit',
     'scikit-learn',
     'scikit-image',
-    'xrft==0.1.dev',
+    #'xrft==0.1.dev',
 
     # Plotting
     'matplotlib',
@@ -155,7 +155,7 @@ setup(
     dependency_links=[
         'https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1',
         # use this specific 'xrft' since it still has `_hanning` and we have not updated to use the new `_create_window`
-        'https://github.com/xgcm/xrft/tarball/879643cb0d6779632fc7600876bd90200a632028#egg=xrft-0.1.dev',
+        #'https://github.com/xgcm/xrft/tarball/879643cb0d6779632fc7600876bd90200a632028#egg=xrft-0.1.dev',
     ],
     install_requires=REQUIRED,
 
