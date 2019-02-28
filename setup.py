@@ -39,6 +39,7 @@ packages = find_packages(exclude=('tests', 'source', 'info_session', 'docs', 'ex
                                   'figures', 'exp', 'datasets', 'resources',))
 
 REQUIRED = [
+    'tornado==4.5.3',
     # Data loading
     'astropy',
     'igor==0.3.1', # patched on GitHub

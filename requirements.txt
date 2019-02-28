@@ -1,3 +1,5 @@
+tornado==4.5.3
+
 # Data loading
 astropy
 git+git://github.com/chstan/igorpy.git@712a4c4#egg=igor-0.3.1
