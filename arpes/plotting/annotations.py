@@ -52,8 +52,8 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation='to
             return '\\textbf{' + pol.upper() + '}'
 
         symbol_pol = {
-            's': '\\updownarrow',
-            'p': '\\leftrightarrow',
+            's': '',
+            'p': '',
             's-p': '',
             'p-s': '',
         }
@@ -72,7 +72,7 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation='to
         return '\\textbf{' + str(c['hv']) + ' eV'
 
     renderers = {
-        'temp': lambda c: '\\textbf{T = ' + '{:.2g}'.format(c['temp']) + ' K}',
+        'temp': lambda c: '\\textbf{T = ' + '{:.3g}'.format(c['temp']) + ' K}',
         'photon': render_photon,
         'photon polarization': lambda c: render_photon(c) + ', ' + render_polarization(c),
         'polarization': render_polarization,
