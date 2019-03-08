@@ -36,6 +36,7 @@ __all__ = (
 
     'dos_axes',
     'fancy_labels',
+    'invisible_axes',
 
     'colorbarmaps_for_axis',
     
@@ -566,3 +567,9 @@ class CoincidentLinesPlot():
         self.ax.figure.canvas.draw_idle()
         self.lw = lw
         """
+
+
+def invisible_axes(ax):
+    ax.grid(False)
+    ax.set_axis_off()
+    ax.patch.set_alpha(0)

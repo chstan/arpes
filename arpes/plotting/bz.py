@@ -357,7 +357,6 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
     :param points:
     :return:
     """
-
     import matplotlib.pyplot as plt
     from ase.dft.bz import bz_vertices
 
@@ -409,6 +408,7 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
             rep_y = (0, rep_y)
 
         for ix, iy in itertools.product(range(*rep_x), range(*rep_y)):
+            print(ix, iy)
             delta = dx * ix + dy * iy
 
             for points, normal in bz1:
