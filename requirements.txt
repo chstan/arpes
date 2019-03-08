@@ -34,7 +34,7 @@ pymatgen
 # holoviews==1.8.4
 matplotlib==3.0.0
 seaborn
-bokeh
+bokeh==0.12.10
 # plotly # optional
 
 # Rendering and exploration
