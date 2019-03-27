@@ -1,10 +1,58 @@
+from collections import defaultdict
 import functools
 import xarray as xr
 import time
 
 from arpes.typing import DataType
 
-__all__ = ['Debounce', 'lift_dataarray_to_generic']
+__all__ = ['Debounce', 'lift_dataarray_to_generic', 'iter_leaves']
+
+
+def collect_leaves(tree, is_leaf=None):
+    """
+    Produces a flat representation of the leaves, leaves with the same key are
+    collected into a list in the order of appearance, but this depends on the
+    dictionary iteration order.
+
+    Example:
+    collect_leaves({'a': 1, 'b': 2, 'c': {'a': 3, 'b': 4}}) -> {'a': [1, 3], 'b': [2, 4]}
+
+    :param tree:
+    :param is_leaf:
+    :return:
+    """
+    def reducer(dd, item):
+        dd[item[0]].append(item[1])
+        return dd
+
+    return functools.reduce(reducer, iter_leaves(tree, is_leaf), defaultdict(list))
+
+
+def iter_leaves(tree, is_leaf=None):
+    """
+    Iterates across the leaves of a nested dictionary. Whether a particular piece
+    of data counts as a leaf is controlled by the predicate `is_leaf`. By default,
+    all nested dictionaries are considered not leaves, i.e. an item is a leaf if and
+    only if it is not a dictionary.
+
+    Iterated items are returned as key value pairs.
+
+    As an example, you can easily flatten a nested structure with
+    `dict(leaves(data))`
+
+    :param tree:
+    :param is_leaf:
+    :return:
+    """
+    if is_leaf is None:
+        is_leaf = lambda x: not isinstance(x, dict)
+
+    for k, v in tree.items():
+        if is_leaf(v):
+            yield k, v
+        else:
+            for item in iter_leaves(v):
+                yield item
 
 
 def lift_dataarray_to_generic(f):
