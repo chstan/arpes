@@ -1607,21 +1607,27 @@ class GenericAccessorTools(object):
             coords_dict = dict(zip(axis_name_or_axes, cut_coords))
             yield coords_dict, self._obj.sel(method='nearest', **coords_dict)
 
-    def map_axes(self, axes, fn, **kwargs):
+    def map_axes(self, axes, fn, dtype=None, **kwargs):
         if isinstance(self._obj, xr.Dataset):
             raise TypeError('map_axes can only work on xr.DataArrays for now because of '
                             'how the type inference works')
         obj = self._obj.copy(deep=True)
 
+        if dtype is not None:
+            obj.values = np.ndarray(shape=obj.values.shape, dtype=dtype)
+
         type_assigned = False
         for coord, value in self.iterate_axis(axes):
             new_value = fn(value, coord)
 
-            if not type_assigned:
-                obj.values = np.ndarray(shape=obj.values.shape, dtype=new_value.data.dtype)
-                type_assigned = True
+            if dtype is None:
+                if not type_assigned:
+                    obj.values = np.ndarray(shape=obj.values.shape, dtype=new_value.data.dtype)
+                    type_assigned = True
 
-            obj.loc[coord] = new_value.values
+                obj.loc[coord] = new_value.values
+            else:
+                obj.loc[coord] = new_value
 
         return obj
 
