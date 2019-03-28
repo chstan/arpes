@@ -229,7 +229,7 @@ def read_single_pxt_old(reference_path: Path, separator=None):
     return wave
 
 
-def find_ses_files_associated(reference_path: Path):
+def find_ses_files_associated(reference_path: Path, separator: str='S'):
     """
     SES Software creates a series of PXT files they are all sequenced with _S[0-9][0-9][0-9].pxt
     `find_ses_files_associated` will collect all the files in the sequence
@@ -237,7 +237,7 @@ def find_ses_files_associated(reference_path: Path):
     :param reference_path:
     :return:
     """
-    name_match = re.match(r'([\w+]+)S[0-9][0-9][0-9]\.pxt', reference_path.name)
+    name_match = re.match(r'([\w+]+)[{}][0-9][0-9][0-9]\.pxt'.format(separator), reference_path.name)
 
     if name_match is None:
         return [reference_path]
