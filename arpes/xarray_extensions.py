@@ -1871,6 +1871,16 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
         return spectrum
 
     @property
+    def spectra(self):
+        spectra = []
+        for dv in list(self._obj.data_vars):
+            if 'spectrum' in dv:
+                spectra.append(self._obj[dv])
+
+        return spectra
+
+
+    @property
     def spectrum_type(self):
         try:
             # this isn't the smartest thing in the world,
