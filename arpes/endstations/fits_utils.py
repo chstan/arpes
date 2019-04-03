@@ -1,6 +1,9 @@
 import numpy as np
 from ast import literal_eval
+import functools
 from collections import Iterable
+
+from arpes.utilities.funcutils import iter_leaves, collect_leaves
 
 __all__ = ('extract_coords', 'find_clean_coords',)
 
@@ -90,6 +93,14 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF', dimension_renamings=
     Determines the scan degrees of freedom, the shape of the actual "spectrum"
     and reads and parses the coordinates from the header information in the recorded
     scan.
+
+    Note: because different scan configurations can have different values of the detector coordinates, such as
+    for instance when you record in two different angular modes of the spectrometer or when you record XPS spectra
+    at different binding energies, we need to be able to provide separate coordinates for each of the different scans.
+
+    In the case where there is a unique coordinate, we will return only that coordinate, under the anticipated name,
+    such as 'eV'. Otherwise, we will return the coordinates that different between the scan configurations under the
+    spectrum name, and with unique names, such as 'eV-Swept_Spectra0'.
 
     TODO Write data loading tests to ensure we don't break MC compatibility
 
@@ -191,6 +202,7 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF', dimension_renamings=
 
         assert(len(offset) == len(delta) and len(delta) == len(rest_shape))
 
+        # Build the actually coordinates
         coords = [np.linspace(o, o + s * d, s, endpoint=False)
                   for o, d, s in zip(offset, delta, rest_shape)]
 
@@ -248,7 +260,6 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF', dimension_renamings=
         time_spectra_type = {
             'Time_Target',
         }
-
         coord_names = None
         if spectrum_name not in coord_names_for_spectrum:
             # Don't remember what the MC ones were, so I will wait to do those again
@@ -273,11 +284,49 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF', dimension_renamings=
                 coords = coords[::-1]
 
         coords_for_spectrum = dict(zip(coord_names, coords))
-        extra_coords.update(coords_for_spectrum)
+        # we need to store the coordinates that were kept in a table separately, because they are allowed to differ
+        # between different scan configurations in the same file
+        if mode == 'ToF':
+            extra_coords.update(coords_for_spectrum)
+        else:
+            extra_coords[spectrum_name] = coords_for_spectrum
         dimensions_for_spectra[spectrum_name] = \
             tuple(scan_dimension) + tuple(coord_names)
         spectrum_shapes[spectrum_name] = tuple(scan_shape) + tuple(rest_shape)
         coords_for_spectrum.update(scan_coords)
 
     extra_coords.update(scan_coords)
+
+    if mode != 'ToF':
+        detector_coord_names = [k for k, v in extra_coords.items() if isinstance(v, dict)]
+
+        from collections import Counter
+        c = Counter(item for name in detector_coord_names for item in extra_coords[name])
+        conflicted = [k for k, v in c.items() if v != 1 and k != 'cycle']
+
+        flat_coordinates = collect_leaves(extra_coords)
+        def can_resolve_conflict(c):
+            coordinates = flat_coordinates[c]
+
+            if not isinstance(coordinates, list) or len(coordinates) < 2:
+                return True
+
+            # check if list of arrays is all equal
+            return functools.reduce(lambda x, y: (np.array_equal(x[1], y) and x[0], y), coordinates, (True, coordinates[0]))[0]
+
+        conflicted = [c for c in conflicted if not can_resolve_conflict(c)]
+
+        def clarify_dimensions(dims, sname):
+            return [d if d not in conflicted else d + '-' + sname for d in dims]
+
+        def clarify_coordinate(coordinates, sname):
+            if not isinstance(coordinates, dict):
+                return coordinates
+
+            return {k if k not in conflicted else k + '-' + sname: v for k, v in coordinates.items()}
+
+        dimensions_for_spectra = {k: clarify_dimensions(v, k) for k, v in dimensions_for_spectra.items()}
+        extra_coords = {k: clarify_coordinate(v, k) for k, v in extra_coords.items()}
+        extra_coords = dict(iter_leaves(extra_coords))
+
     return extra_coords, dimensions_for_spectra, spectrum_shapes

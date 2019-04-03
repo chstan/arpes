@@ -42,7 +42,7 @@ def plot_dos(data, title=None, out=None, norm=None, dos_pow=1, **kwargs):
     data.values[np.isnan(data.values)] = 0
     cbar_axes = matplotlib.colorbar.make_axes(axes, pad=0.01)
 
-    mesh = data.plot(ax=axes[0], norm=norm or colors.PowerNorm(gamma=0.15), add_colorbar=False)
+    mesh = data.plot(ax=axes[0], norm=norm or colors.PowerNorm(gamma=0.15))
 
     axes[1].set_facecolor((0.95, 0.95, 0.95))
     density_of_states = data.S.sum_other(['eV'])

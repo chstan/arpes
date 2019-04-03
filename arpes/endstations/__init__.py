@@ -172,14 +172,14 @@ class SESEndstation(EndstationBase):
             scan_desc = copy.deepcopy(scan_desc)
             scan_desc['path'] = frame_path
             return self.load_SES_nc(scan_desc=scan_desc, **kwargs)
-        
+
         # it's given by SES PXT files
         pxt_data = negate_energy(read_single_pxt(frame_path))
         return xr.Dataset({'spectrum': pxt_data}, attrs=pxt_data.attrs)
 
     def postprocess(self, frame: xr.Dataset):
         frame = super().postprocess(frame)
-        return frame.assign_attrs(frame.spectrum.attrs)
+        return frame.assign_attrs(frame.S.spectrum.attrs)
 
     def load_SES_nc(self, scan_desc: dict=None, robust_dimension_labels=False, **kwargs):
         """
@@ -265,8 +265,6 @@ class SESEndstation(EndstationBase):
 
 class FITSEndstation(EndstationBase):
     PREPPED_COLUMN_NAMES = {
-        'Fixed_Spectra4': 'spectrum',
-        'Fixed_Spectra2': 'spectrum',
         'time': 'time',
         'Delay': 'delay-var',  # these are named thus to avoid conflicts with the
         'Sample-X': 'cycle-var',  # underlying coordinates
@@ -367,9 +365,8 @@ class FITSEndstation(EndstationBase):
 
         data_vars = {}
 
-        built_coords = {k: c * (np.pi / 180) if k in phi_to_rad_coords else c
-                        for k, c in built_coords.items()}
-
+        all_names = hdu.columns.names
+        n_spectra = len([n for n in all_names if 'Fixed_Spectra' in n or 'Swept_Spectra' in n])
         for column_name in hdu.columns.names:
             if column_name in self.SKIP_COLUMN_NAMES:
                 continue
@@ -380,10 +377,16 @@ class FITSEndstation(EndstationBase):
 
             column_display = self.PREPPED_COLUMN_NAMES.get(column_name, column_name)
             if 'Fixed_Spectra' in column_display:
-                column_display = 'spectrum'
+                if n_spectra == 1:
+                    column_display = 'spectrum'
+                else:
+                    column_display = 'spectrum' + '-' + column_display.split('Fixed_Spectra')[1]
 
             if 'Swept_Spectra' in column_display:
-                column_display = 'spectrum'
+                if n_spectra == 1:
+                    column_display = 'spectrum'
+                else:
+                    column_display = 'spectrum' + '-' + column_display.split('Swept_Spectra')[1]
 
             # sometimes if a scan is terminated early it can happen that the sizes do not match the expected value
             # as an example, if a beta map is supposed to have 401 slices, it might end up having only 260 if it were
@@ -456,6 +459,10 @@ class FITSEndstation(EndstationBase):
         if 'spectrum' in data_vars:
             data_vars['spectrum'] = prep_spectrum(data_vars['spectrum'])
 
+        # adjust angular coordinates
+        built_coords = {k: c * (np.pi / 180) if k in phi_to_rad_coords else c
+                        for k, c in built_coords.items()}
+
         return xr.Dataset(
             data_vars,
             attrs={**scan_desc, 'name': primary_dataset_name},
@@ -518,8 +525,9 @@ def load_scan(scan_desc, **kwargs):
     endstation_name = case_insensitive_get(full_note, 'location', case_insensitive_get(full_note, 'endstation'))
     try:
         endstation_cls = endstation_from_alias(endstation_name)
-        return endstation_cls().load(scan_desc, **kwargs)
     except KeyError:
         raise ValueError('Could not identify endstation. '
                          'Did you set the endstation or location? Find a description of the available options '
                          'in the endstations module.')
+
+    return endstation_cls().load(scan_desc, **kwargs)

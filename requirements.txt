@@ -1,3 +1,5 @@
+tornado==4.5.3
+
 # Data loading
 astropy
 git+git://github.com/chstan/igorpy.git@712a4c4#egg=igor-0.3.1
@@ -18,7 +20,9 @@ scipy
 lmfit
 scikit-learn
 scikit-image
-git+git://github.com/xgcm/xrft.git@879643cb0d6779632fc7600876bd90200a632028#egg=xrft-0.1.dev
+
+# You can install this if you like but don't need to
+# git+git://github.com/xgcm/xrft.git@879643cb0d6779632fc7600876bd90200a632028#egg=xrft-0.1.dev
 
 # cvxgrp # Conda
 # cvxpy  # Conda
@@ -30,7 +34,7 @@ pymatgen
 # holoviews==1.8.4
 matplotlib==3.0.0
 seaborn
-bokeh
+bokeh==0.12.10
 # plotly # optional
 
 # Rendering and exploration

@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.tri import Triangulation, TriAnalyzer, UniformTriRefiner
 import numpy as np
-from skimage import measure
 from arpes.provenance import save_plot_provenance
 from arpes.analysis import filters
 from mpl_toolkits.mplot3d import Axes3D # need this import to enable 3D axes
@@ -30,6 +29,7 @@ def plot_isosurface(data, level=None, percentile=99.5, smoothing=None, out=None,
     if level is None:
         level = np.percentile(data.data, percentile)
 
+    from skimage import measure # try to avoid skimage incompatibility with numpy v0.16 as much as possible
     verts, faces, normals, values = measure.marching_cubes(data.values, level, spacing=spacing)
 
     if ax is None:

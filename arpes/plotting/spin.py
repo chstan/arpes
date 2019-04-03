@@ -7,12 +7,15 @@ import xarray as xr
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.collections import LineCollection
 
+from arpes.analysis.statistics import mean_and_deviation
 from arpes.analysis.sarpes import to_intensity_polarization
 from arpes.provenance import save_plot_provenance
 from arpes.utilities.math import (
     polarization,
     propagate_statistical_error
 )
+from arpes.bootstrap import bootstrap
+from arpes.plotting.tof import scatter_with_std
 from .utils import *
 
 __all__ = ('spin_polarized_spectrum', 'spin_colored_spectrum',
@@ -109,39 +112,70 @@ def spin_difference_spectrum(spin_dr, title=None, ax=None, out=None, scatter=Fal
 
 
 @save_plot_provenance
-def spin_polarized_spectrum(spin_dr, title=None, ax=None, out=None, norm=None):
+def spin_polarized_spectrum(
+        spin_dr, title=None, ax=None, out=None, component='y', scatter=False, stats=False, norm=None):
     if ax is None:
         _, ax = plt.subplots(2, 1, sharex=True)
+
+    if stats:
+        spin_dr = bootstrap(lambda x: x)(spin_dr, N=100)
+        pol = mean_and_deviation(to_intensity_polarization(spin_dr))
+        counts = mean_and_deviation(spin_dr)
+    else:
+        counts = spin_dr
+        pol = to_intensity_polarization(counts)
 
     ax_left = ax[0]
     ax_right = ax[1]
 
-    up = spin_dr.down.data
-    down = spin_dr.up.data
+    up = counts.down.data
+    down = counts.up.data
 
-    pol = polarization(spin_dr.up.data, spin_dr.down.data)
-    energies = spin_dr.coords['eV']
+    energies = spin_dr.coords['eV'].values
     min_e, max_e = np.min(energies), np.max(energies)
 
     # Plot the spectra
-    ax_left.plot(energies, up, 'r')
-    ax_left.plot(energies, down, 'b')
-    ax_left.set_title(title if title is not None else 'Spin polarization {}'.format(''))
+    if stats:
+        if scatter:
+            scatter_with_std(counts, 'up', color='red', ax=ax_left)
+            scatter_with_std(counts, 'down', color='blue', ax=ax_left)
+        else:
+            v, s = counts.up.values, counts.up_std.values
+            ax_left.plot(energies, v, 'r')
+            ax_left.fill_between(energies, v - s, v + s, color='r', alpha=0.25)
+
+            v, s = counts.down.values, counts.down_std.values
+            ax_left.plot(energies, v, 'b')
+            ax_left.fill_between(energies, v - s, v + s, color='b', alpha=0.25)
+    else:
+        ax_left.plot(energies, up, 'r')
+        ax_left.plot(energies, down, 'b')
+
+    ax_left.set_title(title if title is not None else 'Spin spectrum {}'.format(''))
     ax_left.set_ylabel(r'\textbf{Spectrum Intensity}')
     ax_left.set_xlabel(r'\textbf{Kinetic energy} (eV)')
     ax_left.set_xlim(min_e, max_e)
 
     max_up = np.max(up)
     max_down = np.max(down)
-    plt.ylim(0, max(max_down, max_up) * 0.7)
+    ax_left.set_ylim(0, max(max_down, max_up) * 1.2)
 
     # Plot the polarization and associated statistical error bars
-    ax_right.plot(energies, pol, color='black')
-    ax_right.fill_between(energies, 0, 1, facecolor='red', alpha=0.1)
-    ax_right.fill_between(energies, -1, 0, facecolor='blue', alpha=0.1)
-    #ax_right.fill_between(energies, pol - 3 * (test_pol + 0.005),
-    #                      pol + 3 * (test_pol + 0.005), facecolor='black', alpha=0.3)
-    ax_right.set_title('Spin polarization')
+    if stats:
+        if scatter:
+            scatter_with_std(pol, 'polarization', ax=ax_right, color='black')
+        else:
+            v = pol.polarization.data
+            s = pol.polarization_std.data
+            ax_right.plot(energies, v, color='black')
+            ax_right.fill_between(energies, v - s, v + s, color='black', alpha=0.25)
+
+    else:
+        ax_right.plot(energies, pol.polarization.data, color='black')
+    ax_right.fill_between(energies, 0, 1, facecolor='blue', alpha=0.1)
+    ax_right.fill_between(energies, -1, 0, facecolor='red', alpha=0.1)
+
+    ax_right.set_title('Spin polarization, $\\text{S}_\\textbf{' + component + '}$')
     ax_right.set_ylabel(r'\textbf{Polarization}')
     ax_right.set_xlabel(r'\textbf{Kinetic Energy} (eV)')
     ax_right.set_xlim(min_e, max_e)
@@ -201,6 +235,9 @@ def hue_brightness_plot(data: xr.Dataset, ax=None, out=None, **kwargs):
     x, y = data.coords[data.intensity.dims[0]].values, data.coords[data.intensity.dims[1]].values
     extent = [y[0], y[-1], x[0], x[-1]]
     ax.imshow(polarization_intensity_to_color(data, **kwargs), extent=extent, aspect='auto', origin='lower')
+    ax.set_xlabel(data.intensity.dims[1])
+    ax.set_ylabel(data.intensity.dims[0])
+
     ax.grid(False)
 
 

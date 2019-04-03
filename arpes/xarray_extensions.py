@@ -2,10 +2,13 @@ import collections
 import itertools
 import copy
 import warnings
+from collections import OrderedDict
 
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+
+from arpes.plotting.utils import fancy_labels, remove_colorbars
 from typing import Optional, Union
 
 from arpes.analysis.band_analysis_utils import param_getter, param_stderr_getter
@@ -14,7 +17,6 @@ from arpes.exceptions import AnalysisError
 from arpes.typing import DataType
 
 from scipy import ndimage as ndi
-from skimage import feature
 
 import arpes.constants
 import arpes.materials
@@ -63,10 +65,15 @@ class ARPESAccessorBase(object):
 
     @property
     def experimental_conditions(self):
+        try:
+            temp = self.temp
+        except AttributeError:
+            temp = None
+
         return {
             'hv': self.hv,
             'polarization': self.polarization,
-            'temp': self.temp,
+            'temp': temp,
         }
 
     @property
@@ -83,7 +90,7 @@ class ARPESAccessorBase(object):
             except ValueError:
                 return self._obj.attrs['epu_pol']
 
-        return 's'
+        return None
 
     @property
     def is_subtracted(self):
@@ -680,6 +687,7 @@ class ARPESAccessorBase(object):
         embedded[:] = energy_marginal.values
         embedded = ndi.gaussian_filter(embedded, embed_size / 3)
 
+        from skimage import feature  # try to avoid dependency conflict with numpy v0.16
         edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
                               low_threshold=0.3) * 1
         edges = np.where(edges[int(embed_size / 2)] == 1)[0]
@@ -723,6 +731,7 @@ class ARPESAccessorBase(object):
             embedded[:] = values
             embedded = ndi.gaussian_filter(embedded, embed_size / 1.5)
 
+            from skimage import feature  # try to avoid dependency conflict with numpy v0.16
             edges = feature.canny(embedded, sigma=4, use_quantiles=False,
                                   low_threshold=0.7, high_threshold=1.5) * 1
             edges = np.where(edges[int(embed_size / 2)] == 1)[0]
@@ -825,6 +834,7 @@ class ARPESAccessorBase(object):
         embedded[:] = near_ef.values
         embedded = ndi.gaussian_filter(embedded, embed_size / 3)
 
+        from skimage import feature  # try to avoid dependency conflict with numpy v0.16
         edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
                               low_threshold=0.2) * 1
         edges = np.where(edges[int(embed_size / 2)] == 1)[0]
@@ -1109,7 +1119,6 @@ class ARPESAccessorBase(object):
         TODO, agressively normalize attributes across different spectrometers
         :return:
         """
-        warnings.warn('This is not reliable. Fill in stub for normalizing the temperature appropriately on data load.')
         prefered_attrs = ['TA', 'ta', 't_a', 'T_A', 'T_1', 't_1', 't1', 'T1', 'temp', 'temp_sample', 'temp_cryotip',
                           'temperature_sensor_b', 'temperature_sensor_a']
         for attr in prefered_attrs:
@@ -1151,6 +1160,134 @@ class ARPESAccessorBase(object):
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
+
+
+    def dict_to_html(self, d):
+        return """
+        <table>
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+        """.format(
+            rows=''.join(['<tr><td>{}</td><td>{}</td></tr>'.format(k, v) for k, v in d.items()])
+        )
+
+    def _repr_html_full_coords(self, coords):
+        def coordinate_dataarray_to_flat_rep(value):
+            if not isinstance(value, xr.DataArray):
+                return value
+
+            return '<span>{min:.3g}<strong> to </strong>{max:.3g}<strong> by </strong>{delta:.3g}</span>'.format(
+                min=value.min().item(),
+                max=value.max().item(),
+                delta=value.values[1] - value.values[0],
+            )
+
+        return self.dict_to_html({k: coordinate_dataarray_to_flat_rep(v) for k, v in coords.items()})
+
+    def _repr_html_spectrometer_info(self):
+        skip_keys = {'dof',}
+        ordered_settings = OrderedDict(self.spectrometer_settings)
+        ordered_settings.update({k: v for k, v in self.spectrometer.items()
+                                 if k not in skip_keys})
+
+        return self.dict_to_html(ordered_settings)
+
+    def _repr_html_experimental_conditions(self, conditions):
+        transforms = {
+            'polarization': lambda p: {
+                'p': 'Linear Horizontal',
+                's': 'Linear Vertical',
+                'rc': 'Right Circular',
+                'lc': 'Left Circular',
+                's-p': 'Linear Dichroism',
+                'p-s': 'Linear Dichroism',
+                'rc-lc': 'Circular Dichroism',
+                'lc-rc': 'Circular Dichroism',
+            }.get(p, p),
+            'hv': lambda hv: '{} eV'.format(hv),
+            'temp': lambda temp: '{} Kelvin'.format(temp),
+        }
+
+        id = lambda x: x
+
+        return self.dict_to_html({k: transforms.get(k, id)(v) for k, v in conditions.items() if v is not None})
+
+    def _repr_html_(self):
+        skip_data_vars = {'time',}
+
+        if isinstance(self._obj, xr.Dataset):
+            to_plot = [k for k in self._obj.data_vars.keys() if k not in skip_data_vars]
+            to_plot = [k for k in to_plot if 1 <= len(self._obj[k].dims) < 3]
+            to_plot = to_plot[:5]
+
+            if len(to_plot):
+                fig, ax = plt.subplots(1, len(to_plot), figsize=(len(to_plot) * 3, 3,))
+                if len(to_plot) == 1:
+                    ax = [ax]
+
+                for i, plot_var in enumerate(to_plot):
+                    self._obj[plot_var].plot(ax=ax[i])
+                    fancy_labels(ax[i])
+                    ax[i].set_title(plot_var.replace('_', ' '))
+
+                remove_colorbars()
+
+        else:
+            if 1 <= len(self._obj.dims) < 3:
+                fig, ax = plt.subplots(1, 1, figsize=(4, 3))
+                self._obj.plot(ax=ax)
+                fancy_labels(ax)
+                ax.set_title('')
+
+                remove_colorbars()
+
+        wrapper_style = 'style="display: flex; flex-direction: row;"'
+
+        try:
+            name = self.df_index
+        except:
+            if 'id' in self._obj.attrs:
+                name = 'ID: ' + str(self._obj.attrs['id'])[:9] + '...'
+            else:
+                name = 'No name'
+
+        warning = ''
+
+        if len(self._obj.attrs) < 10:
+            warning = ':  <span style="color: red;">Few Attributes, Data Is Summed?</span>'
+
+        return """
+        <header><strong>{name}{warning}</strong></header>
+        <div {wrapper_style}>
+        <details open>
+            <summary>Experimental Conditions</summary>
+            {conditions}
+        </details>
+        <details open>
+            <summary>Full Coordinates</summary>
+            {coordinates}
+        </details>
+        <details open>
+            <summary>Spectrometer</summary>
+            {spectrometer_info}
+        </details>
+        </div>
+        """.format(
+            name=name,
+            warning=warning,
+            wrapper_style=wrapper_style,
+            conditions=self._repr_html_experimental_conditions(self.experimental_conditions),
+            coordinates=self._repr_html_full_coords({k: v for k, v in self.full_coords.items() if v is not None}),
+            spectrometer_info=self._repr_html_spectrometer_info(),
+        )
 
 
 @xr.register_dataarray_accessor('S')
@@ -1281,6 +1418,17 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
         else:
             import pdb
             pdb.set_trace()
+
+    @property
+    def eV(self):
+        eV = None
+        if 'eV' in self._obj.dims:
+            eV = self._obj.eV
+        else:
+            for dof in set(self._obj.dims):
+                if 'eV' in dof:
+                    eV = self._obj[dof]
+        return eV
 
 
 NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
@@ -1470,21 +1618,27 @@ class GenericAccessorTools(object):
             coords_dict = dict(zip(axis_name_or_axes, cut_coords))
             yield coords_dict, self._obj.sel(method='nearest', **coords_dict)
 
-    def map_axes(self, axes, fn, **kwargs):
+    def map_axes(self, axes, fn, dtype=None, **kwargs):
         if isinstance(self._obj, xr.Dataset):
             raise TypeError('map_axes can only work on xr.DataArrays for now because of '
                             'how the type inference works')
         obj = self._obj.copy(deep=True)
 
+        if dtype is not None:
+            obj.values = np.ndarray(shape=obj.values.shape, dtype=dtype)
+
         type_assigned = False
         for coord, value in self.iterate_axis(axes):
             new_value = fn(value, coord)
 
-            if not type_assigned:
-                obj.values = np.ndarray(shape=obj.values.shape, dtype=new_value.data.dtype)
-                type_assigned = True
+            if dtype is None:
+                if not type_assigned:
+                    obj.values = np.ndarray(shape=obj.values.shape, dtype=new_value.data.dtype)
+                    type_assigned = True
 
-            obj.loc[coord] = new_value.values
+                obj.loc[coord] = new_value.values
+            else:
+                obj.loc[coord] = new_value
 
         return obj
 
@@ -1708,11 +1862,23 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             spectrum = self._obj.raw
         elif '__xarray_dataarray_variable__' in self._obj.data_vars:
             spectrum = self._obj.__xarray_dataarray_variable__
+        elif any('spectrum' in dv for dv in self._obj.data_vars):
+            spectrum = self._obj[list(self._obj.data_vars)[list('spectrum' in dv for dv in self._obj.data_vars).index(True)]]
 
         if spectrum is not None and 'df' not in spectrum.attrs:
             spectrum.attrs['df'] = self._obj.attrs.get('df', None)
 
         return spectrum
+
+    @property
+    def spectra(self):
+        spectra = []
+        for dv in list(self._obj.data_vars):
+            if 'spectrum' in dv:
+                spectra.append(self._obj[dv])
+
+        return spectra
+
 
     @property
     def spectrum_type(self):
@@ -1836,3 +2002,6 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
         #
         # if self._spectrum is None:
         #     assert(False and "Dataset appears not to contain a spectrum among options {}".format(data_arr_names))
+
+
+

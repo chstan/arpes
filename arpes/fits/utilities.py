@@ -98,18 +98,15 @@ def reduce_model_with_operators(model):
         return left / right
 
 
-def compile_model(model, constraints=None):
+def compile_model(model, params=None):
     """
     Takes a model sequence, i.e. a Model class, a list of such classes, or a list
     of such classes with operators and instantiates an appropriate model.
     :param model:
     :return:
     """
-
-    warnings.warn('Beware of equal operator precedence.')
-
-    if constraints is None:
-        constraints = {}
+    if params is None:
+        params = {}
 
     try:
         if issubclass(model, lmfit.Model):
@@ -119,15 +116,14 @@ def compile_model(model, constraints=None):
 
     if isinstance(model, (list, tuple)) and all([isinstance(token, type) for token in model]):
         models = [m(prefix='{}_'.format(ascii_lowercase[i]), nan_policy='omit') for i, m in enumerate(model)]
-        if isinstance(constraints, (list, tuple)):
-            for cs, m in zip(constraints, models):
-                for name, constraints_for_name in cs.items():
-                    m.set_param_hint(name, **constraints_for_name)
-
-            constraints = {}
+        if isinstance(params, (list, tuple)):
+            for cs, m in zip(params, models):
+                for name, params_for_name in cs.items():
+                    m.set_param_hint(name, **params_for_name)
 
         built = functools.reduce(operator.add, models)
     else:
+        warnings.warn('Beware of equal operator precedence.')
         prefix = iter(ascii_lowercase)
         model = [m if isinstance(m, str) else (m, next(prefix)) for m in model]
         built = reduce_model_with_operators(_parens_to_nested(model))
@@ -135,11 +131,43 @@ def compile_model(model, constraints=None):
     return built
 
 
+def unwrap_params(params, iter_coordinate):
+    """
+    Inspects parameters to see if any are array like and extracts the appropriate value to use for the current
+    iteration point.
+    :param params:
+    :param iter_coordinate:
+    :return:
+    """
+    def transform_or_walk(v):
+        if isinstance(v, dict):
+            return unwrap_params(v, iter_coordinate)
+
+        if isinstance(v, xr.DataArray):
+            return v.sel(**iter_coordinate, method='nearest').item()
+
+        return v
+
+    return {k: transform_or_walk(v) for k, v in params.items()}
+
+
 def broadcast_model(model_cls: typing.Union[type, TypeIterable],
-                    data: DataType, broadcast_dims, constraints=None, progress=True, dataset=True,
+                    data: DataType, broadcast_dims, params=None, progress=True, dataset=True,
                     weights=None, safe=False):
-    if constraints is None:
-        constraints = {}
+    """
+    Perform a fit across a number of dimensions. Allows composite models.
+    :param model_cls:
+    :param data:
+    :param broadcast_dims:
+    :param params:
+    :param progress:
+    :param dataset:
+    :param weights:
+    :param safe:
+    :return:
+    """
+    if params is None:
+        params = {}
 
     if isinstance(broadcast_dims, str):
         broadcast_dims = [broadcast_dims]
@@ -156,9 +184,9 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     residual = data.copy(deep=True)
     residual.values = np.zeros(residual.shape)
 
-    model = compile_model(parse_model(model_cls), constraints=constraints)
-    if isinstance(constraints, (list, tuple)):
-        constraints = {}
+    model = compile_model(parse_model(model_cls), params=params)
+    if isinstance(params, (list, tuple)):
+        params = {}
 
     new_params = model.make_params()
 
@@ -167,8 +195,9 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     if progress:
         wrap_progress = lambda x, *args, **kwargs: tqdm_notebook(x, *args, **kwargs)
 
-    for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting',
-                                             total=n_fits):
+    for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting', total=n_fits):
+        current_params = unwrap_params(params, cut_coords)
+
         cut_data = data.sel(**cut_coords)
         if safe:
             cut_data = cut_data.T.drop_nan()
@@ -178,7 +207,7 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
             weights_for = weights.sel(**cut_coords)
 
         try:
-            fit_result = model.guess_fit(cut_data, params=constraints, weights=weights_for)
+            fit_result = model.guess_fit(cut_data, params=current_params, weights=weights_for)
         except ValueError:
             fit_result = None
 

@@ -1,7 +1,6 @@
 import xarray as xr
 
 from arpes.corrections import apply_photon_energy_fermi_edge_correction, apply_quadratic_fermi_edge_correction
-from .analysis import fft_filter
 from .pipeline import pipeline, compose
 from .preparation import dim_normalizer
 from .provenance import update_provenance
@@ -78,6 +77,8 @@ prep_for_d2 = compose(
 
 @pipeline()
 def fft_clean_mc_map(data: xr.DataArray):
+    from arpes.analysis.fft import fft_filter
+
     polar_filter = [
         {'polar': slice(0.65, 1.)},
         {'polar': slice(-1., -0.65)},

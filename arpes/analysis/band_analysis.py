@@ -204,12 +204,12 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
 
     def resolve_partial_bands_from_description(
             coord_dict, name=None, band=arpes.models.band.Band, dims=None,
-            constraints=None, points=None, marginal=None):
+            params=None, points=None, marginal=None):
         # You don't need to supply a marginal, but it is useful because it allows estimation of the initial value for
         # the amplitude from the approximate peak location
 
-        if constraints is None:
-            constraints = {}
+        if params is None:
+            params = {}
 
 
         coord_name = [d for d in dims if d in coord_dict][0]
@@ -217,16 +217,16 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
         partial_band_locations = list(interpolate_itersecting_fragments(
            iter_coord_value, arr.dims.index(coord_name), points or []))
 
-        def build_constraints(old_constraints, center, center_stray=None):
-            new_constraints = copy.deepcopy(old_constraints)
-            new_constraints.update({
+        def build_params(old_params, center, center_stray=None):
+            new_params = copy.deepcopy(old_params)
+            new_params.update({
                 'center': { 'value': center, }
             })
             if center_stray is not None:
-                new_constraints['center']['min'] = center - center_stray
-                new_constraints['center']['max'] = center + center_stray
-                new_constraints['sigma'] = new_constraints.get('sigma', {})
-                new_constraints['sigma']['value'] = center_stray
+                new_params['center']['min'] = center - center_stray
+                new_params['center']['max'] = center + center_stray
+                new_params['sigma'] = new_params.get('sigma', {})
+                new_params['sigma']['value'] = center_stray
                 if marginal is not None:
                     near_center = marginal.sel(**dict([[marginal.dims[0], slice(
                         center - 1.2 * center_stray,
@@ -234,14 +234,14 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
                     )]]))
 
                     low, high = np.percentile(near_center.values, (20, 80,))
-                    new_constraints['amplitude'] = new_constraints.get('amplitude', {})
-                    new_constraints['amplitude']['value'] = high - low
-            return new_constraints
+                    new_params['amplitude'] = new_params.get('amplitude', {})
+                    new_params['amplitude']['value'] = high - low
+            return new_params
 
         return [{
             'band': band,
             'name': '{}_{}'.format(name, i),
-            'constraints': build_constraints(constraints, band_center, constraints.get('stray', stray)), # TODO
+            'params': build_params(params, band_center, params.get('stray', stray)), # TODO
         } for i, (_, band_center) in enumerate(partial_band_locations)]
 
     template = arr.sum(fit_direction)
@@ -265,16 +265,16 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
             partial_bands = partial_bands + [[{
                 'band': background,
                 'name': '',
-                'constraints': {},
+                'params': {},
             }]]
 
         def instantiate_band(partial_band):
             phony_band = partial_band['band'](partial_band['name'])
             built = phony_band.fit_cls(prefix=partial_band['name'], missing='drop')
-            for constraint_coord, constraints in partial_band['constraints'].items():
+            for constraint_coord, params in partial_band['params'].items():
                 if constraint_coord == 'stray':
                     continue
-                built.set_param_hint(constraint_coord, **constraints)
+                built.set_param_hint(constraint_coord, **params)
             return built
 
         internal_models = [instantiate_band(b) for bs in partial_bands for b in bs]
@@ -364,12 +364,12 @@ def fit_bands(arr: xr.DataArray, band_description, background=None,
     for band in band_description:
         if isinstance(band, dict):
             band_inst = band.get('band')
-            constraints = band.get('constraints', {})
+            params = band.get('params', {})
         else:
             band_inst = band
-            constraints = None
+            params = None
         fit_model = band_inst.fit_cls(prefix=band_inst.label)
-        initial_fit = fit_model.guess_fit(residual, params=constraints)
+        initial_fit = fit_model.guess_fit(residual, params=params)
         if initial_fits is None:
             initial_fits = initial_fit.params
         else:
@@ -416,7 +416,7 @@ def fit_bands(arr: xr.DataArray, band_description, background=None,
 
         closest_model_params = copy.deepcopy(closest_model_params)
 
-        # TODO mix in any constraints to the model params
+        # TODO mix in any params to the model params
 
         # populate models
         internal_models = [band.fit_cls(prefix=band.label) for band in raw_bands]

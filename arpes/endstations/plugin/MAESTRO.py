@@ -18,5 +18,7 @@ class MAESTROARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, FIT
         'LMOTOR3': 'theta',
         'LMOTOR4': 'beta',
         'LMOTOR5': 'sample-phi',
-        'LMOTOR9': 'Slit Defl',
+        'LMOTOR9': 'polar',
+        'mono_eV': 'hv',
+        'Slit Defl': 'polar',
     }

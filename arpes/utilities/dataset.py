@@ -55,6 +55,19 @@ def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
     # to install regexes for particular endstations, if this is needed in the future it might be a good way
     # of preventing clashes where there is ambiguity in file naming scheme across endstations
     patterns = [
+        r'[a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
+        r'[a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file),
+        r'[a-zA-Z0-9_\w+]+_[0]+{}_R[0-9][0-9][0-9]$'.format(file),
+        r'[a-zA-Z0-9_\w+]+_{}_R[0-9][0-9][0-9]$'.format(file),
+        r'[a-zA-Z0-9_\w+]+scan_[0]*{}_[0-9][0-9][0-9]'.format(file),
+        r'[a-zA-Z0-9_\w+]+scan_[0]*{}'.format(file),
+        r'[a-zA-Z0-9_\w]+_[0]+{}$'.format(file),
+        r'[a-zA-Z0-9_\w]+_{}$'.format(file),
+        r'[a-zA-Z0-9_\w]+{}$'.format(file),
+        r'[a-zA-Z0-9_\w]+[0]{}$'.format(file)
+    ]
+    '''
+    patterns = [
         r'[a-zA-Z0-9_\w+]+scan_[0]*{}_[0-9][0-9][0-9]'.format(file),
         r'[a-zA-Z0-9_\w+]+scan_[0]*{}'.format(file),
         r'[a-zA-Z0-9_\w]+_[0]+{}$'.format(file),
@@ -62,8 +75,11 @@ def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
         r'[a-zA-Z0-9_\w]+{}$'.format(file),
         r'[a-zA-Z0-9_\w]+[0]{}$'.format(file),
         r'[a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
-        r'[a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file)
+        r'[a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file),
+        r'[a-zA-Z0-9_\w+]+_[0]+{}_R[0-9][0-9][0-9]$'.format(file),
+        r'[a-zA-Z0-9_\w+]+_{}_R[0-9][0-9][0-9]$'.format(file)
     ]
+    #'''
 
     patterns = [re.compile(m) for m in patterns]
 
@@ -91,7 +107,7 @@ def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
         except FileNotFoundError:
             pass
 
-    if len(file) and file[0] == 'f': # try trimming the f off
+    if len(file) and file[0] == 'f':  # try trimming the f off
         return infer_data_path(file[1:], scan_desc, allow_soft_match=allow_soft_match, use_regex=use_regex)
 
     raise ConfigurationError('Could not find file associated to {}'.format(file))

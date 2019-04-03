@@ -1,9 +1,20 @@
+"""
+TODO: Standardize this module around support for some other library that has proper
+Brillouin zone plotting, like in ASE.
+
+This module also includes tools for masking regions of data against
+Brillouin zones.
+"""
+
+import re
+from collections import namedtuple, Counter
 import numpy as np
 import matplotlib.path
 
-__all__ = ['bz_symmetry', 'bz_cutter', 'reduced_bz_selection',
+__all__ = ('bz_symmetry', 'bz_cutter', 'reduced_bz_selection',
            'reduced_bz_axes', 'reduced_bz_mask', 'reduced_bz_poly',
-           'reduced_bz_axis_to', 'reduced_bz_E_mask', 'axis_along']
+           'reduced_bz_axis_to', 'reduced_bz_E_mask', 'axis_along',
+           'hex_cell', 'hex_cell_2d', 'orthorhombic_cell', 'process_kpath')
 
 
 _SYMMETRY_TYPES = {
@@ -17,6 +28,127 @@ _POINT_NAMES_FOR_SYMMETRY = {
     'square': {'G', 'X'},
     'hex': {'G', 'X', 'BX'},
 }
+
+SpecialPoint = namedtuple('SpecialPoint', ('name', 'negate', 'bz_coord'))
+
+
+def parse_single_path(path):
+    # first tokenize
+    tokens = [name for name in re.split(r'([A-Z][a-z0-9]*(?:\([0-9,\s]+\))?)', path) if name]
+
+    # normalize Gamma to G
+    tokens = [token.replace('Gamma', 'G') for token in tokens]
+
+    # convert to standard format
+    points = []
+    for token in tokens:
+        name, rest = token[0], token[1:]
+        negate = False
+        if len(rest) and rest[0] == 'n':
+            negate = True
+            rest = rest[1:]
+
+        bz_coords = (0, 0, 0,)
+        if len(rest):
+            rest = ''.join(c for c in rest if c not in '( \t\n\r)')
+            bz_coords = tuple([int(c) for c in rest.split(',')])
+
+        if len(bz_coords) == 2:
+            bz_coords = tuple(list(bz_coords) + [0])
+        points.append(SpecialPoint(name=name, negate=negate, bz_coord=bz_coords))
+
+    return points
+
+
+def parse_path(paths):
+    if isinstance(paths, str):
+
+        # some manual string work in order to make sure we do not split on commas inside BZ indices
+        idxs = []
+        for i, p in enumerate(paths):
+            if p == ',':
+                c = Counter(paths[:i])
+                if c['('] - c[')'] == 0:
+                    idxs.append(i)
+
+        paths = list(paths)
+        for idx in idxs:
+            paths[idx] = ':'
+
+        paths = ''.join(paths)
+        paths = paths.split(':')
+
+    return [parse_single_path(p) for p in paths]
+
+
+def special_point_to_vector(special_point, icell, special_points):
+    base = np.dot(icell.T, special_points[special_point.name])
+
+    if special_point.negate:
+        base = -base
+
+    coord = np.array(special_point.bz_coord)
+    return base + coord.dot(icell)
+
+
+def process_kpath(paths, cell, special_points=None):
+    promoted = False
+    if len(cell) == 2:
+        promoted = True
+        cell = [c + [0] for c in cell] + [0, 0, 0]
+
+    icell = np.linalg.inv(cell).T
+
+    if special_points is None:
+        from ase.dft.kpoints import get_special_points
+        special_points = get_special_points(cell)
+
+    points = [[special_point_to_vector(elem, icell, special_points) for elem in p]
+               for p in parse_path(paths)]
+
+    if promoted:
+        print(points)
+        pass
+
+    return points
+
+# Some common Brillouin zone formats
+def orthorhombic_cell(a=1, b=1, c=1):
+    return [[a, 0, 0], [0, b, 0], [0, 0, c]]
+
+
+def hex_cell(a=1, c=1):
+    return [[a, 0, 0], [-0.5 * a, 3 ** 0.5 / 2 * a, 0], [0, 0, c]]
+
+
+def hex_cell_2d(a=1):
+    return [[a, 0], [-0.5 * a, 3 ** 0.5 / 2 * a]]
+
+
+def build_2dbz_poly(vertices=None, icell=None, cell=None):
+    """
+    Converts brillouin zone or equivalent information to a polygon mask
+    that can be used to mask away data outside the zone boundary.
+    :param vertices:
+    :param icell:
+    :param cell:
+    :return:
+    """
+    from arpes.analysis.mask import raw_poly_to_mask
+    from ase.dft.bz import bz_vertices
+
+    assert(cell is not None or vertices is not None or icell is not None)
+
+    if vertices is None:
+        if icell is None:
+            icell = np.linalg.inv(cell).T
+
+        vertices = bz_vertices(icell)
+
+    points, normal = vertices[0]
+    points_2d = [p[:2] for p in points]
+
+    return raw_poly_to_mask(points_2d)
 
 def bz_symmetry(flat_symmetry_points):
     if isinstance(flat_symmetry_points, dict):

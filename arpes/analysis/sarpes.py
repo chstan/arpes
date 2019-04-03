@@ -51,5 +51,5 @@ def to_intensity_polarization(data: DataType):
 
     return xr.Dataset({
         'intensity': intensity,
-        'polarization': spectrum_polarization
+        'polarization': spectrum_polarization / data.S.sherman_function
     })
