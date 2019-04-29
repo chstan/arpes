@@ -67,6 +67,7 @@ class EndstationBase(object):
         return []
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
+        print(frame_path)
         return xr.Dataset()
 
     def postprocess(self, frame: xr.Dataset):
