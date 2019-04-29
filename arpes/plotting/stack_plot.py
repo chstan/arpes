@@ -169,8 +169,8 @@ def flat_stack_plot(data: DataType, stack_axis=None, fermi_level=True, cbarmap=N
                 marginal.plot(ax=ax, color=cmap(coord_dict[stack_axis]), **kwargs)
             else:
                 assert(mode == 'scatter')
-                raise NotImplementedError()
-
+                ax.scatter(*marginal.T.to_arrays(), color=cmap(coord_dict[stack_axis]))
+                ax.set_xlabel(marginal.dims[0])
 
     ax.set_xlabel(label_for_dim(data, ax.get_xlabel()))
     ax.set_ylabel('Spectrum Intensity (arb).')
