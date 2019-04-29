@@ -17,7 +17,7 @@ __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
 
 _DATASET_EXTENSIONS = {'.xlsx', '.xlx',}
 _SEARCH_DIRECTORIES = ('', 'hdf5', 'fits', '../Data', '../Data/hdf5', '../Data/fits',)
-_TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits', '.pxt'}
+_TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits', '.pxt', '.nxs', '.txt',}
 
 
 
@@ -55,14 +55,14 @@ def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
     # to install regexes for particular endstations, if this is needed in the future it might be a good way
     # of preventing clashes where there is ambiguity in file naming scheme across endstations
     patterns = [
-        r'[a-zA-Z0-9_\w+]+scan_[0]*{}_[0-9][0-9][0-9]'.format(file),
-        r'[a-zA-Z0-9_\w+]+scan_[0]*{}'.format(file),
-        r'[a-zA-Z0-9_\w]+_[0]+{}$'.format(file),
-        r'[a-zA-Z0-9_\w]+_{}$'.format(file),
-        r'[a-zA-Z0-9_\w]+{}$'.format(file),
-        r'[a-zA-Z0-9_\w]+[0]{}$'.format(file),
-        r'[a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
-        r'[a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file)
+        r'[\-a-zA-Z0-9_\w+]+scan_[0]*{}_[0-9][0-9][0-9]'.format(file),
+        r'[\-a-zA-Z0-9_\w+]+scan_[0]*{}'.format(file),
+        r'[\-a-zA-Z0-9_\w]+_[0]+{}$'.format(file),
+        r'[\-a-zA-Z0-9_\w]+_{}$'.format(file),
+        r'[\-a-zA-Z0-9_\w]+{}$'.format(file),
+        r'[\-a-zA-Z0-9_\w]+[0]{}$'.format(file),
+        r'[\-a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
+        r'[\-a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file)
     ]
 
     patterns = [re.compile(m) for m in patterns]
@@ -129,7 +129,7 @@ def default_dataset(workspace=None, match=None, **kwargs):
     dir = os.path.join(arpes.config.DATASET_PATH, material_class)
 
     def is_dataset(filename):
-        if filename.startswith('~$'):
+        if filename.startswith('~$') or filename.startswith('._'):
             # temporary files on Windows
             return False
         rest, ext = os.path.splitext(filename)

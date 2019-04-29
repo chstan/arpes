@@ -59,6 +59,7 @@ def pick_gamma(data, **kwargs):
 
     return data
 
+
 def pick_points(data, **kwargs):
     ctx = {'points': []}
 
