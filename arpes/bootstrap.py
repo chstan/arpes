@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import copy
 import xarray as xr
 import functools
@@ -48,7 +49,26 @@ def estimate_prior_adjustment(data: DataType, region: Union[dict, str]=None):
 
 
 @lift_dataarray_to_generic
-def resample(data: xr.DataArray, prior_adjustment=1):
+def resample_cycle(data: xr.DataArray, **kwargs):
+    """
+    Perform a non-parametric bootstrap using a cycle coordinate for statistically independent observations.
+    :param data:
+    :param kwargs:
+    :return:
+    """
+
+    n_cycles = len(data.cycle)
+    which = [random.randint(0, n_cycles - 1) for _ in range(n_cycles)]
+
+    resampled = data.isel(cycle=which).sum('cycle', keep_attrs=True)
+
+    if 'id' in resampled.attrs:
+        del resampled.attrs['id']
+
+    return resampled
+
+@lift_dataarray_to_generic
+def resample(data: xr.DataArray, prior_adjustment=1, **kwargs):
     resampled = xr.DataArray(
         np.random.poisson(lam=data.values * prior_adjustment, size=data.values.shape),
         coords=data.coords,
@@ -129,11 +149,16 @@ def bootstrap_intensity_polarization(data, N=100):
     return bootstrapped_polarization(data, N=N)
 
 
-def bootstrap(fn, skip=None):
+def bootstrap(fn, skip=None, resample_method=None):
     if skip is None:
         skip = []
 
     skip = set(skip)
+
+    if resample_method is None:
+        resample_fn = resample
+    elif resample_method == 'cycle':
+        resample_fn = resample_cycle
 
     def bootstrapped(*args, N=20, prior_adjustment=1, **kwargs):
         # examine args to determine which to resample
@@ -166,9 +191,9 @@ def bootstrap(fn, skip=None):
             new_args = list(args)
             new_kwargs = copy.copy(kwargs)
             for i in resample_indices:
-                new_args[i] = resample(args[i], prior_adjustment=prior_adjustment)
+                new_args[i] = resample_fn(args[i], prior_adjustment=prior_adjustment)
             for k in resample_kwargs:
-                new_kwargs[k] = resample(kwargs[k], prior_adjustment=prior_adjustment)
+                new_kwargs[k] = resample_fn(kwargs[k], prior_adjustment=prior_adjustment)
 
 
             run = fn(*new_args, **new_kwargs)
