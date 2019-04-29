@@ -26,8 +26,8 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
         super().__init__()
 
         self.load_settings(**kwargs)
-        self.app_main_size = self.settings.get('app_main_size', 600)
-        self.app_marginal_size = self.settings.get('app_marginal_size', 300)
+        self.app_main_size = self.settings.get('main_width', 600)
+        self.app_marginal_size = self.settings.get('marginal_width', 300)
         self.selected_data = 'data'
         self.use_dataset = True
         self.remove_outliers = True

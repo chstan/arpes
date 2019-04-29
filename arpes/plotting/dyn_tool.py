@@ -28,8 +28,8 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
         self.analysis_fn = analysis_fn
         self.widget_specification = widget_specification
 
-        self.app_main_size = self.settings.get('app_main_size', 600)
-        self.app_marginal_size = self.settings.get('app_main_size', 300)
+        self.app_main_size = self.settings.get('main_width', 600)
+        self.app_marginal_size = self.settings.get('marginal_width', 300)
 
     def tool_handler(self, doc):
         if len(self.arr.shape) != 2:
