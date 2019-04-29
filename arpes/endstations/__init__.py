@@ -173,14 +173,14 @@ class SESEndstation(EndstationBase):
             scan_desc = copy.deepcopy(scan_desc)
             scan_desc['path'] = frame_path
             return self.load_SES_nc(scan_desc=scan_desc, **kwargs)
-        
+
         # it's given by SES PXT files
         pxt_data = negate_energy(read_single_pxt(frame_path))
         return xr.Dataset({'spectrum': pxt_data}, attrs=pxt_data.attrs)
 
     def postprocess(self, frame: xr.Dataset):
         frame = super().postprocess(frame)
-        return frame.assign_attrs(frame.spectrum.attrs)
+        return frame.assign_attrs(frame.S.spectrum.attrs)
 
     def load_SES_nc(self, scan_desc: dict=None, robust_dimension_labels=False, **kwargs):
         """

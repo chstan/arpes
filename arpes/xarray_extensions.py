@@ -1419,6 +1419,17 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
             import pdb
             pdb.set_trace()
 
+    @property
+    def eV(self):
+        eV = None
+        if 'eV' in self._obj.dims:
+            eV = self._obj.eV
+        else:
+            for dof in set(self._obj.dims):
+                if 'eV' in dof:
+                    eV = self._obj[dof]
+        return eV
+
 
 NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 
@@ -1851,11 +1862,23 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             spectrum = self._obj.raw
         elif '__xarray_dataarray_variable__' in self._obj.data_vars:
             spectrum = self._obj.__xarray_dataarray_variable__
+        elif any('spectrum' in dv for dv in self._obj.data_vars):
+            spectrum = self._obj[list(self._obj.data_vars)[list('spectrum' in dv for dv in self._obj.data_vars).index(True)]]
 
         if spectrum is not None and 'df' not in spectrum.attrs:
             spectrum.attrs['df'] = self._obj.attrs.get('df', None)
 
         return spectrum
+
+    @property
+    def spectra(self):
+        spectra = []
+        for dv in list(self._obj.data_vars):
+            if 'spectrum' in dv:
+                spectra.append(self._obj[dv])
+
+        return spectra
+
 
     @property
     def spectrum_type(self):
