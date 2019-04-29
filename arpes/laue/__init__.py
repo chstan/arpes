@@ -44,7 +44,3 @@ def load_laue(path: typing.Union[Path, str]):
             'user': header[2].split(b'\0')[0].decode('ascii'),
             'comment': header[3].split(b'\0')[0].decode('ascii'),
         })
-
-
-
-

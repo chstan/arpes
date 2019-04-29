@@ -15,6 +15,7 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel','GStepBModel', 'QuadraticModel'
            'FermiDiracModel', 'BandEdgeBModel',
            'gaussian_convolve', 'TwoGaussianModel', "TwoLorModel","TwoLorEdgeModel")
 
+
 class XModelMixin(lf.Model):
     def guess_fit(self, data, params=None, weights=None, debug=False, **kwargs):
         """
