@@ -244,6 +244,61 @@ def affine_broadened_fd(x, fd_center=0, fd_width=0.003, conv_width=0.02, const_b
     ) + offset
 
 
+
+
+
+
+# Daniel Eilbott edits
+def g(x, mu=0, sigma=0.1):
+    return (1/np.sqrt(2 * np.pi * sigma**2)) * np.exp(-(1/2) * ((x-mu) / sigma)**2)
+
+def band_edge_bkg_gauss(x, center=0, width=0.05, amplitude=1, gamma=0.1, lor_center=0, offset=0, lin_bkg=0, const_bkg=0):#,sigma=0.1):
+    return np_convolve(band_edge_bkg(x, 0, width, amplitude, gamma, lor_center, offset, lin_bkg, const_bkg), g(np.linspace(-6,6,800), 0, 0.01))
+
+def fermi_dirac_affine(x, center=0, width=0.05, lin_bkg=0, const_bkg=0, scale=1):
+    # Fermi edge with an affine background multiplied in
+    return (scale + lin_bkg * x) / (np.exp((x - center) / width) + 1) + const_bkg
+
+def fermi_dirac_bkg_gauss(x, center=0, width=0.05, lin_bkg=0, const_bkg=0, scale=1, sigma=0.01):
+    return np_convolve(
+        fermi_dirac_affine(x, center, width, lin_bkg, const_bkg, scale),
+        # g(np.linspace(-6,6,800),0,sigma)
+        g(x,(min(x)+max(x))/2,sigma)
+    )
+
+def gstep_stdev(x, center=0, sigma=1, erf_amp=1):
+    """
+    Fermi function convolved with a Gaussian
+    :param x: value to evaluate fit at
+    :param center: center of the step
+    :param width: width of the step
+    :param erf_amp: height of the step
+    :return:
+    """
+    dx = x - center
+    return erf_amp * 0.5 * erfc(np.sqrt(2) * dx / width)
+
+def gstepb_stdev(x, center=0, sigma=1, erf_amp=1, lin_bkg=0, const_bkg=0):
+    """
+    Fermi function convoled with a Gaussian together with affine background
+    :param x: value to evaluate function at
+    :param center: center of the step
+    :param width: width of the step
+    :param erf_amp: height of the step
+    :param lin_bkg: linear background slope
+    :param const_bkg: constant background
+    :return:
+    """
+    dx = x - center
+    return const_bkg + lin_bkg * np.min(dx, 0) + gstep_stdev(x, center, sigma, erf_amp)
+
+# / Daniel Eilbott
+
+
+
+
+
+
 class AffineBroadenedFD(XModelMixin):
     """
     A model for fitting an affine density of states with resolution broadened Fermi-Dirac occupation
@@ -431,6 +486,119 @@ class BandEdgeBModel(XModelMixin):
         return update_param_vals(pars, self.prefix, **kwargs)
 
 
+
+
+
+
+# Daniel Eilbott edits
+class BandEdgeBGModel(XModelMixin):
+    """
+        A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution
+        """
+
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({
+            'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars,
+        })
+        super().__init__(band_edge_bkg_gauss, **kwargs)
+
+        self.set_param_hint('amplitude', min=0.)
+        self.set_param_hint('gamma', min=0.)
+        self.set_param_hint('offset', min=-10)
+
+        #
+        self.set_param_hint('center', vary=False)
+
+    def guess(self, data, x=None, **kwargs):
+        # should really do some peak fitting or edge detection to find
+        # okay values here
+        pars = self.make_params()
+
+        if x is not None:
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x, data)
+            pars['%slor_center' % self.prefix].set(value=x[np.argmax(data - slope * x)])
+        else:
+            pars['%slor_center' % self.prefix].set(value=-0.2)
+
+        pars['%sgamma' % self.prefix].set(value=0.2)
+        pars['%samplitude' % self.prefix].set(value=(data.mean() - data.min()) / 1.5)
+
+        pars['%sconst_bkg' % self.prefix].set(value=data.min())
+        pars['%slin_bkg' % self.prefix].set(value=0)
+        pars['%soffset' % self.prefix].set(value=data.min())
+
+        # pars['%scenter' % self.prefix].set(value=0)
+        pars['%swidth' % self.prefix].set(0.02)  # TODO we can do better than this
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+class FermiDiracAffGaussModel(XModelMixin):
+    """
+    A model for the Fermi Dirac function with an affine background multiplied, then all convolved with a Gaussian
+    """
+    def __init__(self, independent_vars=['x'], prefix='', missing='drop', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(fermi_dirac_bkg_gauss, **kwargs)
+
+        # self.set_param_hint('width', min=0)
+        self.set_param_hint('width', vary=False)
+        # self.set_param_hint('lin_bkg', max=10)
+        # self.set_param_hint('scale', max=50000)
+        self.set_param_hint('scale', min=0)
+        self.set_param_hint('sigma', min=0, vary=True)
+        self.set_param_hint('lin_bkg', vary=False)
+        self.set_param_hint('const_bkg', vary=False)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['{}center'.format(self.prefix)].set(value=0)
+        # pars['{}width'.format(self.prefix)].set(value=0.05)
+        pars['{}width'.format(self.prefix)].set(value=0.0009264)
+        pars['{}scale'.format(self.prefix)].set(value=data.mean() - data.min())
+        pars['{}lin_bkg'.format(self.prefix)].set(value=0)
+        pars['{}const_bkg'.format(self.prefix)].set(value=0)
+        pars['{}sigma'.format(self.prefix)].set(value=0.023)
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+class GStepBStdevModel(XModelMixin):
+    """
+    A model for fitting Fermi functions with a linear background
+    """
+
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(gstepb_stdev, **kwargs)
+
+        self.set_param_hint('erf_amp', min=0.)
+        self.set_param_hint('sigma', min=0)
+        self.set_param_hint('lin_bkg', min=-10, max=10)
+        self.set_param_hint('const_bkg', min=-50, max=50)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%scenter' % self.prefix].set(value=0)
+        pars['%slin_bkg' % self.prefix].set(value=0)
+        pars['%sconst_bkg' % self.prefix].set(value=data.min())
+        pars['%ssigma' % self.prefix].set(0.02)  # TODO we can do better than this
+        pars['%serf_amp' % self.prefix].set(value=data.mean() - data.min())
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+# / Daniel Eilbott
+
+
+
+
+
 class GStepBStandardModel(XModelMixin):
     """
     A model for fitting Fermi functions with a linear background
@@ -556,7 +724,7 @@ class TwoGaussianModel(XModelMixin):
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
-    
+
 class TwoLorModel(XModelMixin):
     """
     A model for two gaussian functions with a linear background
@@ -651,4 +819,3 @@ class LinearModel(XModelMixin, lf.models.LinearModel):
             sval, oval = np.polyfit(x, data, 1)
         pars = self.make_params(intercept=oval, slope=sval)
         return update_param_vals(pars, self.prefix, **kwargs)
-
