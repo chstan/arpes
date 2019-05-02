@@ -30,6 +30,7 @@ SETTINGS = {
         'marginal_width': 200,
         'palette': 'magma',
     },
+    'xarray_repr_mod': False,
 }
 
 USER_PATH = ARPES_ROOT
@@ -68,15 +69,40 @@ update_configuration()
 
 CONFIG = {
     'VERSION': '1.0.0',
-    'MODE': consts.MODE_ARPES,
-    'LATTICE_CONSTANT': consts.LATTICE_CONSTANTS['Bi-2212'],
-    'WORK_FUNCTION': 46,
-    'LASER_ENERGY': 5.93,
-    'WORKSPACE': None, # set me in your notebook before saving anything
+    'WORKSPACE': None,
 }
+
+
+class WorkspaceManager(object):
+    def __init__(self, workspace=None):
+        self._cached_workspace = None
+        self._workspace = workspace
+
+    def __enter__(self):
+        self._cached_workspace = CONFIG['WORKSPACE']
+
+        if self._workspace is None:
+            return
+
+        if CONFIG['WORKSPACE'] is None:
+            attempt_determine_workspace()
+
+        p = Path(CONFIG['WORKSPACE']['path']).parent / self._workspace
+
+        if p.exists():
+            CONFIG['WORKSPACE'] = dict(CONFIG['WORKSPACE'])
+            CONFIG['WORKSPACE']['name'] = self._workspace
+            CONFIG['WORKSPACE']['path'] = str(p)
+        else:
+            raise ValueError('Could not find workspace: {}'.format(self._workspace))
+
+    def __exit__(self, *args):
+        CONFIG['WORKSPACE'] = self._cached_workspace
+
 
 def workspace_name_is_valid(workspace_name):
     return workspace_name in os.listdir(DATA_PATH)
+
 
 def workspace_matches(path):
     files = os.listdir(path)
@@ -84,8 +110,12 @@ def workspace_matches(path):
 
     return 'data' in files and any(Path(f).suffix in acceptable_suffixes for f in files)
 
-def attempt_determine_workspace(value=None, permissive=False):
+
+def attempt_determine_workspace(value=None, permissive=False, lazy=False):
     # first search upwards from the current directory at most three folders:
+    if lazy and CONFIG['WORKSPACE'] is not None:
+        return
+
     try:
         current_path = os.getcwd()
         for _ in range(3):

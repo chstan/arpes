@@ -33,7 +33,18 @@ Once this project is published on PyPI, you can install by using
 
 You will need to install into a Python interpreter with version 3.5 or higher. Note that the
 `--process-dependency-links` directive appears in both commands and is necessary in order to
-include a patched version of the Igor interop library.
+include a patched version of the Igor interop library. If you have a newer version of ``pip``,
+you might not be able to use `-process-dependency-links` as the ``pip`` team has deprecated
+this option. Please consult the `FAQ`_ for how to manually install a few extra dependencies if this
+is the case.
+
+Windows Installation
+--------------------
+
+Windows is not the most friendly operating system for scientific software. Although
+installation is absolutely possible manually, I cannot advocate Anaconda enough for Windows
+users, as it smooths out a lot of inhomogeneity in the process. For details on how to
+install manually, consult also the `FAQ`_.
 
 
 Alternative Installation
@@ -103,10 +114,18 @@ Contributing and Documentation
 See the section on the docs site about `contributing`_ for information on
 adding to PyPES and rebuilding documentation from source.
 
+Contact
+=======
+
+Questions, difficulties, and suggestions can be directed to Conrad Stansbury (chstan@berkeley.edu)
+or added to the repository as an issue. In the case trouble, also check the `FAQ`_.
+
 Copyright |copy| 2018 by Conrad Stansbury, all rights reserved.
 
 .. |copy|   unicode:: U+000A9 .. COPYRIGHT SIGN
 
 .. _Jupyter: https://jupyter.org/
-.. _the documentation site: https://stupefied-bhabha-ce8a9f.netlify.com/
-.. _contributing: https://stupefied-bhabha-ce8a9f.netlify.com/#/contributing
+.. _the documentation site: https://pypes.netlify.com/
+.. _contributing: https://pypes.netlify.com/#/contributing
+.. _FAQ: https://pypes.netlify.com/#/faq
+

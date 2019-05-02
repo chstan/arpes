@@ -27,7 +27,7 @@ class ImageTool(SaveableTool, CursorTool):
 
         self.app_main_size = self.settings.get('main_width', 600)
         self.app_marginal_size = self.settings.get('marginal_width', 300)
-        
+
         if curs is not None:
             self.cursor_default = curs
 

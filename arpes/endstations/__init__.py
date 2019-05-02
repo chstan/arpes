@@ -67,6 +67,7 @@ class EndstationBase(object):
         return []
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
+        print(frame_path)
         return xr.Dataset()
 
     def postprocess(self, frame: xr.Dataset):
@@ -281,6 +282,10 @@ class FITSEndstation(EndstationBase):
         # insert more as needed
     }
 
+    SKIP_COLUMN_FORMULAS = {
+        lambda name: True if ('beamview' in name or 'IMAQdx' in name) else False,
+    }
+
     RENAME_KEYS = {
         'Phi': 'sample-phi',
         'Beta': 'polar',
@@ -368,7 +373,17 @@ class FITSEndstation(EndstationBase):
         all_names = hdu.columns.names
         n_spectra = len([n for n in all_names if 'Fixed_Spectra' in n or 'Swept_Spectra' in n])
         for column_name in hdu.columns.names:
+            # we skip some fixed set of the columns, such as the one dimensional axes, as well as things that are too
+            # tricky to load at the moment, like the microscope images from MAESTRO
+            should_skip = False
             if column_name in self.SKIP_COLUMN_NAMES:
+                should_skip = True
+
+            for formula in self.SKIP_COLUMN_FORMULAS:
+                if formula(column_name):
+                    should_skip = True
+
+            if should_skip:
                 continue
 
             # the hemisphere axis is handled below

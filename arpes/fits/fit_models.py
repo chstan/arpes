@@ -15,6 +15,7 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel','GStepBModel', 'QuadraticModel'
            'FermiDiracModel', 'BandEdgeBModel',
            'gaussian_convolve', 'TwoGaussianModel', "TwoLorModel","TwoLorEdgeModel")
 
+
 class XModelMixin(lf.Model):
     def guess_fit(self, data, params=None, weights=None, debug=False, **kwargs):
         """
@@ -178,6 +179,15 @@ def exponential_decay_c(x, amp, tau, t0, const_bkg):
     dx = x - t0
     mask = (dx >= 0) * 1
     return const_bkg + amp * mask * np.exp(-(x - t0)/tau)
+
+def twoexponential_decay_c(x,amp,t0,tau1,tau2,const_bkg):
+    dx = x-t0
+    mask = (dx >= 0) * 1
+    y = const_bkg + amp*(1-np.exp(-dx/tau1))*np.exp(-dx/tau2)
+    f = y.copy()
+    f[dx<0] = const_bkg
+    f[dx>=0] = y
+    return f
 
 def lorentzian(x, gamma, center, amplitude):
     return amplitude * (1/(2*np.pi))* gamma /((x-center)**2+(.5*gamma)**2)
@@ -654,6 +664,35 @@ class ExponentialDecayCModel(XModelMixin):
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+class TwoExponentialDecayCModel(XModelMixin):
+    """
+    A model for fitting an exponential decay with a constant background
+    """
+
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(twoexponential_decay_c, **kwargs)
+
+        # amp is also a parameter, but we have no hint for it
+        self.set_param_hint('tau1', min=0.)
+        self.set_param_hint('tau2', min=0.)
+        # t0 is also a parameter, but we have no hint for it
+        self.set_param_hint('const_bkg')
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%stau1' % self.prefix].set(value=0.2) # 200fs
+        pars['%stau2' % self.prefix].set(value=1) # 1ps
+        pars['%st0' % self.prefix].set(value=0)
+        pars['%sconst_bkg' % self.prefix].set(value=data.mean())
+        pars['%samp' % self.prefix].set(value=data.max() - data.mean())
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC    
 
 
 class QuadraticModel(XModelMixin):

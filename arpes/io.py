@@ -1,7 +1,6 @@
 import json
 import os.path
 import uuid
-import warnings
 import numpy as np
 import pickle
 from pathlib import Path
@@ -9,16 +8,19 @@ from pathlib import Path
 import pandas as pd
 import xarray as xr
 
-from arpes.config import DATASET_CACHE_PATH, DATASET_CACHE_RECORD, CLEAVE_RECORD
+import arpes.config
+from arpes.config import DATASET_CACHE_PATH, DATASET_CACHE_RECORD, CLEAVE_RECORD, CONFIG, WorkspaceManager
 from arpes.exceptions import ConfigurationError
 from arpes.typing import DataType
-from arpes.utilities import wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datavar_attrs, WHITELIST_KEYS, FREEZE_PROPS
+from arpes.utilities import (wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datavar_attrs,
+                             WHITELIST_KEYS, FREEZE_PROPS, modern_clean_xlsx_dataset)
+from arpes.endstations import load_scan
 
 __all__ = (
-    'simple_load', 'load_dataset', 'save_dataset', 'delete_dataset',
+    'simple_load', 'direct_load', 'fallback_load', 'load_dataset', 'save_dataset', 'delete_dataset',
     'save_dataset_for_export',
     'dataset_exists', 'is_a_dataset', 'load_dataset_attrs', 'easy_pickle',
-    'sld', 'stitch',
+    'sld', 'dld', 'stitch',
 )
 
 
@@ -50,9 +52,11 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
     loaded = [f if isinstance(f, (xr.DataArray, xr.Dataset)) else simple_load(f)
               for f in list_of_files]
 
-    for f in loaded:
+    for i, f in enumerate(loaded):
         value = None
-        if attr_or_axis in f.attrs:
+        if isinstance(attr_or_axis, (list, tuple)):
+            value = attr_or_axis[i]
+        elif attr_or_axis in f.attrs:
             value = f.attrs[attr_or_axis]
         elif attr_or_axis in f.coords:
             value = f.coords[attr_or_axis]
@@ -232,47 +236,121 @@ def load_dataset_attrs(dataset_uuid):
         return unwrap_attrs_dict(attrs)
 
 
-def simple_load(fragment, df: pd.DataFrame = None, basic_prep=True):
-    if df is None:
-        from arpes.utilities import default_dataset  # break circular dependency
-        df = default_dataset()
+def simple_load(fragment, df: pd.DataFrame=None, workspace=None, basic_prep=True):
+    with WorkspaceManager(workspace):
+        if df is None:
+            from arpes.utilities import default_dataset  # break circular dependency
+            df = default_dataset()
 
-    def resolve_fragment(filename):
-        return str(filename).split('_')[-1]
+        def resolve_fragment(filename):
+            return str(filename).split('_')[-1]
 
-    # find a soft match
-    files = df.index
+        # find a soft match
+        files = df.index
 
-    def strip_left_zeros(value):
-        if len(value) == 1:
-            return value
+        def strip_left_zeros(value):
+            if len(value) == 1:
+                return value
 
-        return value.lstrip('0')
+            return value.lstrip('0')
 
-    if isinstance(fragment, (int, np.int32, np.int64,)):
-        numbers = [int(f) for f in [strip_left_zeros(''.join(c for c in resolve_fragment(f) if c.isdigit()))
-                                    for f in files] if len(f)]
-        index = numbers.index(fragment)
-    else:
-        fragment = str(fragment)
-        matches = [i for i, f in enumerate(files) if fragment in f]
-        if len(matches) == 0:
-            raise ValueError('No match found for {}'.format(fragment))
-        if len(matches) > 1:
-            raise ValueError('Unique match not found for {}. Options are: {}'.format(
-                fragment, [files[i] for i in matches]))
-        index = matches[0]
+        if isinstance(fragment, (int, np.int32, np.int64,)):
+            numbers = [int(f) for f in [strip_left_zeros(''.join(c for c in resolve_fragment(f) if c.isdigit()))
+                                        for f in files] if len(f)]
+            index = numbers.index(fragment)
+        else:
+            fragment = str(fragment)
+            matches = [i for i, f in enumerate(files) if fragment in f]
+            if len(matches) == 0:
+                raise ValueError('No match found for {}'.format(fragment))
+            if len(matches) > 1:
+                raise ValueError('Unique match not found for {}. Options are: {}'.format(
+                    fragment, [files[i] for i in matches]))
+            index = matches[0]
 
-    data = load_dataset(dataset_uuid=df.loc[df.index[index]], df=df)
+        data = load_dataset(dataset_uuid=df.loc[df.index[index]], df=df)
 
-    if basic_prep:
-        if 'cycle' in data.indexes and len(data.coords['cycle']) == 1:
-            data = data.sum('cycle', keep_attrs=True)
+        if basic_prep:
+            if 'cycle' in data.indexes and len(data.coords['cycle']) == 1:
+                data = data.sum('cycle', keep_attrs=True)
 
-    return data
+        return data
+
+
+def direct_load(fragment, df: pd.DataFrame=None, workspace=None, file=None, basic_prep=True, **kwargs):
+    """
+    Loads a dataset directly, in the same manner that prepare_raw_files does, from the denormalized source format.
+    This is useful for testing data loading procedures, and for quickly opening data at beamlines.
+
+    The structure of this is very similar to simple_load, and could be shared. The only differences are in selecting
+    the DataFrame with all the files at the beginning, and finally loading the data at the end.
+    :param fragment:
+    :param df:
+    :param file:
+    :param basic_prep:
+    :return:
+    """
+
+    with WorkspaceManager(workspace):
+        # first get our hands on a dataframe that has a list of all the files, where to find them on disk, and metadata
+        if df is None:
+            arpes.config.attempt_determine_workspace(lazy=True)
+            if file is None:
+                from arpes.utilities import default_dataset  # break circular dependency
+                df = default_dataset(with_inferred_cols=False)
+            else:
+                if not os.path.isabs(file):
+                    file = os.path.join(CONFIG['WORKSPACE']['path'], file)
+
+                df = modern_clean_xlsx_dataset(file, with_inferred_cols=False, write=False)
+
+        def resolve_fragment(filename):
+            return str(filename).split('_')[-1]
+
+        # find a soft match
+        files = df.index
+
+        def strip_left_zeros(value):
+            if len(value) == 1:
+                return value
+
+            return value.lstrip('0')
+
+        if isinstance(fragment, (int, np.int32, np.int64,)):
+            numbers = [int(f) for f in [strip_left_zeros(''.join(c for c in resolve_fragment(f) if c.isdigit()))
+                                        for f in files] if len(f)]
+            index = numbers.index(fragment)
+        else:
+            fragment = str(fragment)
+            matches = [i for i, f in enumerate(files) if fragment in f]
+            if len(matches) == 0:
+                raise ValueError('No match found for {}'.format(fragment))
+            if len(matches) > 1:
+                raise ValueError('Unique match not found for {}. Options are: {}'.format(
+                    fragment, [files[i] for i in matches]))
+            index = matches[0]
+
+        scan = df.loc[df.index[index]]
+        data = load_scan(dict(scan), **kwargs)
+
+        if basic_prep:
+            if 'cycle' in data.indexes and len(data.coords['cycle']) == 1:
+                data = data.sum('cycle', keep_attrs=True)
+
+        return data
 
 
 sld = simple_load
+dld = direct_load
+
+def fallback_load(*args, **kwargs):
+    try:
+        return sld(*args, **kwargs)
+    except:
+        return dld(*args, **kwargs)
+
+
+fld = fallback_load
 
 
 def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame = None):

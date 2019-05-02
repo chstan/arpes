@@ -3,7 +3,7 @@ import lmfit as lf
 import matplotlib.pyplot as plt
 import xarray as xr
 
-from arpes.fits import QuadraticModel, GStepBModel, broadcast_model
+from arpes.fits import QuadraticModel, GStepBModel, LinearModel, broadcast_model
 from arpes.provenance import provenance
 from arpes.typing import DataType
 from arpes.utilities.math import shift_by
@@ -25,7 +25,38 @@ __all__ = ['install_fermi_edge_reference', 'build_quadratic_fermi_edge_correctio
            'build_photon_energy_fermi_edge_correction', 'apply_photon_energy_fermi_edge_correction',
            'apply_quadratic_fermi_edge_correction', 'apply_copper_fermi_edge_correction',
            'apply_direct_copper_fermi_edge_correction', 'build_direct_fermi_edge_correction',
-           'apply_direct_fermi_edge_correction']
+           'apply_direct_fermi_edge_correction', 'find_e_fermi_linear_dos',]
+
+
+def find_e_fermi_linear_dos(edc, guess=None, plot=False, ax=None):
+    """
+    Does a reasonable job of finding E_Fermi in-situ for graphene/graphite or other materials with a linear DOS near
+    the chemical potential. You can provide an initial guess via guess, or one will be chosen half way through the EDC.
+
+    The Fermi level is estimated as the location where the DoS crosses below an estimated background level
+    :param edc:
+    :param guess:
+    :param plot:
+    :return:
+    """
+    if guess is None:
+        guess = edc.eV.values[len(edc.eV) // 2]
+
+    edc = edc - np.percentile(edc.values, (20,))[0]
+    mask = edc > np.percentile(edc.sel(eV=slice(None, guess)), 20)
+    mod = LinearModel().guess_fit(edc[mask])
+
+    chemical_potential = -mod.params['intercept'].value / mod.params['slope'].value
+
+    if plot:
+        if ax is None:
+            fig, ax = plt.subplots()
+        edc.plot(ax=ax)
+        ax.axvline(chemical_potential, linestyle='--', color='red')
+        ax.axvline(guess, linestyle='--', color='gray')
+
+    return chemical_potential
+
 
 def install_fermi_edge_reference(arr: xr.DataArray):
     # TODO add method to install and reference corrections by looking at dataset metadata

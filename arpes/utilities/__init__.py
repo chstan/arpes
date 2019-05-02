@@ -197,7 +197,11 @@ def rename_keys(d, keys_dict):
 def clean_keys(d):
     def clean_single_key(k):
         k = k.replace(' ', '_')
-        return re.sub(r'[()/?]', '', k)
+        k = k.replace('.', '_')
+        k = k.lower()
+        k = re.sub(r'[()/?]', '', k)
+        k = k.replace('__', '_')
+        return k
 
     return dict(zip([clean_single_key(k) for k in d.keys()], d.values()))
 

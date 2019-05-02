@@ -44,7 +44,49 @@ __all__ = (
 
     # insets related
     'inset_cut_locator',
+
+    # TeX related
+    'quick_tex',
 )
+
+def quick_tex(latex_fragment, ax=None, fontsize=30):
+    """
+    Sometimes you just need to render some latex and getting a latex session
+    running is far too much effort.
+    :param latex_fragment:
+    :return:
+    """
+
+    if ax is None:
+        fig, ax = plt.subplots()
+
+    invisible_axes(ax)
+    ax.text(0.2, 0.2, latex_fragment, fontsize=fontsize)
+    return ax
+
+
+def imshow_arr(arr, ax=None, origin='lower', aspect='auto', **kwargs):
+    """
+    Similar to plt.imshow but users different default origin, and sets appropriate
+    extent on the plotted data.
+    :param arr:
+    :param ax:
+    :return:
+    """
+
+    if ax is None:
+        fig, ax = plt.subplots()
+
+    x, y = arr.coords[arr.dims[0]].values, arr.coords[arr.dims[1]].values
+    extent = [y[0], y[-1], x[0], x[-1]]
+
+    ax.imshow(arr.values, origin=origin, extent=extent, aspect=aspect, **kwargs)
+    ax.grid(False)
+    ax.set_xlabel(arr.dims[0])
+    ax.set_ylabel(arr.dims[1])
+
+    return ax
+
 
 def dos_axes(orientation='horiz', figsize=None, with_cbar=True):
     """
@@ -149,8 +191,11 @@ def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=N
 
 
 def generic_colormap(low, high):
+    delta = (high - low)
+    low = low - delta / 6
+    high = high + delta / 6
     def get_color(value):
-        return matplotlib.cm.gnuplot(float((value - low) / (high - low)))
+        return matplotlib.cm.Blues(float((value - low) / (high - low)))
 
     return get_color
 
@@ -186,14 +231,20 @@ def temperature_colormap_around(central, range=50):
 
 
 def generic_colorbar(low, high, label='', ax=None, ticks=None, **kwargs):
+
     extra_kwargs = {
         'orientation': 'horizontal',
         'label': label,
         'ticks': ticks if ticks is not None else [low, high],
     }
+
+    delta = (high - low)
+    low = low - delta / 6
+    high = high + delta / 6
+
     extra_kwargs.update(kwargs)
     cb = colorbar.ColorbarBase(
-        ax, cmap='gnuplot', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
+        ax, cmap='Blues', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
 
     return cb
 

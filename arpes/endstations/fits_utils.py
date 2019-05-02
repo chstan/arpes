@@ -140,6 +140,10 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF', dimension_renamings=
         spectra = [spectra]
 
     for spectrum_key in spectra:
+        skip_names = {
+            lambda name: True if ('beamview' in name or 'IMAQdx' in name) else False,
+        }
+
         if spectrum_key is None:
             spectrum_key = hdu.columns.names[-1]
 
@@ -149,6 +153,15 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF', dimension_renamings=
         spectrum_name = hdu.columns.names[spectrum_key - 1]
         loaded_shape_from_header = False
         desc = None
+
+        should_skip = False
+        for skipped in skip_names:
+            if callable(skipped) and skipped(spectrum_name):
+                should_skip = True
+            elif skipped == spectrum_name:
+                should_skip = True
+        if should_skip:
+            continue
 
         try:
             offset = hdu.header['TRVAL%g' % spectrum_key]
@@ -238,6 +251,11 @@ def find_clean_coords(hdu, attrs, spectra=None, mode='ToF', dimension_renamings=
             import pdb
             pdb.set_trace()
 
+
+        # TODO for cleanup in future, these should be provided by the implementing endstation class, so they do not
+        # get so cluttered, best way will be to make this function a class method, and use class attributes for
+        # each of `coord_names_for_spectrum`, etc. For now, patching to avoid error with the microscope camera images
+        # at BL7
         coord_names_for_spectrum = {
             'Time_Spectra': ['time'],
             'Energy_Spectra': ['eV'],
