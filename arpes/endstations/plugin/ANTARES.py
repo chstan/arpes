@@ -49,9 +49,6 @@ def infer_scan_type_from_data(group):
     raise NotImplementedError(scan_name)
 
 
-
-
-
 class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFileEndstation):
     """
     Implements loading text files from the MB Scientific text file format.
@@ -92,23 +89,55 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         data = group['scan_data']
 
         # handle actuators
+        relaxed_shape = list(shape)
         actuator_list = [k for k in list(data.keys()) if 'actuator' in k]
         actuator_names = [parse_axis_name_from_long_name(
             str(data[act].attrs['long_name'])) for act in actuator_list]
         actuator_list = [data[act][:] for act in actuator_list]
-        actuator_dim_order = [shape.index(len(act)) for act in actuator_list]
+
+        actuator_dim_order = []
+        for act in actuator_list:
+            found = relaxed_shape.index(act.shape[-1])
+            actuator_dim_order.append(found)
+            relaxed_shape[found] = None
 
         coords = {}
+
+        def take_last(vs):
+            while len(vs.shape) > 1:
+                vs = vs[0]
+
+            return vs
+
         for dim_order, name, values in zip(actuator_dim_order, actuator_names, actuator_list):
             name = self.RENAME_KEYS.get(name, name)
             dims[dim_order] = name
-            coords[name] = values
+            coords[name] = take_last(values)
 
-        # handle standard spectrometer axes
-        energy = data['data_01'][0], data['data_03'][0], data['data_02'][0]
-        angle = data['data_04'][0], data['data_06'][0], data['data_05'][0]
+        # handle standard spectrometer axes, keeping in mind things get stored
+        # in different places sometimes for no reasons
+        energy_keys = {
+            'data_9': ('data_01', 'data_03', 'data_02',),
+            'data_12': ('data_04', 'data_06', 'data_05',),
+        }
+        angle_keys = {
+            'data_9': ('data_04', 'data_06', 'data_05',),
+            'data_12': ('data_07', 'data_09', 'data_08',),
+        }
+        e_keys = energy_keys[scan_name]
+        ang_keys = angle_keys[scan_name]
+        energy = data[e_keys[0]][0], data[e_keys[1]][0], data[e_keys[2]][0]
+        angle = data[ang_keys[0]][0], data[ang_keys[1]][0], data[ang_keys[2]][0]
+
+        def get_first(item):
+            if isinstance(item, np.ndarray):
+                return item.ravel()[0]
+
+            return item
 
         def build_axis(low, high, step_size):
+            # this might not work out to be the right thing to do, we will see
+            low, high, step_size = get_first(low), get_first(high), get_first(step_size)
             est_n = int((high - low) / step_size)
 
             closest = None
