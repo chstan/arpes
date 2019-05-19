@@ -1,4 +1,6 @@
+import warnings
 from collections import namedtuple
+from pathlib import Path
 import os
 import uuid
 import logging
@@ -13,12 +15,47 @@ from arpes.utilities.string import snake_case
 
 __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
            'attach_extra_dataset_columns', 'swap_reference_map',
-           'cleaned_dataset_exists', 'modern_clean_xlsx_dataset', 'cleaned_pair_paths']
+           'cleaned_dataset_exists', 'modern_clean_xlsx_dataset', 'cleaned_pair_paths',
+           'list_files_for_rename', 'rename_files']
 
 _DATASET_EXTENSIONS = {'.xlsx', '.xlx',}
 _SEARCH_DIRECTORIES = ('', 'hdf5', 'fits', '../Data', '../Data/hdf5', '../Data/fits',)
 _TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits', '.pxt', '.nxs', '.txt',}
 
+
+def shorten_left(s, max_length=20):
+    if len(s) > max_length:
+        return '...' + s[-(max_length - 3):]
+
+
+def list_files_for_rename(path=None, extensions=None):
+    if path is None:
+        path = os.getcwd()
+
+    if extensions is None:
+        extensions = ['.txt', '.nxs']
+
+    files_list = list((Path(path).glob('*')))
+    files_list = [p for p in files_list if p.suffix in extensions]
+    return files_list
+
+
+def rename_files(dry=True, path=None, extensions=None, starting_index=1):
+    if path is None:
+        path = os.getcwd()
+
+    files = list_files_for_rename(path=path, extensions=extensions)
+    for i, file in enumerate(files):
+        extra = '_{}'.format(i + starting_index)
+        new_file = file.parent / (file.stem + extra + file.suffix)
+
+        short_input = shorten_left(str(file), max_length=20)
+        short_output = shorten_left(str(file.parent / (file.stem + extra + file.suffix)),
+                                    max_length=20 + len(extra))
+
+        print('{} -> {}'.format(short_input, short_output))
+        if not dry:
+            os.rename(str(file), str(new_file))
 
 
 def is_blank(item):
@@ -220,10 +257,12 @@ def with_inferred_columns(df: pd.DataFrame):
 
     df = df.copy()
 
+    if 'spectrum_type' not in df.columns:
+        warnings.warn('You need to have a spectrum_type column. Try using `prepare_raw_files` first.')
+        return df
+
     df['ref_map'] = ''
     df['ref_id'] = ''
-
-    assert('spectrum_type' in df.columns)
 
     last_map = None
     logging.warning('Assuming sort along index')
