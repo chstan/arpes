@@ -1,3 +1,6 @@
+import sys
+import traceback
+
 from PyQt5 import QtGui, QtCore, QtWidgets
 import PyQt5.QtGui
 import pyqtgraph as pg
@@ -8,78 +11,45 @@ from arpes.utilities import normalize_to_spectrum
 from arpes.typing import DataType
 import arpes.config
 
+from .utils import PRETTY_KEYS, pretty_key_event, KeyBinding, hlayout, vlayout, layout, tabs
+from .HelpDialog import HelpDialog
+from .AxisInfoWidget import AxisInfoWidget
+from .DataArrayImageView import DataArrayImageView
+from .BinningInfoWidget import BinningInfoWidget
+
 __all__ = ('QtTool', 'qt_tool',)
 
 ReactivePlotRecord = namedtuple('ReactivePlotRecord', ('dims', 'view', 'orientation',))
 
 pg.setConfigOptions(antialias=True, foreground=(0, 0, 0), background=(255, 255, 255))
 
-pretty_keys = {}
-for key, value in vars(QtCore.Qt).items():
-    if isinstance(value, QtCore.Qt.Key):
-        pretty_keys[value] = key.partition('_')[2]
 
-def pretty_key_event(event):
-    """
-    Key Event -> List[str] in order to be able to prettily print keys
-    :param event:
-    :return:
-    """
-    key_sequence = []
+def clamp(x, low, high):
+    if x <= low:
+        return low
+    if x >= high:
+        return high
+    return x
 
-    key = pretty_keys.get(event.key(), event.text())
-    if key not in key_sequence:
-        key_sequence.append(key)
 
-    return key_sequence
+class CursorRegion(pg.LinearRegionItem):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._region_width = 1
+        self.lines[1].setMovable(False)
 
-#class AxisInfoWidget
+    def set_width(self, value):
+        self._region_width = value
+        self.lineMoved(0)
 
-class HelpDialog(QtWidgets.QDialog):
-    def __init__(self, shortcuts=None):
-        super().__init__()
+    def lineMoved(self, i):
+        if self.blockLineSignal:
+            return
 
-        if shortcuts is None:
-            shortcuts = []
+        self.lines[1].setValue(self.lines[0].value() + self._region_width)
+        self.prepareGeometryChange()
+        self.sigRegionChanged.emit(self)
 
-        self.layout = QtWidgets.QVBoxLayout()
-
-        keyboardShortcutsInfo = QtWidgets.QGroupBox(title='Keyboard Shortcuts')
-        keyboardShortcutsLayout = QtWidgets.QGridLayout()
-        for i, shortcut in enumerate(shortcuts):
-
-            keyboardShortcutsLayout.addWidget(QtWidgets.QLabel(
-                ', '.join(pretty_keys[k] for k in shortcut.chord), wordWrap=True), i, 0)
-            keyboardShortcutsLayout.addWidget(QtWidgets.QLabel(shortcut.label), i, 1)
-
-        keyboardShortcutsInfo.setLayout(keyboardShortcutsLayout)
-
-        aboutInfo = QtWidgets.QGroupBox(title='About')
-        aboutLayout = QtWidgets.QVBoxLayout()
-        aboutLayout.addWidget(QtWidgets.QLabel(
-            'QtTool is the work of Conrad Stansbury, with much inspiration '
-            'and thanks to the authors of ImageTool. QtTool is distributed '
-            'as part of the PyPES data analysis framework.',
-            wordWrap=True
-        ))
-        aboutLayout.addWidget(QtWidgets.QLabel(
-            'Complaints and feature requests should be directed to chstan@berkeley.edu.',
-            wordWrap=True
-        ))
-        aboutInfo.setLayout(aboutLayout)
-        aboutInfo.setFixedHeight(150)
-
-        self.layout.addWidget(keyboardShortcutsInfo)
-        self.layout.addWidget(aboutInfo)
-        self.setLayout(self.layout)
-
-        self.setWindowTitle('QtTool - Help')
-        self.setFixedSize(300, 500)
-
-    def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_H or event.key() == QtCore.Qt.Key_Escape:
-            self._main_window._help_dialog = None
-            self.close()
 
 def patchedLinkedViewChanged(self, view, axis):
     """
@@ -143,37 +113,28 @@ def patchedLinkedViewChanged(self, view, axis):
 pg.ViewBox.linkedViewChanged = patchedLinkedViewChanged
 
 
-class DataArrayImageView(pg.ImageView):
-    """
-    ImageView that transparently handles xarray data, including setting axis and coordinate information.
+def patched_excepthook(exc_type, exc_value, exc_tb):
+    enriched_tb = _add_missing_frames(exc_tb) if exc_tb else exc_tb
+    traceback.print_exception(exc_type, exc_value, enriched_tb)
 
-    This makes it easier to build interactive applications around realistic scientific datasets.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(view=pg.PlotItem(), *args, **kwargs)
+def _add_missing_frames(tb):
+    result = fake_tb(tb.tb_frame, tb.tb_lasti, tb.tb_lineno, tb.tb_next)
+    frame = tb.tb_frame.f_back
+    while frame:
+        result = fake_tb(frame, frame.f_lasti, frame.f_lineno, result)
+        frame = frame.f_back
+    return result
 
-        self.view.invertY(False)
-
-    def setImage(self, img, *args, **kwargs):
-        """
-        Accepts an xarray.DataArray instead of a numpy array
-        :param img:
-        :param args:
-        :param kwargs:
-        :return:
-        """
-
-        super().setImage(img.values, *args, **kwargs)
-        #self.view.axis
-
-
-KeyBinding = namedtuple('KeyBinding', ('label', 'chord', 'handler'))
+fake_tb = namedtuple('fake_tb', ('tb_frame', 'tb_lasti', 'tb_lineno', 'tb_next'))
 
 
 class QtToolWindow(QtGui.QMainWindow, QtCore.QObject):
     def __init__(self, *args, **kwargs):
         super().__init__()
+        self.tool = None
         self._help_dialog = None
+        self._old_excepthook = sys.excepthook
+        sys.excepthook = patched_excepthook
 
         self._keyBindings = [
             KeyBinding('Close', [QtCore.Qt.Key_Escape], self.do_close),
@@ -187,6 +148,10 @@ class QtToolWindow(QtGui.QMainWindow, QtCore.QObject):
 
         QtGui.QGuiApplication.installEventFilter(self, self)
 
+    def close(self):
+        sys.excepthook = self._old_excepthook
+        super(QtToolWindow, self).close()
+
     def do_close(self, event):
         self.close()
 
@@ -199,8 +164,23 @@ class QtToolWindow(QtGui.QMainWindow, QtCore.QObject):
             self._help_dialog.close()
             self._help_dialog = None
 
+    def window_print(self, *args, **kwargs):
+        print(*args, **kwargs)
+
     def scroll(self, event):
-        print('Scrolling.')
+        key_map = {
+            QtCore.Qt.Key_Left: (0, -1),
+            QtCore.Qt.Key_Right: (0, 1),
+            QtCore.Qt.Key_Down: (1, -1),
+            QtCore.Qt.Key_Up: (1, 1),
+        }
+
+        delta = key_map.get(event.key())
+        if delta is not None and self.tool is not None:
+            cursor = list(self.tool.context['cursor'])
+            cursor[delta[0]] += delta[1]
+
+            self.tool.update_cursor_position(cursor)
 
     def eventFilter(self, source, event):
         special_keys = [QtCore.Qt.Key_Down, QtCore.Qt.Key_Up, QtCore.Qt.Key_Left, QtCore.Qt.Key_Right]
@@ -242,7 +222,56 @@ class QtTool(object):
         self.reactive_views = []
         self.registered_cursors = defaultdict(list)
 
+        self.axis_info_widgets = []
+        self.binning_info_widgets = []
+
+        self.axes_tab = None
+        self.binning_tab = None
+        self._binning = None
+
         self.settings = arpes.config.SETTINGS.copy()
+
+    @property
+    def binning(self):
+        if self._binning is None:
+            return [1 for _ in self.data.dims]
+
+        return list(self._binning)
+
+    @binning.setter
+    def binning(self, value):
+        different_binnings = [i for i, (nv, v) in enumerate(zip(value, self._binning)) if nv != v]
+        self._binning = value
+
+        for i in different_binnings:
+            cursors = self.registered_cursors.get(i)
+            for cursor in cursors:
+                cursor.set_width(self._binning[i])
+
+        self.update_cursor_position(self.context['cursor'], force=True)
+
+    def print(self, *args, **kwargs):
+        self.window.window_print(*args, **kwargs)
+
+    def transpose(self, transpose_order):
+        reindex_order = [self.data.dims.index(t) for t in transpose_order]
+        self.data = self.data.transpose(*transpose_order)
+
+        for widget in self.axis_info_widgets + self.binning_info_widgets:
+            widget.recompute()
+
+        self.update_cursor_position([self.context['cursor'][i] for i in reindex_order], force=True)
+
+    def transpose_to_front(self, dim):
+        if not isinstance(dim, str):
+            dim = self.data.dims[dim]
+
+        order = list(self.data.dims)
+        order.remove(dim)
+        order = [dim] + order
+        self.transpose(order)
+
+        # TODO update cursor, marginals, data
 
     def configure_image_widgets(self):
         if len(self.data.dims) == 2:
@@ -282,33 +311,69 @@ class QtTool(object):
     def connect_cursor(self, dimension, the_line):
         self.registered_cursors[dimension].append(the_line)
 
-        def connected_cursor(line: pg.InfiniteLine):
+        def connected_cursor(line: CursorRegion):
             new_cursor = list(self.context['cursor'])
-            new_cursor[dimension] = line.value()
+            new_cursor[dimension] = line.getRegion()[0]
             self.update_cursor_position(new_cursor)
 
-        the_line.sigDragged.connect(connected_cursor)
+        the_line.sigRegionChanged.connect(connected_cursor)
 
     def update_cursor_position(self, new_cursor, force=False):
         old_cursor = list(self.context['cursor'])
         self.context['cursor'] = new_cursor
 
+        def index_to_value(value, i):
+            d = self.data.dims[i]
+            c = self.data.coords[d].values
+            return c[0] + value * (c[1] - c[0])
+
+        self.context['value_cursor'] = [index_to_value(v, i) for i, v in enumerate(new_cursor)]
+
         changed_dimensions = [i for i, (x, y) in enumerate(zip(old_cursor, new_cursor)) if x != y]
 
-        cursor_text = ','.join('{}: {:.4g}'.format(x, y) for x, y in zip(self.data.dims, new_cursor))
+        cursor_text = ','.join('{}: {:.4g}'.format(x, y)
+                               for x, y in zip(self.data.dims, self.context['value_cursor']))
         self.window.statusBar().showMessage('({})'.format(cursor_text))
 
+        # update axis info widgets
+        for widget in self.axis_info_widgets + self.binning_info_widgets:
+            widget.recompute()
+
         # update data
-        for reactive  in self.reactive_views:
+        def safe_slice(vlow, vhigh, axis=0):
+            vlow, vhigh = int(min(vlow, vhigh)), int(max(vlow, vhigh))
+            rng = len(self.data.coords[self.data.dims[axis]])
+            vlow, vhigh = clamp(vlow, 0, rng), clamp(vhigh, 0, rng)
+            
+            if vlow == vhigh:
+                vhigh = vlow + 1
+
+            vlow, vhigh = clamp(vlow, 0, rng), clamp(vhigh, 0, rng)
+
+            if vlow == vhigh:
+                vlow = vhigh - 1
+
+            return slice(vlow, vhigh)
+
+        for reactive in self.reactive_views:
             if len(set(reactive.dims).intersection(set(changed_dimensions))) or force:
                 try:
                     select_coord = dict(zip([self.data.dims[i] for i in reactive.dims],
-                                            [int(new_cursor[i]) for i in reactive.dims]))
+                                            [safe_slice(int(new_cursor[i]), int(new_cursor[i] + self.binning[i]), i)
+                                             for i in reactive.dims]))
                     if isinstance(reactive.view, DataArrayImageView):
-                        reactive.view.setImage(self.data.isel(**select_coord))
+                        image_data = self.data.isel(**select_coord)
+                        if len(select_coord):
+                            image_data = image_data.mean(list(select_coord.keys()))
+                        reactive.view.setImage(image_data)
+
                     elif isinstance(reactive.view, pg.PlotWidget):
-                        for_plot = self.data.isel(**select_coord).values
-                        cursors = [l for l in reactive.view.getPlotItem().items if isinstance(l, pg.InfiniteLine)]
+                        for_plot = self.data.isel(**select_coord)
+                        if len(select_coord):
+                            for_plot = for_plot.mean(list(select_coord.keys()))
+                        for_plot = for_plot.values
+
+                        cursors = [l for l in reactive.view.getPlotItem().items if isinstance(l, CursorRegion)]
                         reactive.view.clear()
                         for c in cursors:
                             reactive.view.addItem(c)
@@ -331,12 +396,14 @@ class QtTool(object):
                 widget.setMaximumWidth(200)
 
             if cursors:
-                cursor = pg.InfiniteLine(angle=0 if orientation == 'vert' else 90, movable=True)
+                cursor = CursorRegion(
+                    orientation=CursorRegion.Vertical if orientation == 'vert' else CursorRegion.Horizontal,
+                    movable=True)
                 widget.addItem(cursor, ignoreBounds=False)
                 self.connect_cursor(remaining_dims[0], cursor)
         else:
             assert(len(remaining_dims) == 2)
-            widget = DataArrayImageView(name=name)
+            widget = DataArrayImageView(name=name, root=self)
             widget.view.setAspectLocked(False)
             self.views[name] = widget
 
@@ -344,8 +411,8 @@ class QtTool(object):
             widget.setLevels(0.05, 0.95)
 
             if cursors:
-                cursor_vert = pg.InfiniteLine(angle=90, movable=True)
-                cursor_horiz = pg.InfiniteLine(angle=0, movable=True)
+                cursor_vert = CursorRegion(orientation=CursorRegion.Vertical, movable=True)
+                cursor_horiz = CursorRegion(orientation=CursorRegion.Horizontal, movable=True)
                 widget.addItem(cursor_vert, ignoreBounds=True)
                 widget.addItem(cursor_horiz, ignoreBounds=True)
                 self.connect_cursor(remaining_dims[0], cursor_vert)
@@ -358,25 +425,28 @@ class QtTool(object):
 
     @property
     def info_tab(self):
-        tab = QtWidgets.QWidget()
-        layout = QtWidgets.QHBoxLayout()
+        return hlayout()
 
-        layout.addWidget(QtWidgets.QWidget())
-        layout.addWidget(QtWidgets.QWidget())
-        layout.addWidget(QtWidgets.QWidget())
+    def construct_axes_tab(self):
+        inner_items = [AxisInfoWidget(axis_index=i, root=self) for i in range(len(self.data.dims))]
+        return hlayout(*inner_items), inner_items
 
-        return tab
+    def construct_binning_tab(self):
+        binning_options = QtWidgets.QLabel('Options')
+        inner_items = [BinningInfoWidget(axis_index=i, root=self) for i in range(len(self.data.dims))]
 
-    @property
-    def axes_tab(self):
-        return QtWidgets.QWidget()
+        return hlayout(binning_options, *inner_items), inner_items
 
     def add_contextual_widgets(self):
-        self.tabs = QtWidgets.QTabWidget()
-        self.tabs.setFixedHeight(150)
+        self.axes_tab, self.axis_info_widgets = self.construct_axes_tab()
+        self.binning_tab, self.binning_info_widgets = self.construct_binning_tab()
 
-        self.tabs.addTab(self.info_tab, 'Info')
-        self.tabs.addTab(self.axes_tab, 'Axes')
+        self.tabs = tabs(
+            ['Info', self.info_tab,],
+            ['Axes', self.axes_tab,],
+            ['Binning', self.binning_tab,],
+        )
+        self.tabs.setFixedHeight(150)
 
         self.main_layout.addLayout(self.content_layout, 0, 0)
         self.main_layout.addWidget(self.tabs, 1, 0)
@@ -390,6 +460,7 @@ class QtTool(object):
         cw = QtGui.QWidget()
         win.setCentralWidget(cw)
         self.window = win
+        self.window.tool = self
 
         self.content_layout = QtGui.QGridLayout()
         self.main_layout = QtGui.QGridLayout()
@@ -417,9 +488,12 @@ class QtTool(object):
         data = normalize_to_spectrum(data)
         self.ninety_eight_percentile = np.percentile(data.values, (98,))[0]
         self.data = data
+        self._binning = [1 for _ in self.data.dims]
 
 
 def qt_tool(data: DataType):
     tool = QtTool()
     tool.set_data(data)
     tool.start()
+
+
