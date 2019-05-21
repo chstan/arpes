@@ -142,7 +142,7 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
 
             for i in range(n_iterations):
                 c = scipy.ndimage.convolve(u[-1],psf,mode=mode)
-                u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf),mode=mode))
+                u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf,None),mode=mode))  # careful about which axis (axes) to flip here...! need to explicitly specify for some versions of numpy
 
             result = u[-1]
     else:
@@ -153,7 +153,8 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
 
         for i in range(n_iterations):
             c = scipy.ndimage.convolve(u[-1],psf,mode=mode)
-            u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf),mode=mode))  # not yet tested to ensure flip correct for asymmetric psf
+            u.append(u[-1] * scipy.ndimage.convolve(arr/c,np.flip(psf,0),mode=mode))  # not yet tested to ensure flip correct for asymmetric psf
+            # note: need to explicitly specify axis number in np.flip in lower versions of numpy
 
         if type(data) is np.ndarray:
             result = u[-1].copy()
