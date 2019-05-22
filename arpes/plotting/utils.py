@@ -47,7 +47,17 @@ __all__ = (
 
     # TeX related
     'quick_tex',
+
+    # Decorating
+    'frame_with',
 )
+
+
+def frame_with(ax, color='red', linewidth=2):
+    for spine in ['left', 'right', 'top', 'bottom']:
+        ax.spines[spine].set_color(color)
+        ax.spines[spine].set_linewidth(linewidth)
+
 
 def quick_tex(latex_fragment, ax=None, fontsize=30):
     """
@@ -80,12 +90,12 @@ def imshow_arr(arr, ax=None, origin='lower', aspect='auto', **kwargs):
     x, y = arr.coords[arr.dims[0]].values, arr.coords[arr.dims[1]].values
     extent = [y[0], y[-1], x[0], x[-1]]
 
-    ax.imshow(arr.values, origin=origin, extent=extent, aspect=aspect, **kwargs)
+    quad = ax.imshow(arr.values, origin=origin, extent=extent, aspect=aspect, **kwargs)
     ax.grid(False)
-    ax.set_xlabel(arr.dims[0])
-    ax.set_ylabel(arr.dims[1])
+    ax.set_xlabel(arr.dims[1])
+    ax.set_ylabel(arr.dims[0])
 
-    return ax
+    return ax, quad
 
 
 def dos_axes(orientation='horiz', figsize=None, with_cbar=True):
