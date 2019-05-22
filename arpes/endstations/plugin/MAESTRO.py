@@ -22,3 +22,17 @@ class MAESTROARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, FIT
         'mono_eV': 'hv',
         'Slit Defl': 'polar',
     }
+
+    def load(self, scan_desc: dict = None, **kwargs):
+        # in the future, can use a regex in order to handle the case where we postfix coordinates
+        # for multiple spectra
+
+        scan = super().load(scan_desc, **kwargs)
+
+        coord_names = scan.coords.keys()
+        will_rename = {}
+        for coord_name in coord_names:
+            if coord_name in self.RENAME_KEYS:
+                will_rename[coord_name] = self.RENAME_KEYS.get(coord_name)
+
+        return scan.rename(will_rename)

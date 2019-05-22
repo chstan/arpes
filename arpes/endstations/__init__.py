@@ -279,6 +279,8 @@ class FITSEndstation(EndstationBase):
         'X',
         'Y',
         'Z',
+        'mono_eV',
+        'Slit Defl',
         # insert more as needed
     }
 
