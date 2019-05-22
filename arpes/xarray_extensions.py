@@ -205,6 +205,12 @@ class ARPESAccessorBase(object):
         dims.remove(dim)
         return self._obj.transpose(*([dim] + dims))
 
+    def transpose_to_back(self, dim):
+        dims = list(self._obj.dims)
+        assert(dim in dims)
+        dims.remove(dim)
+        return self._obj.transpose(*(dims + [dim]))
+
     def select_around_data(self, points, radius=None, fast=False, safe=True, mode='sum', **kwargs):
         """
         Can be used to perform a selection along one axis as a function of another, integrating a region
