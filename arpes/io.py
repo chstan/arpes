@@ -20,7 +20,7 @@ __all__ = (
     'simple_load', 'direct_load', 'fallback_load', 'load_dataset', 'save_dataset', 'delete_dataset',
     'save_dataset_for_export',
     'dataset_exists', 'is_a_dataset', 'load_dataset_attrs', 'easy_pickle',
-    'sld', 'dld', 'stitch',
+    'sld', 'dld', 'stitch', 'fld',
 )
 
 
