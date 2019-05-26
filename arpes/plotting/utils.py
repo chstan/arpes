@@ -10,6 +10,7 @@ import collections
 import xarray as xr
 from titlecase import titlecase
 from matplotlib.lines import Line2D
+import itertools
 
 from collections import Counter
 
@@ -21,26 +22,30 @@ from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
 __all__ = (
-    'path_for_plot', 'path_for_holoviews', 'name_for_dim', 'label_for_colorbar', 'label_for_dim',
-    'label_for_symmetry_point', 'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio', 'unit_for_dim',
-    'polarization_colorbar',
+    # General + IO
+    'path_for_plot', 'path_for_holoviews', 'name_for_dim', 'unit_for_dim',
+    'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio',
 
     # color related
     'temperature_colormap',
+    'polarization_colorbar',
     'temperature_colormap_around',
     'temperature_colorbar',
     'temperature_colorbar_around',
 
     'generic_colorbarmap',
     'generic_colorbarmap_for_data',
-
-    'dos_axes',
-    'fancy_labels',
-    'invisible_axes',
-
     'colorbarmaps_for_axis',
-    
+
+    # Axis generation
+    'dos_axes',
+
+    # matplotlib 'macros'
+    'invisible_axes',
+    'no_ticks',
     'remove_colorbars',
+    'frame_with',
+
 
     # insets related
     'inset_cut_locator',
@@ -48,9 +53,57 @@ __all__ = (
     # TeX related
     'quick_tex',
 
-    # Decorating
-    'frame_with',
+    # Decorating + labeling
+    'label_for_colorbar', 'label_for_dim', 'label_for_symmetry_point',
+    'sum_annotation',
+    'fancy_labels',
+
+    # Data summaries
+    'summarize',
 )
+
+
+def summarize(data: DataType, axes=None):
+    data = normalize_to_spectrum(data)
+
+    axes_shapes_for_dims = {
+        1: (1,1),
+        2: (1,1),
+        3: (2,2), # one extra here
+        4: (3,2), # corresponds to 4 choose 2 axes
+    }
+
+    if axes is None:
+        fig, axes = plt.subplots(axes_shapes_for_dims.get(len(data.dims)), figsize=(8,8))
+
+
+    flat_axes = axes.ravel()
+    combinations = list(itertools.combinations(data.dims, 2))
+    for axi, combination in zip(flat_axes, combinations):
+        data.sum(combination).plot(ax=axi)
+        fancy_labels(axi)
+
+    for i in range(len(combinations), len(flat_axes)):
+        flat_axes[i].set_axis_off()
+
+    return axes
+
+
+def sum_annotation(eV=None, phi=None):
+    eV_annotation, phi_annotation = '', ''
+
+    def to_str(bound):
+        if bound is None:
+            return ''
+
+        return '{:.2g}'.format(bound)
+
+    if eV is not None:
+        eV_annotation = '$\\text{E}_{' + to_str(eV.start) + '}^{' + to_str(eV.stop) + '}$'
+    if phi is not None:
+        phi_annotation = '$\\phi_{' + to_str(phi.start) + '}^{' + to_str(phi.stop) + '}$'
+
+    return eV_annotation + phi_annotation
 
 
 def frame_with(ax, color='red', linewidth=2):
@@ -634,3 +687,8 @@ def invisible_axes(ax):
     ax.grid(False)
     ax.set_axis_off()
     ax.patch.set_alpha(0)
+
+
+def no_ticks(ax):
+    ax.get_xaxis().set_ticks([])
+    ax.get_yaxis().set_ticks([])
