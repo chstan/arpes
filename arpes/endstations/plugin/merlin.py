@@ -36,7 +36,8 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
 
 
         # determine which axis to stitch them together along, and then do this
-        original_filename = scan_desc['file']
+        original_filename = scan_desc.get('file', scan_desc.get('path'))
+        assert(original_filename is not None)
 
         internal_match = re.match(r'([a-zA-Z0-9\w+_]+)_[S][0-9][0-9][0-9]\.pxt', Path(original_filename).name)
         if internal_match is not None:
