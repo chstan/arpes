@@ -1,5 +1,6 @@
 from typing import List
 
+from functools import wraps
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
@@ -9,7 +10,14 @@ __all__ = ('decomposition_along', 'pca_along', 'ica_along',)
 def decomposition_along(data: DataType, axes: List[str], decomposition_cls, correlation=False, **kwargs):
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import StandardScaler
-    flattened_data = normalize_to_spectrum(data).stack(fit_axis=axes)
+
+
+    if len(axes) > 1:
+        flattened_data = normalize_to_spectrum(data).stack(fit_axis=axes)
+        stacked = True
+    else:
+        flattened_data = normalize_to_spectrum(data).S.transpose_to_back(axes[0])
+        stacked = False
 
     if len(flattened_data.dims) != 2:
         raise ValueError('Inappropriate number of dimensions after flattening: [{}]'.format(
@@ -33,14 +41,19 @@ def decomposition_along(data: DataType, axes: List[str], decomposition_cls, corr
 
     into.values = transform.T
 
-    return into.unstack('fit_axis'), decomp
+    if stacked:
+        into = into.unstack('fit_axis')
+
+    return into, decomp
 
 
+@wraps(decomposition_along)
 def pca_along(*args, **kwargs):
     from sklearn.decomposition import PCA
     return decomposition_along(*args, **kwargs, decomposition_cls=PCA)
 
 
+@wraps(decomposition_along)
 def ica_along(*args, **kwargs):
     from sklearn.decomposition import FastICA
     return decomposition_along(*args, **kwargs, decomposition_cls=FastICA)
