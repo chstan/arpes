@@ -13,7 +13,7 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel','GStepBModel', 'QuadraticModel'
            'ConstantModel', 'LinearModel', 'GStepBStandardModel', 'AffineBackgroundModel',
            'AffineBroadenedFD',
            'FermiDiracModel', 'BandEdgeBModel',
-           'gaussian_convolve', 'TwoGaussianModel', "TwoLorModel","TwoLorEdgeModel")
+           'gaussian_convolve', 'TwoGaussianModel', 'TwoLorModel', 'TwoLorEdgeModel')
 
 
 class XModelMixin(lf.Model):
@@ -496,11 +496,6 @@ class BandEdgeBModel(XModelMixin):
         return update_param_vals(pars, self.prefix, **kwargs)
 
 
-
-
-
-
-# Daniel Eilbott edits
 class BandEdgeBGModel(XModelMixin):
     """
         A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution
@@ -515,8 +510,6 @@ class BandEdgeBGModel(XModelMixin):
         self.set_param_hint('amplitude', min=0.)
         self.set_param_hint('gamma', min=0.)
         self.set_param_hint('offset', min=-10)
-
-        #
         self.set_param_hint('center', vary=False)
 
     def guess(self, data, x=None, **kwargs):
@@ -541,6 +534,7 @@ class BandEdgeBGModel(XModelMixin):
         pars['%swidth' % self.prefix].set(0.02)  # TODO we can do better than this
 
         return update_param_vals(pars, self.prefix, **kwargs)
+
 
 class FermiDiracAffGaussModel(XModelMixin):
     """
@@ -575,6 +569,7 @@ class FermiDiracAffGaussModel(XModelMixin):
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
+
 class GStepBStdevModel(XModelMixin):
     """
     A model for fitting Fermi functions with a linear background
@@ -602,11 +597,6 @@ class GStepBStdevModel(XModelMixin):
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
-
-# / Daniel Eilbott
-
-
-
 
 
 class GStepBStandardModel(XModelMixin):
@@ -665,6 +655,7 @@ class ExponentialDecayCModel(XModelMixin):
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
+
 class TwoExponentialDecayCModel(XModelMixin):
     """
     A model for fitting an exponential decay with a constant background
@@ -715,6 +706,7 @@ class QuadraticModel(XModelMixin):
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
+
 class AffineBackgroundModel(XModelMixin):
     """
     A model for an affine background
@@ -731,6 +723,7 @@ class AffineBackgroundModel(XModelMixin):
         pars['%sconst_bkg' % self.prefix].set(value=0)
 
         return update_param_vals(pars, self.prefix, **kwargs)
+
 
 class TwoGaussianModel(XModelMixin):
     """
@@ -764,6 +757,7 @@ class TwoGaussianModel(XModelMixin):
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
+
 class TwoLorModel(XModelMixin):
     """
     A model for two gaussian functions with a linear background
@@ -795,6 +789,7 @@ class TwoLorModel(XModelMixin):
 
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
 
 class TwoLorEdgeModel(XModelMixin):
     """
