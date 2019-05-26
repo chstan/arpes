@@ -1,12 +1,13 @@
 import matplotlib.gridspec as gridspec
 import matplotlib
 import numpy as np
+import warnings
 import matplotlib.pyplot as plt
 from functools import wraps
-from matplotlib.widgets import LassoSelector, Button, TextBox, RectangleSelector
+from matplotlib.widgets import LassoSelector, Button, TextBox, RectangleSelector, SpanSelector
 from matplotlib.path import Path
 
-from arpes.plotting.utils import imshow_arr
+from arpes.plotting.utils import imshow_arr, fancy_labels
 
 
 __all__ = ('pick_rectangles', 'pick_points', 'pca_explorer',)
@@ -104,6 +105,153 @@ def popout(plotting_function):
     return wrapped
 
 
+class DataArrayView(object):
+    """
+    Offers support for 1D and 2D DataArrays with masks, selection tools, and a simpler interface
+    than the matplotlib primitives.
+
+    Look some more into holoviews for different features. https://github.com/pyviz/holoviews/pull/1214
+    """
+    def __init__(self, ax, data=None, ax_kwargs=None, mask_kwargs=None, auto_autoscale=True):
+        self.ax = ax
+        self._initialized = False
+        self._data = None
+        self._mask = None
+        self.n_dims = None
+        self.ax_kwargs = ax_kwargs
+        self._axis_image = None
+        self._mask_image = None
+        self._mask_cmap = None
+        self._selector = None
+        self._inner_on_select = None
+        self.auto_autoscale = auto_autoscale
+        self.mask_kwargs = mask_kwargs
+
+        if data is not None:
+            self.data = data
+
+    def handle_select(self, event_click=None, event_release=None):
+        dims = self.data.dims
+
+        if self.n_dims == 2:
+            x1, y1 = event_click.xdata, event_click.ydata
+            x2, y2 = event_release.xdata, event_release.ydata
+
+            x1, x2 = min(x1, x2), max(x1, x2)
+            y1, y2 = min(y1, y2), max(y1, y2)
+
+            region = dict([[dims[1], slice(x1, x2)], [dims[0], slice(y1, y2)]])
+        else:
+            x1, x2 = event_click, event_release
+            x1, x2 = min(x1, x2), max(x1, x2)
+
+            region = dict([[self.data.dims[0], slice(x1, x2)]])
+
+        self._inner_on_select(region)
+
+    def attach_selector(self, on_select):
+        # data should already have been set
+        assert(self.n_dims is not None)
+
+        self._inner_on_select = on_select
+
+        if self.n_dims == 1:
+            self._selector = SpanSelector(
+                self.ax, self.handle_select, 'horizontal',
+                useblit=True, rectprops=dict(alpha=0.35, facecolor='red'),
+            )
+        else:
+            self._selector = RectangleSelector(
+                self.ax, self.handle_select, drawtype='box',
+                rectprops=dict(fill=False, edgecolor='black', linewidth=2),
+                lineprops=dict(linewidth=2, color='black'),
+            )
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        if self._initialized:
+            self._data = new_data
+        else:
+            self._data = new_data
+            self._initialized = True
+            self.n_dims = len(new_data.dims)
+            if self.n_dims == 2:
+                self._axis_image = imshow_arr(self._data, ax=self.ax, **self.ax_kwargs)[1]
+                fancy_labels(self.ax)
+            else:
+                self.ax_kwargs.pop('cmap')
+                x, y = self.data.coords[self.data.dims[0]].values, self.data.values
+                self._axis_image = self.ax.plot(x, y, **self.ax_kwargs)
+                self.ax.set_xlabel(self.data.dims[0])
+                cs = self.data.coords[self.data.dims[0]].values
+                self.ax.set_xlim([np.min(cs), np.max(cs)])
+                fancy_labels(self.ax)
+
+        if self.n_dims == 2:
+            self._axis_image.set_data(self._data.values)
+        else:
+            color = self.ax.lines[0].get_color()
+            self.ax.lines.remove(self.ax.lines[0])
+            x, y = self.data.coords[self.data.dims[0]].values, self.data.values
+            l, h = np.min(y), np.max(y)
+            self._axis_image = self.ax.plot(x, y, c=color, **self.ax_kwargs)
+            self.ax.set_ylim([l - 0.1 * (h - l), h + 0.1 * (h - l)])
+
+        if self.auto_autoscale:
+            self.autoscale()
+
+    @property
+    def mask_cmap(self):
+        if self._mask_cmap is None:
+            self._mask_cmap = matplotlib.cm.get_cmap(self.mask_kwargs.pop('cmap', 'Reds'))
+            self._mask_cmap.set_bad('k', alpha=0)
+
+        return self._mask_cmap
+
+    @property
+    def mask(self):
+        return self._mask
+
+    @mask.setter
+    def mask(self, new_mask):
+        if np.array(new_mask).shape != self.data.values.shape:
+            # should be indices then
+            mask = np.zeros(self.data.values.shape, dtype=bool)
+            np.ravel(mask)[new_mask] = True
+            new_mask = mask
+
+        self._mask = new_mask
+
+        for_mask = np.ma.masked_where(np.logical_not(self._mask), self.data.values * 0 + 1)
+
+        if self.n_dims == 2:
+            if self._mask_image is None:
+                self._mask_image = self.ax.imshow(
+                    for_mask.T, cmap=self.mask_cmap, interpolation='none', vmax=1, vmin=0,
+                    origin='lower', extent=self._axis_image.get_extent(),
+                    aspect=self.ax.get_aspect(), **self.mask_kwargs
+                )
+            else:
+                self._mask_image.set_data(for_mask.T)
+        else:
+            if self._mask_image is not None:
+                self.ax.collections.remove(self._mask_image)
+
+            x = self.data.coords[self.data.dims[0]].values
+            low, high = self.ax.get_ylim()
+            self._mask_image = self.ax.fill_between(x, low, for_mask * high, color=self.mask_cmap(1.), **self.mask_kwargs)
+
+    def autoscale(self):
+        if self.n_dims == 2:
+            self._axis_image.autoscale()
+        else:
+            pass
+
+
 @popout
 def pca_explorer(pca, data, component_dim='components', initial_values=None, **kwargs):
     if initial_values is None:
@@ -131,6 +279,7 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, **k
 
         return (for_scatter / norm).stack(pca_dims=pca_dims), 5 * size / np.mean(size)
 
+    # ===== Set up axes ======
     gs = gridspec.GridSpec(2, 2)
     ax_components = plt.subplot(gs[0, 0])
     ax_sum_selected = plt.subplot(gs[0, 1])
@@ -141,66 +290,42 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, **k
     ax_widget_2 = plt.subplot(gs_widget[1, 0])
     ax_widget_3 = plt.subplot(gs_widget[2, 0])
 
-    _, data_imshow = imshow_arr(data.sum(pca_dims), ax=ax_sum_selected, cmap='viridis')
-    _, map_imshow = imshow_arr(data.sum(other_dims), ax=ax_map)
+    selected_view = DataArrayView(ax_sum_selected, ax_kwargs=dict(cmap='viridis'))
+    map_view = DataArrayView(ax_map, ax_kwargs=dict(cmap='Greys'),
+                             mask_kwargs=dict(cmap='Reds', alpha=0.35))
 
     def update_from_selection(ind):
-        # calculate the new data
+        # Calculate the new data
         if ind is None or len(ind) == 0:
-            stacked = data.stack(pca_dims=pca_dims).sum('pca_dims')
             context['selected_indices'] = []
+            context['sum_data'] = data.stack(pca_dims=pca_dims).sum('pca_dims')
         else:
             context['selected_indices'] = ind
-            stacked = data.stack(pca_dims=pca_dims).isel(pca_dims=ind).sum('pca_dims')
-
-        context['sum_data'] = stacked
-
-        ax_map.clear()
+            context['sum_data'] = data.stack(pca_dims=pca_dims).isel(pca_dims=ind).sum('pca_dims')
 
         if context['integration_region'] is not None:
             data_sel = data.sel(**context['integration_region']).sum(other_dims)
         else:
             data_sel = data.sum(other_dims)
 
-        _, imshowed = imshow_arr(data_sel, ax=ax_map)
-
-        s = data_sel.values.shape
-        data_sel = (data_sel.values * 0 + 1)
-        mask = (data_sel == 0).ravel()
-        mask[ind] = True
-        mask = mask.reshape(s)
-
-        my_cmap = matplotlib.cm.Reds
-        my_cmap.set_bad('k', alpha=0)
-        data_sel = np.ma.masked_where(np.logical_not(mask), data_sel)
-        ax_map.imshow(data_sel.T, cmap=my_cmap, interpolation='none', alpha=0.35, vmax=1, vmin=0,
-                      origin='lower', extent=imshowed.get_extent(), aspect=ax_map.get_aspect())
-
-        # update the sum display
-        data_imshow.set_data(stacked.values)
-        data_imshow.autoscale()
+        # Update all views
+        map_view.data = data_sel
+        map_view.mask = ind
+        selected_view.data = context['sum_data']
 
     def set_axes(component_x, component_y):
         ax_components.clear()
         context['selected_components'] = [component_x, component_y]
         for_scatter, size = compute_for_scatter()
         pts = ax_components.scatter(for_scatter.values[0], for_scatter.values[1], s=size)
+
         if context['selector'] != None:
             context['selector'].disconnect()
 
         context['selector'] = SelectFromCollection(ax_components, pts, on_select=update_from_selection)
+        ax_components.set_xlabel('$e_' + str(component_x) + '$')
+        ax_components.set_ylabel('$e_' + str(component_y) + '$')
         update_from_selection([])
-
-    def on_select_summed(event_click, event_release):
-        x1, y1 = event_click.xdata, event_click.ydata
-        x2, y2 = event_release.xdata, event_release.ydata
-
-        x1, x2 = min(x1, x2), max(x1, x2)
-        y1, y2 = min(y1, y2), max(y1, y2)
-
-        context['integration_region'] = dict([[other_dims[1], slice(x1, x2)], [other_dims[0], slice(y1, y2)]])
-        update_from_selection(context['selected_indices'])
-        context['rect_selector'].update()
 
     def on_change_axes(event):
         try:
@@ -229,12 +354,12 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, **k
     context['axis_Y_input'] = TextBox(ax_widget_3, 'Axis Y:', initial=str(initial_values[1]))
     context['axis_button'].on_clicked(on_change_axes)
 
-    context['rect_selector'] = RectangleSelector(
-        ax_sum_selected, on_select_summed, drawtype='box',
-        rectprops=dict(fill=False, edgecolor='black', linewidth=2), lineprops=dict(linewidth=2, color='black')
-    )
+    def on_select_summed(region):
+        context['integration_region'] = region
+        update_from_selection(context['selected_indices'])
 
     set_axes(*initial_values)
+    selected_view.attach_selector(on_select_summed)
 
     plt.tight_layout()
     return context
