@@ -15,6 +15,7 @@ def raw_poly_to_mask(poly):
         'poly': poly,
     }
 
+
 def polys_to_mask(mask_dict, coords, shape, radius=None, invert=False):
     dims = mask_dict['dims']
     polys = mask_dict['polys']
@@ -54,6 +55,7 @@ def apply_mask_to_coords(data: xr.Dataset, mask, dims, invert=True):
         mask = np.logical_not(mask)
 
     return mask
+
 
 def apply_mask(data: DataType, mask, replace=np.nan, radius=None, invert=False):
     data = normalize_to_spectrum(data)
