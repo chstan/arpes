@@ -8,10 +8,42 @@ from scipy.spatial import distance
 
 import arpes.models.band
 import arpes.utilities.math
-from arpes.utilities import enumerate_dataarray
+from arpes.utilities import enumerate_dataarray, normalize_to_spectrum
 from arpes.utilities.jupyter_utils import wrap_tqdm
+from arpes.typing import DataType
+from arpes.constants import HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ
+from arpes.fits import broadcast_model, LorentzianModel, AffineBackgroundModel, QuadraticModel
+from arpes.utilities.conversion.forward import convert_coordinates_to_kspace_forward
 
-__all__ = ('fit_bands',)
+__all__ = ('fit_bands', 'fit_for_effective_mass',)
+
+
+def fit_for_effective_mass(data: DataType, fit_kwargs=None):
+    """
+    We should probably include uncertainties here.
+
+    :param data:
+    :param fit_kwargs:
+    :return:
+    """
+    if fit_kwargs is None:
+        fit_kwargs = {}
+    data = normalize_to_spectrum(data)
+    mom_dim = [d for d in ['kp', 'kx', 'ky', 'kz', 'phi', 'polar'] if d in data.dims][0]
+
+    results = broadcast_model([LorentzianModel, AffineBackgroundModel], data, mom_dim, **fit_kwargs)
+    if mom_dim in {'phi', 'polar'}:
+        forward = convert_coordinates_to_kspace_forward(data)
+        final_mom = [d for d in ['kx', 'ky', 'kp', 'kz'] if d in forward][0]
+        eVs = results.F.p('a_center').values
+        kps = [forward[final_mom].sel(eV=eV, **dict([[mom_dim, ang]]), method='nearest') for
+               eV, ang in zip(eVs, data.coords[mom_dim].values)]
+        quad_fit = QuadraticModel().fit(eVs, x=np.array(kps))
+
+        return HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ / (2 * quad_fit.params['a'].value)
+
+    quad_fit = QuadraticModel().guess_fit(results.F.p('a_center'))
+    return HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ / (2 * quad_fit.params['a'].value)
 
 
 def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_weighting=True):
