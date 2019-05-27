@@ -112,6 +112,13 @@ SPECTROMETER_BL4 = {
     'dof': ['polar', 'sample_phi'],
 }
 
+SPECTROMETER_BL7 = {
+    'name': 'BL7',
+    'is_slit_vertical': True,
+    'type': 'hemisphere',
+    'dof': ['polar', 'sample_phi'],
+}
+
 SPECTROMETER_KAINDL = {
     'name': 'Kaindl',
     'is_slit_vertical': True,
