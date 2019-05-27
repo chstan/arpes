@@ -60,7 +60,27 @@ __all__ = (
 
     # Data summaries
     'summarize',
+
+    'transform_labels',
 )
+
+
+def transform_labels(transform_fn, fig=None, include_titles=True):
+    if fig is None:
+        fig = plt.gcf()
+
+    axes = list(fig.get_axes())
+    for ax in axes:
+        try:
+            ax.set_xlabel(transform_fn(ax.get_xlabel(), is_title=False))
+            ax.set_ylabel(transform_fn(ax.get_xlabel(), is_title=False))
+            if include_titles:
+                ax.set_title(transform_fn(ax.get_title(), is_title=True))
+        except TypeError:
+            ax.set_xlabel(transform_fn(ax.get_xlabel()))
+            ax.set_ylabel(transform_fn(ax.get_xlabel()))
+            if include_titles:
+                ax.set_title(transform_fn(ax.get_title()))
 
 
 def summarize(data: DataType, axes=None):
