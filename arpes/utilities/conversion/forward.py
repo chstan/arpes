@@ -8,17 +8,6 @@ from arpes.utilities.conversion.bounds_calculations import euler_to_kx, euler_to
 __all__ = ('convert_coordinates_to_kspace_forward',)
 
 
-def convert_coordinates_forward(arr: xr.DataArray, dimension_to_convert):
-    target_coordinates = dict(arr.coords)
-
-    if dimension_to_convert == 'phi':
-        return {}
-    if dimension_to_convert == 'polar':
-        return {}
-    if dimension_to_convert == 'hv':
-        return {}
-
-
 def fill_coords(arr: xr.DataArray):
     """
     Ensures all standard kspace coordinates are represented
@@ -167,7 +156,12 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
     }
 
     if 'kp' in dest_coords:
-        raw_translated['kp'] = np.sqrt(raw_translated['kx'] ** 2 + raw_translated['ky'] ** 2)
+        if np.sum(raw_translated['kx'] ** 2) > np.sum(raw_translated['ky'] ** 2):
+            sign = raw_translated['kx'] / np.sqrt(raw_translated['kx'] ** 2 + 1e-8)
+        else:
+            sign = raw_translated['ky'] / np.sqrt(raw_translated['ky'] ** 2 + 1e-8)
+
+        raw_translated['kp'] = np.sqrt(raw_translated['kx'] ** 2 + raw_translated['ky'] ** 2) * sign
 
     data_vars = {}
     for dest_coord in dest_coords:
