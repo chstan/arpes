@@ -11,9 +11,9 @@ original_plot = model.ModelResult.plot
 def transform_lmfit_titles(l, is_title=False):
     if is_title:
         l = l.replace('_', '-')
-        print(l)
 
     return l or ''
+
 
 def patched_plot(self, *args, **kwargs):
     from arpes.plotting.utils import transform_labels
