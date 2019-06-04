@@ -133,6 +133,8 @@ def wave_to_xarray(w: igor.Wave):
             return {
                 'eV': 'eV',
                 'deg': 'phi',
+                'Pwr Supply V':'volts',
+                'K2200 V':'volts',
             }.get(unit, unit)
 
         return next(extra_names)
@@ -259,7 +261,7 @@ def read_separated_pxt(reference_path: Path, separator=None, byte_order=None):
         return frames[0]
 
     # adjust as needed
-    scan_coords = ['hv', 'polar', 'timed_power', 'tilt']
+    scan_coords = ['hv', 'polar', 'timed_power', 'tilt','volts']
 
     scan_coord = None
     max_different_values = -np.inf
