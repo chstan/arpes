@@ -51,7 +51,7 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
 
 
         # determine which axis to stitch them together along, and then do this
-        original_filename = scan_desc['file']
+        original_filename = scan_desc.get('path', scan_desc.get('file'))
 
         internal_match = re.match(r'([a-zA-Z0-9\w+_]+)_[0-9][0-9][0-9]\.pxt', Path(original_filename).name)
         if len(internal_match.groups()):
