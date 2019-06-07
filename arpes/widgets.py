@@ -1,14 +1,15 @@
 import matplotlib.gridspec as gridspec
 import matplotlib
 import numpy as np
+import itertools
 import warnings
 import matplotlib.pyplot as plt
 from functools import wraps
 from matplotlib.widgets import LassoSelector, Button, TextBox, RectangleSelector, SpanSelector
 from matplotlib.path import Path
 
-from arpes.plotting.utils import imshow_arr, fancy_labels
-
+from arpes.plotting.utils import imshow_arr, fancy_labels, invisible_axes
+from arpes.fits import LorentzianModel, broadcast_model
 
 __all__ = ('pick_rectangles', 'pick_points', 'pca_explorer',)
 
@@ -112,16 +113,17 @@ class DataArrayView(object):
 
     Look some more into holoviews for different features. https://github.com/pyviz/holoviews/pull/1214
     """
-    def __init__(self, ax, data=None, ax_kwargs=None, mask_kwargs=None, auto_autoscale=True):
+    def __init__(self, ax, data=None, ax_kwargs=None, mask_kwargs=None, transpose_mask=False, auto_autoscale=True):
         self.ax = ax
         self._initialized = False
         self._data = None
         self._mask = None
         self.n_dims = None
-        self.ax_kwargs = ax_kwargs
+        self.ax_kwargs = ax_kwargs or dict()
         self._axis_image = None
         self._mask_image = None
         self._mask_cmap = None
+        self._transpose_mask = transpose_mask
         self._selector = None
         self._inner_on_select = None
         self.auto_autoscale = auto_autoscale
@@ -183,7 +185,7 @@ class DataArrayView(object):
                 self._axis_image = imshow_arr(self._data, ax=self.ax, **self.ax_kwargs)[1]
                 fancy_labels(self.ax)
             else:
-                self.ax_kwargs.pop('cmap')
+                self.ax_kwargs.pop('cmap', None)
                 x, y = self.data.coords[self.data.dims[0]].values, self.data.values
                 self._axis_image = self.ax.plot(x, y, **self.ax_kwargs)
                 self.ax.set_xlabel(self.data.dims[0])
@@ -227,6 +229,8 @@ class DataArrayView(object):
         self._mask = new_mask
 
         for_mask = np.ma.masked_where(np.logical_not(self._mask), self.data.values * 0 + 1)
+        if self.n_dims == 2 and self._transpose_mask:
+            for_mask = for_mask.T
 
         if self.n_dims == 2:
             if self._mask_image is None:
@@ -253,7 +257,94 @@ class DataArrayView(object):
 
 
 @popout
-def pca_explorer(pca, data, component_dim='components', initial_values=None, **kwargs):
+def fit_initializer(data, peak_type=LorentzianModel, **kwargs):
+    ctx = {}
+    gs = gridspec.GridSpec(2, 2)
+    ax_initial = plt.subplot(gs[0, 0])
+    ax_fitted = plt.subplot(gs[0, 1])
+    ax_other = plt.subplot(gs[1, 0])
+    ax_test = plt.subplot(gs[1, 1])
+
+    #gs_widget = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=gs[1, 1])
+    #ax_widget_1 = plt.subplot(gs_widget[0, 0])
+    #ax_widget_2 = plt.subplot(gs_widget[1, 0])
+    #ax_widget_3 = plt.subplot(gs_widget[2, 0])
+
+    invisible_axes(ax_other)
+    #invisible_axes(ax_widget_2)
+    #invisible_axes(ax_widget_3)
+
+    prefixes = 'abcdefghijklmnopqrstuvwxyz'
+    model_settings = []
+    model_defs = []
+    fitted_individual_models = []
+    for_fit = data.expand_dims('fit_dim')
+    for_fit.coords['fit_dim'] = np.array([0])
+
+    data_view = DataArrayView(ax_initial)
+    residual_view = DataArrayView(ax_fitted, ax_kwargs=dict(linestyle=':', color='orange'))
+    fitted_view = DataArrayView(ax_fitted, ax_kwargs=dict(color='red'))
+    initial_fit_view = DataArrayView(ax_fitted, ax_kwargs=dict(linestyle='--', color='blue'))
+
+    def compute_parameters():
+        renamed = [{'{}_{}'.format(prefix, k): v for k, v in m_setting.items()} for m_setting, prefix in zip(model_settings, prefixes)]
+        return dict(itertools.chain(*[list(d.items()) for d in renamed]))
+
+    def on_add_new_peak(selection):
+        amplitude = data.sel(**selection).mean().item()
+
+        selection = selection[data.dims[0]]
+        center = (selection.start + selection.stop) / 2
+        sigma = (selection.stop - selection.start)
+
+        model_settings.append({'center': {'value': center, 'min': center - sigma, 'max': center + sigma}, 'sigma': {'value': sigma}, 'amplitude': {'min': 0, 'value': amplitude}})
+        model_defs.append(LorentzianModel)
+
+        if len(model_defs):
+            results = broadcast_model(model_defs, for_fit, 'fit_dim', params=compute_parameters())
+            result = results.results[0].item()
+
+            if result is not None:
+                # residual
+                for_residual = data.copy(deep=True)
+                for_residual.values = result.residual
+                residual_view.data = for_residual
+
+                # fit_result
+                for_best_fit = data.copy(deep=True)
+                for_best_fit.values = result.best_fit
+                fitted_view.data = for_best_fit
+
+                # initial_fit_result
+                for_initial_fit = data.copy(deep=True)
+                for_initial_fit.values = result.init_fit
+                initial_fit_view.data = for_initial_fit
+
+                ax_fitted.set_ylim(ax_initial.get_ylim())
+
+
+    data_view.data = data
+    data_view.attach_selector(on_select=on_add_new_peak)
+    ctx['data'] = data
+
+    def on_copy_settings(event):
+        try:
+            import pyperclip
+            import pprint
+            pyperclip.copy(pprint.pformat(compute_parameters()))
+        except ImportError:
+            pass
+        finally:
+            print(pprint.pformat(compute_parameters()))
+
+    copy_settings_button = Button(ax_test, 'Copy Settings')
+    copy_settings_button.on_clicked(on_copy_settings)
+    ctx['button'] = copy_settings_button
+    return ctx
+
+
+@popout
+def pca_explorer(pca, data, component_dim='components', initial_values=None, transpose_mask=False, **kwargs):
     if initial_values is None:
         initial_values = [0, 1]
 
@@ -292,7 +383,7 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, **k
 
     selected_view = DataArrayView(ax_sum_selected, ax_kwargs=dict(cmap='viridis'))
     map_view = DataArrayView(ax_map, ax_kwargs=dict(cmap='Greys'),
-                             mask_kwargs=dict(cmap='Reds', alpha=0.35))
+                             mask_kwargs=dict(cmap='Reds', alpha=0.35), transpose_mask=transpose_mask)
 
     def update_from_selection(ind):
         # Calculate the new data
@@ -350,9 +441,10 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, **k
             pass
 
     context['axis_button'] = Button(ax_widget_1, 'Change Decomp Axes')
+    context['axis_button'].on_clicked(on_change_axes)
     context['axis_X_input'] = TextBox(ax_widget_2, 'Axis X:', initial=str(initial_values[0]))
     context['axis_Y_input'] = TextBox(ax_widget_3, 'Axis Y:', initial=str(initial_values[1]))
-    context['axis_button'].on_clicked(on_change_axes)
+
 
     def on_select_summed(region):
         context['integration_region'] = region
