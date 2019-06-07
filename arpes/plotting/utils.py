@@ -50,6 +50,9 @@ __all__ = (
 
     # insets related
     'inset_cut_locator',
+    'swap_xaxis_side',
+    'swap_yaxis_side',
+    'swap_axis_sides',
 
     # TeX related
     'quick_tex',
@@ -64,6 +67,21 @@ __all__ = (
 
     'transform_labels',
 )
+
+
+def swap_xaxis_side(ax):
+    ax.xaxis.tick_top()
+    ax.xaxis.set_label_position("top")
+
+
+def swap_yaxis_side(ax):
+    ax.yaxis.tick_right()
+    ax.yaxis.set_label_position("right")
+
+
+def swap_axis_sides(ax):
+    swap_xaxis_side(ax)
+    swap_yaxis_side(ax)
 
 
 def transform_labels(transform_fn, fig=None, include_titles=True):
