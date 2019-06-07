@@ -1,0 +1,99 @@
+# full guide of options:
+# https://conda.io/docs/user-guide/tasks/build-packages/define-metadata.html
+
+# To see what comes out after this template is processed, run:
+#    conda-render ./conda/
+
+{% set data = load_setup_py_data(setup_file='../setup.py', from_recipe_dir=True) %}
+
+package:
+  name: {{ data.name }}
+  version: "{{ data.version }}"
+
+source:
+  # Source from a local path
+  # path: ..
+
+  # Source from tarball
+  # note: must 'make dist-pypi' or `python setup.py sdist` before running conda-build as we now rely on MANIFEST.IN to only pick desired files and avoid copying data folders and alike - and its puts its clean tarball under /dist/:
+  path: ../dist/{{ data.name }}-{{ data.version }}.tar.gz
+  # url: https://pypi.python.org/packages/source/pypes/pypes/FILLMEIN
+  # sha1: FILLMEIN
+
+  # Source from git
+  # git_rev: v0.13.1
+  # git_url: https://gitlab.com/lanzara-group/python-arpes
+
+build:
+  number: 1
+  noarch: python
+  script: "python setup.py install --single-version-externally-managed --record=record.txt"
+
+# unlike pypi, conda has a slightly different format for required
+# versions, with one space between package name and version specifier, i.e.
+# we must use - xarray >=0.9.6. For details see:
+# https://conda.io/docs/user-guide/tasks/build-packages/package-spec.html#package-match-specifications
+requirements:
+  build:
+    - conda-build
+    - python
+
+# skipped requirements:
+# jupyter_contrib_nbextensions - only needed for internal tools - it's not on conda and requires too many of its own dependencies which aren't on conda either
+  run:
+    - tornado ==4.5.3
+    - astropy
+    - xarray ==0.9.6
+    - h5py ==2.7.0
+    - netCDF4 ==1.3.0
+    - colorcet
+    - pint
+    - pandas
+    - dask
+    - numpy
+    - scipy
+    - lmfit
+    - scikit-learn
+    - scikit-image
+
+    - matplotlib >=3.0.0
+    - bokeh ==0.12.10
+    - xlrd
+    - titlecase
+    - openpyxl
+    - toolz >=0.7.3
+    - tqdm
+
+
+# Optional dependencies
+# - seaborn
+# - PyQt5
+# - pyqtgraph
+# - igor ==0.3.1
+
+test:
+  imports:
+    - arpes
+
+  requires:
+    - python
+
+about:
+  home: https://pypes.netlify.com/#/
+  license: {{ data['license'] }}
+  license_family: GPL
+  license_url: https://gitlab.com/lanzara-group/python-arpes/blob/master/LICENSE
+  license_file: LICENSE
+  summary: {{ data['description'] }}
+  description: |
+    {{ data['long_description'] | replace("\n", "\n    ") | replace("#", '\#')}}
+  doc_url: https://pypes.netlify.com/#/
+  dev_url: {{ data.get('url') }}
+
+extra:
+  recipe-maintainers:
+    - chstan
+  deploy:
+    - anaconda-client
+    - setuptools >=0.39
+    - twine >=1.12
