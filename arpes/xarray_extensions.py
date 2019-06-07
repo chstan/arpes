@@ -520,6 +520,7 @@ class ARPESAccessorBase(object):
             'ToF': arpes.constants.SPECTROMETER_STRAIGHT_TOF,
             'DLD': arpes.constants.SPECTROMETER_DLD,
             'BL7': arpes.constants.SPECTROMETER_BL7,
+            'ANTARES': arpes.constants.SPECTROMETER_ANTARES,
         }
 
         if 'spectrometer_name' in ds.attrs:
@@ -539,6 +540,7 @@ class ARPESAccessorBase(object):
                 'ALG-SToF': arpes.constants.SPECTROMETER_STRAIGHT_TOF,
                 'Kaindl': arpes.constants.SPECTROMETER_KAINDL,
                 'BL7': arpes.constants.SPECTROMETER_BL7,
+                'ANTARES': arpes.constants.SPECTROMETER_ANTARES,
             }.get(ds.attrs['location'])
 
         try:

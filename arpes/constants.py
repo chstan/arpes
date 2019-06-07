@@ -121,6 +121,13 @@ SPECTROMETER_BL7 = {
     'dof': ['polar', 'sample_phi'],
 }
 
+SPECTROMETER_ANTARES = {
+    'name': 'ANTARES',
+    'is_slit_vertical': True,
+    'type': 'hemisphere',
+    'dof': ['polar', 'sample_phi'],
+}
+
 SPECTROMETER_KAINDL = {
     'name': 'Kaindl',
     'is_slit_vertical': True,
