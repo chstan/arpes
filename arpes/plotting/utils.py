@@ -43,6 +43,7 @@ __all__ = (
     # matplotlib 'macros'
     'invisible_axes',
     'no_ticks',
+    'get_colorbars',
     'remove_colorbars',
     'frame_with',
 
@@ -387,6 +388,19 @@ colorbarmaps_for_axis = {
     'delay': (delay_colorbar, delay_colormap,),
     'theta': (phase_angle_colorbar, phase_angle_colormap,),
 }
+
+
+def get_colorbars(fig=None):
+    if fig is None:
+        fig = plt.gcf()
+
+    colorbars = []
+    for ax in fig.axes:
+        if ax.get_aspect() == 20:
+            colorbars.append(ax)
+
+    return colorbars
+
 
 def remove_colorbars(fig=None):
     """Removes colorbars from given (or, if no given figure, current) matplotlib figure.
