@@ -4,7 +4,7 @@ from functools import wraps
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('decomposition_along', 'pca_along', 'ica_along',)
+__all__ = ('decomposition_along', 'pca_along', 'ica_along', 'factor_analysis_along',)
 
 
 def decomposition_along(data: DataType, axes: List[str], decomposition_cls, correlation=False, **kwargs):
@@ -51,6 +51,12 @@ def decomposition_along(data: DataType, axes: List[str], decomposition_cls, corr
 def pca_along(*args, **kwargs):
     from sklearn.decomposition import PCA
     return decomposition_along(*args, **kwargs, decomposition_cls=PCA)
+
+
+@wraps(decomposition_along)
+def factor_analysis_along(*args, **kwargs):
+    from sklearn.decomposition import FactorAnalysis
+    return decomposition_along(*args, **kwargs, decomposition_cls=FactorAnalysis)
 
 
 @wraps(decomposition_along)
