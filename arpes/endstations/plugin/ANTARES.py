@@ -4,6 +4,7 @@ import h5py
 
 from arpes.endstations import HemisphericalEndstation, SynchrotronEndstation, SingleFileEndstation
 from arpes.endstations.nexus_utils import read_data_attributes_from
+from arpes.preparation import disambiguate_coordinates
 
 __all__ = ('ANTARESEndstation',)
 
@@ -63,7 +64,7 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         'deflx': 'polar',
     }
 
-    def load_top_level_scan(self, group, scan_desc: dict=None):
+    def load_top_level_scan(self, group, scan_desc: dict=None, spectrum_index=None):
         dr = self.read_scan_data(group)
         attrs = read_data_attributes_from(group, general_paths)
 
@@ -74,18 +75,13 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
             pass
 
         dr = dr.assign_attrs(attrs)
-        return xr.Dataset({'spectrum': dr})
+        return xr.Dataset(dict([['spectrum-{}'.format(spectrum_index), dr]]))
 
     def get_coords(self, group, scan_name, shape):
         # This will have to be modified for data which lacks either a phi or energy axis
         # We will cross this bridge once we have any idea what shape the bridge is in
 
         dims = list(shape)
-
-        if len(shape) != len(set(shape)):
-            # Axis order will need to be disambiguated, instead of matching the sizes against shape
-            raise ValueError('Ambiguous axes.')
-
         data = group['scan_data']
 
         # handle actuators
@@ -177,6 +173,13 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         f = h5py.File(frame_path)
         top_level = list(f.keys())
 
-        loaded = [self.load_top_level_scan(f[key], scan_desc) for key in top_level]
+        loaded = [self.load_top_level_scan(f[key], scan_desc, spectrum_index=i) for i, key in enumerate(top_level)]
 
-        return loaded[0]
+        if isinstance(loaded, list) and len(loaded) > 0:
+            loaded = disambiguate_coordinates(loaded, ['phi', 'eV'])
+            loaded = xr.merge(loaded)
+        else:
+            loaded = loaded[0]
+            loaded.rename({'spectrum-1': 'spectrum'})
+
+        return loaded
