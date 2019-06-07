@@ -47,6 +47,10 @@ __all__ = (
     'remove_colorbars',
     'frame_with',
 
+    'imshow_arr',
+    'imshow_mask',
+    'lineplot_arr', # 1D version of imshow_arr
+    'plot_arr', # generic dimension version of imshow_arr, plot_arr
 
     # insets related
     'inset_cut_locator',
@@ -135,7 +139,7 @@ def sum_annotation(eV=None, phi=None):
         if bound is None:
             return ''
 
-        return '{:.2g}'.format(bound)
+        return '{:.2f}'.format(bound)
 
     if eV is not None:
         eV_annotation = '$\\text{E}_{' + to_str(eV.start) + '}^{' + to_str(eV.stop) + '}$'
@@ -167,7 +171,71 @@ def quick_tex(latex_fragment, ax=None, fontsize=30):
     return ax
 
 
-def imshow_arr(arr, ax=None, origin='lower', aspect='auto', **kwargs):
+def lineplot_arr(arr, ax=None, method='plot', mask=None, mask_kwargs=dict(), **kwargs):
+    if ax is None:
+        _, ax = plt.subplots()
+
+    xs = None
+    if arr is not None:
+        fn = plt.plot
+        if method == 'scatter':
+            fn = plt.scatter
+
+        xs = arr.coords[arr.dims[0]].values
+        fn(xs, arr.values, **kwargs)
+
+
+    if mask is not None:
+        y_lim = ax.get_ylim()
+        if isinstance(mask, list) and isinstance(mask[0], slice):
+            for slice_mask in mask:
+                ax.fill_betweenx(y_lim, slice_mask.start, slice_mask.stop, **mask_kwargs)
+        else:
+            raise NotImplementedError()
+        ax.set_ylim(y_lim)
+
+    return ax
+
+
+def plot_arr(arr=None, ax=None, over=None, mask=None, **kwargs):
+    to_plot = arr if mask is None else mask
+    try:
+        n_dims = len(to_plot.dims)
+    except AttributeError:
+        n_dims = 1
+
+    if n_dims == 2:
+        quad = None
+        if arr is not None:
+            ax, quad = imshow_arr(arr, ax=ax, over=over, **kwargs)
+        if mask is not None:
+            over = quad if over is None else over
+            imshow_mask(mask, ax=ax, over=over, **kwargs)
+    if n_dims == 1:
+        ax = lineplot_arr(arr, ax=ax, mask=mask, **kwargs)
+
+    return ax
+
+
+def imshow_mask(mask, ax=None, over=None, cmap=None, **kwargs):
+    assert(over is not None)
+
+    if ax is None:
+        ax = plt.gca()
+
+    if cmap is None:
+        cmap = 'Reds'
+
+    if isinstance(cmap, str):
+        cmap = matplotlib.cm.get_cmap(name=cmap)
+
+    cmap.set_bad('k', alpha=0)
+
+    ax.imshow(mask.values, cmap=cmap, interpolation='none', vmax=1, vmin=0,
+              origin='lower', extent=over.get_extent(), aspect=ax.get_aspect(), **kwargs)
+
+
+def imshow_arr(arr, ax=None, over=None, origin='lower', aspect='auto', **kwargs):
     """
     Similar to plt.imshow but users different default origin, and sets appropriate
     extent on the plotted data.
@@ -182,10 +250,13 @@ def imshow_arr(arr, ax=None, origin='lower', aspect='auto', **kwargs):
     x, y = arr.coords[arr.dims[0]].values, arr.coords[arr.dims[1]].values
     extent = [y[0], y[-1], x[0], x[-1]]
 
-    quad = ax.imshow(arr.values, origin=origin, extent=extent, aspect=aspect, **kwargs)
-    ax.grid(False)
-    ax.set_xlabel(arr.dims[1])
-    ax.set_ylabel(arr.dims[0])
+    if over is None:
+        quad = ax.imshow(arr.values, origin=origin, extent=extent, aspect=aspect, **kwargs)
+        ax.grid(False)
+        ax.set_xlabel(arr.dims[1])
+        ax.set_ylabel(arr.dims[0])
+    else:
+        quad = ax.imshow(arr.values, extent=over.get_extent(), aspect=ax.get_aspect(), origin=origin, **kwargs)
 
     return ax, quad
 
