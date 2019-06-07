@@ -1,4 +1,5 @@
 import xarray as xr
+import warnings
 
 import arpes.utilities
 
@@ -16,7 +17,9 @@ class CoordinateConverter(object):
         spectrometer = self.arr.S.spectrometer
         if spectrometer is not None:
             self.spectrometer = spectrometer
-            self.is_slit_vertical = spectrometer['is_slit_vertical']
+            self.is_slit_vertical = self.arr.S.is_slit_vertical
+        else:
+            warnings.warn('Could not find spectrometer information! Ask Conrad for help.')
 
     def prep(self, arr: xr.DataArray):
         """
