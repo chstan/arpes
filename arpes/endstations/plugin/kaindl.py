@@ -76,6 +76,36 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
         original_filename = scan_desc.get('path', scan_desc.get('file'))
         internal_match = re.match(r'([a-zA-Z0-9\w+_]+_[0-9][0-9][0-9])\.pxt', Path(original_filename).name)
+        all_filenames = find_kaindl_files_associated(Path(original_filename))
+        all_filenames = ['{}\\{}_AI.txt'.format(f.parent,f.stem) for f in all_filenames]
+
+        def load_attr_for_frame(filename, attr_name):
+            df = pd.read_csv(filename, sep='\t', skiprows=6)
+            return np.mean(df[attr_name])
+
+        def attach_attr(data, attr_name, as_name):
+            photocurrents = np.array([load_attr_for_frame(f, attr_name) 
+                                      for f in all_filenames])
+        
+            if len(photocurrents) == 1:
+                data[as_name] = photocurrents[0]
+            else:
+            
+                non_spectrometer_dims = [d for d in data.spectrum.dims if d not in {'eV', 'phi'}]
+                non_spectrometer_coords = {c: v for c, v in data.spectrum.coords.items() 
+                                           if c in non_spectrometer_dims}
+
+                new_shape = [len(data.coords[d]) for d in non_spectrometer_dims]
+                photocurrent_arr = xr.DataArray(
+                    photocurrents.reshape(new_shape), coords=non_spectrometer_coords, dims=non_spectrometer_dims)
+
+                data = xr.merge([data, xr.Dataset(dict([[as_name, photocurrent_arr]]))])
+
+            return data
+
+        data = attach_attr(data, 'Photocurrent', 'photocurrent')
+        data = attach_attr(data, 'Temperature B', 'temp')
+        data = attach_attr(data, 'Temperature A', 'cryotip_temp')
 
         if len(internal_match.groups()):
             attrs_path = str(Path(original_filename).parent / '{}_AI.txt'.format(internal_match.groups()[0]))
