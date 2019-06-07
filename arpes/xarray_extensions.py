@@ -127,7 +127,13 @@ class ARPESAccessorBase(object):
     def is_slit_vertical(self):
         spectrometer = self.spectrometer
         if spectrometer is not None:
-            return spectrometer['is_slit_vertical']
+            try:
+                return spectrometer['is_slit_vertical']
+            except KeyError:
+                pass
+
+        if 'is_slit_vertical' in self._obj.attrs:
+            return self._obj.attrs['is_slit_vertical']
 
         raise AnalysisError('Unknown spectrometer configuration.')
 
