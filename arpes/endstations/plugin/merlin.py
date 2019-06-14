@@ -28,6 +28,8 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         'Cryostat Temp B': 'temp',
         'BL Energy': 'hv',
         'Polar Compens': 'polar',
+        'K2200 V':'volts',
+        'Pwr Supply V': 'volts'
     }
 
     def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict=None):
