@@ -127,7 +127,13 @@ class ARPESAccessorBase(object):
     def is_slit_vertical(self):
         spectrometer = self.spectrometer
         if spectrometer is not None:
-            return spectrometer['is_slit_vertical']
+            try:
+                return spectrometer['is_slit_vertical']
+            except KeyError:
+                pass
+
+        if 'is_slit_vertical' in self._obj.attrs:
+            return self._obj.attrs['is_slit_vertical']
 
         raise AnalysisError('Unknown spectrometer configuration.')
 
@@ -514,6 +520,7 @@ class ARPESAccessorBase(object):
             'ToF': arpes.constants.SPECTROMETER_STRAIGHT_TOF,
             'DLD': arpes.constants.SPECTROMETER_DLD,
             'BL7': arpes.constants.SPECTROMETER_BL7,
+            'ANTARES': arpes.constants.SPECTROMETER_ANTARES,
         }
 
         if 'spectrometer_name' in ds.attrs:
@@ -533,6 +540,7 @@ class ARPESAccessorBase(object):
                 'ALG-SToF': arpes.constants.SPECTROMETER_STRAIGHT_TOF,
                 'Kaindl': arpes.constants.SPECTROMETER_KAINDL,
                 'BL7': arpes.constants.SPECTROMETER_BL7,
+                'ANTARES': arpes.constants.SPECTROMETER_ANTARES,
             }.get(ds.attrs['location'])
 
         try:
@@ -1400,6 +1408,18 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 
         return plotting.fancy_dispersion(self._obj, **kwargs)
 
+    def cut_nan_coords(self):
+        slices = dict()
+        for cname, cvalue in self._obj.coords.items():
+            try:
+                end_ind = np.where(np.isnan(cvalue.values))[0][0]
+                end_ind = None if end_ind == -1 else end_ind
+                slices[cname] = slice(None, end_ind)
+            except IndexError:
+                pass
+
+        return self._obj.isel(**slices)
+
     def nan_to_num(self, x=0):
         """
         xarray version of numpy.nan_to_num
@@ -1445,6 +1465,26 @@ NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 @xr.register_dataarray_accessor('T')
 class GenericAccessorTools(object):
     _obj = None
+
+    def extent(self, *args, dims=None):
+        """
+        Returns an "extent" array that can be used to draw with plt.imshow
+        :return:
+        """
+
+        if dims is None:
+            if len(args) == 0:
+                dims = self._obj.dims
+            else:
+                dims = args
+
+        assert(len(dims) == 2 and 'You must supply exactly two dims to `.T.extent` not {}'.format(dims))
+        return [
+            self._obj.coords[dims[0]][0].item(),
+            self._obj.coords[dims[0]][-1].item(),
+            self._obj.coords[dims[1]][0].item(),
+            self._obj.coords[dims[1]][-1].item(),
+        ]
 
     def drop_nan(self):
         assert(len(self._obj.dims) == 1)

@@ -4,6 +4,7 @@
 import io
 import os
 import sys
+import re
 from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
@@ -22,8 +23,65 @@ with open('./arpes/__init__.py') as fp:
 
 VERSION = about['VERSION']
 
-with open('requirements.txt', 'r') as f_requirements:
-    requirements = f_requirements.read()
+DEPENDENCY_GROUPS = {
+    'core': [
+        'tornado==4.5.3', # this version required due to Bokeh weirdness
+        'astropy',
+
+        # this version required as 0.10.1 introduces a change that forced all assignment
+        # through Variable.get_compatible_data, which coerces to an array
+        'xarray==0.9.6',
+
+        'h5py==2.7.0',
+        'netCDF4==1.3.0',
+        'colorcet',
+
+        'pint',
+        'pandas',
+        'dask',
+        'numpy',
+        'scipy',
+        'lmfit',
+
+        # plotting
+        'matplotlib==3.0.0',
+        'seaborn',
+        'bokeh==0.12.10',
+        'ipywidgets==7.0.1',
+
+        # Misc deps
+        'xlrd',
+        'titlecase',
+        'openpyxl',
+        'tqdm',
+    ],
+    'igor': ['igor==0.3.1'],
+    'ml': [
+        'scikit-learn',
+        'scikit-image',
+        'cvxpy',
+        'libgcc',
+    ],
+}
+
+requirements = [y for k, v in DEPENDENCY_GROUPS.items() for y in v if k not in {'igor', 'ml'}]
+
+DEV_DEPENDENCIES = {
+    'jupyter': [
+        'jupyter',
+        'ipython',
+        'jupyter_contrib_nbextensions',
+        'notebook>=5.7.0',
+    ],
+    'test': [
+        'attrs==17.4.0',
+        'pluggy==0.6.0',
+        'py==1.5.2',
+        'pytest==3.3.2',
+        'setuptools==38.4.0',
+    ]
+}
+
 
 with open('README.rst', 'r') as f_readme:
     long_description = f_readme.read()
@@ -33,98 +91,26 @@ DOCUMENTATION_URL = "https://stupefied-bhabha-ce8a9f.netlify.com/#/"
 
 POST_INSTALL_MESSAGE = """
 Documentation available at: {}
+
+You should follow standard best practices for working with IPython and Jupyter.
+
+To get the interactive volumetric data explorer `qt_tool` you will need to install
+`PyQt5` and `pyqtgraph`. 
+
+To use the Igor data loading libraries in PyPES you will need to install the `igor` 
+module from 'https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1'.
+
+Some functionality, including PCA/Factor Analysis decomposition tools, require 
+additional heavy dependencies such as `scikit-learn` and `scikit-image`. 
 """.format(DOCUMENTATION_URL)
 
 packages = find_packages(exclude=('tests', 'source', 'info_session', 'docs', 'example_configuration',
-                                  'figures', 'exp', 'datasets', 'resources',))
-
-REQUIRED = [
-    'tornado==4.5.3',
-    # Data loading
-    'astropy',
-    'igor==0.3.1', # patched on GitHub
-    'xarray==0.9.6',
-    'h5py==2.7.0',
-    'netCDF4==1.3.0', # some dependency bugs here and in h5py, so fix the versions
-    'colorcet',
-
-    # Analysis
-    'pint',
-    'pandas',
-    'dask',
-    'numpy',
-    'scipy',
-    'lmfit',
-    'scikit-learn',
-    'scikit-image',
-    #'xrft==0.1.dev',
-
-    # Plotting
-    'matplotlib',
-    'seaborn',
-    'bokeh==0.12.10', # will look into upgrading to >=1.0.3 at a later date
-    'PyQt5',
-    'pyqtgraph',
-
-    # Rendering and exploration
-    #'ipywidgets==7.0.1',
-
-    # Dependencies
-    'xlrd',
-    'titlecase',
-    'openpyxl',
-    'toolz>=0.7.3', # required by dask and delayed, inconveniently, since only 'distributed' does not include it
-
-    # UI
-    'tqdm',
-]
+                                  'conda', 'figures', 'exp', 'datasets', 'resources',))
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 with io.open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
     LONG_DESCRIPTION = '\n' + f.read()
-
-
-class LinkIPythonCommand(Command):
-    """
-    Links user default iPython to template files
-    Largely defunct and superceded by just using setuptools to install the package
-    and making a single "import useful stuff" function available for easy of use.
-    """
-
-    description = 'Establish symbolic links between template iPython file, establish path.'
-    user_options = []
-
-    @staticmethod
-    def status(s):
-        """Prints things in bold."""
-        print('\033[1m{0}\033[0m'.format(s))
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        sys.exit()
-        try:
-            self.status('Removing previous builds…')
-            rmtree(os.path.join(here, 'dist'))
-        except OSError:
-            pass
-
-        self.status('Building Source and Wheel (universal) distribution…')
-        os.system('{0} setup.py sdist bdist_wheel --universal'.format(sys.executable))
-
-        self.status('Uploading the package to PyPi via Twine…')
-        os.system('twine upload dist/*')
-
-        self.status('Pushing git tags…')
-        os.system('git tag v{0}'.format(about['VERSION']))
-        os.system('git push --tags')
-
-        sys.exit()
 
 
 class PostInstallCommand(install):
@@ -135,6 +121,7 @@ class PostInstallCommand(install):
     def run(self):
         install.run(self)
         print(POST_INSTALL_MESSAGE)
+
 
 # Where the magic happens:
 setup(
@@ -149,15 +136,10 @@ setup(
 
     packages=packages,
 
-    # entry_points={
-    #     'console_scripts': ['mycli=mymodule:cli'],
-    # },
     dependency_links=[
         'https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1',
-        # use this specific 'xrft' since it still has `_hanning` and we have not updated to use the new `_create_window`
-        #'https://github.com/xgcm/xrft/tarball/879643cb0d6779632fc7600876bd90200a632028#egg=xrft-0.1.dev',
     ],
-    install_requires=REQUIRED,
+    install_requires=requirements,
 
     include_package_data=False, # until we get a manifest file
 
@@ -165,7 +147,7 @@ setup(
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: Closed',
+        'License :: OSI Approved :: GPLv3',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
@@ -174,6 +156,7 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Natural Language :: English',
         'Intended Audience :: Science/Research',
+        'Intended Audience :: Developers',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows :: Windows 7',
         'Operating System :: Microsoft :: Windows :: Windows 8',
