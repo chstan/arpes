@@ -24,7 +24,7 @@ class XModelMixin(lf.Model):
     n_dims = 1
     dimension_order = None
 
-    def guess_fit(self, data, params=None, weights=None, guess=True, debug=False, prefix_params=True, **kwargs):
+    def guess_fit(self, data, params=None, weights=None, guess=True, debug=False, prefix_params=True, transpose=False, **kwargs):
         """
         Params allows you to pass in hints as to what the values and bounds on parameters
         should be. Look at the lmfit docs to get hints about structure
@@ -33,6 +33,9 @@ class XModelMixin(lf.Model):
         :param kwargs:
         :return:
         """
+        if transpose:
+            assert(len(data.dims) == 1 and "You cannot transpose (invert) a multidimensional array (scalar field).")
+
         coord_values = {}
         if 'x' in kwargs:
             coord_values['x'] = kwargs.pop('x')
@@ -75,6 +78,12 @@ class XModelMixin(lf.Model):
                     real_weights = weights.transpose(*new_dim_order).values.ravel()
                 else:
                     real_weights = weights.values.ravel()
+
+        if transpose:
+            cached_coordinate = list(coord_values.values())[0]
+            coord_values[list(coord_values.keys())[0]] = real_data
+            real_data = cached_coordinate
+            flat_data = real_data
 
         if guess:
             guessed_params = self.guess(real_data, **coord_values)
