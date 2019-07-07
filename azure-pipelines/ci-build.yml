@@ -23,7 +23,7 @@ jobs:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: 'Add conda to PATH'
 
-  - script: 'conda create --yes --quiet --file test-environment.yml python=%PYTHON_VERSION%'
+  - script: 'conda env create --quiet --file test-environment.yml python=%PYTHON_VERSION%'
     displayName: 'Create Anaconda Environment'
 
   - script: |
@@ -60,7 +60,7 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Add conda to PATH'
 
-  - bash: 'conda create --yes --quiet --file test-environment.yml python=$PYTHON_VERSION'
+  - bash: 'conda env create --quiet --file test-environment.yml python=$PYTHON_VERSION'
     displayName: 'Create Anaconda Environment'
 
   - bash: |
@@ -96,7 +96,7 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Add conda to PATH'
 
-  - bash: 'conda create --yes --quiet --file test-environment.yml python=$PYTHON_VERSION'
+  - bash: 'conda env create --quiet --file test-environment.yml python=$PYTHON_VERSION'
     displayName: 'Create Anaconda Environment'
 
   - bash: |
@@ -113,4 +113,3 @@ jobs:
     inputs:
       testResultsFiles: '**/test-results.xml'
       testRunTitle: 'Platform macOS-10.13 Python $(python.version)'
-
