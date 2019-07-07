@@ -7,7 +7,8 @@ variables:
   ref.data.home: '$(Agent.BuildDirectory)/testdata'
 
 jobs:
-- job: 'Build and Test Windows'
+- job: 'Build_and_Test_Windows'
+  displayName: 'Build and Test Windows'
   strategy:
     matrix:
       Python36:
@@ -47,7 +48,8 @@ jobs:
       testResultsFiles: '**/test-results.xml'
       testRunTitle: 'Platform vs2017-win2016 Python $(python.version)'
 
-- job: 'Build and Test Ubuntu'
+- job: 'Build_and_Test_Ubuntu'
+  displayName: 'Build and Test Ubuntu'
   strategy:
     matrix:
       Python36:
@@ -87,7 +89,8 @@ jobs:
       testRunTitle: 'Platform ubuntu-16.04 Python $(python.version)'
 
 
-- job: 'Build and Test Mac OS X'
+- job: 'Build_and_Test_Mac_OS_X'
+  displayName: 'Build and Test Mac OS X'
   strategy:
     matrix:
       Python36:
