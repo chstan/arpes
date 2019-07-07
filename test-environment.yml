@@ -1,0 +1,36 @@
+name: test_environment
+channels:
+  - arpes
+  - defaults
+  - conda-forge
+dependencies:
+  - tornado==4.5.3
+  - astropy
+
+  - xarray==0.9.6
+
+  - h5py==2.7.0
+  - colorcet
+
+  - pint
+  - pandas
+  - dask
+  - numpy
+  - scipy
+  - lmfit
+
+  # plotting
+  - matplotlib==3.0.0
+  - seaborn
+  - bokeh==0.12.10
+  - ipywidgets==7.0.1
+
+  # Misc deps
+  - xlrd
+  - openpyxl
+  - tqdm
+
+  # pip
+  - pip:
+    - titlecase
+    - netCDF4==1.3.0

@@ -23,13 +23,8 @@ jobs:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: 'Add conda to PATH'
 
-  - script: conda create --yes --quiet --name test_environment
+  - script: 'conda create --yes --quiet --file test-environment.yml python=%PYTHON_VERSION%'
     displayName: 'Create Anaconda Environment'
-
-  - script: |
-      call activate test_environment
-      conda install --yes --quiet --name test_environment python=%PYTHON_VERSION% --file requirements.txt
-    displayName: 'Install Anaconda packages'
 
   - script: |
       call activate test_environment
@@ -65,13 +60,8 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Add conda to PATH'
 
-  - bash: conda create --yes --quiet --name test_environment
+  - bash: 'conda create --yes --quiet --file test-environment.yml python=$PYTHON_VERSION'
     displayName: 'Create Anaconda Environment'
-
-  - bash: |
-      source activate test_environment
-      conda install --yes --quiet --name test_environment python=$PYTHON_VERSION --file requirements.txt
-    displayName: 'Install Anaconda packages'
 
   - bash: |
       source activate test_environment
@@ -106,13 +96,8 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Add conda to PATH'
 
-  - bash: conda create --yes --quiet --name test_environment
+  - bash: 'conda create --yes --quiet --file test-environment.yml python=$PYTHON_VERSION'
     displayName: 'Create Anaconda Environment'
-
-  - bash: |
-      source activate test_environment
-      conda install --yes --quiet --name test_environment python=$PYTHON_VERSION --file requirements.txt
-    displayName: 'Install Anaconda packages'
 
   - bash: |
       source activate test_environment
