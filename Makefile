@@ -10,7 +10,7 @@ BUILDDIR      = build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile rst2markdown clean-pypi dist-pypi clean-build-pypi dist-pypi bdist dist-pypi-sdist dist-pypi upload-pypi clean-conda dist-conda upload-conda install-conda-local clean dist upload install test tools-update sanity-check dist-pypi
+.PHONY: help Makefile rst2markdown clean-pypi dist-pypi clean-build-pypi dist-pypi-sdist dist-pypi-bdist upload-pypi clean-conda dist-conda upload-conda install-conda-local clean dist upload install test tools-update sanity-check
 
 rst2markdown:
 	echo "test"
@@ -51,9 +51,6 @@ dist-pypi-sdist: ## build pypi source package
 	@echo "\n\n*** Building pypi source package"
 	python setup.py sdist
 
-dist-pypi: | clean-pypi dist-pypi-sdist dist-pypi-bdist ## build pypi source and wheel package
-	ls -l dist
-
 upload-pypi: ## upload pypi package
 	@echo "\n\n*** Uploading" dist/* "to pypi\n"
 	twine upload dist/*
@@ -66,10 +63,10 @@ clean-conda:
 	@echo "\n\n*** rm -rf conda-dist/"
 	rm -rf conda-dist/
 
-dist-conda: | clean-conda dist-pypi-sdist
+dist-conda: | clean dist-pypi-sdist
 	@echo "\n\n*** Building conda package"
 	mkdir "conda-dist"
-	conda-build ./conda/ --output-folder conda-dist # CHECK ME
+	conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
 	ls -l conda-dist/noarch/*tar.bz2
 
 upload-conda:

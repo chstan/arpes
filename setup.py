@@ -10,7 +10,7 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 from setuptools.command.install import install
 
-NAME = 'pypes'
+NAME = 'arpes'
 DESCRIPTION = 'Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)'
 URL = 'https://gitlab.com/lanzara-group/python-arpes'
 EMAIL = 'chstan@berkeley.edu'
@@ -141,13 +141,13 @@ setup(
     ],
     install_requires=requirements,
 
-    include_package_data=False, # until we get a manifest file
+    include_package_data=True,
 
     license='MIT',
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: OSI Approved :: GPLv3',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',

@@ -1,0 +1,6 @@
+include LICENSE
+include CONTRIBUTING.md
+include README.rst
+
+
+recursive-include docs *.md *.png

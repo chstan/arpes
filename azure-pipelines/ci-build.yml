@@ -1,0 +1,128 @@
+# TODO Add a jupyter test like fast.ai
+
+trigger:
+- master
+
+variables:
+  ref.data.home: '$(Agent.BuildDirectory)/testdata'
+
+jobs:
+- job: 'Build and Test Windows'
+  strategy:
+    matrix:
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+    maxParallel: 2
+  pool:
+    vmImage: 'vs2017-win2016'
+
+  steps:
+  - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+    displayName: 'Add conda to PATH'
+
+  - script: conda create --yes --quiet --name test_environment
+    displayName: 'Create Anaconda Environment'
+
+  - script: |
+      call activate test_environment
+      conda install --yes --quiet --name test_environment python=%PYTHON_VERSION% --file requirements.txt
+    displayName: 'Install Anaconda packages'
+
+  - script: |
+      call activate test_environment
+      pip install -e .
+      pip install pytest pytest-azurepipelines
+    displayName: 'Install PyARPES and test requirements'
+
+  - script: |
+      call activate test_environment
+      pytest tests --doctest-modules --junitxml=junit/test-results.xml
+    displayName: 'pytest'
+
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results **/test-results.xml'
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'Platform vs2017-win2016 Python $(python.version)'
+
+- job: 'Build and Test Ubuntu'
+  strategy:
+    matrix:
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+    maxParallel: 2
+
+  pool:
+    vmImage: 'ubuntu-16.04'
+
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: 'Add conda to PATH'
+
+  - bash: conda create --yes --quiet --name test_environment
+    displayName: 'Create Anaconda Environment'
+
+  - bash: |
+      source activate test_environment
+      conda install --yes --quiet --name test_environment python=$PYTHON_VERSION --file requirements.txt
+    displayName: 'Install Anaconda packages'
+
+  - bash: |
+      source activate test_environment
+      pip install -e .
+      pip install pytest pytest-azurepipelines
+    displayName: 'Install PyARPES and Test Requirements'
+
+  - bash: 'source activate test_environment && pytest tests --doctest-modules --junitxml=junit/test-results.xml'
+    displayName: 'pytest'
+
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results **/test-results.xml'
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'Platform ubuntu-16.04 Python $(python.version)'
+
+
+- job: 'Build and Test Mac OS X'
+  strategy:
+    matrix:
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+    maxParallel: 2
+
+  pool:
+    vmImage: 'macOS-10.13'
+
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: 'Add conda to PATH'
+
+  - bash: conda create --yes --quiet --name test_environment
+    displayName: 'Create Anaconda Environment'
+
+  - bash: |
+      source activate test_environment
+      conda install --yes --quiet --name test_environment python=$PYTHON_VERSION --file requirements.txt
+    displayName: 'Install Anaconda packages'
+
+  - bash: |
+      source activate test_environment
+      pip install -e .
+      pip install pytest pytest-azurepipelines
+    displayName: 'Install PyARPES and Test Requirements'
+
+  - bash: 'source activate test_environment && pytest tests --doctest-modules --junitxml=junit/test-results.xml'
+    displayName: 'pytest'
+
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results **/test-results.xml'
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'Platform macOS-10.13 Python $(python.version)'
+
