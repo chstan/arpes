@@ -1,0 +1,28 @@
+# PyPI Build Artifacts
+
+trigger:
+- master
+
+pool:
+  name: Hosted Ubuntu 1604
+variables:
+  python.version: '3.6'
+
+steps:
+- template: templates/unix-configure-conda-and-test.yml
+
+- bash: |
+    source activate root
+    mkdir "conda-dist"
+	conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
+  displayName: 'conda-build'
+
+- task: CopyFiles@2
+  inputs:
+    contents: conda-dist/**
+    targetFolder: $(Build.ArtifactStagingDirectory)
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: $(Build.ArtifactStagingDirectory)
+    artifactName: PyARPES_Conda

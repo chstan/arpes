@@ -1,0 +1,28 @@
+# PyPI Build Artifacts
+
+trigger:
+- master
+
+pool:
+  name: Hosted Ubuntu 1604
+variables:
+  python.version: '3.6'
+
+steps:
+- template: templates/unix-configure-conda-and-test.yml
+
+- bash: |
+    source activate test_environment
+    python setup.py sdist
+    python setup.py bdist_wheel
+  displayName: 'sdist, bdist_wheel'
+
+- task: CopyFiles@2
+  inputs:
+    contents: dist/**
+    targetFolder: $(Build.ArtifactStagingDirectory)
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: $(Build.ArtifactStagingDirectory)
+    artifactName: PyARPES_PyPI_Wheel

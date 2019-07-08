@@ -3,9 +3,6 @@
 trigger:
 - master
 
-variables:
-  ref.data.home: '$(Agent.BuildDirectory)/testdata'
-
 jobs:
 - job: 'Build_and_Test_Windows'
   displayName: 'Build and Test Windows'
@@ -44,6 +41,7 @@ jobs:
       testResultsFiles: '**/test-results.xml'
       testRunTitle: 'Platform vs2017-win2016 Python $(python.version)'
 
+
 - job: 'Build_and_Test_Ubuntu'
   displayName: 'Build and Test Ubuntu'
   strategy:
@@ -58,33 +56,19 @@ jobs:
     vmImage: 'ubuntu-16.04'
 
   steps:
-  - bash: echo "##vso[task.prependpath]$CONDA/bin"
-    displayName: 'Add conda to PATH'
-
-  - bash: 'conda env create --quiet --file test-environment.yml python=$PYTHON_VERSION'
-    displayName: 'Create Anaconda Environment'
-
-  - bash: |
-      source activate test_environment
-      pip install -e .
-      pip install pytest pytest-azurepipelines pytest-cov
-      pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
-    displayName: 'Install PyARPES, Igor, and Test Requirements'
-
-  - bash: 'source activate test_environment && pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html'
-    displayName: 'pytest'
-
-  - task: PublishCodeCoverageResults@1
-    inputs:
-      codeCoverageTool: Cobertura
-      summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
-      reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+  - template: templates/unix-configure-conda-and-test.yml
 
   - task: PublishTestResults@2
     displayName: 'Publish Test Results **/test-results.xml'
     inputs:
       testResultsFiles: '**/test-results.xml'
       testRunTitle: 'Platform ubuntu-16.04 Python $(python.version)'
+
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: '**/coverage.xml'
+      reportDirectory: '**/htmlcov'
 
 
 - job: 'Build_and_Test_Mac_OS_X'
@@ -101,21 +85,7 @@ jobs:
     vmImage: 'macOS-10.13'
 
   steps:
-  - bash: echo "##vso[task.prependpath]$CONDA/bin"
-    displayName: 'Add conda to PATH'
-
-  - bash: 'conda env create --quiet --file test-environment.yml python=$PYTHON_VERSION'
-    displayName: 'Create Anaconda Environment'
-
-  - bash: |
-      source activate test_environment
-      pip install -e .
-      pip install pytest pytest-azurepipelines
-      pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
-    displayName: 'Install PyARPES and Test Requirements'
-
-  - bash: 'source activate test_environment && pytest tests --doctest-modules --junitxml=junit/test-results.xml'
-    displayName: 'pytest'
+  - template: templates/unix-configure-conda-and-test.yml
 
   - task: PublishTestResults@2
     displayName: 'Publish Test Results **/test-results.xml'
