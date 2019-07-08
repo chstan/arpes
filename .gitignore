@@ -1,5 +1,6 @@
 figures/
 datasets/
+!tests/resources/datasets
 exp
 SCRATCH.md
 

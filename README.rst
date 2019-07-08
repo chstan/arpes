@@ -12,6 +12,12 @@
 .. |Documentation| image:: https://img.shields.io/badge/api-reference-blue.svg
    :target: https://stupefied-bhabha-ce8a9f.netlify.com/
 
+.. image:: https://dev.azure.com/lanzara-group/PyARPES/_apis/build/status/PyARPES%20CI%20Build?branchName=master
+   :target: https://dev.azure.com/lanzara-group/PyARPES/_build?definitionId=2
+
+.. image:: https://coveralls.io/repos/github/chstan/arpes/badge.svg?branch=master
+   :target: https://coveralls.io/github/chstan/arpes?branch=master
+
 Installation
 ============
 
@@ -28,7 +34,7 @@ Once this project is published on PyPI, you can install by using
 
 ::
 
-   pip install --process-dependency-links pypes
+   pip install arpes
 
 
 You will need to install into a Python interpreter with version 3.5 or higher. Note that the
