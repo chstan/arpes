@@ -13,8 +13,9 @@ steps:
 
 - bash: |
     source activate root
+    conda install conda-build
     mkdir "conda-dist"
-	conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
+    conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
   displayName: 'conda-build'
 
 - task: CopyFiles@2
