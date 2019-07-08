@@ -1,4 +1,4 @@
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 
 def setup(outer_globals, arpes_root=None):
@@ -22,6 +22,9 @@ def setup(outer_globals, arpes_root=None):
         raise ValueError('You must supply the location of your analysis directory.')
     if arpes_root is not None:
         os.environ['ARPES_ROOT'] = arpes_root
+
+    import arpes.config
+    arpes.config.update_configuration(user_path=os.environ['ARPES_ROOT'])
 
     from importlib import import_module
 

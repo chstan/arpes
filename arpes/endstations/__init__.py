@@ -179,6 +179,8 @@ class SESEndstation(EndstationBase):
         return xr.Dataset({'spectrum': pxt_data}, attrs=pxt_data.attrs)
 
     def postprocess(self, frame: xr.Dataset):
+        import arpes.xarray_extensions
+
         frame = super().postprocess(frame)
         return frame.assign_attrs(frame.S.spectrum.attrs)
 
@@ -281,6 +283,10 @@ class FITSEndstation(EndstationBase):
         'Z',
         'mono_eV',
         'Slit Defl',
+        'Optics Stage',
+        'Scan X',
+        'Scan Y',
+        'Scan Z',
         # insert more as needed
     }
 
@@ -458,7 +464,7 @@ class FITSEndstation(EndstationBase):
             # don't do center pixel inference because the main chamber
             # at least consistently records the offset from the edge
             # of the recorded window
-            if 'pixel' in data.coords:
+            if 'pixel' in data.coords and False:
                 phi_axis = data.coords['pixel'].values * \
                            arpes.constants.SPECTROMETER_MC['rad_per_pixel']
                 data = replace_coords(data, {

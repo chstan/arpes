@@ -1,14 +1,14 @@
 import datetime
 import errno
-import itertools
 import os.path
+import warnings
+
 import numpy as np
 import matplotlib.offsetbox
 import matplotlib
 import matplotlib.cm
 import collections
 import xarray as xr
-from titlecase import titlecase
 from matplotlib.lines import Line2D
 import itertools
 
@@ -692,6 +692,18 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
         return raw_dim_names.get(dim_name)
 
     # Next we will look at the listed symmetry_points to try to infer the appropriate way to display the axis
+    try:
+        from titlecase import titlecase
+    except ImportError:
+        warnings.warn('Using alternative titlecase, for better results `pip install titlecase`.')
+        def titlecase(s):
+            """
+            Poor man's titlecase
+            :param s:
+            :return:
+            """
+            return s.title()
+
     return titlecase(dim_name.replace('_', ' '))
 
 

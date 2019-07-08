@@ -1,5 +1,6 @@
 figures/
 datasets/
+!tests/resources/datasets
 exp
 SCRATCH.md
 
@@ -7,6 +8,8 @@ experiment/
 Experiments/
 
 # Generated Files
+conda-dist/
+junit/
 source/arpes.md
 source/toc.md
 source/arpes.*.md

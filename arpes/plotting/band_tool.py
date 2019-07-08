@@ -6,11 +6,6 @@ from arpes.models import band
 from arpes.plotting.interactive_utils import CursorTool, SaveableTool
 from arpes.exceptions import AnalysisError
 
-from bokeh.layouts import row, column, widgetbox
-from bokeh.models.mappers import LinearColorMapper
-from bokeh.models import widgets
-from bokeh.plotting import figure
-
 from arpes.analysis.band_analysis import fit_patterned_bands
 from arpes.utilities import normalize_to_spectrum
 
@@ -35,6 +30,11 @@ class BandTool(SaveableTool, CursorTool):
         self.pointer_mode = 'band'
 
     def tool_handler(self, doc):
+        from bokeh.layouts import row, column, widgetbox
+        from bokeh.models.mappers import LinearColorMapper
+        from bokeh.models import widgets
+        from bokeh.plotting import figure
+
         if len(self.arr.shape) != 2:
             raise AnalysisError('Cannot use the band tool on non image-like spectra')
 

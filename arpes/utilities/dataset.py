@@ -367,7 +367,7 @@ def modern_clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=T
 
     return joined
 
-def clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=True, warn_on_exists=False, **kwargs):
+def clean_xlsx_dataset(path, allow_soft_match=False, write=True, with_inferred_cols=True, warn_on_exists=False, **kwargs):
     reload = kwargs.pop('reload', False)
     _, extension = os.path.splitext(path)
     if extension not in _DATASET_EXTENSIONS:
@@ -424,9 +424,10 @@ def clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=True, wa
 
         last_index = index
 
-    excel_writer = pd.ExcelWriter(new_filename)
-    ds.to_excel(excel_writer)
-    excel_writer.save()
+    if write:
+        excel_writer = pd.ExcelWriter(new_filename)
+        ds.to_excel(excel_writer)
+        excel_writer.save()
 
     if with_inferred_cols:
         return with_inferred_columns(ds.set_index('file'))

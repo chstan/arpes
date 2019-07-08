@@ -7,11 +7,6 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 import colorcet as cc
-from bokeh import palettes
-from bokeh.application import Application
-from bokeh.application.handlers import FunctionHandler
-from bokeh.models.widgets.markups import Div
-from bokeh.io import show, output_notebook
 
 from abc import ABC, abstractmethod
 
@@ -63,6 +58,8 @@ class CursorTool(object):
 
     @cursor.setter
     def cursor(self, values):
+        from bokeh.models.widgets.markups import Div
+
         if self._cursor_dims is None:
             try:
                 self._cursor_dims = list(self.arr.dims)
@@ -105,6 +102,8 @@ class BokehInteractiveTool(ABC):
 
     @property
     def debug_div(self):
+        from bokeh.models.widgets.markups import Div
+
         if self._debug_div is None:
             self._debug_div = Div(text='', width=300, height=100)
 
@@ -127,6 +126,8 @@ class BokehInteractiveTool(ABC):
         return update_plot_colormap
 
     def init_bokeh_server(self):
+        from bokeh.io import output_notebook
+
         if 'bokeh_configured' not in arpes.config.CONFIG:
             arpes.config.CONFIG['bokeh_configured'] = True
 
@@ -146,6 +147,8 @@ class BokehInteractiveTool(ABC):
 
     @property
     def default_palette(self):
+        from bokeh import palettes
+
         palette_options = {
             'viridis': palettes.viridis(256),
             'magma': palettes.magma(256),
@@ -184,6 +187,10 @@ class BokehInteractiveTool(ABC):
 
     def make_tool(self, arr: Union[xr.DataArray, str], notebook_url=None,
                   notebook_handle=True, **kwargs):
+        from bokeh.application import Application
+        from bokeh.application.handlers import FunctionHandler
+        from bokeh.io import show
+
 
         def generate_url(port):
             if port is None:

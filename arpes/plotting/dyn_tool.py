@@ -2,12 +2,6 @@ import typing
 import inspect
 import numpy as np
 
-from bokeh import events
-from bokeh.layouts import row, column, widgetbox
-from bokeh.models.mappers import LinearColorMapper
-from bokeh.models import widgets
-from bokeh.plotting import figure
-
 from arpes.exceptions import AnalysisError
 from arpes.plotting.interactive_utils import BokehInteractiveTool, CursorTool
 from arpes.utilities import normalize_to_spectrum, Debounce
@@ -32,6 +26,12 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
         self.app_marginal_size = self.settings.get('marginal_width', 300)
 
     def tool_handler(self, doc):
+        from bokeh import events
+        from bokeh.layouts import row, column, widgetbox
+        from bokeh.models.mappers import LinearColorMapper
+        from bokeh.models import widgets
+        from bokeh.plotting import figure
+
         if len(self.arr.shape) != 2:
             raise AnalysisError('Cannot use the band tool on non image-like spectra')
 

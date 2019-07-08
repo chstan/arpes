@@ -4,10 +4,6 @@ import xarray as xr
 import colorcet as cc
 import numpy as np
 import scipy.ndimage.interpolation
-from bokeh.layouts import row, column, widgetbox
-from bokeh.models import widgets
-from bokeh.models.mappers import LinearColorMapper
-from bokeh.plotting import figure
 
 from arpes.typing import DataType
 
@@ -33,6 +29,11 @@ class ComparisonTool(BokehInteractiveTool):
         self.other = other
 
     def tool_handler(self, doc):
+        from bokeh.layouts import row, column, widgetbox
+        from bokeh.models import widgets
+        from bokeh.models.mappers import LinearColorMapper
+        from bokeh.plotting import figure
+
         default_palette = self.default_palette
         difference_palette = cc.coolwarm
 

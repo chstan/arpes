@@ -19,10 +19,7 @@ ureg = pint.UnitRegistry()
 
 # ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES, or via `setup`
 DATA_PATH = None
-ARPES_ROOT = os.getenv('ARPES_ROOT')
 SOURCE_ROOT = str(Path(__file__).parent)
-assert(ARPES_ROOT is not None and "Check to make sure you have the ARPES_ROOT environment "
-                                  "variable defined, or call `setup`.")
 
 SETTINGS = {
     'interactive': {
@@ -33,37 +30,56 @@ SETTINGS = {
     'xarray_repr_mod': False,
 }
 
-USER_PATH = ARPES_ROOT
-FIGURE_PATH = os.path.join(USER_PATH, 'figures')
-
-DATASET_PATH = os.path.join(USER_PATH, 'datasets')
-# don't really need this one, but you can set it if you want
-
-DATASET_ROOT_PATH = USER_PATH
 # these are all set by ``update_configuration``
+FIGURE_PATH = None
+DATASET_PATH = None
 
-DATASET_CACHE_PATH = os.path.join(USER_PATH, 'cache')
+DATASET_CACHE_PATH = None
 DATASET_CACHE_RECORD = None # .json file that holds normalized files
+
 # .json file that records which files are linked to the same physical sample, currently unused
 CLEAVE_RECORD = None
 
 PIPELINE_SHELF = None
 PIPELINE_JSON_SHELF = None
 
-def update_configuration():
-    global DATASET_ROOT_PATH
+def generate_cache_files():
     global DATASET_CACHE_RECORD
     global CLEAVE_RECORD
 
+    for p in [DATASET_CACHE_RECORD, CLEAVE_RECORD]:
+        fp = Path(p)
+        if not fp.exists():
+            with open(p, 'w') as f:
+                json.dump({}, f)
+
+def update_configuration(user_path=None):
+    global FIGURE_PATH
+    global DATASET_PATH
+    global DATASET_CACHE_PATH
+    global DATASET_CACHE_RECORD
+    global CLEAVE_RECORD
     global PIPELINE_SHELF
     global PIPELINE_JSON_SHELF
 
-    DATASET_CACHE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets', 'cache.json')
-    CLEAVE_RECORD = os.path.join(DATASET_ROOT_PATH, 'datasets', 'cleaves.json')
+    try:
+        FIGURE_PATH = os.path.join(user_path, 'figures')
+        DATASET_PATH = os.path.join(user_path, 'datasets')
 
-    # TODO use a real database here
-    PIPELINE_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets','pipeline.shelf')
-    PIPELINE_JSON_SHELF = os.path.join(DATASET_ROOT_PATH, 'datasets','pipeline.shelf.json')
+        DATASET_CACHE_PATH = os.path.join(user_path, 'cache')
+
+        DATASET_CACHE_RECORD = os.path.join(user_path, 'datasets', 'cache.json')
+        CLEAVE_RECORD = os.path.join(user_path, 'datasets', 'cleaves.json')
+
+        # TODO use a real database here
+        PIPELINE_SHELF = os.path.join(user_path, 'datasets','pipeline.shelf')
+        PIPELINE_JSON_SHELF = os.path.join(user_path, 'datasets','pipeline.shelf.json')
+
+        generate_cache_files()
+    except TypeError:
+        pass
+
+
 
 update_configuration()
 
@@ -111,7 +127,7 @@ def workspace_matches(path):
     return 'data' in files and any(Path(f).suffix in acceptable_suffixes for f in files)
 
 
-def attempt_determine_workspace(value=None, permissive=False, lazy=False):
+def attempt_determine_workspace(value=None, permissive=False, lazy=False, current_path=None):
     # first search upwards from the current directory at most three folders:
     if lazy and CONFIG['WORKSPACE'] is not None:
         return
@@ -132,11 +148,13 @@ def attempt_determine_workspace(value=None, permissive=False, lazy=False):
         pass
 
     if CONFIG['WORKSPACE'] is None:
-        current_path = os.path.realpath(os.getcwd())
+        if current_path is None:
+            current_path = os.path.realpath(os.getcwd())
+
         option = None
         skip_dirs = {'experiments', 'experiment', 'exp', 'projects', 'project'}
 
-        if os.path.realpath(DATASET_PATH) in current_path:
+        if os.path.realpath(DATASET_PATH) in str(current_path):
             path_fragment = current_path.split(os.path.realpath(DATASET_PATH))[1]
             option = [x for x in path_fragment.split('/') if len(x) and x not in skip_dirs][0]
             # we are in a dataset, we can use the folder name in order to configure
@@ -169,11 +187,10 @@ except:
 
 
 # try to generate cache files if they do not exist
-for p in [DATASET_CACHE_RECORD, CLEAVE_RECORD]:
-    fp = Path(p)
-    if not fp.exists():
-        with open(p, 'w') as f:
-            json.dump({}, f)
+try:
+    generate_cache_files()
+except TypeError:
+    pass
 
 # load plugins
 def load_plugins():

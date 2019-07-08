@@ -1555,7 +1555,7 @@ class GenericAccessorTools(object):
 
     def coordinatize(self, as_coordinate_name):
         """
-        Remarkably, `coordinatize is a word`
+        Remarkably, `coordinatize` is a word
 
         :return:
         """
@@ -1636,7 +1636,6 @@ class GenericAccessorTools(object):
             out = pattern.format('{}_animation'.format(self.label))
             kwargs['out'] = out
         return plotting.plot_movie(self._obj, time_dim, **kwargs)
-
 
     def filter_coord(self, coordinate_name, sieve):
         """
@@ -1927,6 +1926,9 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
 
         return spectra
 
+    @property
+    def is_multi_region(self):
+        return len(self.spectra) > 1
 
     @property
     def spectrum_type(self):
