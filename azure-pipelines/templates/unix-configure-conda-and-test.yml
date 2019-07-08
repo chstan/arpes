@@ -13,5 +13,5 @@ steps:
     pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
   displayName: 'Install PyARPES, Igor, and Test Requirements'
 
-- bash: 'source activate test_environment && pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html'
+- bash: 'source activate test_environment && pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=arpes --cov-report=xml --cov-report=html'
   displayName: 'pytest'
