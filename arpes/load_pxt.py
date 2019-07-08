@@ -3,7 +3,6 @@ from pathlib import Path
 
 import typing
 from arpes.utilities import rename_keys
-import igor.igorpy as igor
 import numpy as np
 import re
 
@@ -116,7 +115,7 @@ def read_header(header_bytes: bytes):
         'bl_energy': 'hv',
     })
 
-def wave_to_xarray(w: igor.Wave):
+def wave_to_xarray(w): # : igor.Wave
     """
     Converts a wave to an xarray.DataArray
     :param w:
@@ -157,6 +156,7 @@ def read_experiment(reference_path: typing.Union[Path, str], **kwargs):
     :param reference_path:
     :return:
     """
+    import igor.igorpy as igor
 
     if isinstance(reference_path, Path):
         reference_path = str(reference_path.absolute())
@@ -171,6 +171,8 @@ def read_single_ibw(reference_path: typing.Union[Path, str]):
     :param reference_path:
     :return:
     """
+    import igor.igorpy as igor
+
     if isinstance(reference_path, Path):
         reference_path = str(reference_path.absolute())
     return igor.load(reference_path)
@@ -181,6 +183,7 @@ def read_single_pxt(reference_path: typing.Union[Path, str], byte_order=None):
     Uses igor.igorpy to load a single .PXT or .PXP file
     :return:
     """
+    import igor.igorpy as igor
 
     if isinstance(reference_path, Path):
         reference_path = str(reference_path.absolute())

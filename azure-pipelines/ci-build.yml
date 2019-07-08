@@ -30,6 +30,7 @@ jobs:
       call activate test_environment
       pip install -e .
       pip install pytest pytest-azurepipelines
+      pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
     displayName: 'Install PyARPES and test requirements'
 
   - script: |
@@ -67,7 +68,8 @@ jobs:
       source activate test_environment
       pip install -e .
       pip install pytest pytest-azurepipelines pytest-cov
-    displayName: 'Install PyARPES and Test Requirements'
+      pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
+    displayName: 'Install PyARPES, Igor, and Test Requirements'
 
   - bash: 'source activate test_environment && pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html'
     displayName: 'pytest'
@@ -109,6 +111,7 @@ jobs:
       source activate test_environment
       pip install -e .
       pip install pytest pytest-azurepipelines
+      pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
     displayName: 'Install PyARPES and Test Requirements'
 
   - bash: 'source activate test_environment && pytest tests --doctest-modules --junitxml=junit/test-results.xml'

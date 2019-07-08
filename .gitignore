@@ -7,6 +7,8 @@ experiment/
 Experiments/
 
 # Generated Files
+conda-dist/
+junit/
 source/arpes.md
 source/toc.md
 source/arpes.*.md

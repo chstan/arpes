@@ -3,12 +3,6 @@ import warnings
 
 import numpy as np
 import colorcet as cc
-from bokeh import events
-from bokeh.layouts import row, column, widgetbox, Spacer
-from bokeh.models import ColumnDataSource, HoverTool, widgets
-from bokeh.models.mappers import LinearColorMapper
-from bokeh.models.widgets.markups import Div
-from bokeh.plotting import figure
 
 from .interactive_utils import SaveableTool, CursorTool
 
@@ -48,6 +42,13 @@ class ImageTool(SaveableTool, CursorTool):
         return self.tool_handler_2d(doc)
 
     def tool_handler_2d(self, doc):
+        from bokeh import events
+        from bokeh.layouts import row, column, widgetbox, Spacer
+        from bokeh.models import ColumnDataSource, widgets
+        from bokeh.models.mappers import LinearColorMapper
+        from bokeh.models.widgets.markups import Div
+        from bokeh.plotting import figure
+
         arr = self.arr
         # Set up the data
         x_coords, y_coords = arr.coords[arr.dims[0]], arr.coords[arr.dims[1]]
@@ -343,6 +344,13 @@ class ImageTool(SaveableTool, CursorTool):
             self.cursor = json_data['cursor']
 
     def tool_handler_3d(self, doc):
+        from bokeh import events
+        from bokeh.layouts import row, column, widgetbox, Spacer
+        from bokeh.models import ColumnDataSource, HoverTool, widgets
+        from bokeh.models.mappers import LinearColorMapper
+        from bokeh.models.widgets.markups import Div
+        from bokeh.plotting import figure
+
         arr = self.arr
         # Set up the data
         x_coords, y_coords, z_coords = arr.coords[arr.dims[0]], arr.coords[arr.dims[1]], arr.coords[arr.dims[2]]

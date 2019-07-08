@@ -1,4 +1,5 @@
 from arpes.endstations import HemisphericalEndstation, SynchrotronEndstation, FITSEndstation
+import numpy as np
 
 __all__ = ('MAESTROARPESEndstation',)
 
@@ -15,11 +16,16 @@ class MAESTROARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, FIT
         'LMOTOR0': 'x',
         'LMOTOR1': 'y',
         'LMOTOR2': 'z',
+        'Scan X': 'scan_x',
+        'Scan Y': 'scan_y',
+        'Scan Z': 'scan_z',
         'LMOTOR3': 'theta',
         'LMOTOR4': 'beta',
         'LMOTOR5': 'sample-phi',
         'LMOTOR9': 'polar',
         'mono_eV': 'hv',
+        'SF_HV': 'hv',
+        'SS_HV': 'hv',
         'Slit Defl': 'polar',
     }
 
@@ -35,4 +41,11 @@ class MAESTROARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, FIT
             if coord_name in self.RENAME_KEYS:
                 will_rename[coord_name] = self.RENAME_KEYS.get(coord_name)
 
-        return scan.rename(will_rename)
+        renamed = scan.rename(will_rename)
+
+        if 'scan_x' in renamed.coords:
+            for d in renamed.data_vars:
+                if 'spectrum' in d:
+                    renamed[d].values = np.flip(renamed[d].values, axis=renamed[d].dims.index('scan_x'))
+
+        return renamed

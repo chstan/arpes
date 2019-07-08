@@ -42,9 +42,10 @@ DEPENDENCY_GROUPS = {
         'numpy',
         'scipy',
         'lmfit',
+        'sklearn',
 
         # plotting
-        'matplotlib==3.0.0',
+        'matplotlib>=3.0.3',
         'seaborn',
         'bokeh==0.12.10',
         'ipywidgets==7.0.1',

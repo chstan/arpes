@@ -4,12 +4,6 @@ import numpy as np
 
 from arpes.plotting.interactive_utils import BokehInteractiveTool, CursorTool
 
-from bokeh.layouts import row, column, widgetbox, Spacer
-from bokeh.models.mappers import LinearColorMapper
-from bokeh.models import widgets
-from bokeh.models.widgets.markups import Div
-from bokeh.plotting import figure
-
 
 __all__ = ('FitCheckTool',)
 
@@ -34,6 +28,12 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
         self.outlier_clip = 1
 
     def tool_handler(self, doc):
+        from bokeh.layouts import row, column, widgetbox, Spacer
+        from bokeh.models.mappers import LinearColorMapper
+        from bokeh.models import widgets
+        from bokeh.models.widgets.markups import Div
+        from bokeh.plotting import figure
+
         self.arr = self.arr.copy(deep=True)
 
         if not isinstance(self.arr, xr.Dataset):

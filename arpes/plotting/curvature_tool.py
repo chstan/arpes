@@ -1,8 +1,4 @@
 import numpy as np
-from bokeh.layouts import row, column, widgetbox
-from bokeh.models import widgets, Spacer
-from bokeh.models.mappers import LinearColorMapper
-from bokeh.plotting import figure
 
 from arpes.analysis import curvature, d1_along_axis, d2_along_axis, gaussian_filter, boxcar_filter
 from arpes.plotting.interactive_utils import BokehInteractiveTool
@@ -22,6 +18,11 @@ class CurvatureTool(BokehInteractiveTool):
         self.app_main_size = self.settings.get('app_main_size', 400)
 
     def tool_handler(self, doc):
+        from bokeh.layouts import row, column, widgetbox
+        from bokeh.models import widgets, Spacer
+        from bokeh.models.mappers import LinearColorMapper
+        from bokeh.plotting import figure
+
         default_palette = self.default_palette
 
         x_coords, y_coords = self.arr.coords[self.arr.dims[1]], self.arr.coords[self.arr.dims[0]]

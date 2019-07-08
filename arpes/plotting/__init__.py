@@ -18,6 +18,9 @@ from .spatial import *
 from .movie import *
 
 # 'Tools'
+# Note, we lift Bokeh imports into definitions in case people don't want to install Bokeh
+# and also because of an undesirable interaction between pytest and Bokeh due to Bokeh's use
+# of jinja2.
 from .interactive import *
 from .band_tool import *
 from .comparison_tool import *
