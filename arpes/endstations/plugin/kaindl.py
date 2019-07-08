@@ -102,10 +102,12 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
                 data = xr.merge([data, xr.Dataset(dict([[as_name, photocurrent_arr]]))])
 
             return data
-
-        data = attach_attr(data, 'Photocurrent', 'photocurrent')
-        data = attach_attr(data, 'Temperature B', 'temp')
-        data = attach_attr(data, 'Temperature A', 'cryotip_temp')
+        try:
+            data = attach_attr(data, 'Photocurrent', 'photocurrent')
+            data = attach_attr(data, 'Temperature B', 'temp')
+            data = attach_attr(data, 'Temperature A', 'cryotip_temp')
+        except FileNotFoundError as e:
+            print(e)
 
         if len(internal_match.groups()):
             attrs_path = str(Path(original_filename).parent / '{}_AI.txt'.format(internal_match.groups()[0]))

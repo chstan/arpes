@@ -98,7 +98,7 @@ def reduce_model_with_operators(model):
         return left / right
 
 
-def compile_model(model, params=None):
+def compile_model(model, params=None, prefixes=None):
     """
     Takes a model sequence, i.e. a Model class, a list of such classes, or a list
     of such classes with operators and instantiates an appropriate model.
@@ -108,6 +108,11 @@ def compile_model(model, params=None):
     if params is None:
         params = {}
 
+    prefix_compile = '{}'
+    if prefixes is None:
+        prefixes = ascii_lowercase
+        prefix_compile = '{}_'
+
     try:
         if issubclass(model, lmfit.Model):
             return model()
@@ -115,7 +120,7 @@ def compile_model(model, params=None):
         pass
 
     if isinstance(model, (list, tuple)) and all([isinstance(token, type) for token in model]):
-        models = [m(prefix='{}_'.format(ascii_lowercase[i]), nan_policy='omit') for i, m in enumerate(model)]
+        models = [m(prefix=prefix_compile.format(prefixes[i]), nan_policy='omit') for i, m in enumerate(model)]
         if isinstance(params, (list, tuple)):
             for cs, m in zip(params, models):
                 for name, params_for_name in cs.items():
@@ -124,7 +129,7 @@ def compile_model(model, params=None):
         built = functools.reduce(operator.add, models)
     else:
         warnings.warn('Beware of equal operator precedence.')
-        prefix = iter(ascii_lowercase)
+        prefix = iter(prefixes)
         model = [m if isinstance(m, str) else (m, next(prefix)) for m in model]
         built = reduce_model_with_operators(_parens_to_nested(model))
 
@@ -153,7 +158,7 @@ def unwrap_params(params, iter_coordinate):
 
 def broadcast_model(model_cls: typing.Union[type, TypeIterable],
                     data: DataType, broadcast_dims, params=None, progress=True, dataset=True,
-                    weights=None, safe=False):
+                    weights=None, safe=False, prefixes=None):
     """
     Perform a fit across a number of dimensions. Allows composite models.
     :param model_cls:
@@ -184,7 +189,7 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     residual = data.copy(deep=True)
     residual.values = np.zeros(residual.shape)
 
-    model = compile_model(parse_model(model_cls), params=params)
+    model = compile_model(parse_model(model_cls), params=params, prefixes=prefixes)
     if isinstance(params, (list, tuple)):
         params = {}
 

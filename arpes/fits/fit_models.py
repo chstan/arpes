@@ -9,6 +9,7 @@ from lmfit.models import update_param_vals
 from scipy.special import erfc
 from scipy.signal import convolve
 from scipy.ndimage import gaussian_filter
+from lmfit.models import guess_from_peak
 
 from arpes.constants import HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ
 
@@ -17,7 +18,7 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel','GStepBModel', 'QuadraticModel'
            'ConstantModel', 'LinearModel', 'GStepBStandardModel', 'AffineBackgroundModel',
            'AffineBroadenedFD',
            'FermiDiracModel', 'BandEdgeBModel',
-           'gaussian_convolve', 'TwoGaussianModel', 'TwoLorModel', 'TwoLorEdgeModel')
+           'gaussian_convolve', 'TwoGaussianModel', 'TwoLorModel', 'TwoLorEdgeModel','SplitLorentzianModel')
 
 
 class XModelMixin(lf.Model):
@@ -105,6 +106,7 @@ class XModelMixin(lf.Model):
             result.independent = coord_values
             result.independent_order = new_dim_order
         except Exception as e:
+            print(e)
             if debug:
                 import pdb
                 pdb.post_mortem(e.__traceback__)
@@ -277,7 +279,7 @@ def twoexponential_decay_c(x,amp,t0,tau1,tau2,const_bkg):
     y = const_bkg + amp*(1-np.exp(-dx/tau1))*np.exp(-dx/tau2)
     f = y.copy()
     f[dx<0] = const_bkg
-    f[dx>=0] = y
+    f[dx>=0] = y[dx>=0]
     return f
 
 
@@ -358,6 +360,39 @@ def affine_broadened_fd(x, fd_center=0, fd_width=0.003, conv_width=0.02, const_b
     ) + offset
 
 
+# Nick Dale edits
+
+def log_renormalization(x, kF=1.6,kD=1.6,kC= 1.7, alpha = 0.4, vF=1e6):
+    """
+    Logarithmic Correction to Linear Dispersion of Materials with Dirac Dispersion near charge neutrality
+    :param k: value to evaluate fit at
+    :param kF: Fermi wavevector
+    :param kD: Dirac point
+    :param alpha: Fine structure constant
+    :param vF: Bare Band Fermi Velocity
+    :param kC: Cutoff Momentum
+    """
+    dk = x - kF
+    dkD = x - kD
+    return -vF*np.abs(dkD)+(alpha/4)*vF*dk*np.log(np.abs(kC/dkD))
+
+def dirac_dispersion(x, kd = 1.6, amplitude_1 = 1,amplitude_2=1,center=0, sigma_1 = 1,sigma_2 =1):
+    """
+    Model for dirac_dispersion symmetric about the dirac point. Fits lorentziants to (kd-center) and (kd+center)
+    :param x: value to evaluate fit at
+    :param kd: Dirac point momentum
+    :param amplitude_1: amplitude of Lorentzian at kd-center
+    :param amplitude_2: amplitude of Lorentzian at kd+center
+    :param center: center of Lorentzian
+    :param sigma_1: FWHM of Lorentzian at kd-center
+    :param sigma_2: FWHM of Lorentzian at kd+center
+
+    """
+
+    dx = x-center
+    return lorentzian(x,center=kd-center,amplitude=amplitude_1,gamma=sigma_1) + lorentzian(x,center=kd+center,amplitude=amplitude_2,gamma=sigma_2)
+
+# end Nick Dale edits
 
 
 
@@ -981,10 +1016,91 @@ class TwoLorEdgeModel(XModelMixin):
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
+class Log_Renormalization_Model(XModelMixin):
+    """
+    A model for Logarithmic Renormalization to Linear Dispersion in Dirac Materials
+    :param k: value to evaluate fit at
+    :param kF: Fermi wavevector
+    :param kD: Dirac point
+    :param alpha: Fine structure constant
+    :param vF: Bare Band Fermi Velocity
+    :param kC: Cutoff Momentum
+    """
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(log_renormalization, **kwargs)
+
+        self.set_param_hint('alpha', min=0.)
+        self.set_param_hint('vF', min=0.)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        pars['%skC' % self.prefix].set(value=1.7)
+        # pars['%svF' % self.prefix].set(value=(data.max()-data.min())/(kC-kD))
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
+class DiracDispersionModel(XModelMixin):
+    """
+    Model for dirac_dispersion symmetric about the dirac point. Fits lorentziants to (kd-center) and (kd+center)
+    :param x: value to evaluate fit at
+    :param kd: Dirac point momentum
+    :param amplitude_1: amplitude of Lorentzian at kd-center
+    :param amplitude_2: amplitude of Lorentzian at kd+center
+    :param center: center of Lorentzian
+    :param sigma_1: FWHM of Lorentzian at kd-center
+    :param sigma_2: FWHM of Lorentzian at kd+center
+    """
+    def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(dirac_dispersion, **kwargs)
+
+        self.set_param_hint('sigma_1', min=0.)
+        self.set_param_hint('sigma_2', min=0.)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        # pars['%skd' % self.prefix].set(value=1.5)
+        
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
 class LorentzianModel(XModelMixin, lf.models.LorentzianModel):
     pass
 
+class SplitLorentzianModel(XModelMixin, lf.models.SplitLorentzianModel):
+    def _set_paramhints_prefix(self):
+        """
+        Conrad: In lmfit v0.9.13 there is a bug here where the prefix is not set 
+        on the parameter hint expressions for the computed variables "height" 
+        and "fwhm". Until this is patched, we need to do this correctly, which invovles
+        just injecting the prefix in before each of the model parameters in these
+        expressions.
+        """
+        self.set_param_hint('sigma', min=0)
+        self.set_param_hint('sigma_r', min=0)
+        self.set_param_hint('fwhm', expr='{prefix}sigma+{prefix}sigma_r'.format(
+            prefix=self.prefix))
+        self.set_param_hint(
+            'height', expr='2*{prefix}amplitude/{:.7f}/max({}, ({prefix}sigma+{prefix}sigma_r))'.format(
+                np.pi, np.finfo(np.float).eps, prefix=self.prefix))
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params() 
+        """Estimate initial model parameter values from data."""
+        pars = guess_from_peak(self, data, x, negative=False, ampscale=1.25)
+        sigma = pars['%ssigma' % self.prefix]
+        pars['%ssigma_r' % self.prefix].set(value=sigma.value, min=sigma.min, max=sigma.max)
+
+        return update_param_vals(pars, self.prefix, **kwargs)
 
 class VoigtModel(XModelMixin, lf.models.VoigtModel):
     pass
