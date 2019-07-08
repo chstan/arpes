@@ -15,8 +15,8 @@
 .. image:: https://dev.azure.com/lanzara-group/PyARPES/_apis/build/status/PyARPES%20CI%20Build?branchName=master
    :target: https://dev.azure.com/lanzara-group/PyARPES/_build?definitionId=2
 
-.. image:: https://coveralls.io/repos/github/chstan/arpes/badge.svg?branch=master
-   :target: https://coveralls.io/github/chstan/arpes?branch=master
+.. image:: https://img.shields.io/azure-devops/coverage/lanzara-group/PyARPES/2.svg
+   :target: https://dev.azure.com/lanzara-group/PyARPES/_build?definitionId=2
 
 Installation
 ============
