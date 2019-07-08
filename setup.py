@@ -42,7 +42,7 @@ DEPENDENCY_GROUPS = {
         'numpy',
         'scipy',
         'lmfit',
-        'sklearn',
+        'scikit-learn',
 
         # plotting
         'matplotlib>=3.0.3',

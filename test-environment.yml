@@ -29,7 +29,7 @@ dependencies:
   - xlrd
   - openpyxl
   - tqdm
-  - sklearn
+  - scikit-learn
 
   # pip
   - pip:
