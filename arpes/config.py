@@ -84,7 +84,6 @@ def update_configuration(user_path=None):
 update_configuration()
 
 CONFIG = {
-    'VERSION': '1.0.0',
     'WORKSPACE': None,
 }
 
