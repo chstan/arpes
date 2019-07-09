@@ -13,7 +13,7 @@ steps:
 
 - bash: |
     source activate root
-    conda install conda-build
+    conda install -y conda-build
     mkdir "conda-dist"
     conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
   displayName: 'conda-build'
