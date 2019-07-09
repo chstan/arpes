@@ -14,6 +14,8 @@ steps:
 - bash: |
     source activate root
     conda install -y conda-build
+    python setup.py sdist
+    python setup.py bdist_wheel
     mkdir "conda-dist"
     conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
   displayName: 'conda-build'
