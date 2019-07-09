@@ -14,7 +14,7 @@ steps:
 
 - bash: |
     source activate root
-    conda install -y conda-build
+    conda install -y conda-build anaconda-client
     python setup.py sdist
     python setup.py bdist_wheel
     mkdir "conda-dist"
