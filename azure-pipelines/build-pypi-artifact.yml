@@ -1,7 +1,8 @@
-# PyPI Build Artifacts
+# PyPI Build Artifacts and Upload
 
 trigger:
 - master
+- release
 
 pool:
   name: Hosted Ubuntu 1604
@@ -26,3 +27,8 @@ steps:
   inputs:
     pathtoPublish: $(Build.ArtifactStagingDirectory)
     artifactName: PyARPES_PyPI_Wheel
+
+- bash: |
+    twine -u $(pypi.user) -p $(pypi.password) upload dist/*
+  displayName: 'Upload to PyPI'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/release'))
