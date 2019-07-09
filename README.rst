@@ -24,6 +24,9 @@
 .. image:: https://img.shields.io/pypi/pyversions/arpes.svg
    :target: https://pypi.org/project/arpes/
 
+.. image:: https://img.shields.io/conda/v/arpes/arpes.svg
+   :target: https://anaconda.org/arpes/arpes
+
 
 
 Installation
