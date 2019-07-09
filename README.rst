@@ -15,8 +15,16 @@
 .. image:: https://dev.azure.com/lanzara-group/PyARPES/_apis/build/status/PyARPES%20CI%20Build?branchName=master
    :target: https://dev.azure.com/lanzara-group/PyARPES/_build?definitionId=2
 
+.. image:: https://img.shields.io/pypi/v/arpes.svg
+   :target: https://pypi.org/project/arpes/
+
 .. image:: https://img.shields.io/azure-devops/coverage/lanzara-group/PyARPES/2.svg
    :target: https://dev.azure.com/lanzara-group/PyARPES/_build?definitionId=2
+
+.. image:: https://img.shields.io/pypi/pyversions/arpes.svg
+   :target: https://pypi.org/project/arpes/
+
+
 
 Installation
 ============
