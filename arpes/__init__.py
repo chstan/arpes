@@ -1,4 +1,80 @@
-VERSION = '1.0.2'
+import warnings
+import contextlib
+
+VERSION = '1.1.0'
+
+def check():
+    """
+    Verifies certain aspects of the installation and provides guidance for semi-broken installations.
+    :return:
+    """
+
+    def verify_igor_pro():
+        pip_command = 'pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1'
+        warning = 'For Igor support, install igorpy with: {}'.format(pip_command)
+        warning_incompatible = 'PyARPES requires a patched copy of igorpy, ' \
+                               'available at \n\thttps://github.com/chstan/igorpy/tarball/712a4c4\n\n\tYou can install with: ' \
+                               '{}'.format(pip_command)
+        try:
+            import igor
+            if not igor.__version__ > '0.3':
+                raise ValueError('Not using patched version of igorpy.')
+
+        except ImportError:
+            return warning
+        except ValueError:
+            return warning_incompatible
+
+    def verify_bokeh():
+        pip_command = 'pip install bokeh==0.12.10'
+
+        warning = 'For bokeh support, install version 0.12.10\n\t with {}'.format(pip_command)
+        warning_incompatible = 'PyARPES, requires version 0.12.10 of bokeh. You can install with \n\t{}'.format(pip_command)
+
+        try:
+            import bokeh
+            if not bokeh.__version__ == '0.12.10':
+                raise ValueError('Not using the specified version of Bokeh.')
+
+        except ImportError:
+            return warning
+        except ValueError:
+            return warning_incompatible
+
+    def verify_everything():
+        import os
+        phony_datasets = os.path.abspath(__file__ + '../../../tests/resources')
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                with open(os.devnull, 'w') as devnull:
+                    with contextlib.redirect_stdout(devnull):
+                        setup({}, arpes_root=phony_datasets)
+
+        except Exception as e:
+            return str(e)
+
+    checks = [
+        ('Igor Pro Support', verify_igor_pro,),
+        ('Bokeh Support', verify_bokeh,),
+        ('Import almost everything in PyARPES', verify_everything,),
+    ]
+
+    from colorama import Fore, Style
+
+    print('Checking...')
+    for check_name, check_fn in checks:
+        initial_str = '[ ] {}'.format(check_name)
+        print(initial_str, end='', flush=True)
+
+        failure_message = check_fn()
+
+        print('\b' * len(initial_str) + ' ' * len(initial_str) + '\b' * len(initial_str), end='')
+
+        if failure_message is None:
+            print('{}[✔] {}{}'.format(Fore.GREEN, check_name, Style.RESET_ALL))
+        else:
+            print('{}[✘] {}: \n\t{}{}'.format(Fore.RED, check_name, failure_message, Style.RESET_ALL))
 
 
 def setup(outer_globals, arpes_root=None):

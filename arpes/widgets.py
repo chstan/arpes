@@ -2,7 +2,6 @@ import matplotlib.gridspec as gridspec
 import matplotlib
 import numpy as np
 import itertools
-import warnings
 import matplotlib.pyplot as plt
 from functools import wraps
 from matplotlib.widgets import LassoSelector, Button, TextBox, RectangleSelector, SpanSelector
@@ -265,14 +264,7 @@ def fit_initializer(data, peak_type=LorentzianModel, **kwargs):
     ax_other = plt.subplot(gs[1, 0])
     ax_test = plt.subplot(gs[1, 1])
 
-    #gs_widget = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=gs[1, 1])
-    #ax_widget_1 = plt.subplot(gs_widget[0, 0])
-    #ax_widget_2 = plt.subplot(gs_widget[1, 0])
-    #ax_widget_3 = plt.subplot(gs_widget[2, 0])
-
     invisible_axes(ax_other)
-    #invisible_axes(ax_widget_2)
-    #invisible_axes(ax_widget_3)
 
     prefixes = 'abcdefghijklmnopqrstuvwxyz'
     model_settings = []
@@ -335,6 +327,7 @@ def fit_initializer(data, peak_type=LorentzianModel, **kwargs):
         except ImportError:
             pass
         finally:
+            import pprint
             print(pprint.pformat(compute_parameters()))
 
     copy_settings_button = Button(ax_test, 'Copy Settings')

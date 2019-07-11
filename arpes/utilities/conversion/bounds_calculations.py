@@ -39,7 +39,7 @@ def spherical_to_ky(kinetic_energy, theta, phi):
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.sin(phi)
 
 def spherical_to_kz(kinetic_energy, theta, phi, inner_V):
-    """
+    r"""
     K_INV_ANGSTROM encodes that k_z = \frac{\sqrt{2 * m * E_kin * \cos^2\theta + V_0}}{\hbar}
     :param kinetic_energy:
     :param theta:

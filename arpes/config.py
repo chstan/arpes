@@ -7,13 +7,12 @@ between different projects.
 import json
 import os.path
 import logging
+import pint
+import collections
 
 from pathlib import Path
 
 from arpes.exceptions import ConfigurationError
-import arpes.constants as consts
-
-import pint
 
 ureg = pint.UnitRegistry()
 
@@ -23,8 +22,8 @@ SOURCE_ROOT = str(Path(__file__).parent)
 
 SETTINGS = {
     'interactive': {
-        'main_width': 500,
-        'marginal_width': 200,
+        'main_width': 350,
+        'marginal_width': 150,
         'palette': 'magma',
     },
     'xarray_repr_mod': False,
@@ -183,6 +182,13 @@ try:
 except:
     logging.warning("Could not find local configuration file. If you don't "
                   "have one, you can safely ignore this message.")
+
+
+def override_settings(new_settings):
+    from arpes.utilities.collections import deep_update
+
+    global SETTINGS
+    deep_update(SETTINGS, new_settings)
 
 
 # try to generate cache files if they do not exist

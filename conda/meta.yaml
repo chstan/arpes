@@ -17,7 +17,7 @@ source:
   # Source from tarball
   # note: must 'make dist-pypi' or `python setup.py sdist` before running conda-build as we now rely on MANIFEST.IN to only pick desired files and avoid copying data folders and alike - and its puts its clean tarball under /dist/:
   url: ../dist/{{ data.name }}-{{ data.version }}.tar.gz
-  # url: https://pypi.python.org/packages/source/pypes/pypes/
+  # url: https://pypi.python.org/packages/source/arpes/arpes/
   # sha1: FILLMEIN
 
   # Source from git
@@ -76,7 +76,7 @@ test:
     - python
 
 about:
-  home: https://pypes.netlify.com/#/
+  home: https://arpes.netlify.com/#/
   license: GPL-3.0
   license_family: GPL
 #  license_file: LICENSE

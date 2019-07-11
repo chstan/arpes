@@ -8,7 +8,6 @@ import json
 import os
 import re
 import warnings
-import functools
 from math import sin, cos
 from operator import itemgetter
 
