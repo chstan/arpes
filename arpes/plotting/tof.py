@@ -3,7 +3,7 @@ This module is a bit of a misnomer, in that it also applies perfectly well to da
 line on a hemisphere, the important point is that the data in any given channel should correspond to the true number of
 electrons that arrived in that channel.
 
-Plotting routines here are ones that include statistical errorbars. Generally for datasets in PyPES, an xr.Dataset
+Plotting routines here are ones that include statistical errorbars. Generally for datasets in PyARPES, an xr.Dataset
 will hold the standard deviation data for a given variable on `{var_name}_std`.
 """
 import xarray as xr

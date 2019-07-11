@@ -25,7 +25,7 @@ class HelpDialog(QtWidgets.QDialog):
             label(
                 'QtTool is the work of Conrad Stansbury, with much inspiration '
                 'and thanks to the authors of ImageTool. QtTool is distributed '
-                'as part of the PyPES data analysis framework.',
+                'as part of the PyARPES data analysis framework.',
                 wordWrap=True
             ),
             label(
