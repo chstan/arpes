@@ -32,7 +32,7 @@ steps:
     artifactName: PyARPES_Conda
 
 - bash: |
-    anaconda login --username $(conda.user) --password $(conda.password)
+    yes | anaconda login --username $(conda.user) --password $(conda.password)
     anaconda upload -u arpes conda-dist/noarch/$(ls conda-dist/noarch/ | grep ".tar.bz2")
   displayName: 'Upload to conda'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/release'))
