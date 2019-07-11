@@ -2,7 +2,7 @@
 
 ## Converting Volumetric Data
 
-PyPES provides a consistent interface for converting ARPES data from angle to momentum space.
+PyARPES provides a consistent interface for converting ARPES data from angle to momentum space.
 This means that there is only a single function that provides an entrypoint for converting 
 volumetric data: `arpes.utilities.conversion.convert_to_kspace`.
 
@@ -24,7 +24,7 @@ before converting an entire Fermi surface.
 
 ### Requesting a Resolution
 
-PyPES attempts to pick resolutions in the destination coordinate space that match the gridding
+PyARPES attempts to pick resolutions in the destination coordinate space that match the gridding
 in the original space. You can override them however, by passing a resolution for any of the 
 destination coordinates which will be used when creating the grid to interpolate onto. 
 

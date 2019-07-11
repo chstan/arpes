@@ -11,6 +11,8 @@
 > 
 > `PRINCIPAL_NAME = 'ALG-SToF'`
 > 
+> `RENAME_KEYS = {'LMOTOR0': 'x', 'LM ... 'delay', 'Phi': 'phi'}`
+> 
 > `SKIP_ATTR_FRAGMENTS = {'BITPIX', 'COMMENT' ... ', 'TUNIT',
 > 'XTENSION'}`
 > 

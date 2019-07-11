@@ -1,4 +1,6 @@
 *      text=auto
 *.*    eol=lf
 
-
+*.fits binary
+*.h5   binary
+*.pxt  binary

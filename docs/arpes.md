@@ -10,6 +10,10 @@
                     module](arpes.analysis.band_analysis)
                   - [arpes.analysis.band\_analysis\_utils
                     module](arpes.analysis.band_analysis_utils)
+                  - [arpes.analysis.decomposition
+                    module](arpes.analysis.decomposition)
+                  - [arpes.analysis.deconvolution
+                    module](arpes.analysis.deconvolution)
                   - [arpes.analysis.derivative
                     module](arpes.analysis.derivative)
                   - [arpes.analysis.fft module](arpes.analysis.fft)
@@ -31,11 +35,15 @@
                     module](arpes.analysis.sarpes)
                   - [arpes.analysis.savitzky\_golay
                     module](arpes.analysis.savitzky_golay)
+                  - [arpes.analysis.shirley
+                    module](arpes.analysis.shirley)
+                  - [arpes.analysis.statistics
+                    module](arpes.analysis.statistics)
                   - [arpes.analysis.tarpes
                     module](arpes.analysis.tarpes)
                   - [arpes.analysis.xps module](arpes.analysis.xps)
         
-          - [Module contents](arpes.analysis#module-arpes.analysis)
+          - [Module contents](arpes.analysis#module-contents)
 
   -   - [arpes.corrections package](arpes.corrections)
         
@@ -48,8 +56,7 @@
                   - [arpes.corrections.fermi\_edge\_corrections
                     module](arpes.corrections.fermi_edge_corrections)
         
-          - [Module
-            contents](arpes.corrections#module-arpes.corrections)
+          - [Module contents](arpes.corrections#module-contents)
 
   -   - [arpes.endstations package](arpes.endstations)
         
@@ -64,12 +71,20 @@
                                     module](arpes.endstations.plugin.ALG_main)
                                   - [arpes.endstations.plugin.ALG\_spin\_ToF
                                     module](arpes.endstations.plugin.ALG_spin_ToF)
+                                  - [arpes.endstations.plugin.ANTARES
+                                    module](arpes.endstations.plugin.ANTARES)
                                   - [arpes.endstations.plugin.HERS
                                     module](arpes.endstations.plugin.HERS)
                                   - [arpes.endstations.plugin.MAESTRO
                                     module](arpes.endstations.plugin.MAESTRO)
+                                  - [arpes.endstations.plugin.MBS
+                                    module](arpes.endstations.plugin.MBS)
                                   - [arpes.endstations.plugin.SToF\_DLD
                                     module](arpes.endstations.plugin.SToF_DLD)
+                                  - [arpes.endstations.plugin.igor\_export
+                                    module](arpes.endstations.plugin.igor_export)
+                                  - [arpes.endstations.plugin.kaindl
+                                    module](arpes.endstations.plugin.kaindl)
                                   - [arpes.endstations.plugin.merlin
                                     module](arpes.endstations.plugin.merlin)
                         
@@ -82,6 +97,8 @@
                     module](arpes.endstations.fits_utils)
                   - [arpes.endstations.igor\_utils
                     module](arpes.endstations.igor_utils)
+                  - [arpes.endstations.nexus\_utils
+                    module](arpes.endstations.nexus_utils)
         
           - [Module
             contents](arpes.endstations#module-arpes.endstations)
@@ -94,9 +111,11 @@
                     module](arpes.fits.fit_models)
                   - [arpes.fits.lmfit\_html\_repr
                     module](arpes.fits.lmfit_html_repr)
+                  - [arpes.fits.lmfit\_plot
+                    module](arpes.fits.lmfit_plot)
                   - [arpes.fits.utilities module](arpes.fits.utilities)
         
-          - [Module contents](arpes.fits#module-arpes.fits)
+          - [Module contents](arpes.fits#module-contents)
 
   -   - [arpes.laue package](arpes.laue)
         
@@ -108,9 +127,30 @@
                 
                   - [arpes.models.band module](arpes.models.band)
         
-          - [Module contents](arpes.models#module-arpes.models)
+          - [Module contents](arpes.models#module-contents)
 
   -   - [arpes.plotting package](arpes.plotting)
+        
+          -   - [Subpackages](arpes.plotting#subpackages)
+                
+                  -   - [arpes.plotting.qt\_tool
+                        package](arpes.plotting.qt_tool)
+                        
+                          -   - [Submodules](arpes.plotting.qt_tool#submodules)
+                                
+                                  - [arpes.plotting.qt\_tool.AxisInfoWidget
+                                    module](arpes.plotting.qt_tool.AxisInfoWidget)
+                                  - [arpes.plotting.qt\_tool.BinningInfoWidget
+                                    module](arpes.plotting.qt_tool.BinningInfoWidget)
+                                  - [arpes.plotting.qt\_tool.DataArrayImageView
+                                    module](arpes.plotting.qt_tool.DataArrayImageView)
+                                  - [arpes.plotting.qt\_tool.HelpDialog
+                                    module](arpes.plotting.qt_tool.HelpDialog)
+                                  - [arpes.plotting.qt\_tool.utils
+                                    module](arpes.plotting.qt_tool.utils)
+                        
+                          - [Module
+                            contents](arpes.plotting.qt_tool#module-contents)
         
           -   - [Submodules](arpes.plotting#submodules)
                 
@@ -120,6 +160,7 @@
                     module](arpes.plotting.band_tool)
                   - [arpes.plotting.bands module](arpes.plotting.bands)
                   - [arpes.plotting.basic module](arpes.plotting.basic)
+                  - [arpes.plotting.bz module](arpes.plotting.bz)
                   - [arpes.plotting.comparison\_tool
                     module](arpes.plotting.comparison_tool)
                   - [arpes.plotting.curvature\_tool
@@ -129,6 +170,8 @@
                   - [arpes.plotting.dos module](arpes.plotting.dos)
                   - [arpes.plotting.dyn\_tool
                     module](arpes.plotting.dyn_tool)
+                  - [arpes.plotting.false\_color
+                    module](arpes.plotting.false_color)
                   - [arpes.plotting.fermi\_edge
                     module](arpes.plotting.fermi_edge)
                   - [arpes.plotting.fermi\_surface
@@ -146,8 +189,6 @@
                     module](arpes.plotting.parameter)
                   - [arpes.plotting.path\_tool
                     module](arpes.plotting.path_tool)
-                  - [arpes.plotting.qt\_tool
-                    module](arpes.plotting.qt_tool)
                   - [arpes.plotting.spatial
                     module](arpes.plotting.spatial)
                   - [arpes.plotting.spin module](arpes.plotting.spin)
@@ -155,10 +196,11 @@
                     module](arpes.plotting.stack_plot)
                   - [arpes.plotting.tarpes
                     module](arpes.plotting.tarpes)
+                  - [arpes.plotting.tof module](arpes.plotting.tof)
                   - [arpes.plotting.visualize\_3d
                     module](arpes.plotting.visualize_3d)
         
-          - [Module contents](arpes.plotting#module-arpes.plotting)
+          - [Module contents](arpes.plotting#module-contents)
 
   -   - [arpes.preparation package](arpes.preparation)
         
@@ -218,6 +260,8 @@
                     module](arpes.utilities.dataset)
                   - [arpes.utilities.funcutils
                     module](arpes.utilities.funcutils)
+                  - [arpes.utilities.geometry
+                    module](arpes.utilities.geometry)
                   - [arpes.utilities.jupyter\_utils
                     module](arpes.utilities.jupyter_utils)
                   - [arpes.utilities.math module](arpes.utilities.math)
@@ -246,7 +290,9 @@
   - [arpes.provenance module](arpes.provenance)
   - [arpes.repair module](arpes.repair)
   - [arpes.typing module](arpes.typing)
+  - [arpes.widgets module](arpes.widgets)
   - [arpes.xarray\_extensions module](arpes.xarray_extensions)
+  - [arpes.xarray\_html\_repr module](arpes.xarray_html_repr)
 
 ## Module contents
 

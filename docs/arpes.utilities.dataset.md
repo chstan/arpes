@@ -1,7 +1,7 @@
 # arpes.utilities.dataset module
 
 **arpes.utilities.dataset.clean\_xlsx\_dataset(path,
-allow\_soft\_match=False, with\_inferred\_cols=True,
+allow\_soft\_match=False, write=True, with\_inferred\_cols=True,
 warn\_on\_exists=False,**kwargs)\*\*
 
 **arpes.utilities.dataset.default\_dataset(workspace=None,
@@ -26,3 +26,9 @@ allow\_soft\_match=False, with\_inferred\_cols=True,
 write=False,**kwargs)\*\*
 
 **arpes.utilities.dataset.cleaned\_pair\_paths(path)**
+
+**arpes.utilities.dataset.list\_files\_for\_rename(path=None,
+extensions=None)**
+
+**arpes.utilities.dataset.rename\_files(dry=True, path=None,
+extensions=None, starting\_index=1)**

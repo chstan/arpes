@@ -8,14 +8,14 @@ at once for single (k, E). Other detectors, like we one we have in the
 Lanzara lab, measure a single (k, S) point at once, but produce 
 full EDCs.
 
-Furthermore, SARPES datasets have the discrete spin label **S**. PyPES 
+Furthermore, SARPES datasets have the discrete spin label **S**. PyARPES 
 choice of `xarray` as our data primitive makes it excellently suited for
 handling SARPES data, because the different spin channels can exist 
 simultaneously as `xr.DataArrays` on the same `xr.Dataset`.
 
-## Spin-ARPES conventions in PyPES
+## Spin-ARPES conventions in PyARPES
 
-Most functionality in PyPES works just as well for SARPES as for other 
+Most functionality in PyARPES works just as well for SARPES as for other 
 modalities. You can load data just as you would with any other type:
 
 ![Loading SToF Data](/static/SToF-load.png)
@@ -31,7 +31,7 @@ You can think of `up` and `down` in the same way that `spectrum` is treated for
 spin integrated datasets. All analysis code that operates on `xr.DataArray`s should
 work for these as well.  
 
-**Note for plugin writers**: PyPES reserves `t_up`, `t_down`, `up`, `down`
+**Note for plugin writers**: PyARPES reserves `t_up`, `t_down`, `up`, `down`
 for the spin channels of ToF detectors and the spin channels of energy-aware 
 detectors respectively. You should ensure plugins produce the appropriately
 variables. Spin-integrated time of flight detectors should produce `t_spectrum`
@@ -47,7 +47,7 @@ or by quiver plot is also straightforward.
 
 # Converting Time-of-Flight Data to Kinetic Energy
 
-PyPES contains support for converting time of flight photoemission data to 
+PyARPES contains support for converting time of flight photoemission data to 
 energy and momentum space. Our support for this currently supports the Lanzara Lab's
 Spin-ARPES spectrometer, but support is largely generic to multidimensional (ARToF)
 and PEEM-ToF detectors, given an associated [data loading plugin](/writing-plugins).
@@ -57,7 +57,7 @@ and PEEM-ToF detectors, given an associated [data loading plugin](/writing-plugi
 Utilities can be found in `arpes.preparation.tof_preparation`.
 
 **Note about units:** Be aware that the energy coordinates produced by conversion from ToF data 
-are the electron kinetic energies. Because PyPES is more concerned about axes having meaningful 
+are the electron kinetic energies. Because PyARPES is more concerned about axes having meaningful 
 and consistent units, it does not distinguish between the binding and kinetic energy:
 both are labelled by 'eV'. This has advantages, because analysis code will still work 
 transparently on either type of data. You will apply a correction or offset to adjust units 

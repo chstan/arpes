@@ -13,4 +13,15 @@
 > 
 > `PRINCIPAL_NAME = 'ALS-BL702'`
 > 
-> `RENAME_KEYS = {'LMOTOR0': 'x', 'LM ... 'LMOTOR9': 'Slit Defl'}`
+> `RENAME_KEYS = {'LMOTOR0': 'x', 'LM ... olar', 'mono_eV': 'hv'}`
+> 
+> **load(scan\_desc: dict = None,**kwargs)\*\*
+> 
+> > Loads a scan from a single file or a sequence of files.
+> > 
+> >   - Parameters
+> >     
+> >       - **scan\_desc** –
+> >       - **kwargs** –
+> > 
+> >   - Returns

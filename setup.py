@@ -41,7 +41,7 @@ DEPENDENCY_GROUPS = {
         'dask',
         'numpy',
         'scipy',
-        'lmfit',
+        'lmfit>=0.9.13',
         'scikit-learn',
 
         # plotting
@@ -52,6 +52,7 @@ DEPENDENCY_GROUPS = {
 
         # Misc deps
         'xlrd',
+        'colorama',
         'titlecase',
         'openpyxl',
         'tqdm',
@@ -98,7 +99,7 @@ You should follow standard best practices for working with IPython and Jupyter.
 To get the interactive volumetric data explorer `qt_tool` you will need to install
 `PyQt5` and `pyqtgraph`. 
 
-To use the Igor data loading libraries in PyPES you will need to install the `igor` 
+To use the Igor data loading libraries in PyARPES you will need to install the `igor` 
 module from 'https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1'.
 
 Some functionality, including PCA/Factor Analysis decomposition tools, require 
@@ -151,7 +152,6 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',

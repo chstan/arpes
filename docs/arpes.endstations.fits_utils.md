@@ -13,6 +13,18 @@ spectra=None, mode='ToF', dimension\_renamings=None)**
 > “spectrum” and reads and parses the coordinates from the header
 > information in the recorded scan.
 > 
+> Note: because different scan configurations can have different values
+> of the detector coordinates, such as for instance when you record in
+> two different angular modes of the spectrometer or when you record XPS
+> spectra at different binding energies, we need to be able to provide
+> separate coordinates for each of the different scans.
+> 
+> In the case where there is a unique coordinate, we will return only
+> that coordinate, under the anticipated name, such as ‘eV’. Otherwise,
+> we will return the coordinates that different between the scan
+> configurations under the spectrum name, and with unique names, such as
+> ‘eV-Swept\_Spectra0’.
+> 
 > TODO Write data loading tests to ensure we don’t break MC
 > compatibility
 > 

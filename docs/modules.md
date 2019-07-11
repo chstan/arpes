@@ -8,13 +8,13 @@
                         
                           - [Submodules](arpes.analysis#submodules)
                           - [Module
-                            contents](arpes.analysis#module-arpes.analysis)
+                            contents](arpes.analysis#module-contents)
                 
                   -   - [arpes.corrections package](arpes.corrections)
                         
                           - [Submodules](arpes.corrections#submodules)
                           - [Module
-                            contents](arpes.corrections#module-arpes.corrections)
+                            contents](arpes.corrections#module-contents)
                 
                   -   - [arpes.endstations package](arpes.endstations)
                         
@@ -27,7 +27,7 @@
                         
                           - [Submodules](arpes.fits#submodules)
                           - [Module
-                            contents](arpes.fits#module-arpes.fits)
+                            contents](arpes.fits#module-contents)
                 
                   -   - [arpes.laue package](arpes.laue)
                         
@@ -38,13 +38,14 @@
                         
                           - [Submodules](arpes.models#submodules)
                           - [Module
-                            contents](arpes.models#module-arpes.models)
+                            contents](arpes.models#module-contents)
                 
                   -   - [arpes.plotting package](arpes.plotting)
                         
+                          - [Subpackages](arpes.plotting#subpackages)
                           - [Submodules](arpes.plotting#submodules)
                           - [Module
-                            contents](arpes.plotting#module-arpes.plotting)
+                            contents](arpes.plotting#module-contents)
                 
                   -   - [arpes.preparation package](arpes.preparation)
                         
@@ -75,7 +76,10 @@
                   - [arpes.provenance module](arpes.provenance)
                   - [arpes.repair module](arpes.repair)
                   - [arpes.typing module](arpes.typing)
+                  - [arpes.widgets module](arpes.widgets)
                   - [arpes.xarray\_extensions
                     module](arpes.xarray_extensions)
+                  - [arpes.xarray\_html\_repr
+                    module](arpes.xarray_html_repr)
         
           - [Module contents](arpes#module-arpes)

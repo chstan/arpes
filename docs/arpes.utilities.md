@@ -34,6 +34,7 @@
   - [arpes.utilities.collections module](arpes.utilities.collections)
   - [arpes.utilities.dataset module](arpes.utilities.dataset)
   - [arpes.utilities.funcutils module](arpes.utilities.funcutils)
+  - [arpes.utilities.geometry module](arpes.utilities.geometry)
   - [arpes.utilities.jupyter\_utils
     module](arpes.utilities.jupyter_utils)
   - [arpes.utilities.math module](arpes.utilities.math)

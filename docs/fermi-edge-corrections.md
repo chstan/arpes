@@ -19,14 +19,14 @@ not only to remove this effect, but also to remove any other miscalibration
 in the chemical potential arising from alignment of the phosphor imaging
 camera, or lens aberration.
 
-In PyPES, you can either apply a direct correction (discussed in the previous 
+In PyARPES, you can either apply a direct correction (discussed in the previous 
 section) or fit a quadratic to the chemical potential edge. This latter 
 method is advantageous in that it reflects that the contribution of 
 miscalibration from anticipated sources are slowly varying in the detector
 angle. It can also be used to give reasonably good behavior at the spectrometer
 edges, where there might not be as much data as in the central region.
 
-To build and apply a quadratic chemical potential correction in PyPES,
+To build and apply a quadratic chemical potential correction in PyARPES,
 you can use `arpes.corrections.build_quadratic_fermi_edge_correction`
 and `arpes.corrections.apply_quadratic_fermi_edge_correction`. Here we 
 will give an example of correcting the edge of a metal reference. 
@@ -36,7 +36,7 @@ will give an example of correcting the edge of a metal reference.
 
 ### Higher Dimensional Datasets
 
-Curve fitting and shifting in PyPES can be automatically broadcasted 
+Curve fitting and shifting in PyARPES can be automatically broadcasted 
 across extra dimensions. You should not need to worry about the 
 dimensionality of your data. 
 

@@ -17,7 +17,7 @@ dependencies:
   - dask
   - numpy
   - scipy
-  - lmfit
+  - lmfit>=0.9.13
 
   # plotting
   - matplotlib>=3.0.3
@@ -30,6 +30,7 @@ dependencies:
   - openpyxl
   - tqdm
   - scikit-learn
+  - colorama
 
   # pip
   - pip:

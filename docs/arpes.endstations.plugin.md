@@ -6,12 +6,19 @@
     module](arpes.endstations.plugin.ALG_main)
   - [arpes.endstations.plugin.ALG\_spin\_ToF
     module](arpes.endstations.plugin.ALG_spin_ToF)
+  - [arpes.endstations.plugin.ANTARES
+    module](arpes.endstations.plugin.ANTARES)
   - [arpes.endstations.plugin.HERS
     module](arpes.endstations.plugin.HERS)
   - [arpes.endstations.plugin.MAESTRO
     module](arpes.endstations.plugin.MAESTRO)
+  - [arpes.endstations.plugin.MBS module](arpes.endstations.plugin.MBS)
   - [arpes.endstations.plugin.SToF\_DLD
     module](arpes.endstations.plugin.SToF_DLD)
+  - [arpes.endstations.plugin.igor\_export
+    module](arpes.endstations.plugin.igor_export)
+  - [arpes.endstations.plugin.kaindl
+    module](arpes.endstations.plugin.kaindl)
   - [arpes.endstations.plugin.merlin
     module](arpes.endstations.plugin.merlin)
 

@@ -6,7 +6,7 @@ probe modalities nonetheless exist at synchrotrons, and CW experiments can indir
 dynamics by measuring quasiparticle diffusion.
 
 Tr-ARPES datasets can in principle have at least two additional degrees of freedom, the excitation 
-delay&mdash;referred to through PyPES as `delay`&mdash;and the pump wavelength.
+delay&mdash;referred to through PyARPES as `delay`&mdash;and the pump wavelength.
 
 Analysis tools for Tr-ARPES exist in `arpes.analysis.tarpes`. Plotting utilities are to be found in
 `arpes.plotting.tarpes`.

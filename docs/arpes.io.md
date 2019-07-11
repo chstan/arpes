@@ -1,7 +1,21 @@
 # arpes.io module
 
 **arpes.io.simple\_load(fragment, df: pandas.core.frame.DataFrame =
-None, basic\_prep=True)**
+None, workspace=None, basic\_prep=True)**
+
+**arpes.io.direct\_load(fragment, df: pandas.core.frame.DataFrame =
+None, workspace=None, file=None, basic\_prep=True,**kwargs)\*\*
+
+> Loads a dataset directly, in the same manner that prepare\_raw\_files
+> does, from the denormalized source format. This is useful for testing
+> data loading procedures, and for quickly opening data at beamlines.
+> 
+> The structure of this is very similar to simple\_load, and could be
+> shared. The only differences are in selecting the DataFrame with all
+> the files at the beginning, and finally loading the data at the end.
+> :param fragment: :param df: :param file: :param basic\_prep: :return:
+
+**arpes.io.fallback\_load(\*args,**kwargs)\*\*
 
 **arpes.io.load\_dataset(dataset\_uuid=None, filename=None, df:
 pandas.core.frame.DataFrame = None)**
@@ -44,7 +58,19 @@ index,**kwargs)\*\*
 **arpes.io.easy\_pickle(data\_or\_str, name=None)**
 
 **arpes.io.sld(fragment, df: pandas.core.frame.DataFrame = None,
-basic\_prep=True)**
+workspace=None, basic\_prep=True)**
+
+**arpes.io.dld(fragment, df: pandas.core.frame.DataFrame = None,
+workspace=None, file=None, basic\_prep=True,**kwargs)\*\*
+
+> Loads a dataset directly, in the same manner that prepare\_raw\_files
+> does, from the denormalized source format. This is useful for testing
+> data loading procedures, and for quickly opening data at beamlines.
+> 
+> The structure of this is very similar to simple\_load, and could be
+> shared. The only differences are in selecting the DataFrame with all
+> the files at the beginning, and finally loading the data at the end.
+> :param fragment: :param df: :param file: :param basic\_prep: :return:
 
 **arpes.io.stitch(df\_or\_list, attr\_or\_axis, built\_axis\_name=None,
 sort=True)**
@@ -61,3 +87,5 @@ sort=True)**
 > 
 > we will create a new axis corresponding to the temperature and
 > concatenate the data along this axis :return:
+
+**arpes.io.fld(\*args,**kwargs)\*\*

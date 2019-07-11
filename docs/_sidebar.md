@@ -18,8 +18,10 @@
       - [K-space Conversion](/k-space-conversion)
       - [Fermi Edge Corrections](/fermi-edge-corrections)
       - [Interactive Analysis Tools](/interactive)
+      - [Statistics](/statistics)
       - [Advanced Plotting](/advanced-plotting)
           - [Stack Plots](/stack-plots)
+          - [Brillouin Zones](/brillouin-zones)
           - [Fermi Surfaces](/fermi-surfaces)
           - [3D Cut Plots](/3d-cut-plots)
           - [Spin-ARPES Plots](/spin-arpes)
@@ -31,6 +33,7 @@
 
   - [Topics](/how-to)
     
+      - [Condensed Matter Physics Software Stack](/cmp-stack)
       - [Analysis Spreadsheets](/spreadsheets)
       - [Spectra + Data Representation](/spectra)
       - [Plugins](/writing-plugins)
@@ -69,7 +72,10 @@
                   - [arpes.provenance module](arpes.provenance)
                   - [arpes.repair module](arpes.repair)
                   - [arpes.typing module](arpes.typing)
+                  - [arpes.widgets module](arpes.widgets)
                   - [arpes.xarray\_extensions
                     module](arpes.xarray_extensions)
+                  - [arpes.xarray\_html\_repr
+                    module](arpes.xarray_html_repr)
         
           - [Module contents](arpes#module-arpes)

@@ -1,6 +1,6 @@
 # Plots Cut Through 3D Datasets
 
-PyPES provides 3D cut plots to illustrate the Femri Surface, and high symmetry
+PyARPES provides 3D cut plots to illustrate the Femri Surface, and high symmetry
 direction dispersion at the same time.
 
 Support is currently rudimentary in that the cut directions must be orthogonal, 

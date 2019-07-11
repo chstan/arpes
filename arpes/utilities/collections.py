@@ -1,6 +1,24 @@
 import numpy as np
+import collections
 
-__all__ = ('deep_equals',)
+__all__ = ('deep_equals', 'deep_update',)
+
+
+def deep_update(destination, source):
+    """
+    Doesn't clobber keys further down trees like doing a shallow update would. Instead recurse down from the root
+    and update as appropriate.
+    :param destination:
+    :param source:
+    :return:
+    """
+    for k, v in source.items():
+        if isinstance(v, collections.Mapping):
+            destination[k] = deep_update(destination.get(k, {}), v)
+        else:
+            destination[k] = v
+
+    return destination
 
 
 def deep_equals(a, b):
