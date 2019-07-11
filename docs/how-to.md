@@ -1,6 +1,6 @@
-# PyPES Crash Course and Usage Documentation
+# PyARPES Crash Course and Usage Documentation
 
-The PyPES documentation is split into two separate parts. The [first section](/how-to) 
+The PyARPES documentation is split into two separate parts. The [first section](/how-to) 
 (the one you are reading) contains practical usage information for certain types of data
 physics analyses, principally as they relate to ARPES. The [second section](/arpes) 
 consists of documentation generated from the analysis code source files, and represents a complete&mdash;if 
@@ -8,7 +8,7 @@ not always completely documented&mdash;representation of what is available.
 
 ## First Section: Practical Usage Documentation
 
-This is intended as a crash course in how to use PyPES. It takes you through the first steps of 
+This is intended as a crash course in how to use PyARPES. It takes you through the first steps of 
 [how to configure](/getting-started) a working environment, [loading data](/loading-data), and 
 subsequently through some rudimentary analyses that nonethless represent substantial first steps
 towards analyzing typical ARPES data.

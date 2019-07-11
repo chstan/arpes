@@ -10,12 +10,20 @@
                     module](arpes.endstations.plugin.ALG_main)
                   - [arpes.endstations.plugin.ALG\_spin\_ToF
                     module](arpes.endstations.plugin.ALG_spin_ToF)
+                  - [arpes.endstations.plugin.ANTARES
+                    module](arpes.endstations.plugin.ANTARES)
                   - [arpes.endstations.plugin.HERS
                     module](arpes.endstations.plugin.HERS)
                   - [arpes.endstations.plugin.MAESTRO
                     module](arpes.endstations.plugin.MAESTRO)
+                  - [arpes.endstations.plugin.MBS
+                    module](arpes.endstations.plugin.MBS)
                   - [arpes.endstations.plugin.SToF\_DLD
                     module](arpes.endstations.plugin.SToF_DLD)
+                  - [arpes.endstations.plugin.igor\_export
+                    module](arpes.endstations.plugin.igor_export)
+                  - [arpes.endstations.plugin.kaindl
+                    module](arpes.endstations.plugin.kaindl)
                   - [arpes.endstations.plugin.merlin
                     module](arpes.endstations.plugin.merlin)
         
@@ -26,6 +34,8 @@
 
   - [arpes.endstations.fits\_utils module](arpes.endstations.fits_utils)
   - [arpes.endstations.igor\_utils module](arpes.endstations.igor_utils)
+  - [arpes.endstations.nexus\_utils
+    module](arpes.endstations.nexus_utils)
 
 ## Module contents
 
@@ -88,7 +98,9 @@ a common format
 > 
 > `RENAME_KEYS = {'Azimuth': 'chi', ' ... _func': 'workfunction'}`
 > 
-> `SKIP_COLUMN_NAMES = {'Phi', 'X', 'Y', 'Z', 'null'}`
+> `SKIP_COLUMN_FORMULAS = {<function FITSEndstation.<lambda>>}`
+> 
+> `SKIP_COLUMN_NAMES = {'Optics Stage', 'Ph ... 'Z', 'mono_eV', 'null'}`
 > 
 > **load\_single\_frame(frame\_path: str = None, scan\_desc: dict =
 > None,**kwargs)\*\*

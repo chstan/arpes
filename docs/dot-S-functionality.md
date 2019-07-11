@@ -1,13 +1,13 @@
 # Data Abstraction
 
-The core data primitive in PyPES is the `xarray.DataArray`. However, adding additional
+The core data primitive in PyARPES is the `xarray.DataArray`. However, adding additional
 scientific functionality is needed since `xarray` provides only very general functionality.
 The approach that we take is described in some detail in the `xarray` documentation at 
 [extending xarray](http://xarray.pydata.org/en/stable/internals.html#extending-xarray), which
 allows putting additional functionality on all arrays and datasets on particular, registered 
 attributes.
 
-In PyPES we use a few of these:
+In PyARPES we use a few of these:
 
 1. `.S` attribute: functionality associated with spectra (physics here)
 2. `.T` attribute: general abstract functionality that could reasonably be a part of `xarray` core

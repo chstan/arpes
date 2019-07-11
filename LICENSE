@@ -1,11 +1,11 @@
-You are free to redistribute, modify, and use PyPES as you see fit under the
+You are free to redistribute, modify, and use PyARPES as you see fit under the
 terms of the GNU GPLv3 (attached below).
 
-PyPES use falls under guidelines often found for scientific software: if you
-use PyPES as part of work towards a scientific publication, you should include
-a citation to the PyPES User Manual.
+PyARPES use falls under guidelines often found for scientific software: if you
+use PyARPES as part of work towards a scientific publication, you should include
+a citation to the PyARPES User Manual.
 
-Furthermore, PyPES implements a number of analysis techniques suggested in
+Furthermore, PyARPES implements a number of analysis techniques suggested in
 scientific papers. As appropriate, you should include citations to the authors
 that first published on these techniques when they constitute a central part of
 your analysis.
@@ -15,9 +15,9 @@ your analysis.
 ===============================================================================
 Plugins
 ===============================================================================
-PyPES is distributed with plugins for reading data formats produced at major
-synchrotrons. Any plugins distributed by authors with the PyPES source code
-should be distributed under the same license as PyPES itself.
+PyARPES is distributed with plugins for reading data formats produced at major
+synchrotrons. Any plugins distributed by authors with the PyARPES source code
+should be distributed under the same license as PyARPES itself.
 
 ===============================================================================
 ===============================================================================

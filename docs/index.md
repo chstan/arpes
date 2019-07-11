@@ -1,5 +1,17 @@
 # Welcome to python-arpes’s documentation\!
 
+**arpes.io.direct\_load(fragment, df: pandas.core.frame.DataFrame =
+None, workspace=None, file=None, basic\_prep=True,**kwargs)\*\*
+
+> Loads a dataset directly, in the same manner that prepare\_raw\_files
+> does, from the denormalized source format. This is useful for testing
+> data loading procedures, and for quickly opening data at beamlines.
+> 
+> The structure of this is very similar to simple\_load, and could be
+> shared. The only differences are in selecting the DataFrame with all
+> the files at the beginning, and finally loading the data at the end.
+> :param fragment: :param df: :param file: :param basic\_prep: :return:
+
 **arpes.io.load\_dataset(dataset\_uuid=None, filename=None, df:
 pandas.core.frame.DataFrame = None)**
 
@@ -25,6 +37,18 @@ xarray.core.dataset.Dataset\], filename=None, force=False)**
 > attributes, it is nice to be able to force a write, since a write
 > would not take place if the file is already on disk. To do this you
 > can set the `force` attribute. :param arr: :param force: :return:
+
+**arpes.io.dld(fragment, df: pandas.core.frame.DataFrame = None,
+workspace=None, file=None, basic\_prep=True,**kwargs)\*\*
+
+> Loads a dataset directly, in the same manner that prepare\_raw\_files
+> does, from the denormalized source format. This is useful for testing
+> data loading procedures, and for quickly opening data at beamlines.
+> 
+> The structure of this is very similar to simple\_load, and could be
+> shared. The only differences are in selecting the DataFrame with all
+> the files at the beginning, and finally loading the data at the end.
+> :param fragment: :param df: :param file: :param basic\_prep: :return:
 
 **arpes.io.stitch(df\_or\_list, attr\_or\_axis, built\_axis\_name=None,
 sort=True)**

@@ -21,3 +21,6 @@ remove\_old=True)**
 
 **arpes.preparation.axis\_preparation.normalize\_total(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\])**
+
+**arpes.preparation.axis\_preparation.sort\_axis(data:
+xarray.core.dataarray.DataArray, axis\_name)**

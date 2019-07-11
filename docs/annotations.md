@@ -1,10 +1,10 @@
 # Plot Annotation Tools
 
-PyPES has tools, in addition to those provided through 
+PyARPES has tools, in addition to those provided through 
 [Matplotlib](https://matplotlib.org), to add fairly general text based
 annotations to plots. 
 
-Additionally, PyPES includes tools to add annotations purpose built for
+Additionally, PyARPES includes tools to add annotations purpose built for
 ARPES applications, including plotting cut planes and lines onto higher 
 dimensional datasets, as when indicating the location of a particular photon
 energy plane on a k<sub>z</sub> dependence.

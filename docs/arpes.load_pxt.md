@@ -20,7 +20,7 @@ str\],**kwargs)\*\*
 >   - Returns
 
 **arpes.load\_pxt.find\_ses\_files\_associated(reference\_path:
-pathlib.Path)**
+pathlib.Path, separator: str = 'S')**
 
 > SES Software creates a series of PXT files they are all sequenced with
 > \_S\[0-9\]\[0-9\]\[0-9\].pxt *find\_ses\_files\_associated* will

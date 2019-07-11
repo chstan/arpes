@@ -6,7 +6,7 @@ how to ground further analysis. Unfortunately, increasing dimensionality and dat
 harder technical problem. This aspect of data analysis, especially as manifested in
 ImageTool, has been among greatest strengths of the ARPES community.
 
-PyPES solves the interactivity problem by offering two sets of tools in two 
+PyARPES solves the interactivity problem by offering two sets of tools in two 
 different environments, depending on what a given user prefers.
 
 1. QtTool or `qt_tool`, an ImageTool-like native data exploration client for 2, 3, and 4
@@ -39,7 +39,7 @@ current quirks include:
 2. Color normalization does not persist across scrolling
 
 Ultimately we aim to include most of the behavior from ImageTool 5 as well
-as a few other tools (like marking symmetry points) that are especially helpful in PyPES.
+as a few other tools (like marking symmetry points) that are especially helpful in PyARPES.
 
 Invoke with `qt_tool`
 

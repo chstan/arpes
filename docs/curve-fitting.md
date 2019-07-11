@@ -1,4 +1,4 @@
-# Curve Fitting in PyPES
+# Curve Fitting in PyARPES
 
 ## Why curve fit
 
@@ -10,13 +10,13 @@ spectral function.
 
 ## Simple curve fitting
 
-PyPES uses `lmfit` in order to provide a user friendly, compositional API for curve fitting. 
+PyARPES uses `lmfit` in order to provide a user friendly, compositional API for curve fitting. 
 This allows users to define more complicated models using operators like `+` and `*`, but also
 makes the process of curve fitting transparent and simple.
 
 Here we will prepare an EDC with a step edge, and fit it with a linear density of states multipled
 by the Fermi distribution and convolved with Gaussian instrumental broadening (`AffineBroadenedFD`).
-In general in PyPES, we use extensions of the models available in `lmfit`, which provides an `xarray`
+In general in PyARPES, we use extensions of the models available in `lmfit`, which provides an `xarray`
 compatible and unitful fitting function `guess_fit`. This has more or less the same call signature as
 `fit` except that we do not need to pass the X and Y data separately, the X data is provided by the
 dataset coordinates. 
@@ -57,7 +57,7 @@ While curve fitting a single EDC or MDC is useful, often we will want to repeat 
 experimental parameter or variable, such as the binding energy to track a dispersion, or across temperature
 to understand a phase transition.
 
-PyPES provides a tool, `broadcast_model` that allows for automatic and compositional curve fitting across 
+PyARPES provides a tool, `broadcast_model` that allows for automatic and compositional curve fitting across 
 one or more axes of a Dataset or DataArray. As before, you can use the `constraints=` keyword to 
 enforce constraints or specify initial guesses for the fitting parameters. Broadcasts can be performed 
 over a single dimension (`str`) or a list of dimensions (pass `[str]`). Here we demonstrate performing 
@@ -71,7 +71,7 @@ In the above, we also used the `.F` extension to `xarray` in order to get the co
 Dataset containing the full data, the residual, and the results. The results attribute is itself a 
 DataArray whose values are the full results of the fit, rather than any single of the values.
 
-Because of the rich information provided by a broadcast, PyPES also has facilities for interacting with
+Because of the rich information provided by a broadcast, PyARPES also has facilities for interacting with
 the results of an array of fit results more simply, furnished by the `.F` attribute.  
 
 ## The .F attribute

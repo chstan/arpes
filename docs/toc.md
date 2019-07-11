@@ -30,7 +30,10 @@
                   - [arpes.provenance module](arpes.provenance)
                   - [arpes.repair module](arpes.repair)
                   - [arpes.typing module](arpes.typing)
+                  - [arpes.widgets module](arpes.widgets)
                   - [arpes.xarray\_extensions
                     module](arpes.xarray_extensions)
+                  - [arpes.xarray\_html\_repr
+                    module](arpes.xarray_html_repr)
         
           - [Module contents](arpes#module-arpes)

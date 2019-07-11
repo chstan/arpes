@@ -5,7 +5,7 @@ lineshape as a function of an experimental degree of freedom or to
 better present the dispersion of a band, are among the most bread 
 and butter of ARPES figures.
 
-Because of their ubiquity, PyPES offers two principal styles, 
+Because of their ubiquity, PyARPES offers two principal styles, 
 differing in whether the lines are shifted and stacked, or all aligned
 but with varying color (often better for highlighting lineshape or
 gap change).
@@ -34,7 +34,7 @@ lines by color while keeping them overlapped. This can be accomplished by
 
 ![A flat stack plot](static/flat-stack.png)
 
-Although PyPES will attempt to make a reasonable default guess for the colorscale,
+Although PyARPES will attempt to make a reasonable default guess for the colorscale,
 here identifying that the stack axis is along the experimental temperature and giving
 a colorbar from 0K to room temperature, we can also control the colorbar
 and plot them onto custom axes with `cbarmap=`. 

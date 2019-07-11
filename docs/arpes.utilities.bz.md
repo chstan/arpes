@@ -1,5 +1,11 @@
 # arpes.utilities.bz module
 
+TODO: Standardize this module around support for some other library that
+has proper Brillouin zone plotting, like in ASE.
+
+This module also includes tools for masking regions of data against
+Brillouin zones.
+
 **arpes.utilities.bz.bz\_symmetry(flat\_symmetry\_points)**
 
 **arpes.utilities.bz.bz\_cutter(symmetry\_points, reduced=True)**
@@ -23,3 +29,11 @@ scale\_zone=False)**
 
 > Determines which axis lies principally along the direction G-\>S.
 > :param data: :param S: :return:
+
+**arpes.utilities.bz.hex\_cell(a=1, c=1)**
+
+**arpes.utilities.bz.hex\_cell\_2d(a=1)**
+
+**arpes.utilities.bz.orthorhombic\_cell(a=1, b=1, c=1)**
+
+**arpes.utilities.bz.process\_kpath(paths, cell, special\_points=None)**

@@ -6,7 +6,7 @@ import subprocess
 import os.path
 
 
-ARPES_ROOT = os.environ['ARPES_ROOT']
+ARPES_ROOT = os.path.abspath(__file__ + '/../..')
 DOCS_ROOT = os.path.join(ARPES_ROOT, 'source')
 BUILD_ROOT = os.path.join(ARPES_ROOT, 'build')
 DESTINATION_ROOT = os.path.join(ARPES_ROOT, 'docs')
