@@ -2,6 +2,7 @@ import json
 import os.path
 import uuid
 import numpy as np
+import typing
 import pickle
 from pathlib import Path
 
@@ -13,15 +14,31 @@ from arpes.config import DATASET_CACHE_PATH, DATASET_CACHE_RECORD, CLEAVE_RECORD
 from arpes.exceptions import ConfigurationError
 from arpes.typing import DataType
 from arpes.utilities import (wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datavar_attrs,
-                             WHITELIST_KEYS, FREEZE_PROPS, modern_clean_xlsx_dataset)
+                             WHITELIST_KEYS, FREEZE_PROPS, clean_xlsx_dataset)
 from arpes.endstations import load_scan
 
 __all__ = (
     'simple_load', 'direct_load', 'fallback_load', 'load_dataset', 'save_dataset', 'delete_dataset',
+    'load_without_dataset', 'load_example_data',
     'save_dataset_for_export',
     'dataset_exists', 'is_a_dataset', 'load_dataset_attrs', 'easy_pickle',
     'sld', 'dld', 'stitch', 'fld',
 )
+
+
+def load_without_dataset(file: typing.Union[str, Path], location=None, **kwargs):
+    file = str(Path(file).absolute())
+
+    if location is None:
+        raise ValueError('You must provide a location indicating the endstation or instrument used directly when '
+                         'loading data without a dataset.')
+
+    return load_scan(dict(file=file, location=location), **kwargs)
+
+
+def load_example_data():
+    file = Path(__file__).parent.parent / 'resources' / 'example_data' / 'main_chamber_cut_0.fits'
+    return load_without_dataset(file=file, location='ALG-MC')
 
 
 def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
@@ -302,7 +319,7 @@ def direct_load(fragment, df: pd.DataFrame=None, workspace=None, file=None, basi
                 if not os.path.isabs(file):
                     file = os.path.join(CONFIG['WORKSPACE']['path'], file)
 
-                df = modern_clean_xlsx_dataset(file, with_inferred_cols=False, write=False)
+                df = clean_xlsx_dataset(file, with_inferred_cols=False, write=False)
 
         def resolve_fragment(filename):
             return str(filename).split('_')[-1]
