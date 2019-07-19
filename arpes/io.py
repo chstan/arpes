@@ -37,7 +37,7 @@ def load_without_dataset(file: typing.Union[str, Path], location=None, **kwargs)
 
 
 def load_example_data():
-    file = Path(__file__).parent / '..' / 'resources' / 'example_data' / 'main_chamber_cut_0.fits'
+    file = Path(__file__).parent.parent / 'resources' / 'example_data' / 'main_chamber_cut_0.fits'
     return load_without_dataset(file=file, location='ALG-MC')
 
 
