@@ -14,4 +14,3 @@ def load_test_scan(dataset_name, file_number):
 
         df = default_dataset(match=dataset_name, write=False)
         return direct_load(file_number, df=df)
-

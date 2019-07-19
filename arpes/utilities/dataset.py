@@ -240,7 +240,7 @@ def attach_extra_dataset_columns(path, **kwargs):
 
     os.remove(new_filename)
     excel_writer = pd.ExcelWriter(new_filename)
-    ds.to_excel(excel_writer)
+    ds.to_excel(excel_writer, index=False)
     excel_writer.save()
 
     return ds.set_index('file')
@@ -279,7 +279,7 @@ def with_inferred_columns(df: pd.DataFrame):
 
 def cleaned_path(path):
     base_filename, extension = os.path.splitext(path)
-    if 'cleaned' in base_filename:
+    if '.cleaned' in base_filename:
         return base_filename + extension
     return base_filename + '.cleaned' + extension
 
@@ -302,26 +302,32 @@ def safe_read(path, **kwargs):
 
     def read_snake(x):
         try:
-            return [x, snake_case(x)]
+            return [x, snake_case(x.strip())]
         except:
-            return [x, x]
+            try:
+                return [x, x.strip()]
+            except AttributeError:
+                return [x, x]
 
     if skiprows is not None:
         read = pd.read_excel(path, skiprows=skiprows, **kwargs)
 
-        return read.rename(index=str, columns=dict([read_snake(x) for x in list(read.columns)]))
+        return read.rename(columns=dict([read_snake(x) for x in list(read.columns)]))
 
     for skiprows in range(REATTEMPT_LIMIT):
         try:
             read = pd.read_excel(path, skiprows=skiprows, **kwargs)
-            read = read.rename(index=str, columns=dict([read_snake(x) for x in list(read.columns)]))
+            read = read.rename(columns=dict([read_snake(x) for x in list(read.columns)]))
             if 'file' in read.columns:
                 return read
         except TypeError:
             # sometimes this happens due to what looks like a bug in pandas
             pass
 
-    raise ValueError('Could not safely read dataset. Supply a `skiprows` parameter and check '
+    warnings.warn('You must supply both a `file` and a `location` column in your '
+                  'spreadsheet in order to load data.')
+    raise ValueError('Did you supply both a `file` and a `location` column in your spreadsheet? '
+                     'Could not safely read dataset. Supply a `skiprows` parameter and check '
                      'the validity of your data.')
 
 
@@ -359,13 +365,14 @@ def modern_clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=T
 
     if write:
         excel_writer = pd.ExcelWriter(cleaned_path)
-        joined.to_excel(excel_writer)
+        joined.to_excel(excel_writer, index=False)
         excel_writer.save()
 
     if with_inferred_cols:
         return with_inferred_columns(joined)
 
     return joined
+
 
 def clean_xlsx_dataset(path, allow_soft_match=False, write=True, with_inferred_cols=True, warn_on_exists=False, **kwargs):
     reload = kwargs.pop('reload', False)
@@ -389,7 +396,16 @@ def clean_xlsx_dataset(path, allow_soft_match=False, write=True, with_inferred_c
                 return with_inferred_columns(ds)
             return ds
 
-    ds = pd.read_excel(path, **kwargs)
+    ds = safe_read(path, **kwargs)
+    ds.rename(columns=lambda c: c.lower().strip().replace(' ', '_'), inplace=True)
+
+    column_renamings = {
+        'photon_energy': 'hv',
+        'temp': 'temperature',
+        # 't': 'temperature', # This is ambiguous between temperature and delay!
+    }
+    ds.rename(columns=lambda c: column_renamings.get(c, c), inplace=True)
+
     ds = ds.loc[ds.index.dropna()]
     if 'path' not in ds.columns:
         ds = ds[pd.notnull(ds['file'])] # drop null files if path not specified
@@ -424,9 +440,11 @@ def clean_xlsx_dataset(path, allow_soft_match=False, write=True, with_inferred_c
 
         last_index = index
 
+    ds = ds.loc[:, ~ds.columns.str.contains('^unnamed:_')]
+
     if write:
         excel_writer = pd.ExcelWriter(new_filename)
-        ds.to_excel(excel_writer)
+        ds.to_excel(excel_writer, index=False)
         excel_writer.save()
 
     if with_inferred_cols:

@@ -3,8 +3,6 @@ import xarray as xr
 
 import arpes.xarray_extensions
 
-from tests.utils import load_test_scan
-
 
 def pytest_generate_tests(metafunc):
     idlist = []
