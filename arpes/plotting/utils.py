@@ -612,11 +612,11 @@ def path_for_holoviews(desired_path):
 
 def name_for_dim(dim_name, escaped=True):
     name = {
-        'beta': r'$\beta',
-        'theta': r'$\theta',
-        'chi': r'$\chi',
-        'alpha': r'$\alpha',
-        'psi': r'$\psi',
+        'beta': r'$\beta$',
+        'theta': r'$\theta$',
+        'chi': r'$\chi$',
+        'alpha': r'$\alpha$',
+        'psi': r'$\psi$',
         'phi': r'$\varphi$',
         'eV': r'$\textnormal{E}$',
         'kx': r'$\textnormal{k}_\textnormal{x}$',
@@ -682,10 +682,10 @@ def label_for_colorbar(data):
 def label_for_dim(data=None, dim_name=None, escaped=True):
     raw_dim_names = {
         'theta': r'$\theta$',
-        'beta': r'$\beta',
-        'chi': r'$\chi',
-        'alpha': r'$\alpha',
-        'psi': r'$\psi',
+        'beta': r'$\beta$',
+        'chi': r'$\chi$',
+        'alpha': r'$\alpha$',
+        'psi': r'$\psi$',
         'phi': r'$\varphi$',
         'eV': r'\textbf{eV}',
         'angle': r'Interp. \textbf{Angle}',
