@@ -459,9 +459,8 @@ def kspace_tool(data, **kwargs):
     original_data = data
     data = normalize_to_spectrum(data)
     if len(data.dims) > 2:
-        data = data.sel(eV=slice(-0.05, 0.05))
+        data = data.sel(eV=slice(-0.05, 0.05)).sum('eV', keep_attrs=True)
         data.coords['eV'] = 0
-        data = data.expand_dims('eV')
 
     if 'eV' in data.dims:
         data = data.S.transpose_to_front('eV')
@@ -512,7 +511,8 @@ def kspace_tool(data, **kwargs):
     for convert_dim in convert_dims:
         widget_ax = next(axes)
         low, high, delta = default_ranges.get(convert_dim, ang_range)
-        sliders[convert_dim] = Slider(widget_ax, convert_dim, low, high, valinit=data.S._lookup_offset(convert_dim), valstep=delta)
+        init = data.S._lookup_offset(convert_dim)
+        sliders[convert_dim] = Slider(widget_ax, convert_dim, init + low, init + high, valinit=init, valstep=delta)
         sliders[convert_dim].on_changed(update_kspace_plot)
 
     def compute_offsets():
