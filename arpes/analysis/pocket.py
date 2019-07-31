@@ -59,7 +59,7 @@ def radial_edcs_along_pocket(data: DataType, angle, inner_radius=0, outer_radius
     Produces EDCs distributed radially along a vector from the pocket center. The pocket center
     should be passed through kwargs via `{dim}={value}`. I.e. an appropriate call would be
 
-    radial_edcs_along_pocket(spectrum, np.pi / 4, inner_radius=1, outer_radius=4, phi=0.1, polar=0)
+    radial_edcs_along_pocket(spectrum, np.pi / 4, inner_radius=1, outer_radius=4, phi=0.1, beta=0)
 
     :param data: ARPES Spectrum
     :param angle: Angle along the FS to cut against

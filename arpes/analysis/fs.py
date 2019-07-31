@@ -20,4 +20,4 @@ def fs_gap(data: DataType, shape=None, energy_range=None):
         reduction = {'phi': 16}
 
     data = rebin(data, reduction=reduction, shape=shape)
-    return broadcast_model(GStepBModel, data, ['phi', 'polar'])
+    return broadcast_model(GStepBModel, data, ['phi', 'beta'])

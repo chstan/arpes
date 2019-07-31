@@ -141,10 +141,10 @@ def cut_dispersion_plot(data: xr.DataArray, e_floor=None, title=None, ax=None, i
     Ys = np.ones(inset_face.data.shape)
     if y_dim == axis_X:
         Ys *= data.S.phi_offset
-        Xs += data.S.polar_offset
+        Xs += data.S.map_angle_offset
         Xs, Ys = Ys, Xs
     else:
-        Ys *= data.S.polar_offset
+        Ys *= data.S.map_angle_offset
         Xs += data.S.phi_offset
     ax.plot_surface(Xs, Ys, Zs, facecolors=colormap(inset_face.data / scale_colors),
                     shade=False, antialiased=True, zorder=1, rcount=sampling, ccount=sampling)
@@ -153,12 +153,12 @@ def cut_dispersion_plot(data: xr.DataArray, e_floor=None, title=None, ax=None, i
     Ys, Zs = np.meshgrid(inset_face.coords[axis_Y], inset_face.coords[z_dim])
     Xs = np.ones(inset_face.data.shape)
     if x_dim == axis_Y:
-        Xs *= data.S.polar_offset
+        Xs *= data.S.map_angle_offset
         Ys += data.S.phi_offset
         Xs, Ys = Ys, Xs
     else:
         Xs *= data.S.phi_offset
-        Ys += data.S.polar_offset
+        Ys += data.S.map_angle_offset
 
     ax.plot_surface(Xs, Ys, Zs, facecolors=colormap(inset_face.data / scale_colors),
                     shade=False, antialiased=True, zorder=1, rcount=sampling, ccount=sampling)

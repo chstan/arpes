@@ -54,7 +54,7 @@ class NonlinearDetectorEffect(DetectorEffect):
             'Nonlinearity lookup tables are not yet supported.')
 
 
-def FixedModeDetectorEffect(DetectorEffect):
+class FixedModeDetectorEffect(DetectorEffect):
     def __init__(self, spacing=None, periodic='hex', detector_efficiency=None):
         if spacing is None:
             spacing = 5 # Five pixel average spacing
@@ -68,7 +68,7 @@ def FixedModeDetectorEffect(DetectorEffect):
 
     def __call__(self, spectrum):
         # will fail if we do not have the right size
-        return detector_imprint * spectrum
+        return self.detector_imprint * spectrum
 
 
 class DustDetectorEffect(DetectorEffect):
@@ -79,7 +79,7 @@ class TrapezoidalDetectorEffect(DetectorEffect):
     pass
 
 
-def WindowedDetectorEffect(DetectorEffect):
+class WindowedDetectorEffect(DetectorEffect):
     pass
 
 

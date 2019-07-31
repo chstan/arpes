@@ -13,8 +13,8 @@
 > 
 > `PRINCIPAL_NAME = 'ALS-BL403'`
 > 
-> `RENAME_KEYS = {'Azimuth': 'chi', ' ... ture_sensor_b':
-> 'temp'}`
+> `RENAME_KEYS = {'BL Energy': 'hv', ... 'temp', 'tilt':
+> 'beta'}`
 > 
 > **concatenate\_frames(frames=typing.List\[xarray.core.dataset.Dataset\],
 > scan\_desc: dict = None)**

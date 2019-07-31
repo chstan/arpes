@@ -84,7 +84,7 @@ SPECTROMETER_STRAIGHT_TOF = {
     'mstar': 1.0,
     'type': 'tof',
     'dof': ['t'],
-    'scan_dof': ['polar'],
+    'scan_dof': ['theta'],
 }
 
 SPECTROMETER_SPIN_TOF = {
@@ -93,7 +93,7 @@ SPECTROMETER_SPIN_TOF = {
     'mstar': 0.5,
     'type': 'tof',
     'dof': ['time', 'spin'],
-    'scan_dof': ['polar', 'beta'],
+    'scan_dof': ['theta', 'beta'],
 }
 
 SPECTROMETER_DLD = {
@@ -104,35 +104,35 @@ SPECTROMETER_DLD = {
         'timing': ['x_pixels', 't_pixels'],
         'spatial': ['x_pixels', 'y_pixels'],
     },
-    'scan_dof': ['polar'],
+    'scan_dof': ['theta'],
 }
 
 SPECTROMETER_BL4 = {
     'name': 'BL4',
     'is_slit_vertical': True,
     'type': 'hemisphere',
-    'dof': ['polar', 'sample_phi'],
+    'dof': ['theta', 'sample_phi'],
 }
 
 SPECTROMETER_BL7 = {
     'name': 'BL7',
     'is_slit_vertical': True,
     'type': 'hemisphere',
-    'dof': ['polar', 'sample_phi'],
+    'dof': ['theta', 'sample_phi'],
 }
 
 SPECTROMETER_ANTARES = {
     'name': 'ANTARES',
     'is_slit_vertical': True,
     'type': 'hemisphere',
-    'dof': ['polar', 'sample_phi'],
+    'dof': ['theta', 'sample_phi'],
 }
 
 SPECTROMETER_KAINDL = {
     'name': 'Kaindl',
     'is_slit_vertical': True,
     'type': 'hemisphere',
-    'dof': ['polar', 'sample_phi'],
+    'dof': ['theta', 'sample_phi'],
 }
 
 HV_CONVERSION = 3.81

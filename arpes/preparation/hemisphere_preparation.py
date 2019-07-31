@@ -11,7 +11,7 @@ def infer_center_pixel(arr: xr.DataArray):
     return float((np.max(edges) + np.min(edges)) / 2 + np.min(arr.coords['pixel']))
 
 @update_provenance('Stitch maps together')
-def stitch_maps(arr: xr.DataArray, arr2: xr.DataArray, dimension='polar'):
+def stitch_maps(arr: xr.DataArray, arr2: xr.DataArray, dimension='beta'):
     """
     Stitches together two maps by appending and potentially dropping frames in the first dataset.
 

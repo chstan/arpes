@@ -45,6 +45,11 @@ xarray.core.dataset.Dataset\], filename=None, force=False)**
 
 **arpes.io.delete\_dataset(arr\_or\_uuid)**
 
+**arpes.io.load\_without\_dataset(file: Union\[str, pathlib.Path\],
+location=None,**kwargs)\*\*
+
+**arpes.io.load\_example\_data()**
+
 **arpes.io.save\_dataset\_for\_export(arr:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
 index,**kwargs)\*\*

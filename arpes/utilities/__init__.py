@@ -226,9 +226,10 @@ ATTRS_MAP = {
     'Instrument': 'instrument',
     'Pressure': 'pressure',
     'User': 'user',
-    'Polar': 'polar',
+    'Polar': 'theta',
+    'Theta': 'theta',
     'Sample': 'sample',
-    'Beta': 'polar',
+    'Beta': 'beta',
     'Azimuth': 'chi',
     'Location': 'location',
 }

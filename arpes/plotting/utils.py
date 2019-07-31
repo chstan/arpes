@@ -317,7 +317,8 @@ def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=N
 
     # add more as necessary
     missing_dim_resolvers = {
-        'polar': lambda: reference_data.S.polar,
+        'theta': lambda: reference_data.S.theta,
+        'beta': lambda: reference_data.S.beta,
         'phi': lambda: reference_data.S.phi,
     }
 
@@ -611,7 +612,11 @@ def path_for_holoviews(desired_path):
 
 def name_for_dim(dim_name, escaped=True):
     name = {
-        'polar': r'$\theta$',
+        'beta': r'$\beta$',
+        'theta': r'$\theta$',
+        'chi': r'$\chi$',
+        'alpha': r'$\alpha$',
+        'psi': r'$\psi$',
         'phi': r'$\varphi$',
         'eV': r'$\textnormal{E}$',
         'kx': r'$\textnormal{k}_\textnormal{x}$',
@@ -628,7 +633,11 @@ def name_for_dim(dim_name, escaped=True):
 
 def unit_for_dim(dim_name, escaped=True):
     unit = {
-        'polar': r'rad',
+        'theta': r'rad',
+        'beta': r'rad',
+        'psi': r'rad',
+        'chi': r'rad',
+        'alpha': r'rad',
         'phi': r'rad',
         'eV': r'eV',
         'kx': r'$\AA^{-1}$',
@@ -673,7 +682,10 @@ def label_for_colorbar(data):
 def label_for_dim(data=None, dim_name=None, escaped=True):
     raw_dim_names = {
         'theta': r'$\theta$',
-        'polar': r'$\theta$',
+        'beta': r'$\beta$',
+        'chi': r'$\chi$',
+        'alpha': r'$\alpha$',
+        'psi': r'$\psi$',
         'phi': r'$\varphi$',
         'eV': r'\textbf{eV}',
         'angle': r'Interp. \textbf{Angle}',

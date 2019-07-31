@@ -1,5 +1,7 @@
-from arpes.endstations import HemisphericalEndstation, SynchrotronEndstation, FITSEndstation
 import numpy as np
+import xarray as xr
+
+from arpes.endstations import HemisphericalEndstation, SynchrotronEndstation, FITSEndstation
 
 __all__ = ('MAESTROARPESEndstation',)
 
@@ -21,12 +23,19 @@ class MAESTROARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, FIT
         'Scan Z': 'scan_z',
         'LMOTOR3': 'theta',
         'LMOTOR4': 'beta',
-        'LMOTOR5': 'sample-phi',
-        'LMOTOR9': 'polar',
+        'LMOTOR5': 'chi',
+        'LMOTOR6': 'alpha',
+        'LMOTOR9': 'psi',
         'mono_eV': 'hv',
         'SF_HV': 'hv',
         'SS_HV': 'hv',
-        'Slit Defl': 'polar',
+        'Slit Defl': 'psi',
+    }
+
+    RENAME_COORDS = {
+        'X': 'x',
+        'Y': 'y',
+        'Z': 'z',
     }
 
     def load(self, scan_desc: dict = None, **kwargs):
@@ -49,3 +58,9 @@ class MAESTROARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, FIT
                     renamed[d].values = np.flip(renamed[d].values, axis=renamed[d].dims.index('scan_x'))
 
         return renamed
+
+    def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
+
+        data = super().postprocess_final(data, scan_desc)
+
+        return data

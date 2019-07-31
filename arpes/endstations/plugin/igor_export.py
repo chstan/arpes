@@ -1,17 +1,15 @@
-import typing
 import numpy as np
 import xarray as xr
-import re
-import pandas as pd
 from pathlib import Path
 
 import os
 import copy
 import h5py
-from arpes.endstations.igor_utils import shim_wave_note
 from arpes.provenance import provenance_from_file
 
-from arpes.endstations import HemisphericalEndstation, SESEndstation
+from arpes.endstations import SESEndstation
+from arpes.load_pxt import read_single_pxt
+from arpes.repair import negate_energy
 
 __all__ = ('IgorExportEndstation',)
 
@@ -56,6 +54,7 @@ class IgorExportEndstation(SESEndstation):  # , FITSEndstation):
         data_loc = scan_desc.get('path', scan_desc.get('file'))
         p = Path(data_loc)
         if not p.exists():
+            import arpes.config
             data_loc = os.path.join(arpes.config.DATA_PATH, data_loc)
 
         # wave_note = shim_wave_note(data_loc)
@@ -95,13 +94,13 @@ class IgorExportEndstation(SESEndstation):  # , FITSEndstation):
 
         built_coords = dict(zip(dimension_labels, scaling))
 
-        deg_to_rad_coords = {'polar', 'phi'}
+        deg_to_rad_coords = {'theta', 'beta', 'phi'}
 
         # the hemisphere axis is handled below
         built_coords = {k: c * (np.pi / 180) if k in deg_to_rad_coords else c
                         for k, c in built_coords.items()}
 
-        deg_to_rad_attrs = {'theta', 'polar', 'chi'}
+        deg_to_rad_attrs = {'theta', 'beta', 'alpha', 'chi'}
         for angle_attr in deg_to_rad_attrs:
             if angle_attr in attrs:
                 attrs[angle_attr] = float(attrs[angle_attr]) * np.pi / 180

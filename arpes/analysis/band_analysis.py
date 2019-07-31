@@ -29,10 +29,10 @@ def fit_for_effective_mass(data: DataType, fit_kwargs=None):
     if fit_kwargs is None:
         fit_kwargs = {}
     data = normalize_to_spectrum(data)
-    mom_dim = [d for d in ['kp', 'kx', 'ky', 'kz', 'phi', 'polar'] if d in data.dims][0]
+    mom_dim = [d for d in ['kp', 'kx', 'ky', 'kz', 'phi', 'beta', 'theta'] if d in data.dims][0]
 
     results = broadcast_model([LorentzianModel, AffineBackgroundModel], data, mom_dim, **fit_kwargs)
-    if mom_dim in {'phi', 'polar'}:
+    if mom_dim in {'phi', 'beta', 'theta'}:
         forward = convert_coordinates_to_kspace_forward(data)
         final_mom = [d for d in ['kx', 'ky', 'kp', 'kz'] if d in forward][0]
         eVs = results.F.p('a_center').values

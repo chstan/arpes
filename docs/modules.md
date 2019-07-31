@@ -8,13 +8,13 @@
                         
                           - [Submodules](arpes.analysis#submodules)
                           - [Module
-                            contents](arpes.analysis#module-contents)
+                            contents](arpes.analysis#module-arpes.analysis)
                 
                   -   - [arpes.corrections package](arpes.corrections)
                         
                           - [Submodules](arpes.corrections#submodules)
                           - [Module
-                            contents](arpes.corrections#module-contents)
+                            contents](arpes.corrections#module-arpes.corrections)
                 
                   -   - [arpes.endstations package](arpes.endstations)
                         
@@ -27,7 +27,7 @@
                         
                           - [Submodules](arpes.fits#submodules)
                           - [Module
-                            contents](arpes.fits#module-contents)
+                            contents](arpes.fits#module-arpes.fits)
                 
                   -   - [arpes.laue package](arpes.laue)
                         
@@ -38,14 +38,14 @@
                         
                           - [Submodules](arpes.models#submodules)
                           - [Module
-                            contents](arpes.models#module-contents)
+                            contents](arpes.models#module-arpes.models)
                 
                   -   - [arpes.plotting package](arpes.plotting)
                         
                           - [Subpackages](arpes.plotting#subpackages)
                           - [Submodules](arpes.plotting#submodules)
                           - [Module
-                            contents](arpes.plotting#module-contents)
+                            contents](arpes.plotting#module-arpes.plotting)
                 
                   -   - [arpes.preparation package](arpes.preparation)
                         
@@ -66,6 +66,7 @@
                   - [arpes.config module](arpes.config)
                   - [arpes.constants module](arpes.constants)
                   - [arpes.exceptions module](arpes.exceptions)
+                  - [arpes.experiment module](arpes.experiment)
                   - [arpes.io module](arpes.io)
                   - [arpes.laser module](arpes.laser)
                   - [arpes.load\_pxt module](arpes.load_pxt)

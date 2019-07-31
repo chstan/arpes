@@ -5,7 +5,7 @@
 +-----------------------+
 
 .. |Documentation| image:: https://img.shields.io/badge/api-reference-blue.svg
-   :target: https://stupefied-bhabha-ce8a9f.netlify.com/
+   :target: https://arpes.netlify.com/
 
 .. image:: https://dev.azure.com/lanzara-group/PyARPES/_apis/build/status/PyARPES%20CI%20Build?branchName=master
    :target: https://dev.azure.com/lanzara-group/PyARPES/_build?definitionId=2

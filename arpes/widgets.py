@@ -4,13 +4,15 @@ import numpy as np
 import itertools
 import matplotlib.pyplot as plt
 from functools import wraps
-from matplotlib.widgets import LassoSelector, Button, TextBox, RectangleSelector, SpanSelector
+from matplotlib.widgets import LassoSelector, Button, TextBox, RectangleSelector, SpanSelector, Slider
 from matplotlib.path import Path
 
 from arpes.plotting.utils import imshow_arr, fancy_labels, invisible_axes
 from arpes.fits import LorentzianModel, broadcast_model
+from arpes.utilities import normalize_to_spectrum
+from arpes.utilities.conversion import convert_to_kspace
 
-__all__ = ('pick_rectangles', 'pick_points', 'pca_explorer',)
+__all__ = ('pick_rectangles', 'pick_points', 'pca_explorer', 'kspace_tool',)
 
 
 class SelectFromCollection(object):
@@ -193,6 +195,9 @@ class DataArrayView(object):
                 fancy_labels(self.ax)
 
         if self.n_dims == 2:
+            x, y = self._data.coords[self._data.dims[0]].values, self._data.coords[self._data.dims[1]].values
+            extent = [y[0], y[-1], x[0], x[-1]]
+            self._axis_image.set_extent(extent)
             self._axis_image.set_data(self._data.values)
         else:
             color = self.ax.lines[0].get_color()
@@ -438,7 +443,6 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
     context['axis_X_input'] = TextBox(ax_widget_2, 'Axis X:', initial=str(initial_values[0]))
     context['axis_Y_input'] = TextBox(ax_widget_3, 'Axis Y:', initial=str(initial_values[1]))
 
-
     def on_select_summed(region):
         context['integration_region'] = region
         update_from_selection(context['selected_indices'])
@@ -448,6 +452,111 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
 
     plt.tight_layout()
     return context
+
+
+@popout
+def kspace_tool(data, **kwargs):
+    original_data = data
+    data = normalize_to_spectrum(data)
+    if len(data.dims) > 2:
+        data = data.sel(eV=slice(-0.05, 0.05)).sum('eV', keep_attrs=True)
+        data.coords['eV'] = 0
+
+    if 'eV' in data.dims:
+        data = data.S.transpose_to_front('eV')
+
+    data = data.copy(deep=True)
+
+    ctx = {
+        'original_data': original_data,
+        'data': data,
+        'widgets': []
+    }
+    gs = gridspec.GridSpec(4, 3)
+    ax_initial = plt.subplot(gs[0:2, 0:2])
+    ax_converted = plt.subplot(gs[2:, 0:2])
+
+    n_widget_axes = 8
+    gs_widget = gridspec.GridSpecFromSubplotSpec(n_widget_axes, 1, subplot_spec=gs[:, 2])
+
+    widget_axes = [plt.subplot(gs_widget[i, 0]) for i in range(n_widget_axes)]
+    [invisible_axes(a) for a in widget_axes[:-2]]
+
+    skip_dims = {'x', 'X', 'y', 'y', 'z', 'Z', 'T'}
+    for dim in skip_dims:
+        if dim in data.dims:
+            raise ValueError('Please provide data without the {} dimension'.format(dim))
+
+    convert_dims = ['theta', 'beta', 'phi', 'psi']
+    if 'eV' not in data.dims:
+        convert_dims += ['chi']
+    if 'hv' in data.dims:
+        convert_dims += ['hv']
+
+    ang_range = (-45 * np.pi / 180, 45 * np.pi / 180, 0.01)
+    default_ranges = {
+        'eV': [-0.05, 0.05, 0.001],
+        'hv': [-20, 20, 0.5],
+    }
+
+    sliders = {}
+
+    def update_kspace_plot(_):
+        for name, slider in sliders.items():
+            data.attrs['{}_offset'.format(name)] = slider.val
+
+        converted_view.data = convert_to_kspace(data)
+
+    axes = iter(widget_axes)
+    for convert_dim in convert_dims:
+        widget_ax = next(axes)
+        low, high, delta = default_ranges.get(convert_dim, ang_range)
+        init = data.S._lookup_offset(convert_dim)
+        sliders[convert_dim] = Slider(widget_ax, convert_dim, init + low, init + high, valinit=init, valstep=delta)
+        sliders[convert_dim].on_changed(update_kspace_plot)
+
+    def compute_offsets():
+        return {k: v.val for k, v in sliders.items()}
+
+    def on_copy_settings(event):
+        try:
+            import pyperclip
+            import pprint
+            pyperclip.copy(pprint.pformat(compute_offsets()))
+        except ImportError:
+            pass
+        finally:
+            import pprint
+            print(pprint.pformat(compute_offsets()))
+
+    def apply_offsets(event):
+        for name, offset in compute_offsets().items():
+            print(name, offset)
+            original_data.attrs['{}_offset'.format(name)] = offset
+            try:
+                for s in original_data.S.spectra:
+                    s.attrs['{}_offset'.format(name)] = offset
+            except AttributeError:
+                pass
+
+    ctx['widgets'].append(sliders)
+
+    copy_settings_button = Button(widget_axes[-1], 'Copy Offsets')
+    apply_settings_button = Button(widget_axes[-2], 'Apply Offsets')
+    copy_settings_button.on_clicked(on_copy_settings)
+    apply_settings_button.on_clicked(apply_offsets)
+    ctx['widgets'].append(copy_settings_button)
+    ctx['widgets'].append(apply_settings_button)
+
+    data_view = DataArrayView(ax_initial)
+    converted_view = DataArrayView(ax_converted)
+
+    data_view.data = data
+    update_kspace_plot(None)
+
+    plt.tight_layout()
+
+    return ctx
 
 
 @popout

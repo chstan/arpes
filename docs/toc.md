@@ -20,6 +20,7 @@
                   - [arpes.config module](arpes.config)
                   - [arpes.constants module](arpes.constants)
                   - [arpes.exceptions module](arpes.exceptions)
+                  - [arpes.experiment module](arpes.experiment)
                   - [arpes.io module](arpes.io)
                   - [arpes.laser module](arpes.laser)
                   - [arpes.load\_pxt module](arpes.load_pxt)

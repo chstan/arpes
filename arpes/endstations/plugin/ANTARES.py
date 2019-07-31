@@ -61,7 +61,7 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
     ALIASES = []
 
     RENAME_KEYS = {
-        'deflx': 'polar',
+        'deflx': 'psi',
     }
 
     def load_top_level_scan(self, group, scan_desc: dict=None, spectrum_index=None):

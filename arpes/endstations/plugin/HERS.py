@@ -63,8 +63,8 @@ class HERSEndstation(SynchrotronEndstation, HemisphericalEndstation):
                                set(itertools.chain(*[l[0] for l in data_vars.values()]))}
         relevant_coords = {k: v for k, v in coords.items() if k in relevant_dimensions}
 
-        phi_to_rad_coords = {'polar', 'theta', 'sample-phi'}
-        relevant_coords = {k: c * (np.pi / 180) if k in phi_to_rad_coords else c
+        deg_to_rad_coords = {'beta', 'psi', 'chi', 'theta'}
+        relevant_coords = {k: c * (np.pi / 180) if k in deg_to_rad_coords else c
                            for k, c in relevant_coords.items()}
 
         dataset = xr.Dataset(

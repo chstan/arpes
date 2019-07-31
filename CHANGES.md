@@ -2,7 +2,41 @@
 
 Changes are listed with most recent versions at the top.
 
-## 1.2.0 (2019-08-18)
+Dates are in YYYY/MM/DD format.
+
+Primary (X.-.-) version numbers are used to denote backwards incompatibilities 
+between versions, while minor (-.X.-) numbers primarily indicate new features and 
+documentation.
+
+## 2.0.0 (2019-07-31)
+
+### New: 
+
+1. Major rework in order to provide a consistent angle convention
+2. New momentum space conversion widget allows 
+   setting offsets interactively
+3. Fermi surface conversion functions now allow azimuthal rotations
+4. New `experiment` module contains primitives for exporting
+   scan sequences. This is an early addition towards being able 
+   to perform ARPES experiments from inside PyARPES.
+    
+   1. As an example: After conducting nano-XPS, you can use PCA to 
+      select your sample region and export a scan sequnce just over the
+      sample ROI or over the border between your sample and another area.
+
+### Changed:
+
+1. All loaded data comes with all angles and positions as coordinates
+2. All loaded data should immediately convert to momentum space 
+   without issue (though normal emission is not guaranteed!)
+3. Documentation changes to reflect these adjustments to the data model
+
+
+### Fixed:
+
+1. Documentation link in README.rst is now correct.   
+
+## 1.2.0 (2019-07-18)
 
 ### New:
 
@@ -31,7 +65,7 @@ Changes are listed with most recent versions at the top.
 4. Spreadsheet writing will not include the index and therefore an unnamed column when saving to disk.
 
 
-## 1.1.0 (2019-08-11)
+## 1.1.0 (2019-07-11)
 
 ### New:
 
@@ -51,7 +85,7 @@ Changes are listed with most recent versions at the top.
 1. Version requirements on `lmfit` are now correct after Nick added `SplitLorentzian` xarray compatible models
 
 
-## 1.0.2 (2019-08-08)
+## 1.0.2 (2019-07-08)
 
 ### New:
 

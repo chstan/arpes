@@ -13,7 +13,9 @@
 > 
 > `PRINCIPAL_NAME = 'ALS-BL702'`
 > 
-> `RENAME_KEYS = {'LMOTOR0': 'x', 'LM ... olar', 'mono_eV': 'hv'}`
+> `RENAME_COORDS = {'X': 'x', 'Y': 'y', 'Z': 'z'}`
+> 
+> `RENAME_KEYS = {'LMOTOR0': 'x', 'LM ... 'psi', 'mono_eV': 'hv'}`
 > 
 > **load(scan\_desc: dict = None,**kwargs)\*\*
 > 
@@ -25,3 +27,6 @@
 > >       - **kwargs** –
 > > 
 > >   - Returns
+> 
+> **postprocess\_final(data: xarray.core.dataset.Dataset, scan\_desc:
+> dict = None)**

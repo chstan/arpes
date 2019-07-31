@@ -29,12 +29,13 @@ __all__ = ('endstation_name_from_alias', 'endstation_from_alias', 'add_endstatio
 
 _ENDSTATION_ALIASES = {}
 
+
 class EndstationBase(object):
     ALIASES = []
     PRINCIPAL_NAME = None
 
     # adjust as needed
-    CONCAT_COORDS = ['hv', 'polar', 'timed_power', 'tilt']
+    CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta', 'theta']
     SUMMABLE_NULL_DIMS = ['phi', 'cycle'] # phi because this happens sometimes at BL4 with core level scans
 
     RENAME_KEYS = {}
@@ -89,11 +90,11 @@ class EndstationBase(object):
         # attach the 'spectrum_type'
         # TODO move this logic into xarray extensions and customize here
         # only as necessary
-        coord_names = tuple(sorted([c for c in data.coords.keys() if c != 'cycle']))
+        coord_names = tuple(sorted([c for c in data.dims if c != 'cycle']))
 
         spectrum_type = None
-        if 'X' in coord_names or 'Y' in coord_names or 'Z' in coord_names:
-            coord_names = tuple(c for c in coord_names if c not in {'X', 'Y', 'Z'})
+        if any(d in coord_names for d in {'x', 'y', 'z'}):
+            coord_names = tuple(c for c in coord_names if c not in {'x', 'y', 'z'})
             spectrum_types = {
                 ('eV',): 'spem',
                 ('eV', 'phi',): 'ucut',
@@ -102,17 +103,34 @@ class EndstationBase(object):
         else:
             spectrum_types = {
                 ('eV',): 'xps',
-                ('eV', 'phi', 'polar',): 'map',
-                ('Slit Defl', 'eV', 'phi'): 'map',
+                ('eV', 'phi', 'theta',): 'map',
+                ('eV', 'phi', 'psi',): 'map',
+                ('beta', 'eV', 'phi',): 'map',
                 ('eV', 'hv', 'phi',): 'hv_map',
                 ('eV', 'phi'): 'cut',
             }
             spectrum_type = spectrum_types.get(coord_names)
 
+        if 'phi' not in data.coords:
+            # XPS
+            data.coords['phi'] = 0
+            for s in data.S.spectra:
+                s.coords['phi'] = 0
+
         if spectrum_type is not None:
             data.attrs['spectrum_type'] = spectrum_type
             if 'spectrum' in data.data_vars:
                 data.spectrum.attrs['spectrum_type'] = spectrum_type
+
+        ls = [data] + data.S.spectra
+        for l in ls:
+            for c in ['x', 'y', 'z', 'theta', 'beta', 'chi', 'hv', 'alpha', 'psi']:
+                if c not in l.coords:
+                    l.coords[c] = l.attrs[c]
+
+        for l in ls:
+            if 'chi' in l.coords and 'chi_offset' not in l.attrs:
+                l.attrs['chi_offset'] = l.coords['chi'].item()
 
         return data
 
@@ -237,13 +255,13 @@ class SESEndstation(EndstationBase):
 
         built_coords = dict(zip(dimension_labels, scaling))
 
-        deg_to_rad_coords = {'polar', 'phi'}
+        deg_to_rad_coords = {'theta', 'beta', 'phi', 'alpha', 'psi'}
 
         # the hemisphere axis is handled below
         built_coords = {k: c * (np.pi / 180) if k in deg_to_rad_coords else c
                         for k, c in built_coords.items()}
 
-        deg_to_rad_attrs = {'theta', 'polar', 'chi'}
+        deg_to_rad_attrs = {'theta', 'beta', 'alpha', 'psi', 'chi'}
         for angle_attr in deg_to_rad_attrs:
             if angle_attr in attrs:
                 attrs[angle_attr] = float(attrs[angle_attr]) * np.pi / 180
@@ -295,13 +313,20 @@ class FITSEndstation(EndstationBase):
     }
 
     RENAME_KEYS = {
-        'Phi': 'sample-phi',
-        'Beta': 'polar',
+        'Phi': 'chi',
+        'Beta': 'beta',
         'Azimuth': 'chi',
         'Pump_energy_uJcm2': 'pump_fluence',
         'T0_ps': 't0_nominal',
         'W_func': 'workfunction',
         'Slit': 'slit',
+        'LMOTOR0': 'x',
+        'LMOTOR1': 'y',
+        'LMOTOR2': 'z',
+        'LMOTOR3': 'theta',
+        'LMOTOR4': 'beta',
+        'LMOTOR5': 'chi',
+        'LMOTOR6': 'alpha',
     }
 
     def resolve_frame_locations(self, scan_desc: dict=None):
@@ -361,10 +386,10 @@ class FITSEndstation(EndstationBase):
         scan_desc = {clean_key_name(k): v for k, v in scan_desc.items()}
 
         # don't have phi because we need to convert pixels first
-        phi_to_rad_coords = {'polar', 'theta', 'sample-phi'}
+        deg_to_rad_coords = {'beta', 'theta', 'chi'}
 
         # convert angular attributes to radians
-        for coord_name in phi_to_rad_coords:
+        for coord_name in deg_to_rad_coords:
             if coord_name in attrs:
                 try:
                     attrs[coord_name] = float(attrs[coord_name]) * (np.pi / 180)
@@ -464,7 +489,7 @@ class FITSEndstation(EndstationBase):
             # don't do center pixel inference because the main chamber
             # at least consistently records the offset from the edge
             # of the recorded window
-            if 'pixel' in data.coords and False:
+            if 'pixel' in data.coords:
                 phi_axis = data.coords['pixel'].values * \
                            arpes.constants.SPECTROMETER_MC['rad_per_pixel']
                 data = replace_coords(data, {
@@ -483,7 +508,7 @@ class FITSEndstation(EndstationBase):
             data_vars['spectrum'] = prep_spectrum(data_vars['spectrum'])
 
         # adjust angular coordinates
-        built_coords = {k: c * (np.pi / 180) if k in phi_to_rad_coords else c
+        built_coords = {k: c * (np.pi / 180) if k in deg_to_rad_coords else c
                         for k, c in built_coords.items()}
 
         return xr.Dataset(

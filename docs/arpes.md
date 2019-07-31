@@ -43,7 +43,7 @@
                     module](arpes.analysis.tarpes)
                   - [arpes.analysis.xps module](arpes.analysis.xps)
         
-          - [Module contents](arpes.analysis#module-contents)
+          - [Module contents](arpes.analysis#module-arpes.analysis)
 
   -   - [arpes.corrections package](arpes.corrections)
         
@@ -56,7 +56,8 @@
                   - [arpes.corrections.fermi\_edge\_corrections
                     module](arpes.corrections.fermi_edge_corrections)
         
-          - [Module contents](arpes.corrections#module-contents)
+          - [Module
+            contents](arpes.corrections#module-arpes.corrections)
 
   -   - [arpes.endstations package](arpes.endstations)
         
@@ -115,7 +116,7 @@
                     module](arpes.fits.lmfit_plot)
                   - [arpes.fits.utilities module](arpes.fits.utilities)
         
-          - [Module contents](arpes.fits#module-contents)
+          - [Module contents](arpes.fits#module-arpes.fits)
 
   -   - [arpes.laue package](arpes.laue)
         
@@ -127,7 +128,7 @@
                 
                   - [arpes.models.band module](arpes.models.band)
         
-          - [Module contents](arpes.models#module-contents)
+          - [Module contents](arpes.models#module-arpes.models)
 
   -   - [arpes.plotting package](arpes.plotting)
         
@@ -150,7 +151,7 @@
                                     module](arpes.plotting.qt_tool.utils)
                         
                           - [Module
-                            contents](arpes.plotting.qt_tool#module-contents)
+                            contents](arpes.plotting.qt_tool#module-arpes.plotting.qt_tool)
         
           -   - [Submodules](arpes.plotting#submodules)
                 
@@ -200,7 +201,7 @@
                   - [arpes.plotting.visualize\_3d
                     module](arpes.plotting.visualize_3d)
         
-          - [Module contents](arpes.plotting#module-contents)
+          - [Module contents](arpes.plotting#module-arpes.plotting)
 
   -   - [arpes.preparation package](arpes.preparation)
         
@@ -231,8 +232,6 @@
                                     module](arpes.utilities.conversion.base)
                                   - [arpes.utilities.conversion.bounds\_calculations
                                     module](arpes.utilities.conversion.bounds_calculations)
-                                  - [arpes.utilities.conversion.core
-                                    module](arpes.utilities.conversion.core)
                                   - [arpes.utilities.conversion.forward
                                     module](arpes.utilities.conversion.forward)
                                   - [arpes.utilities.conversion.kx\_ky\_conversion
@@ -280,6 +279,7 @@
   - [arpes.config module](arpes.config)
   - [arpes.constants module](arpes.constants)
   - [arpes.exceptions module](arpes.exceptions)
+  - [arpes.experiment module](arpes.experiment)
   - [arpes.io module](arpes.io)
   - [arpes.laser module](arpes.laser)
   - [arpes.load\_pxt module](arpes.load_pxt)
@@ -295,6 +295,11 @@
   - [arpes.xarray\_html\_repr module](arpes.xarray_html_repr)
 
 ## Module contents
+
+**arpes.check()**
+
+> Verifies certain aspects of the installation and provides guidance for
+> semi-broken installations. :return:
 
 **arpes.setup(outer\_globals, arpes\_root=None)**
 

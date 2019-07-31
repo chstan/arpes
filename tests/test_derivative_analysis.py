@@ -1,6 +1,10 @@
+import numpy as np
+
 import pytest
+
 from arpes.analysis.derivative import dn_along_axis
 from arpes.analysis.filters import gaussian_filter_arr
+
 
 
 def test_dataarray_derivatives(sandbox_configuration):
@@ -13,7 +17,7 @@ def test_dataarray_derivatives(sandbox_configuration):
     :return:
     """
     def wrapped_filter(arr):
-        return gaussian_filter_arr(arr, {'eV': 0.05, 'pixel': 10})
+        return gaussian_filter_arr(arr, {'eV': 0.05, 'phi': np.pi / 180})
 
     data = sandbox_configuration.load('basic', 0).spectrum
 
@@ -21,6 +25,9 @@ def test_dataarray_derivatives(sandbox_configuration):
 
     # some random sample
     assert [pytest.approx(v, 1e-3) for v in (d2_data.values[50:55, 60:62].ravel())] == [
-        28007.35, 27926.49, 28041.94, 27925.58, 28014.83,
-        27862.66, 27925.76, 27737.75, 27775.20, 27551.59,
+        29298.377691428424, 29230.839777046887,
+        29354.147718455544, 29245.10370224837,
+        29331.912863686706, 29180.932258864683,
+        29231.45715140855, 29038.482805082265,
+        29053.593654735683, 28818.9411615606841
     ]

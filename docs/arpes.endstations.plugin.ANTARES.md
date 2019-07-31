@@ -16,7 +16,7 @@
 > 
 > `PRINCIPAL_NAME = 'ANTARES'`
 > 
-> `RENAME_KEYS = {'deflx': 'polar'}`
+> `RENAME_KEYS = {'deflx': 'psi'}`
 > 
 > **get\_coords(group, scan\_name, shape)**
 > 

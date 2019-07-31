@@ -1,7 +1,7 @@
 """
 Helper functions for coordinate transformations. All the functions here
-assume standard polar angles, for better or worse, so you might need to
-massage your inputs slightly in order to get them into an appropriate form.
+assume standard polar angles, as given in the guide: https://arpes.netlify.com/#/spectra
+
 
 Functions here must accept constants or numpy arrays as valid inputs,
 so all standard math functions have been replaced by their equivalents out
@@ -10,26 +10,11 @@ would encourage the use of direct iteration, but in case you need to write
 a conversion directly, be aware that any functions here must work on arrays
 as well for consistency with client code.
 
-Through the code that follows, there are some conventions on the names of angles
-to make the code easier to follow:
-
-Standard vertically oriented cryostats:
-
-'polar' is the name of the angle that describes rotation around \hat{z}
-'beta' is the name of the angle that describes rotation around \hat{x}
-'sample_phi' is the name of the angle that describes rotation around the sample normal
-'phi' is the name of the angle that describes the angle along the analyzer entrance slit
-
-Additionally, everywhere, 'eV' denotes binding energies. Other energy units should
-be labelled as:
+Everywhere:
 
 Kinetic energy -> 'kinetic_energy'
-Binding energy -> 'binding_energy'
+Binding energy -> 'eV', for convenience (negative below 0)
 Photon energy -> 'hv'
-
-Other angles:
-Sample elevation/tilt/beta angle -> 'polar'
-Analyzer polar angle -> 'phi'
 """
 
 # pylint: disable=W0613, C0103
@@ -72,9 +57,13 @@ def infer_kspace_coordinate_transform(arr: xr.DataArray):
 
     new_coords = {
         ('phi',): ['kp'],
-        ('phi', 'polar',): ['kx', 'ky'],
+        ('beta', 'phi',): ['kx', 'ky'],
+        ('phi', 'theta',): ['kx', 'ky'],
+        ('phi', 'psi',): ['kx', 'ky'],
         ('hv', 'phi',): ['kp', 'kz'],
-        ('hv', 'phi', 'polar',): ['kx', 'ky', 'kz'],
+        ('beta', 'hv', 'phi',): ['kx', 'ky', 'kz'],
+        ('hv', 'phi', 'theta',): ['kx', 'ky', 'kz'],
+        ('hv', 'phi', 'psi',): ['kx', 'ky', 'kz'],
     }.get(tuple(old_coords))
 
     # At this point we need to do a bit of work in order to determine the functions
@@ -213,7 +202,10 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
 
     if axis_name is None:
         axis_name = {
-            ('phi', 'polar',): 'angle',
+            ('beta', 'phi',): 'angle',
+            ('chi', 'phi',): 'angle',
+            ('phi', 'psi',): 'angle',
+            ('phi', 'theta',): 'angle',
             ('kx', 'ky',): 'kp',
             ('kx', 'kz',): 'k',
             ('ky', 'kz',): 'k',
@@ -350,9 +342,11 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
         raise NotImplementedError('Forward conversion of datasets not supported. Coordinate conversion is. '
                                   'See `arpes.utilities.conversion.forward.convert_coordinates_to_kspace_forward`')
 
+    has_eV = 'eV' in arr.dims
+
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
-    remove_dims = ['eV', 'delay', 'cycle', 'T']
+    remove_dims = ['eV', 'delay', 'cycle', 'temp', 'x', 'y']
 
     def unconvertible(dimension):
         if dimension in remove_dims:
@@ -372,27 +366,36 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
 
     # This should always be true because otherwise we have no hope of carrying
     # through with the conversion
-    has_ev = 'eV' in arr.dims
-
     if 'eV' in removed:
         removed.remove('eV') # This is put at the front as a standardization
 
     old_dims.sort()
 
     if len(old_dims) == 0:
-        # Was a core level scan or something similar
-        return arr
+        return arr # no need to convert, might be XPS or similar
 
-    converted_dims = (['eV'] if has_ev else []) + {
+    converted_dims = (['eV'] if has_eV else []) + {
         ('phi',): ['kp'],
-        ('phi', 'polar'): ['kx', 'ky'],
+
+        ('phi', 'theta'): ['kx', 'ky'],
+        ('beta', 'phi'): ['kx', 'ky'],
+        ('phi', 'psi'): ['kx', 'ky'],
+
         ('hv', 'phi'): ['kp', 'kz'],
-        ('hv', 'phi', 'polar'): ['kx', 'ky', 'kz'],
+
+        ('hv', 'phi', 'theta'): ['kx', 'ky', 'kz'],
+        ('beta', 'hv', 'phi'): ['kx', 'ky', 'kz'],
+        ('hv', 'phi', 'psi'): ['kx', 'ky', 'kz'],
     }.get(tuple(old_dims)) + removed
 
     convert_cls = {
         ('phi',): ConvertKp,
-        ('phi', 'polar'): ConvertKxKy,
+
+        ('beta', 'phi'): ConvertKxKy,
+        ('phi', 'theta'): ConvertKxKy,
+        ('phi', 'psi'): ConvertKxKy,
+        #('chi', 'phi',): ConvertKxKy,
+
         ('hv', 'phi'): ConvertKpKz,
     }.get(tuple(old_dims))
     converter = convert_cls(arr, converted_dims)
@@ -420,6 +423,9 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
                                      indexing='ij')
     meshed_coordinates = [meshed_coord.ravel() for meshed_coord in meshed_coordinates]
 
+    if 'eV' not in arr.dims:
+        meshed_coordinates = [arr.S.lookup_offset_coord('eV')] + meshed_coordinates
+
     old_coord_names = [dim for dim in arr.dims if dim not in target_coordinates]
     old_coordinate_transforms = [coordinate_transform['transforms'][dim] for dim in arr.dims if dim not in target_coordinates]
     old_dimensions = [np.reshape(tr(*meshed_coordinates), [len(target_coordinates[d]) for d in coordinate_transform['dims']], order='C')
@@ -429,11 +435,23 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
     converted_volume = grid_interpolator(np.array([tr(*meshed_coordinates) for tr in ordered_transformations]).T)
 
     # Wrap it all up
+    def acceptable_coordinate(c):
+        # Currently we do this to filter out coordinates that are functions of the old angular dimensions,
+        # we could forward convert these, but right now we do not
+        try:
+            if set(c.dims).issubset(coordinate_transform['dims']):
+                return True
+            else:
+                return False
+        except:
+            return True
+
+    target_coordinates = {k: v for k, v in target_coordinates.items() if acceptable_coordinate(v)}
     data = xr.DataArray(
         np.reshape(converted_volume, [len(target_coordinates[d]) for d in coordinate_transform['dims']], order='C'),
         target_coordinates,
         coordinate_transform['dims'],
-        attrs=arr.attrs
+        attrs=arr.attrs,
     )
     old_mapped_coords = [xr.DataArray(values, target_coordinates, coordinate_transform['dims'], attrs=arr.attrs) for values in
                          old_dimensions]
