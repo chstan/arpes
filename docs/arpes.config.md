@@ -21,6 +21,8 @@ permissive=False, lazy=False, current\_path=None)**
 
 **arpes.config.load\_plugins()**
 
+**arpes.config.override\_settings(new\_settings)**
+
 **arpes.config.update\_configuration(user\_path=None)**
 
 **arpes.config.use\_tex(rc\_text\_should\_use=False)**

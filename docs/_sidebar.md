@@ -30,6 +30,7 @@
           - [Labeling + Utilities](/plotting-utilities)
       - [Adding a Beamline/Lab Source](/writing-plugins)
       - [Contributing](/contributing)
+      - [Customization and Notes on Juypyter](/customization)
 
   - [Topics](/how-to)
     
@@ -38,6 +39,7 @@
       - [Spectra + Data Representation](/spectra)
       - [Plugins](/writing-plugins)
       - [IO + Data Normalization](/topic-io)
+      - [Ad Hoc: Opting out of Workspaces](/ad-hoc)
       - [Data Provenance](/data-provenance)
 
 # arpes
@@ -62,6 +64,7 @@
                   - [arpes.config module](arpes.config)
                   - [arpes.constants module](arpes.constants)
                   - [arpes.exceptions module](arpes.exceptions)
+                  - [arpes.experiment module](arpes.experiment)
                   - [arpes.io module](arpes.io)
                   - [arpes.laser module](arpes.laser)
                   - [arpes.load\_pxt module](arpes.load_pxt)

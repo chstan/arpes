@@ -56,7 +56,8 @@ a common format
 > 
 > `ALIASES = []`
 > 
-> `CONCAT_COORDS = ['hv', 'polar', 'timed_power', 'tilt']`
+> `CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta',
+> 'theta']`
 > 
 > `PRINCIPAL_NAME = None`
 > 

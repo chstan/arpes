@@ -5,7 +5,7 @@ xarray.core.dataarray.DataArray)**
 
 **arpes.preparation.hemisphere\_preparation.stitch\_maps(arr:
 xarray.core.dataarray.DataArray, arr2: xarray.core.dataarray.DataArray,
-dimension='polar')**
+dimension='beta')**
 
 > Stitches together two maps by appending and potentially dropping
 > frames in the first dataset.

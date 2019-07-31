@@ -17,7 +17,8 @@
                   - [arpes.plotting.qt\_tool.utils
                     module](arpes.plotting.qt_tool.utils)
         
-          - [Module contents](arpes.plotting.qt_tool#module-contents)
+          - [Module
+            contents](arpes.plotting.qt_tool#module-arpes.plotting.qt_tool)
 
 ## Submodules
 

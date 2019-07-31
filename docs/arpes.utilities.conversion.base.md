@@ -11,6 +11,8 @@ xarray.core.dataarray.DataArray, dim\_order=None, \*args,**kwargs)\*\*
 > 
 > **identity\_transform(axis\_name, \*args,**kwargs)\*\*
 > 
+> `is_slit_vertical`
+> 
 > **kspace\_to\_BE(binding\_energy, \*args,**kwargs)\*\*
 > 
 > **prep(arr: xarray.core.dataarray.DataArray)**

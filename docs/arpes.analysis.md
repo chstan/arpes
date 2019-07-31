@@ -27,3 +27,35 @@
   - [arpes.analysis.xps module](arpes.analysis.xps)
 
 ## Module contents
+
+**arpes.analysis.d1\_along\_axis(arr: xarray.core.dataarray.DataArray,
+axis=None, smooth\_fn=None, \*, order=1)**
+
+> Like curvature, performs a second derivative. You can pass a function
+> to use for smoothing through the parameter smooth\_fn, otherwise no
+> smoothing will be performed.
+> 
+> You can specify the axis to take the derivative along with the axis
+> param, which expects a string. If no axis is provided the axis will be
+> chosen from among the available ones according to the preference for
+> axes here, the first available being taken:
+> 
+> \[‘eV’, ‘kp’, ‘kx’, ‘kz’, ‘ky’, ‘phi’, ‘beta’, ‘theta\] :param arr:
+> :param axis: :param smooth\_fn: :param order: Specifies how many
+> derivatives to take :return:
+
+**arpes.analysis.d2\_along\_axis(arr: xarray.core.dataarray.DataArray,
+axis=None, smooth\_fn=None, \*, order=2)**
+
+> Like curvature, performs a second derivative. You can pass a function
+> to use for smoothing through the parameter smooth\_fn, otherwise no
+> smoothing will be performed.
+> 
+> You can specify the axis to take the derivative along with the axis
+> param, which expects a string. If no axis is provided the axis will be
+> chosen from among the available ones according to the preference for
+> axes here, the first available being taken:
+> 
+> \[‘eV’, ‘kp’, ‘kx’, ‘kz’, ‘ky’, ‘phi’, ‘beta’, ‘theta\] :param arr:
+> :param axis: :param smooth\_fn: :param order: Specifies how many
+> derivatives to take :return:

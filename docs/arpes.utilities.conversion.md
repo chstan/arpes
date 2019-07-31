@@ -6,8 +6,6 @@
     module](arpes.utilities.conversion.base)
   - [arpes.utilities.conversion.bounds\_calculations
     module](arpes.utilities.conversion.bounds_calculations)
-  - [arpes.utilities.conversion.core
-    module](arpes.utilities.conversion.core)
   - [arpes.utilities.conversion.forward
     module](arpes.utilities.conversion.forward)
   - [arpes.utilities.conversion.kx\_ky\_conversion
