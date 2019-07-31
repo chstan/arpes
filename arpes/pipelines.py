@@ -79,15 +79,15 @@ prep_for_d2 = compose(
 def fft_clean_mc_map(data: xr.DataArray):
     from arpes.analysis.fft import fft_filter
 
-    polar_filter = [
-        {'polar': slice(0.65, 1.)},
-        {'polar': slice(-1., -0.65)},
+    beta_filter = [
+        {'beta': slice(0.65, 1.)},
+        {'beta': slice(-1., -0.65)},
     ]
-    return fft_filter(data, polar_filter)
+    return fft_filter(data, beta_filter)
 
 
 convert_mc_map_to_kspace_fft_filter = compose(
-    pipeline('normalize_polar_axis')(dim_normalizer('polar')),
+    pipeline('normalize_polar_axis')(dim_normalizer('beta')),
     fft_clean_mc_map,
     pipeline()(conversion.convert_to_kspace),
 )

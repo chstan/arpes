@@ -8,12 +8,15 @@ from arpes.utilities.funcutils import iter_leaves, collect_leaves
 __all__ = ('extract_coords', 'find_clean_coords',)
 
 DEFAULT_DIMENSION_RENAMINGS = {
-    'Beta': 'polar',
-    'Theta': 'phi',
+    'Beta': 'beta',
+    'Theta': 'theta',
     'Delay': 'delay',
     'Sample-X': 'cycle',
     'null': 'cycle',
     'Mira': 'pump_power',
+    'X': 'x',
+    'Y': 'y',
+    'Z': 'z',
 }
 
 

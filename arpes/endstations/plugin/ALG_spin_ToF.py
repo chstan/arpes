@@ -49,9 +49,9 @@ class SpinToFEndstation(EndstationBase):
         'LMOTOR0': 'x',
         'LMOTOR1': 'y',
         'LMOTOR2': 'z',
-        'LMOTOR3': 'polar',
-        'LMOTOR4': 'tilt',
-        'LMOTOR5': 'sample-phi',
+        'LMOTOR3': 'theta',
+        'LMOTOR4': 'beta',
+        'LMOTOR5': 'chi',
         'LMOTOR6': 'delay',
         'Phi': 'phi',
     }

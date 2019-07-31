@@ -121,7 +121,7 @@ class ARPESAccessorBase(object):
         true for XPS spectra, which I suppose is true but trivially.
         :return:
         """
-        return not any(d in {'phi', 'polar', 'angle'} for d in self._obj.dims)
+        return not any(d in {'phi', 'theta', 'beta', 'angle'} for d in self._obj.dims)
 
     @property
     def is_slit_vertical(self):
@@ -187,7 +187,11 @@ class ARPESAccessorBase(object):
         dim_types = {
             ('eV',): 'xps_spectrum',
             ('eV', 'phi'): 'spectrum',
-            ('eV', 'phi', 'polar'): 'map',
+
+            # this should check whether the other angular axis perpendicular to scan axis?
+            ('eV', 'phi', 'beta'): 'map',
+            ('eV', 'phi', 'theta'): 'map',
+
             ('eV', 'hv', 'phi'): 'hv_map',
 
             # kspace
@@ -255,7 +259,8 @@ class ARPESAccessorBase(object):
             'kp': 0.02,
             'kz': 0.05,
             'phi': 0.02,
-            'polar': 0.02,
+            'beta': 0.02,
+            'theta': 0.02,
             'eV': 0.05,
             'delay': 0.2,
             'T': 2,
@@ -349,7 +354,8 @@ class ARPESAccessorBase(object):
             'kp': 0.02,
             'kz': 0.05,
             'phi': 0.02,
-            'polar': 0.02,
+            'beta': 0.02,
+            'theta': 0.02,
             'eV': 0.05,
             'delay': 0.2,
             'T': 2,
@@ -647,6 +653,25 @@ class ARPESAccessorBase(object):
 
         return None
 
+    def lookup_offset_coord(self, name):
+        offset = self.lookup_coord(name) - self._lookup_offset(name)
+        try:
+            return offset.item()
+        except (AttributeError, ValueError):
+            try:
+                return offset.values
+            except AttributeError:
+                return offset
+
+    def lookup_coord(self, name):
+        if name in self._obj.coords:
+            return self._obj.coords[name]
+
+        if name in self._obj.attrs:
+            return self._obj.attrs[name]
+
+        raise ValueError('Could not find coordinate {}.'.format(name))
+
     def _lookup_offset(self, attr_name):
         symmetry_points = self.symmetry_points(raw=True)
         if 'G' in symmetry_points:
@@ -661,8 +686,12 @@ class ARPESAccessorBase(object):
         return self._obj.attrs.get('data_preparation', {}).get(offset_name, 0)
 
     @property
-    def polar_offset(self):
-        return self._lookup_offset('polar')
+    def beta_offset(self):
+        return self._lookup_offset('beta')
+
+    @property
+    def theta_offset(self):
+        return self._lookup_offset('theta')
 
     @property
     def phi_offset(self):
@@ -967,7 +996,8 @@ class ARPESAccessorBase(object):
         default_widths = {
             'eV': 0.05,
             'phi': 2,
-            'polar': 2,
+            'beta': 2,
+            'theta': 2,
             'kx': 0.02,
             'ky': 0.02,
             'kp': 0.02,
@@ -985,6 +1015,8 @@ class ARPESAccessorBase(object):
         sliced = self._obj.sel(**slices)
         thickness = np.product([len(sliced.coords[k]) for k in slice_kwargs.keys()])
         normalized = sliced.sum(slices.keys(), keep_attrs=True) / thickness
+        for k, v in slices.items():
+            normalized.coords[k] = (v.start + v.stop) / 2
         normalized.attrs.update(self._obj.attrs.copy())
         return normalized
 
@@ -1077,18 +1109,22 @@ class ARPESAccessorBase(object):
     @property
     def sample_angles(self):
         return (
-            self.chi,
-            self.phi,
-            self.polar,
+            # manipulator
+            self.beta,
             self.theta,
+            self.chi,
+
+            # analyzer
+            self.phi,
+            self.psi,
+            self.alpha,
         )
 
+    """
+    For a description of the PyARPES angular conventions, visit
+    """
     @property
     def theta(self):
-        """
-        Theta is always the manipulator angle DoF that lies along the analyzer slit.
-        :return:
-        """
         try:
             return float(self._obj.attrs['theta'])
         except KeyError:
@@ -1096,23 +1132,15 @@ class ARPESAccessorBase(object):
 
     @property
     def phi(self):
-        """
-        Phi is always the angle along the hemisphere
-        :return:
-        """
         try:
             return float(self._obj.attrs['phi'])
         except KeyError:
             return None
 
     @property
-    def polar(self):
-        """
-        Polar is always the angle perpendicular to the analyzer slit
-        :return:
-        """
+    def beta(self):
         try:
-            return float(self._obj.attrs['polar'])
+            return float(self._obj.attrs['beta'])
         except KeyError:
             return None
 
@@ -1121,7 +1149,7 @@ class ARPESAccessorBase(object):
         full_coords = {}
 
         full_coords.update(dict(zip(['x', 'y', 'z'], self.sample_pos)))
-        full_coords.update(dict(zip(['chi', 'phi', 'polar', 'theta'], self.sample_angles)))
+        full_coords.update(dict(zip(['beta', 'theta', 'chi', 'phi', 'psi', 'alpha'], self.sample_angles)))
         full_coords.update({
             'hv': self.hv,
         })

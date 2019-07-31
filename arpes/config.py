@@ -181,7 +181,7 @@ try:
     from local_config import *
 except:
     logging.warning("Could not find local configuration file. If you don't "
-                  "have one, you can safely ignore this message.")
+                    "have one, you can safely ignore this message.")
 
 
 def override_settings(new_settings):

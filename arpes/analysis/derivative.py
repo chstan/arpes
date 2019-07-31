@@ -150,14 +150,14 @@ def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
     If no axis is provided the axis will be chosen from among the available ones according to the preference
     for axes here, the first available being taken:
 
-    ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'polar']
+    ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'beta', 'theta]
     :param arr:
     :param axis:
     :param smooth_fn:
     :param order: Specifies how many derivatives to take
     :return:
     """
-    axis_order = ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'polar']
+    axis_order = ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'beta', 'theta']
     if axis is None:
         axes = [a for a in axis_order if a in arr.dims]
         if len(axes):

@@ -119,13 +119,13 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
                 # WELP we tried
                 pass
 
-        deg_to_rad_coords = {'polar', 'phi'}
+        deg_to_rad_coords = {'theta', 'beta', 'phi'}
 
         for c in deg_to_rad_coords:
             if c in data.dims:
                 data.coords[c] = data.coords[c] * np.pi / 180
 
-        deg_to_rad_attrs = {'theta', 'polar', 'chi'}
+        deg_to_rad_attrs = {'theta', 'beta', 'alpha', 'chi'}
         for angle_attr in deg_to_rad_attrs:
             if angle_attr in data.attrs:
                 data.attrs[angle_attr] = float(data.attrs[angle_attr]) * np.pi / 180
