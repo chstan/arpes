@@ -1,3 +1,5 @@
+import warnings
+
 import xarray as xr
 import numpy as np
 import h5py
@@ -61,7 +63,11 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
     ALIASES = []
 
     RENAME_KEYS = {
+        'DeflX': 'psi',
         'deflx': 'psi',
+        'energy': 'hv',
+        'PASSENERGY': 'pass_energy',
+        'LensMode': 'lens_mode',
     }
 
     def load_top_level_scan(self, group, scan_desc: dict=None, spectrum_index=None):
@@ -113,13 +119,14 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         # handle standard spectrometer axes, keeping in mind things get stored
         # in different places sometimes for no reasons
         energy_keys = {
-            'data_9': ('data_01', 'data_03', 'data_02',),
+            'data_09': ('data_01', 'data_03', 'data_02',),
             'data_12': ('data_04', 'data_06', 'data_05',),
         }
         angle_keys = {
-            'data_9': ('data_04', 'data_06', 'data_05',),
+            'data_09': ('data_04', 'data_06', 'data_05',),
             'data_12': ('data_07', 'data_09', 'data_08',),
         }
+
         e_keys = energy_keys[scan_name]
         ang_keys = angle_keys[scan_name]
         energy = data[e_keys[0]][0], data[e_keys[1]][0], data[e_keys[2]][0]
@@ -145,6 +152,8 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
                     diff = np.abs(s - est_n)
                     closest = s
 
+            if diff is not 0:
+                warnings.warn('Could not identify axis by length.')
             return np.linspace(low, high, closest, endpoint=False), idx
 
         energy, energy_idx = build_axis(*energy)
@@ -182,4 +191,30 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
             loaded = loaded[0]
             loaded.rename({'spectrum-1': 'spectrum'})
 
+        loaded = loaded.assign_attrs(**{self.RENAME_KEYS.get(k, k): v for k, v in loaded.attrs.items()})
+
         return loaded
+
+    def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
+        def check_attrs(s):
+            for k in ['psi', 'hv', 'lens_mode', 'pass_energy']:
+                try:
+                    if isinstance(s.attrs[k], (np.ndarray, list, tuple,)):
+                        s.attrs[k] = s.attrs[k][0]
+                    elif isinstance(s.attrs[k], bytes):
+                        s.attrs[k] = s.attrs[k].decode()
+                except (TypeError, KeyError):
+                    pass
+
+        ls = [data] + data.S.spectra
+        for l in ls:
+            check_attrs(l)
+
+        # TODO fix this
+        defaults = {'z': 0, 'x': 0, 'y': 0, 'alpha': 0, 'chi': 0, 'theta': 0, 'beta': 0, 'hv': 100, 'psi': 0}
+        for k, v in defaults.items():
+            data.attrs[k] = data.attrs.get(k, v)
+            for s in data.S.spectra:
+                s.attrs[k] = s.attrs.get(k, v)
+
+        return super().postprocess_final(data, scan_desc)
