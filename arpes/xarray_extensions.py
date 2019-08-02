@@ -653,6 +653,10 @@ class ARPESAccessorBase(object):
 
         return None
 
+    def apply_offsets(self, offsets):
+        for k, v in offsets.items():
+            self._obj.attrs['{}_offset'.format(k)] = v
+
     def lookup_offset_coord(self, name):
         offset = self.lookup_coord(name) - self._lookup_offset(name)
         try:
