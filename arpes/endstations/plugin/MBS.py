@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 import xarray as xr
 import numpy as np
@@ -19,10 +20,27 @@ class MBSEndstation(HemisphericalEndstation):
     ALIASES = ['MB Scientific',]
 
     RENAME_KEYS = {
+        'deflx': 'psi',
     }
 
     def resolve_frame_locations(self, scan_desc: dict=None):
         return [scan_desc['path']]
+
+    def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
+        warnings.warn('Loading from text format misses metadata. You will need to supply '
+                      'missing coordinates as appropriate.')
+        data.attrs['psi'] = float(data.attrs['psi'])
+        for s in data.S.spectra:
+            s.attrs['psi'] = float(s.attrs['psi'])
+
+        defaults = {'x': np.nan, 'y': np.nan, 'z': np.nan, 'theta': 0, 'beta': 0,
+                    'chi': 0, 'alpha': np.nan, 'hv': np.nan}
+        for k, v in defaults.items():
+            data.attrs[k] = v
+            for s in data.S.spectra:
+                s.attrs[k] = v
+
+        return super().postprocess_final(data, scan_desc)
 
     def load_single_frame(self, frame_path: str=None, scan_desc: dict=None, **kwargs):
         p = Path(frame_path)
