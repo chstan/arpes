@@ -13,6 +13,20 @@ features and documentation.
 ### New:
 
 1. Improved API documentation.
+2. Most recent interative plot context is saved to `arpes.config.CONFIG['CURRENT_CONTEXT']`.
+   This allows simple and transparent recovery in case you forget to save the context and
+   performed a lot of work in an interactive session.
+   Additionally, this means that matplotlib interactive tools should work transparently,
+   as the relevant widgets are guaranteed to be kept in memory.
+
+### Changed:
+
+### Fixed:
+
+1. MBS data loader now warns about unsatisfiable attributes and
+   produces otherwise correct coordinates in the PyARPES format.
+2. Some improvements made in the ANTARES data loader, still not as high
+   quality as I would like though.
 
 ## 2.0.0 (2019-07-31)
 

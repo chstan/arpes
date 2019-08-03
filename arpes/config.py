@@ -84,6 +84,7 @@ update_configuration()
 
 CONFIG = {
     'WORKSPACE': None,
+    'CURRENT_CONTEXT': None,
 }
 
 

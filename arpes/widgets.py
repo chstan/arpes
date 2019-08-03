@@ -35,12 +35,13 @@ from functools import wraps
 from matplotlib.widgets import LassoSelector, Button, TextBox, RectangleSelector, SpanSelector, Slider
 from matplotlib.path import Path
 
+import arpes.config
 from arpes.plotting.utils import imshow_arr, fancy_labels, invisible_axes
 from arpes.fits import LorentzianModel, broadcast_model
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.conversion import convert_to_kspace
 
-__all__ = ('pick_rectangles', 'pick_points', 'pca_explorer', 'kspace_tool',)
+__all__ = ('pick_rectangles', 'pick_points', 'pca_explorer', 'kspace_tool', 'fit_initializer',)
 
 
 class SelectFromCollection(object):
@@ -374,6 +375,7 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
         'selector': None,
         'integration_region': None,
     }
+    arpes.config.CONFIG['CURRENT_CONTEXT'] = context
 
     def compute_for_scatter():
         for_scatter = pca.copy(deep=True).isel(**dict([[component_dim, context['selected_components']]]))
@@ -488,6 +490,7 @@ def kspace_tool(data, **kwargs):
         'data': data,
         'widgets': []
     }
+    arpes.config.CONFIG['CURRENT_CONTEXT'] = ctx
     gs = gridspec.GridSpec(4, 3)
     ax_initial = plt.subplot(gs[0:2, 0:2])
     ax_converted = plt.subplot(gs[2:, 0:2])
@@ -578,6 +581,8 @@ def kspace_tool(data, **kwargs):
 @popout
 def pick_rectangles(data, **kwargs):
     ctx = {'points': [], 'rect_next': False}
+    arpes.config.CONFIG['CURRENT_CONTEXT'] = ctx
+
     rects = []
 
     fig = plt.figure()
@@ -636,6 +641,7 @@ def pick_gamma(data, **kwargs):
 @popout
 def pick_points(data, **kwargs):
     ctx = {'points': []}
+    arpes.config.CONFIG['CURRENT_CONTEXT'] = ctx
 
     fig = plt.figure()
     data.S.plot(**kwargs)
