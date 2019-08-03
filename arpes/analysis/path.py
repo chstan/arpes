@@ -84,7 +84,11 @@ def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
 
 def select_along_path(path: xr.Dataset, data: DataType, radius=None, n_points=None, fast=True, scaling=None, **kwargs):
     """
-    Performs integration along the path des
+    Performs integration along a path. This functionally allows for performing a finite width
+    cut (with finite width perpendicular to the local path direction) along some path,
+    and integrating along this perpendicular selection. This allows for better statistics in
+    oversampled data.
+
     :param path:
     :param data:
     :param radius: A number or dictionary of radii to use for the selection along different dimensions, if none is provided

@@ -1,3 +1,9 @@
+"""
+The core IO facilities supported by PyARPES. The most important here are the
+data loading functions (simpe_load, fallback_load, load_without_dataset, load_example_data),
+pickling utilities, data stitching, and dataset manipulation functions.
+"""
+
 import json
 import os.path
 import uuid

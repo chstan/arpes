@@ -10,6 +10,19 @@ __all__ = ('gaussian_filter_arr', 'gaussian_filter', 'boxcar_filter_arr', 'boxca
 
 
 def gaussian_filter_arr(arr: xr.DataArray, sigma=None, n=1, default_size=1):
+    """
+    Functionally wraps scipy.ndimage.filters.gaussian_filter with the advantage that the sigma
+    is coordinate aware.
+
+    :param arr:
+    :param sigma: Kernel sigma, specified in terms of axis units. An axis that is not specified
+                  will have a kernel width of `default_size` in index units.
+    :param n: Repeats n times.
+    :param default_size: Changes the default kernel width for axes not specified in `sigma`. Changing this
+                         parameter and leaving `sigma` as None allows you to smooth with an even-width
+                         kernel in index-coordinates.
+    :return: xr.DataArray: smoothed data.
+    """
     if sigma is None:
         sigma = {}
 
@@ -44,6 +57,13 @@ def gaussian_filter_arr(arr: xr.DataArray, sigma=None, n=1, default_size=1):
 
 
 def gaussian_filter(sigma=None, n=1):
+    """
+    A partial application of `gaussian_filter_arr` that can be passed to derivative analysis functions.
+    :param sigma:
+    :param n:
+    :return:
+    """
+
     def f(arr):
         return gaussian_filter_arr(arr, sigma, n)
 
@@ -51,12 +71,35 @@ def gaussian_filter(sigma=None, n=1):
 
 
 def boxcar_filter(size=None, n=1):
+    """
+    A partial application of `boxcar_filter_arr` that can be passed to derivative analysis functions.
+    :param size:
+    :param n:
+    :return:
+    """
+
     def f(arr):
         return boxcar_filter_arr(arr, size, n)
 
     return f
 
+
 def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1, default_size=1, skip_nan=True):
+    """
+    Functionally wraps scipy.ndimage.filters.gaussian_filter with the advantage that the sigma
+    is coordinate aware.
+
+    :param arr:
+    :param size: Kernel size, specified in terms of axis units. An axis that is not specified
+                 will have a kernel width of `default_size` in index units.
+    :param n: Repeats n times.
+    :param default_size: Changes the default kernel width for axes not specified in `sigma`. Changing this
+                         parameter and leaving `sigma` as None allows you to smooth with an even-width
+                         kernel in index-coordinates.
+    :param skip_nan: By default, masks parts of the data which are NaN to prevent poor filter results.
+    :return: xr.DataArray: smoothed data.
+    """
+
     if size is None:
         size = {}
 
@@ -81,7 +124,6 @@ def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1, default_size=1, skip_na
     else:
         for i in range(n):
             values = ndimage.filters.uniform_filter(values, size)
-
 
     filtered_arr = xr.DataArray(
         values,

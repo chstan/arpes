@@ -196,6 +196,18 @@ def find_kf_by_mdc(slice: DataType, offset=0, **kwargs):
 
 def edcs_along_pocket(data: DataType, kf_method=None, select_radius=None,
                       sel=None, method_kwargs=None, **kwargs):
+    """
+    Collects EDCs around a pocket. This consists first in identifying the momenta
+    around the pocket, and then integrating small windows around each of these points.
+
+    :param data:
+    :param kf_method:
+    :param select_radius:
+    :param sel:
+    :param method_kwargs:
+    :param kwargs:
+    :return:
+    """
     slices, angles = curves_along_pocket(data, **kwargs)
 
     if kf_method is None:

@@ -55,6 +55,25 @@ def normalize_by_fermi_dirac(data: DataType, reference_data: DataType=None, plot
                              broadening=None,
                              temperature_axis=None,
                              temp_offset=0, **kwargs):
+    """
+    Normalizes data according to a Fermi level reference on separate data or using the same source spectrum.
+
+    To do this, a linear density of states is multiplied against a resolution broadened Fermi-Dirac
+    distribution (`arpes.fits.fit_models.AffineBroadenedFD`). We then set the density of states to 1 and
+    evaluate this model to obtain a reference that the desired spectrum is normalized by.
+
+    :param data: Data to be normalized.
+    :param reference_data: A reference spectrum, typically a metal reference. If not provided the
+                           integrated data is used. Beware: this is inappropriate if your data is gapped.
+    :param plot: A debug flag, allowing you to view the normalization spectrum and relevant curve-fits.
+    :param broadening: Detector broadening.
+    :param temperature_axis: Temperature coordinate, used to adjust the quality
+                             of the reference for temperature dependent data.
+    :param temp_offset: Temperature calibration in the case of low temperature data. Useful if the
+                        temperature at the sample is known to be hotter than the value recorded off of a diode.
+    :param kwargs:
+    :return:
+    """
     reference_data = data if reference_data is None else reference_data
     broadening_fit = determine_broadened_fermi_distribution(reference_data, **kwargs)
     broadening = broadening_fit.params['conv_width'].value if broadening is None else broadening
@@ -106,23 +125,6 @@ def normalize_by_fermi_dirac(data: DataType, reference_data: DataType=None, plot
     divided.coords['eV'].values = divided.coords['eV'].values - broadening_fit.params['fd_center'].value
     return divided
 
-"""
-def symmetrize(data: DataType):
-    data = normalize_to_spectrum(data).S.transpose_to_front('eV')
-
-    above = data.sel(eV=slice(0, None))
-    below = data.sel(eV=slice(None, 0)).copy(deep=True)
-
-    l = len(above.coords['eV'])
-
-    zeros = below.values * 0
-    print(zeros.shape)
-    zeros[-l:] = above.values[::-1]
-
-    below.values = below.values + zeros
-
-    return below
-"""
 
 def _shift_energy_interpolate(data: DataType,shift=None):
     if shift is not None:
@@ -162,7 +164,20 @@ def _shift_energy_interpolate(data: DataType,shift=None):
     
     return new_data
 
-def symmetrize(data: DataType,subpixel=False,full_spectrum=False):
+
+def symmetrize(data: DataType, subpixel=False, full_spectrum=False):
+    """
+    Symmetrizes data across the chemical potential. This provides a crude tool by which
+    gap analysis can be performed. In this implementation, subpixel accuracy is achieved by
+    interpolating data.
+
+    :param data: Input array.
+    :param subpixel: Enable subpixel correction
+    :param full_spectrum: Returns data above and below the chemical potential. By default, only
+           the bound part of the spectrum (below the chemical potential) is returned, because
+           the other half is identical.
+    :return:
+    """
     data = normalize_to_spectrum(data).S.transpose_to_front('eV')
     
     if subpixel or full_spectrum:

@@ -1,3 +1,31 @@
+"""
+Provides interactive tools based on matplotlib Qt interactive elements.
+This are generally primitive one offs that are useful for accomplishing
+something quick. As examples:
+
+1. `pca_explorer` lets you interactively examine a PCA decomposition or
+   other decomposition supported by `arpes.analysis.decomposition`
+2. `pick_points`, `pick_rectangles` allows selecting many individual points
+    or regions from a piece of data, useful to isolate locations to do
+    further analysis.
+3. `kspace_tool` allows interactively setting coordinate offset for
+    angle-to-momentum conversion.
+4. `fit_initializer` allows for seeding an XPS curve fit.
+
+All of these return a "context" object which can be used to get information from the current
+session (i.e. the selected points or regions, or modified data).
+If you forget to save this context, you can recover it as the most recent context
+is saved at `arpes.config.CONFIG` under the key "CURRENT_CONTEXT".
+
+There are also primitives for building interactive tools in matplotlib. Such as
+DataArrayView, which provides an interactive and updatable plot view from an
+xarray.DataArray instance.
+
+In the future, it would be nice to get higher quality interactive tools, as
+we start to run into the limits of these ones. But between this and `qt_tool`
+we are doing fine for now.
+"""
+
 import matplotlib.gridspec as gridspec
 import matplotlib
 import numpy as np
@@ -27,18 +55,6 @@ class SelectFromCollection(object):
 
     Note that this tool selects collection objects based on their *origins*
     (i.e., `offsets`).
-
-    Parameters
-    ----------
-    ax : :class:`~matplotlib.axes.Axes`
-        Axes to interact with.
-
-    collection : :class:`matplotlib.collections.Collection` subclass
-        Collection you want to select from.
-
-    alpha_other : 0 <= float <= 1
-        To highlight a selection, this tool sets all selected points to an
-        alpha value of 1 and non-selected points to `alpha_other`.
     """
 
     def __init__(self, ax, collection, alpha_other=0.3, on_select=None):

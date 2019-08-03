@@ -1,3 +1,16 @@
+"""
+Contains tools pertaining to statistical boostraps. It can sometimes be difficult
+to assess when bootstraps are appropriate, so make sure to consider this before you
+just stick a bootstrap around your code and stuff the resultant error bar
+into your papers.
+
+This is most useful on data coming from ToF experiments, where individual electron
+arrivals are counted, but even here you must be aware of tricky aspects of
+the experiment: ToF-ARPES analyzers are not perfect, their efficiency can vary dramatically
+across the detector due to MCP burn-in, and electron aberration and focusing
+must be considered.
+"""
+
 import numpy as np
 import random
 import copy

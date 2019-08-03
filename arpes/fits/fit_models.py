@@ -22,6 +22,24 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel','GStepBModel', 'QuadraticModel'
 
 
 class XModelMixin(lf.Model):
+    """
+    A mixin providing curve fitting for xarray.DataArray instances.
+
+    This amounts mostly to making `lmfit` coordinate aware, and providing
+    a translation layer between xarray and raw np.ndarray instances.
+
+    Subclassing this mixin as well as an lmfit Model class should bootstrap
+    an lmfit Model to one that works transparently on xarray data.
+
+    Alternatively, you can use this as a model base in order to build new models.
+
+    The core method here is `guess_fit` which is a convenient utility that performs both
+    a `lmfit.Model.guess`, if available, before populating parameters and
+    performing a curve fit.
+
+    __add__ and __mul__ are also implemented, to ensure that the composite model
+    remains an instance of a subclass of this mixin.
+    """
     n_dims = 1
     dimension_order = None
 
@@ -134,6 +152,10 @@ class XModelMixin(lf.Model):
 
 
 class XAdditiveCompositeModel(lf.CompositeModel, XModelMixin):
+    """
+    xarray coordinate aware composite model corresponding to the
+    sum of two models.
+    """
     def guess(self, data, x=None, **kwargs):
         pars = self.make_params()
         guessed = {}
@@ -147,6 +169,9 @@ class XAdditiveCompositeModel(lf.CompositeModel, XModelMixin):
 
 class XMultiplicativeCompositeModel(lf.CompositeModel, XModelMixin):
     """
+    xarray coordinate aware composite model corresponding to the
+    sum of two models.
+
     Currently this just copies +, might want to adjust things!
     """
     def guess(self, data, x=None, **kwargs):
@@ -160,7 +185,11 @@ class XMultiplicativeCompositeModel(lf.CompositeModel, XModelMixin):
 
         return pars
 
+
 class XConvolutionCompositeModel(lf.CompositeModel, XModelMixin):
+    """
+    Work in progress for convolving two `Model`s.
+    """
     def guess(self, data, x=None, **kwargs):
         pars = self.make_params()
         guessed = {}
@@ -177,8 +206,10 @@ class XConvolutionCompositeModel(lf.CompositeModel, XModelMixin):
 
         return pars
 
+
 def np_convolve(original_data, convolution_kernel):
     return convolve(original_data, convolution_kernel, mode='same')
+
 
 def _convolve(original_data, convolution_kernel):
     n_points = min(len(original_data), len(convolution_kernel))
@@ -187,6 +218,7 @@ def _convolve(original_data, convolution_kernel):
     convolved = np.convolve(temp, convolution_kernel, mode='valid')
     n_offset = int((len(convolved) - n_points) / 2)
     return (convolved[n_offset:])[:n_points]
+
 
 def gaussian_convolve(model_instance):
     """
@@ -233,15 +265,26 @@ def effective_mass_bkg(eV, kp, m_star=0,
 
 
 def affine_bkg(x, lin_bkg=0, const_bkg=0):
+    """
+    An affine/linear background.
+    :param x:
+    :param lin_bkg:
+    :param const_bkg:
+    :return:
+    """
     return lin_bkg * x + const_bkg
 
 
 def quadratic(x, a=1, b=0, c=0):
     return a * x**2 + b * x + c
 
+
 def gstepb(x, center=0, width=1, erf_amp=1, lin_bkg=0, const_bkg=0):
     """
-    Fermi function convoled with a Gaussian together with affine background
+    Fermi function convoled with a Gaussian together with affine background.
+    This accurately represents low temperature steps where thermal broadening is
+    less substantial than instrumental resolution.
+
     :param x: value to evaluate function at
     :param center: center of the step
     :param width: width of the step
@@ -252,6 +295,7 @@ def gstepb(x, center=0, width=1, erf_amp=1, lin_bkg=0, const_bkg=0):
     """
     dx = x - center
     return const_bkg + lin_bkg * np.min(dx, 0) + gstep(x, center, width, erf_amp)
+
 
 def gstep(x, center=0, width=1, erf_amp=1):
     """
@@ -265,15 +309,41 @@ def gstep(x, center=0, width=1, erf_amp=1):
     dx = x - center
     return erf_amp * 0.5 * erfc(1.66511 * dx / width)
 
+
 def gstepb_standard(x, center=0, sigma=1, amplitude=1, **kwargs):
     return gstepb(x, center, width=sigma, erf_amp=amplitude, **kwargs)
 
+
 def exponential_decay_c(x, amp, tau, t0, const_bkg):
+    """
+    Represents an exponential decay after a point (delta) impulse.
+    This coarsely models the dynamics after excitation in a
+    pump-probe experiment.
+    :param x:
+    :param amp:
+    :param tau:
+    :param t0:
+    :param const_bkg:
+    :return:
+    """
     dx = x - t0
     mask = (dx >= 0) * 1
     return const_bkg + amp * mask * np.exp(-(x - t0)/tau)
 
+
 def twoexponential_decay_c(x,amp,t0,tau1,tau2,const_bkg):
+    """
+    Like `exponential_decay_c`, except that two timescales corresponding
+    for instance to different quasiparticle decay channels are allowed,
+    represented by `tau1` and `tau2`.
+    :param x:
+    :param amp:
+    :param t0:
+    :param tau1:
+    :param tau2:
+    :param const_bkg:
+    :return:
+    """
     dx = x-t0
     mask = (dx >= 0) * 1
     y = const_bkg + amp*(1-np.exp(-dx/tau1))*np.exp(-dx/tau2)
@@ -288,10 +358,35 @@ def lorentzian(x, gamma, center, amplitude):
 
 
 def pseudo_shirley(x, gamma, center, amplitude, bkg_amplitude):
+    """
+    WIP for a lorentzian with a "shirley like" background.
+    :param x:
+    :param gamma:
+    :param center:
+    :param amplitude:
+    :param bkg_amplitude:
+    :return:
+    """
     lor = lorentzian(x, gamma, center, amplitude)
 
 
 def twolorentzian(x, gamma, t_gamma, center, t_center, amp, t_amp, lin_bkg, const_bkg):
+    """
+    A double lorentzian model. This is typically not necessary, as you can use the
+    + operator on the Model instances. For instance `LorentzianModel() + LorentzianModel(prefix='b')`.
+
+    This mostly exists for people that prefer to do things the "Igor Way".
+    :param x:
+    :param gamma:
+    :param t_gamma:
+    :param center:
+    :param t_center:
+    :param amp:
+    :param t_amp:
+    :param lin_bkg:
+    :param const_bkg:
+    :return:
+    """
     L1 = lorentzian(x, gamma, center, amp)
     L2 = lorentzian(x, t_gamma, t_center, t_amp)
     AB = affine_bkg(x, lin_bkg, const_bkg)
@@ -303,7 +398,14 @@ def gstepb_mult_lorentzian(x, center=0, width=1, erf_amp=1, lin_bkg=0, const_bkg
 
 
 def fermi_dirac(x, center=0, width=0.05, scale=1):
-    # Fermi edge
+    """
+    Fermi edge
+    :param x:
+    :param center:
+    :param width:
+    :param scale:
+    :return:
+    """
     return scale / (np.exp((x - center) / width) + 1)
 
 
@@ -329,16 +431,11 @@ def twogaussian(x, center=0, t_center=0, width=1, t_width=1, amp=1, t_amp=1, lin
     return gaussian(x, center, width, amp) + gaussian(x, t_center, t_width, t_amp) + affine_bkg(x, lin_bkg, const_bkg)
 
 
-def twolorentzian(x, gamma, t_gamma, center, t_center, amp, t_amp, lin_bkg, const_bkg):
-    L1 = lorentzian(x, gamma, center, amp)
-    L2 = lorentzian(x, t_gamma, t_center, t_amp)
-    AB = affine_bkg(x, lin_bkg, const_bkg)
-    return L1 + L2 + AB
-
 def twolorentzian_gstep(x, gamma, t_gamma, center, t_center, amp, t_amp, lin_bkg, const_bkg, g_center, sigma, erf_amp):
     TL = twolorentzian(x, gamma, t_gamma, center, t_center, amp, t_amp, lin_bkg, const_bkg)
     GS = gstep(x, g_center, sigma, erf_amp)
     return TL*GS
+
 
 def affine_broadened_fd(x, fd_center=0, fd_width=0.003, conv_width=0.02, const_bkg=1, lin_bkg=0, offset=0):
     """
@@ -360,11 +457,12 @@ def affine_broadened_fd(x, fd_center=0, fd_width=0.003, conv_width=0.02, const_b
     ) + offset
 
 
-# Nick Dale edits
-
 def log_renormalization(x, kF=1.6,kD=1.6,kC= 1.7, alpha = 0.4, vF=1e6):
     """
-    Logarithmic Correction to Linear Dispersion of Materials with Dirac Dispersion near charge neutrality
+    Logarithmic correction to linear dispersion of materials with Dirac dispersion near charge neutrality.
+
+    As examples, this can be used to study the low energy physics in high quality ARPES spectra of graphene
+    or topological Dirac semimetals.
     :param k: value to evaluate fit at
     :param kF: Fermi wavevector
     :param kD: Dirac point
@@ -376,6 +474,7 @@ def log_renormalization(x, kF=1.6,kD=1.6,kC= 1.7, alpha = 0.4, vF=1e6):
     dkD = x - kD
     return -vF*np.abs(dkD)+(alpha/4)*vF*dk*np.log(np.abs(kC/dkD))
 
+
 def dirac_dispersion(x, kd = 1.6, amplitude_1 = 1,amplitude_2=1,center=0, sigma_1 = 1,sigma_2 =1):
     """
     Model for dirac_dispersion symmetric about the dirac point. Fits lorentziants to (kd-center) and (kd+center)
@@ -386,27 +485,23 @@ def dirac_dispersion(x, kd = 1.6, amplitude_1 = 1,amplitude_2=1,center=0, sigma_
     :param center: center of Lorentzian
     :param sigma_1: FWHM of Lorentzian at kd-center
     :param sigma_2: FWHM of Lorentzian at kd+center
-
     """
-
-    dx = x-center
-    return lorentzian(x,center=kd-center,amplitude=amplitude_1,gamma=sigma_1) + lorentzian(x,center=kd+center,amplitude=amplitude_2,gamma=sigma_2)
-
-# end Nick Dale edits
+    return lorentzian(x,center=kd-center,amplitude=amplitude_1,gamma=sigma_1) + \
+           lorentzian(x,center=kd+center,amplitude=amplitude_2,gamma=sigma_2)
 
 
-
-
-# Daniel Eilbott edits
 def g(x, mu=0, sigma=0.1):
     return (1/np.sqrt(2 * np.pi * sigma**2)) * np.exp(-(1/2) * ((x-mu) / sigma)**2)
+
 
 def band_edge_bkg_gauss(x, center=0, width=0.05, amplitude=1, gamma=0.1, lor_center=0, offset=0, lin_bkg=0, const_bkg=0):#,sigma=0.1):
     return np_convolve(band_edge_bkg(x, 0, width, amplitude, gamma, lor_center, offset, lin_bkg, const_bkg), g(np.linspace(-6,6,800), 0, 0.01))
 
+
 def fermi_dirac_affine(x, center=0, width=0.05, lin_bkg=0, const_bkg=0, scale=1):
     # Fermi edge with an affine background multiplied in
     return (scale + lin_bkg * x) / (np.exp((x - center) / width) + 1) + const_bkg
+
 
 def fermi_dirac_bkg_gauss(x, center=0, width=0.05, lin_bkg=0, const_bkg=0, scale=1, sigma=0.01):
     return np_convolve(
@@ -414,6 +509,7 @@ def fermi_dirac_bkg_gauss(x, center=0, width=0.05, lin_bkg=0, const_bkg=0, scale
         # g(np.linspace(-6,6,800),0,sigma)
         g(x,(min(x)+max(x))/2,sigma)
     )
+
 
 def gstep_stdev(x, center=0, sigma=1, erf_amp=1):
     """
@@ -425,7 +521,8 @@ def gstep_stdev(x, center=0, sigma=1, erf_amp=1):
     :return:
     """
     dx = x - center
-    return erf_amp * 0.5 * erfc(np.sqrt(2) * dx / width)
+    return erf_amp * 0.5 * erfc(np.sqrt(2) * dx / sigma)
+
 
 def gstepb_stdev(x, center=0, sigma=1, erf_amp=1, lin_bkg=0, const_bkg=0):
     """
@@ -441,13 +538,21 @@ def gstepb_stdev(x, center=0, sigma=1, erf_amp=1, lin_bkg=0, const_bkg=0):
     dx = x - center
     return const_bkg + lin_bkg * np.min(dx, 0) + gstep_stdev(x, center, sigma, erf_amp)
 
-# / Daniel Eilbott
-
 
 class EffectiveMassModel(XModelMixin):
     """
-    A two dimensional model for a quadratic distribution of Lorentzians
+    A two dimensional model for a quadratic distribution of Lorentzians.
+    This can be used for "global" fitting of the effective mass of a band, providing higher quality
+    results than iterative fitting for the lineshapes and then performing a
+    quadratic fit to the centers.
+
+    This model also provides a representative example of how to implement (2+)D "global"
+    lmfit.Model classes which are xarray coordinate aware.
+
+        `dimension_order`: allows specifying allowed sets of dimension for the global fit (here eV
+        must be one axis, while either kp or phi is allowed for the other.
     """
+
     n_dims = 2
     dimension_order = ['eV', ['kp', 'phi']]
 
@@ -574,6 +679,7 @@ class FermiDiracModel(XModelMixin):
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
+
 class GStepBModel(XModelMixin):
     """
     A model for fitting Fermi functions with a linear background
@@ -605,8 +711,9 @@ class GStepBModel(XModelMixin):
 
 class TwoBandEdgeBModel(XModelMixin):
     """
-        A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution
-        """
+    A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution
+    TODO, actually implement two_band_edge_bkg (find original author and their intent)
+    """
 
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
         kwargs.update({
@@ -647,8 +754,8 @@ class TwoBandEdgeBModel(XModelMixin):
 
 class BandEdgeBModel(XModelMixin):
     """
-        A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution
-        """
+    A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution
+    """
 
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
         kwargs.update({
@@ -686,8 +793,8 @@ class BandEdgeBModel(XModelMixin):
 
 class BandEdgeBGModel(XModelMixin):
     """
-        A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution
-        """
+    A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution
+    """
 
     def __init__(self, independent_vars=['x'], prefix='', missing='raise', name=None, **kwargs):
         kwargs.update({
@@ -1073,13 +1180,15 @@ class DiracDispersionModel(XModelMixin):
     __init__.doc = lf.models.COMMON_INIT_DOC
     guess.__doc__ = lf.models.COMMON_GUESS_DOC
 
+
 class LorentzianModel(XModelMixin, lf.models.LorentzianModel):
     pass
+
 
 class SplitLorentzianModel(XModelMixin, lf.models.SplitLorentzianModel):
     def _set_paramhints_prefix(self):
         """
-        Conrad: In lmfit v0.9.13 there is a bug here where the prefix is not set 
+        In lmfit v0.9.13 there is a bug here where the prefix is not set
         on the parameter hint expressions for the computed variables "height" 
         and "fwhm". Until this is patched, we need to do this correctly, which invovles
         just injecting the prefix in before each of the model parameters in these
@@ -1102,13 +1211,13 @@ class SplitLorentzianModel(XModelMixin, lf.models.SplitLorentzianModel):
 
         return update_param_vals(pars, self.prefix, **kwargs)
 
+
 class VoigtModel(XModelMixin, lf.models.VoigtModel):
     pass
 
 
 class GaussianModel(XModelMixin, lf.models.GaussianModel):
     pass
-
 
 
 class ConstantModel(XModelMixin, lf.models.ConstantModel):

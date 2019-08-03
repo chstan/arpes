@@ -5,7 +5,17 @@ from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('remove_incoherent_background',)
 
+
 def remove_incoherent_background(data: DataType, set_zero=True):
+    """
+    Sometimes spectra are contaminated by data above the Fermi level for
+    various reasons (such as broad core levels from 2nd harmonic light,
+    or slow enough electrons in ToF experiments to be counted in subsequent
+    pulses).
+    :param data:
+    :param set_zero:
+    :return:
+    """
     data = normalize_to_spectrum(data)
 
     approximate_fermi_energy_level = data.S.find_spectrum_energy_edges().max()

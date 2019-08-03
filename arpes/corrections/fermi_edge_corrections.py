@@ -214,6 +214,7 @@ def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None
 
     return corrected_arr
 
+
 def apply_quadratic_fermi_edge_correction(arr: xr.DataArray, correction: lf.model.ModelResult=None, offset=None):
     assert(isinstance(arr, xr.DataArray))
     if correction is None:

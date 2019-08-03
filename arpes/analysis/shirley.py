@@ -12,6 +12,13 @@ __all__ = (
 
 
 def remove_shirley_background(xps: DataType, **kwargs):
+    """
+    Calculates and removes a Shirley background from a spectrum.
+    Only the background corrected spectrum is retrieved.
+    :param xps:
+    :param kwargs:
+    :return:
+    """
     xps = normalize_to_spectrum(xps)
     return xps - calculate_shirley_background(xps, **kwargs)
 

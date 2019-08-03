@@ -1,3 +1,15 @@
+"""
+This is another core part of PyARPES. It provides a lot of extensions to
+what comes out of the box in xarray. Some of these are useful generics,
+generally on the .T extension, others collect and manipulate metadata,
+interface with plotting routines, provide functional programming utilities,
+etc.
+
+If `f` is an ARPES spectrum, then `f.S` should provide a nice representation of your data
+in a Jupyter cell. This is a complement to the text based approach that merely printing `f`
+offers.
+"""
+
 import collections
 import itertools
 import copy
@@ -154,7 +166,6 @@ class ARPESAccessorBase(object):
                 return 5.93
 
         return None
-
 
     def fetch_ref_attrs(self):
         if 'ref_attrs' in self._obj.attrs:
@@ -2059,21 +2070,3 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
         self._spectrum = None
-
-        # TODO consider how this should work
-        # data_arr_names = self._obj.data_vars.keys()
-        #
-        # spectrum_candidates = ['raw', 'spectrum', 'spec']
-        # if len(data_arr_names) == 1:
-        #     self._spectrum = self._obj.data_vars[data_arr_names[0]]
-        # else:
-        #     for candidate in spectrum_candidates:
-        #         if candidate in data_arr_names:
-        #             self._spectrum = self._obj.data_vars[candidate]
-        #             break
-        #
-        # if self._spectrum is None:
-        #     assert(False and "Dataset appears not to contain a spectrum among options {}".format(data_arr_names))
-
-
-

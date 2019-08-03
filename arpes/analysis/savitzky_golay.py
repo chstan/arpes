@@ -15,6 +15,19 @@ __all__ = ('savitzky_golay',)
 
 @update_provenance('Savitzky Golay Filter')
 def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, order, deriv=0, rate=1, dim=None):
+    """
+    Implements a Savitzky Golay filter with given window size. You can specify "pass through" dimensions
+    which will not be touched with the `dim` argument. This allows for filtering each frame of a map or each equal-energy
+    contour in a 3D dataset, for instance.
+
+    :param data: Input data.
+    :param window_size: Number of points in the window that the filter uses locally.
+    :param order: The polynomial order used in the convolution.
+    :param deriv:
+    :param rate:
+    :param dim:
+    :return:
+    """
     if isinstance(data, (list, np.ndarray,)):
         return savitzky_golay_array(data, window_size, order, deriv, rate)
 
@@ -43,6 +56,15 @@ def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, 
 
 def savitzky_golay_2d(z, window_size, order, derivative=None):
     """
+    Implementation from the scipy cookbook before the Savitzky Golay filter
+    was supported. This is changed now, so we should ideally migrate to use the
+    new scipy implementation.
+
+    :param z:
+    :param window_size:
+    :param order:
+    :param derivative:
+    :return:
     """
     # number of terms in the polynomial expression
     n_terms = (order + 1) * (order + 2) / 2.0

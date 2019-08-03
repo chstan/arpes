@@ -1,3 +1,8 @@
+"""
+Primitive support for loading Laue data from the NorthStar x-ray
+backscattering DAQ program.
+"""
+
 # Laue file structure courtesy Jonathan Denlinger, MERLIN endstations at the ALS
 # 16-bit binary Laue histogram (.hs2) file
 # Format:  2 byte*256*256= 131072 long + header info at the end

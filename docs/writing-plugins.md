@@ -1,19 +1,19 @@
 # Adding Support for Beamlines or Lab Facilities
 
-**Note:** This is an advanced section, you can skip this unless you need or want to extend PyPES to cover
+**Note:** This is an advanced section, you can skip this unless you need or want to extend PyARPES to cover
 more data formats. 
 
-One of the overarching design goals of PyPES is to provide a completely uniform, pragmatic, 
+One of the overarching design goals of PyARPES is to provide a completely uniform, pragmatic, 
 and understandable approach to loading and performing common analyses of ARPES data. Practically,
 this consists of at least
 
 1. Programmatic or automated data loading + saving, including from networked locations
 2. Data assuming the same ultimate format and structure, where this is reasonable (excluding SARPES)
 3. k-space conversion "just working", without requiring additional effort from either
-   the PyPES authors or users once implemented
+   the PyARPES authors or users once implemented
 4. Backward compatibility with Igor Pro experiments and binary data types
    
-In order to meet these constraints in light of the large variety of data formats, PyPES 
+In order to meet these constraints in light of the large variety of data formats, PyARPES 
 first requires that data is normalized to a single data type (NetCDF) which is well supported by
 `xarray` our data primitive of choice. This normalization step is performed automatically and 
 without user intervention aside from invocation of `prepare_raw_files()`. 
@@ -77,7 +77,7 @@ present, `concatenate_frames` will return just this data.
 
 ## Writing Your Own Plugin
 
-To write your own plugin to be included in PyPES, make a file containing a single class, subclassing
+To write your own plugin to be included in PyARPES, make a file containing a single class, subclassing
 `EndstationBase`. If it represents a instrument with a hemispherical electron analyzer, 
 subclass as well `HemisphericalEndstation`. If it is associated with a synchrotron, subclass 
 `SynchrotronEndstation`.

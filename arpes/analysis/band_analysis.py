@@ -20,10 +20,17 @@ __all__ = ('fit_bands', 'fit_for_effective_mass',)
 
 def fit_for_effective_mass(data: DataType, fit_kwargs=None):
     """
+    Performs an effective mass fit by first fitting for Lorentzian lineshapes and then fitting a quadratic
+    model to the result. This is an alternative to global effective mass fitting.
+
+    In the case that data is provided in anglespace, the Lorentzian fits are performed in anglespace
+    before being converted to momentum where the effective mass is extracted.
+
     We should probably include uncertainties here.
 
     :param data:
-    :param fit_kwargs:
+    :param fit_kwargs: Passthrough for arguments to `broadcast_model`,
+    used internally to obtain the Lorentzian peak locations
     :return:
     """
     if fit_kwargs is None:
