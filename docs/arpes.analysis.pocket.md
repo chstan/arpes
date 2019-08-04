@@ -19,6 +19,21 @@ Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
 kf\_method=None, select\_radius=None, sel=None,
 method\_kwargs=None,**kwargs)\*\*
 
+> Collects EDCs around a pocket. This consists first in identifying the
+> momenta around the pocket, and then integrating small windows around
+> each of these points.
+> 
+>   - Parameters
+>     
+>       - **data** –
+>       - **kf\_method** –
+>       - **select\_radius** –
+>       - **sel** –
+>       - **method\_kwargs** –
+>       - **kwargs** –
+> 
+>   - Returns
+
 **arpes.analysis.pocket.radial\_edcs\_along\_pocket(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
 angle, inner\_radius=0, outer\_radius=5, n\_points=None,

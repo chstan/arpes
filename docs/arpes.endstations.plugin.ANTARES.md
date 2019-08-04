@@ -16,7 +16,7 @@
 > 
 > `PRINCIPAL_NAME = 'ANTARES'`
 > 
-> `RENAME_KEYS = {'deflx': 'psi'}`
+> `RENAME_KEYS = {'DeflX': 'psi', 'Le ... 'psi', 'energy': 'hv'}`
 > 
 > **get\_coords(group, scan\_name, shape)**
 > 
@@ -25,6 +25,9 @@
 > 
 > **load\_top\_level\_scan(group, scan\_desc: dict = None,
 > spectrum\_index=None)**
+> 
+> **postprocess\_final(data: xarray.core.dataset.Dataset, scan\_desc:
+> dict = None)**
 > 
 > **read\_scan\_data(group)**
 > 

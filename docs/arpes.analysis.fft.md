@@ -1,5 +1,9 @@
 # arpes.analysis.fft module
 
+This module contains monkey-patched versions of functions from xrft
+until improvements are made upstream. We don’t generally use this module
+too much anyway, and it is not a default import.
+
 **arpes.analysis.fft.fft\_filter(data: xarray.core.dataarray.DataArray,
 stops)**
 

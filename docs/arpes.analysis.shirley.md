@@ -34,3 +34,7 @@ eps=1e-07, max\_iters=50, n\_samples=5)**
 **arpes.analysis.shirley.remove\_shirley\_background(xps:
 Union\[xarray.core.dataarray.DataArray,
 xarray.core.dataset.Dataset\],**kwargs)\*\*
+
+> Calculates and removes a Shirley background from a spectrum. Only the
+> background corrected spectrum is retrieved. :param xps: :param kwargs:
+> :return:

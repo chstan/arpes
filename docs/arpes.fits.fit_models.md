@@ -6,6 +6,25 @@ name=None,**kws)\*\*
 
 > Bases: `lmfit.model.Model`
 > 
+> A mixin providing curve fitting for xarray.DataArray instances.
+> 
+> This amounts mostly to making *lmfit* coordinate aware, and providing
+> a translation layer between xarray and raw np.ndarray instances.
+> 
+> Subclassing this mixin as well as an lmfit Model class should
+> bootstrap an lmfit Model to one that works transparently on xarray
+> data.
+> 
+> Alternatively, you can use this as a model base in order to build new
+> models.
+> 
+> The core method here is *guess\_fit* which is a convenient utility
+> that performs both a *lmfit.Model.guess*, if available, before
+> populating parameters and performing a curve fit.
+> 
+> \_\_add\_\_ and \_\_mul\_\_ are also implemented, to ensure that the
+> composite model remains an instance of a subclass of this mixin.
+> 
 > `dimension_order = None`
 > 
 > **guess\_fit(data, params=None, weights=None, guess=True, debug=False,

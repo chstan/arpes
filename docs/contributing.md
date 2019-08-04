@@ -57,6 +57,6 @@ and [pandoc](https://pandoc.org/) installed. Then from the directory that contai
 5. As desired publish to docs site by pushing updated documentation
 
 **Note** Sometimes `sphinx-doc` has trouble converting modules to ReStructured Text.
-This typically manifests with a `KeyError` in `docutils`. To get around this temporarily
-delete the generated `.rst` file where the error occurs in the `source` folder. Typically you 
-will only have an issue with a single module.
+This typically manifests with a `KeyError` in `docutils`. This occurs when the docstrings
+do not conform to the standard for ReStructuredText. The most common problem encountered is due to 
+bare hyperlinks, which are incompatible with the *unique* hyperlink format in RST. 

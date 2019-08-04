@@ -14,9 +14,9 @@ total\_broadening=None)**
 >     
 >       - **data** – Input
 >     
->       -   - **clamp** – Maximum value for the gain. By default the
->             value  
->             used is the mean of the spectrum.
+>       -   - **max\_gain** – Maximum value for the gain. By default
+>             the  
+>             value used is the mean of the spectrum.
 >     
 >       -   - **rigid\_shift** – How much to shift the spectrum
 >             chemical  
@@ -29,6 +29,20 @@ total\_broadening=None)**
 
 **arpes.analysis.general.symmetrize\_axis(data, axis\_name,
 flip\_axes=None, shift\_axis=True)**
+
+> Symmetrizes data across an axis. It would be better ultimately to be
+> able to implement an arbitrary symmetry (such as a mirror or
+> rotational symmetry about a line or point) and to symmetrize data by
+> that method.
+> 
+>   - Parameters
+>     
+>       - **data** –
+>       - **axis\_name** –
+>       - **flip\_axes** –
+>       - **shift\_axis** –
+> 
+>   - Returns
 
 **arpes.analysis.general.condense(data:
 xarray.core.dataarray.DataArray)**
@@ -66,3 +80,7 @@ interpolate=False,**kwargs)\*\*
 >   - Returns
 
 **arpes.analysis.general.fit\_fermi\_edge(data, energy\_range=None)**
+
+> Fits a Fermi edge. Not much easier than doing it manually, but this
+> can be useful sometimes inside procedures where you don’t want to
+> reimplement this logic. :param data: :param energy\_range: :return:
