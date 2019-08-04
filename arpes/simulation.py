@@ -289,7 +289,7 @@ class SpectralFunctionMFL(SpectralFunction):
 class SpectralFunctionBSSCO(SpectralFunction):
     """
     Implements the spectral function for BSSCO as reported in PhysRevB.57.R11093 and explored in
-    https://arxiv.org/pdf/1707.02305.pdf
+    `"Collapse of superconductivity in cuprates via ultrafast quenching of phase coherence" <https://arxiv.org/pdf/1707.02305.pdf>`_.
     """
 
     def __init__(self, k=None, omega=None, T=None, delta=None, gamma_s=None, gamma_p=None):

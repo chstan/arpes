@@ -542,10 +542,11 @@ def calculate_aspect_ratio(data: DataType):
 
     return y_extent / x_extent
 
+
 class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
     """
-    modified from https://stackoverflow.com/questions/43258638/ as alternate
-    to the one provided through matplotlib
+    Modified from `this StackOverflow question <https://stackoverflow.com/questions/43258638/>`_
+    as alternate to the one provided through matplotlib
 
     size: length of bar in data units
     extent : height of bar ends in axes units
@@ -761,7 +762,8 @@ class CoincidentLinesPlot():
 
     Only works for straight lines
 
-    Technique from https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit.
+    Technique adapted from `StackOverflow
+    <https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit>`_.
     """
 
     linewidth=3

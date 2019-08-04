@@ -1,6 +1,7 @@
 """
 Helper functions for coordinate transformations. All the functions here
-assume standard polar angles, as given in the guide: https://arpes.netlify.com/#/spectra
+assume standard polar angles, as given in the
+`data model documentation <https://arpes.netlify.com/#/spectra>`_.
 
 
 Functions here must accept constants or numpy arrays as valid inputs,
@@ -15,9 +16,9 @@ Everywhere:
 Kinetic energy -> 'kinetic_energy'
 Binding energy -> 'eV', for convenience (negative below 0)
 Photon energy -> 'hv'
-"""
 
-# pylint: disable=W0613, C0103
+Better facilities should be added for ToFs to do simultaneous (timing, angle) to (binding energy, k-space).
+"""
 
 import collections
 import warnings
@@ -34,9 +35,6 @@ from .kx_ky_conversion import *
 from .kz_conversion import *
 
 __all__ = ['convert_to_kspace', 'slice_along_path']
-
-# TODO Add conversion utilities that work for lower dimensionality, i.e. the ToF
-# TODO Check if conversion utilities work for constant energy cuts
 
 
 def infer_kspace_coordinate_transform(arr: xr.DataArray):
