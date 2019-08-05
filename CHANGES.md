@@ -8,7 +8,7 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
-## 2.1.0 (2019-08-03)
+## 2.1.0 (2019-08-04)
 
 ### New:
 
@@ -18,8 +18,12 @@ features and documentation.
    performed a lot of work in an interactive session.
    Additionally, this means that matplotlib interactive tools should work transparently,
    as the relevant widgets are guaranteed to be kept in memory.
+3. Improved provenance coverage for builtins.
 
 ### Changed:
+
+1. Metadata reworked to a common format accross all endstations. 
+   This is now documented appropriately with the data model. 
 
 ### Fixed:
 
