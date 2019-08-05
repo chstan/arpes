@@ -1,5 +1,6 @@
 import datetime
 import errno
+import json
 import os.path
 import warnings
 
@@ -17,6 +18,7 @@ from collections import Counter
 from matplotlib import colors, colorbar, gridspec
 import matplotlib.pyplot as plt
 
+from arpes import VERSION
 from arpes.config import CONFIG, FIGURE_PATH
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
@@ -576,14 +578,37 @@ class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
                  borderpad=borderpad, child=self.vpac, prop=prop, frameon=frameon)
 
 
-def savefig(desired_path, dpi=400, **kwargs):
+def savefig(desired_path, dpi=400, data=None, **kwargs):
     full_path = path_for_plot(desired_path)
+
+    if data is not None:
+        assert(isinstance(data, (list, tuple, set,)))
+
+        def extract(for_data):
+            try:
+                return for_data.attrs.get('provenance', {})
+            except Exception:
+                return {}
+
+        provenance_context = {
+            'VERSION': VERSION,
+            'time': datetime.datetime.now().isoformat(),
+            'name': 'savefig',
+            'data': [extract(d) for d in data],
+        }
+        provenance_path = full_path + '.provenance.json'
+        with open(provenance_path, 'w') as f:
+            json.dump(provenance_context, f, indent=2)
+
     plt.savefig(full_path, dpi=dpi, **kwargs)
 
 
 def path_for_plot(desired_path):
     workspace = CONFIG['WORKSPACE']
-    assert(workspace is not None)
+
+    if workspace is None:
+        warnings.warn('Saving locally, no workspace found.')
+        return os.path.join(os.getcwd(), desired_path)
 
     if isinstance(workspace, dict):
         workspace = workspace['name']
