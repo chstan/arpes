@@ -5,6 +5,8 @@ import numpy as np
 
 import xarray as xr
 
+from arpes.provenance import update_provenance
+
 __all__ = ('replace_coords', 'disambiguate_coordinates',)
 
 
@@ -38,6 +40,7 @@ def disambiguate_coordinates(datasets, possibly_clashing_coordinates):
     return after_deconflict
 
 
+@update_provenance('Replace coordinates')
 def replace_coords(arr: xr.DataArray, new_coords, mapping):
     coords = dict(copy.deepcopy(arr.coords))
     dims = list(copy.deepcopy(arr.dims))

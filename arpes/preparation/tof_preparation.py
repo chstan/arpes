@@ -3,11 +3,13 @@ import math
 import numpy as np
 import xarray as xr
 
+from arpes.provenance import update_provenance
 from .axis_preparation import transform_dataarray_axis
 
 __all__ = ['build_KE_coords_to_time_pixel_coords', 'build_KE_coords_to_time_coords', 'process_DLD', 'process_SToF',]
 
 
+@update_provenance('Convert ToF data from timing signal to kinetic energy')
 def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
     """
     Convert the ToF timing information into an energy histogram
@@ -145,6 +147,7 @@ def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
     return KE_coords_to_time_coords
 
 
+@update_provenance('Convert ToF data from timing signal to kinetic energy ALT')
 def convert_SToF_to_energy(dataset: xr.Dataset):
     """
     Achieves the same computation as timeProcessX and t2energyProcessX in LoadTOF_3.51.ipf
@@ -167,6 +170,7 @@ def convert_SToF_to_energy(dataset: xr.Dataset):
     return dataset
 
 
+@update_provenance('Preliminary data processing Spin-ToF')
 def process_SToF(dataset: xr.Dataset):
     """
     This isn't the best unit conversion function because it doesn't properly
@@ -200,6 +204,7 @@ def process_SToF(dataset: xr.Dataset):
     return dataset
 
 
+@update_provenance('Preliminary data processing prototype DLD')
 def process_DLD(dataset: xr.Dataset):
     e_min = 1
     ke_axis = np.linspace(e_min, dataset.attrs['E_max'], (dataset.attrs['E_max'] - e_min) / dataset.attrs['dE'])

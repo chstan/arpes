@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 
 from arpes.fits import QuadraticModel, GStepBModel, LinearModel, broadcast_model
-from arpes.provenance import provenance
+from arpes.provenance import provenance, update_provenance
 from arpes.typing import DataType
 from arpes.utilities.math import shift_by
 from arpes.utilities import normalize_to_spectrum
@@ -21,11 +21,13 @@ exclude_hemisphere_axes = _exclude_from_set({'phi', 'eV'})
 exclude_hv_axes = _exclude_from_set({'hv', 'eV'})
 
 
-__all__ = ['install_fermi_edge_reference', 'build_quadratic_fermi_edge_correction',
-           'build_photon_energy_fermi_edge_correction', 'apply_photon_energy_fermi_edge_correction',
-           'apply_quadratic_fermi_edge_correction', 'apply_copper_fermi_edge_correction',
-           'apply_direct_copper_fermi_edge_correction', 'build_direct_fermi_edge_correction',
-           'apply_direct_fermi_edge_correction', 'find_e_fermi_linear_dos',]
+__all__ = (
+    'build_quadratic_fermi_edge_correction',
+    'build_photon_energy_fermi_edge_correction', 'apply_photon_energy_fermi_edge_correction',
+    'apply_quadratic_fermi_edge_correction', 'apply_copper_fermi_edge_correction',
+    'apply_direct_copper_fermi_edge_correction', 'build_direct_fermi_edge_correction',
+    'apply_direct_fermi_edge_correction', 'find_e_fermi_linear_dos',
+)
 
 
 def find_e_fermi_linear_dos(edc, guess=None, plot=False, ax=None):
@@ -58,10 +60,7 @@ def find_e_fermi_linear_dos(edc, guess=None, plot=False, ax=None):
     return chemical_potential
 
 
-def install_fermi_edge_reference(arr: xr.DataArray):
-    # TODO add method to install and reference corrections by looking at dataset metadata
-    return build_quadratic_fermi_edge_correction(arr, plot=True)
-
+@update_provenance('Apply direct Fermi edge correction from metal reference')
 def apply_direct_copper_fermi_edge_correction(arr: DataType, copper_ref: DataType, *args, **kwargs):
     """
     Applies a *direct* fermi edge correction.
@@ -77,6 +76,7 @@ def apply_direct_copper_fermi_edge_correction(arr: DataType, copper_ref: DataTyp
     shift = np.interp(arr.coords['phi'].values, direct_corr.coords['phi'].values,
                       direct_corr.values)
     return apply_direct_fermi_edge_correction(arr, shift)
+
 
 def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args, **kwargs):
     if correction is None:
@@ -105,6 +105,8 @@ def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args
 
     return corrected_arr
 
+
+@update_provenance('Build direct Fermi edge correction')
 def build_direct_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, energy_range=None, plot=False,
                                        along='phi'):
     """
@@ -139,6 +141,7 @@ def build_direct_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, energ
     return corrections
 
 
+@update_provenance('Apply quadratic Fermi edge correction from metal reference')
 def apply_copper_fermi_edge_correction(arr: DataType, copper_ref: DataType, *args, **kwargs):
     # this maybe isn't best because we don't correct anything other than the spectrum,
     # but that's the only thing with an energy axis in ARPES datasets so whatever
@@ -175,6 +178,7 @@ def build_quadratic_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, eV
     return quadratic_corr
 
 
+@update_provenance('Build photon energy Fermi edge correction')
 def build_photon_energy_fermi_edge_correction(arr: xr.DataArray, plot=False, energy_window=0.2):
     edge_fit = broadcast_model(GStepBModel, arr.sum(exclude_hv_axes(arr.dims)).sel(
         eV=slice(-energy_window, energy_window)), 'hv')

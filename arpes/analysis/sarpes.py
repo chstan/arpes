@@ -1,6 +1,7 @@
 import xarray as xr
 
 from arpes.analysis import savitzky_golay
+from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_dataset
 from arpes.utilities.math import polarization
@@ -8,6 +9,7 @@ from arpes.utilities.math import polarization
 __all__ = ('to_intensity_polarization', 'to_up_down', 'normalize_sarpes_photocurrent', 'sarpes_smooth')
 
 
+@update_provenance('Smooth SARPES data')
 def sarpes_smooth(data: xr.Dataset, *args, **kwargs):
     """
     Smooths the up and down channels.
@@ -21,6 +23,7 @@ def sarpes_smooth(data: xr.Dataset, *args, **kwargs):
     return data.copy(deep=True).assign(up=up, down=down)
 
 
+@update_provenance('Normalize SARPES by photocurrent')
 def normalize_sarpes_photocurrent(data: DataType):
     """
     Normalizes the down channel so that it matches the up channel in terms of mean photocurrent. Destroys the integrity
@@ -35,6 +38,7 @@ def normalize_sarpes_photocurrent(data: DataType):
     return copied
 
 
+@update_provenance('Convert polarization data to up-down spin channels')
 def to_up_down(data: DataType):
     """
     Converts from [intensity, polarization] representation to [up, down] representation.
@@ -49,6 +53,7 @@ def to_up_down(data: DataType):
     })
 
 
+@update_provenance('Convert up-down spin channels to polarization')
 def to_intensity_polarization(data: DataType):
     """
     Converts from [up, down] representation (the spin projection) to

@@ -80,7 +80,7 @@ def normalize_by_fermi_distribution(
     return data / distrib_arr
 
 
-@update_provenance('Symmetrize axis')
+@update_provenance('Symmetrize about axis')
 def symmetrize_axis(data, axis_name, flip_axes=None, shift_axis=True):
     """
     Symmetrizes data across an axis. It would be better ultimately to be able

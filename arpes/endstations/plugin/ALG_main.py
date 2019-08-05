@@ -12,6 +12,11 @@ class ALGMainChamber(HemisphericalEndstation, FITSEndstation):
     PRINCIPAL_NAME = 'ALG-Main'
     ALIASES = ['MC', 'ALG-Main', 'ALG-MC', 'ALG-Hemisphere', 'ALG-Main Chamber',]
 
+    ATTR_TRANSFORMS = {
+        'START_T': lambda l: {'time': ' '.join(l.split(' ')[1:]).lower(),
+                              'date': l.split(' ')[0]},
+    }
+
     RENAME_KEYS = {
         'Phi': 'chi',
         'Beta': 'beta',
@@ -29,6 +34,23 @@ class ALGMainChamber(HemisphericalEndstation, FITSEndstation):
         'LMOTOR4': 'beta',
         'LMOTOR5': 'chi',
         'LMOTOR6': 'delay',
+
+        'SFLNM0': 'lens_mode_name',
+        'SFFR_0': 'frames_per_slice',
+
+        'SFBA_0': 'phi_prebinning',
+        'SFBE0': 'eV_prebinning',
+    }
+
+    MERGE_ATTRS = {
+        'analyzer': 'Specs PHOIBOS 150',
+        'analyzer_name': 'Specs PHOIBOS 150',
+        'parallel_deflectors': False,
+        'perpendicular_deflectors': False,
+        'analyzer_radius': 150,
+        'analyzer_type': 'hemispherical',
+        'mcp_voltage': None,
+        'probe_linewidth': 0.015,
     }
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):

@@ -22,6 +22,7 @@ from arpes.typing import DataType
 from tqdm import tqdm_notebook
 
 from arpes.utilities import normalize_to_spectrum
+from arpes.provenance import update_provenance
 
 __all__ = ('broadcast_model',)
 
@@ -168,6 +169,7 @@ def unwrap_params(params, iter_coordinate):
     return {k: transform_or_walk(v) for k, v in params.items()}
 
 
+@update_provenance('Broadcast a curve fit along several dimensions')
 def broadcast_model(model_cls: typing.Union[type, TypeIterable],
                     data: DataType, broadcast_dims, params=None, progress=True, dataset=True,
                     weights=None, safe=False, prefixes=None):

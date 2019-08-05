@@ -14,6 +14,7 @@ from arpes.typing import DataType
 from arpes.constants import HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ
 from arpes.fits import broadcast_model, LorentzianModel, AffineBackgroundModel, QuadraticModel
 from arpes.utilities.conversion.forward import convert_coordinates_to_kspace_forward
+from arpes.provenance import update_provenance
 
 __all__ = ('fit_bands', 'fit_for_effective_mass',)
 
@@ -175,6 +176,7 @@ def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_w
     return bands
 
 
+@update_provenance('Fit bands from pattern')
 def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
                         fit_direction=None, avoid_crossings=None,
                         stray=None, background=True, preferred_k_direction=None,

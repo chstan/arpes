@@ -2,10 +2,12 @@ import numpy as np
 
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
+from arpes.provenance import update_provenance
 
 __all__ = ('remove_incoherent_background',)
 
 
+@update_provenance('Remove incoherent background from above Fermi level')
 def remove_incoherent_background(data: DataType, set_zero=True):
     """
     Sometimes spectra are contaminated by data above the Fermi level for

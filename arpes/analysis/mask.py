@@ -5,6 +5,7 @@ import xarray as xr
 import numpy as np
 
 from arpes.utilities import normalize_to_spectrum
+from arpes.provenance import update_provenance
 
 __all__ = ('polys_to_mask', 'apply_mask', 'raw_poly_to_mask',
            'apply_mask_to_coords',)
@@ -85,6 +86,7 @@ def apply_mask_to_coords(data: xr.Dataset, mask, dims, invert=True):
     return mask
 
 
+@update_provenance('Apply boolean mask to data')
 def apply_mask(data: DataType, mask, replace=np.nan, radius=None, invert=False):
     """
     Applies a logical mask, i.e. one given in terms of polygons, to a specific

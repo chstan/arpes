@@ -27,6 +27,7 @@ import warnings
 import xarray as xr
 
 import arpes.config
+from arpes import VERSION
 import typing
 from arpes.typing import *
 
@@ -61,6 +62,7 @@ def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file
         'file': file,
         'parents_provenance': 'filesystem',
         'time': datetime.datetime.now().isoformat(),
+        'version': VERSION,
     }
 
 
@@ -100,7 +102,8 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
                     provenance_fn(result, all_parents, {
                         'what': what,
                         'by': f.__name__,
-                        'time': datetime.datetime.now().isoformat()
+                        'time': datetime.datetime.now().isoformat(),
+                        'version': VERSION,
                     }, keep_parent_ref)
 
             return result
@@ -138,7 +141,7 @@ def save_plot_provenance(plot_fn):
                                'practice of placing plots into designated workspaces.').format(plot_fn.__name__))
 
             provenance_context = {
-                'VERSION': arpes.config.CONFIG['VERSION'],
+                'VERSION': VERSION,
                 'time': datetime.datetime.now().isoformat(),
                 'name': plot_fn.__name__,
                 'args': [arg.attrs.get('provenance', {}) for arg in args
@@ -185,6 +188,7 @@ def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typin
         'parent_id': parent_id,
         'parents_provanence': parent_arr.attrs.get('provenance'),
         'time': datetime.datetime.now().isoformat(),
+        'version': VERSION,
     }
 
     if keep_parent_ref:

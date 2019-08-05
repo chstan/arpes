@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 
 from arpes.typing import DataType
-from arpes.provenance import provenance
+from arpes.provenance import provenance, update_provenance
 from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('curvature', 'dn_along_axis', 'd2_along_axis', 'd1_along_axis', 'minimum_gradient', 'vector_diff')
@@ -47,12 +47,15 @@ def vector_diff(arr, delta, n=1):
     return arr[slice1] - arr[slice2]
 
 
+@update_provenance('Minimum Gradient')
 def minimum_gradient(data: DataType,delta=1):
     arr = normalize_to_spectrum(data)
     new = arr / gradient_modulus(arr,delta=delta)
     new.values[np.isnan(new.values)] = 0
     return new
 
+
+@update_provenance('Gradient Modulus')
 def gradient_modulus(data: DataType, delta=1):
     spectrum = normalize_to_spectrum(data)
     values = spectrum.values

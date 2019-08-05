@@ -19,10 +19,290 @@ def pytest_generate_tests(metafunc):
     metafunc.parametrize(argnames, argvalues, ids=idlist, scope='class')
 
 
+class TestMetadata(object):
+    """
+    Tests metadata normalization conventions.
+    """
+    data = None
+
+    scenarios = [
+        # Lanzara Group "Main Chamber"
+        ('main_chamber_load_cut', {
+            'dataset': 'basic',
+            'id': 0,
+            'expected': {
+                'scan_info': {
+                    'time': '1:45:34 pm',
+                    'date': '2/3/2016',
+                    'type': None,
+                    'spectrum_type': 'cut',
+                    'experimenter': None,
+                    'sample': None,
+                },
+                'experiment_info': {
+                    'temperature': None,
+                    'temperature_cryotip': None,
+                    'pressure': None,
+                    'polarization': (None, None),
+                    'photon_flux': None,
+                    'photocurrent': None,
+                    'probe': None,
+                    'probe_detail': None,
+                    'analyzer': 'Specs PHOIBOS 150',
+                    'analyzer_detail': {
+                        'type': 'hemispherical',
+                        'radius': 150,
+                        'name': 'Specs PHOIBOS 150',
+                        'parallel_deflectors': False,
+                        'perpendicular_deflectors': False,
+                    },
+                },
+                'analyzer_info': {
+                    'lens_mode': None,
+                    'lens_mode_name': 'WideAngleMode:40V',
+                    'acquisition_mode': None,
+                    'pass_energy': None,
+                    'slit_shape': None,
+                    'slit_width': None,
+                    'slit_number': None,
+                    'lens_table': None,
+                    'analyzer_type': 'hemispherical',
+                    'mcp_voltage': None,
+                },
+                'daq_info': {
+                    'daq_type': None,
+                    'region': None,
+                    'region_name': None,
+                    'prebinning': {'eV': 2, 'phi': 1},
+                    'trapezoidal_correction_strategy': None,
+                    'dither_settings': None,
+                    'sweep_settings': {
+                        'low_energy': None,
+                        'high_energy': None,
+                        'n_sweeps': None,
+                        'step': None,
+                    },
+                    'frames_per_slice': 500,
+                    'frame_duration': None,
+                    'center_energy': None,
+                },
+                'laser_info': {
+                    'pump_wavelength': None,
+                    'pump_energy': None,
+                    'pump_fluence': None,
+                    'pump_pulse_energy': None,
+                    'pump_spot_size': (None, None),
+                    'pump_profile': None,
+                    'pump_linewidth': None,
+                    'pump_temporal_width': None,
+                    'pump_polarization': (None, None),
+
+                    'probe_wavelength': None,
+                    'probe_energy': 5.93,
+                    'probe_fluence': None,
+                    'probe_pulse_energy': None,
+                    'probe_spot_size': (None, None),
+                    'probe_profile': None,
+                    'probe_linewidth': 0.015,
+                    'probe_temporal_width': None,
+                    'probe_polarization': (None, None),
+
+                    'repetition_rate': None,
+                },
+                'sample_info': {
+                    'id': None,
+                    'name': None,
+                    'source': None,
+                    'reflectivity': None,
+                }
+            }
+        }),
+        ('merlin_load_cut', {
+            'dataset': 'basic',
+            'id': 8,
+            'expected': {
+                'scan_info': {
+                    'time': '09:52:10 AM',
+                    'date': '07/05/2017',
+                    'type': None,
+                    'spectrum_type': 'cut',
+                    'experimenter': 'Jonathan',
+                    'sample': 'LaSb_3',
+                },
+                'experiment_info': {
+                    'temperature': 21.75,
+                    'temperature_cryotip': 21.43,
+                    'pressure': 3.11e-11,
+                    'polarization': (0,0),
+                    'photon_flux': 2.652,
+                    'photocurrent': None,
+                    'probe': None,
+                    'probe_detail': None,
+                    'analyzer': 'R8000',
+                    'analyzer_detail': {
+                        'name': 'Scienta R8000',
+                        'parallel_deflectors': False,
+                        'perpendicular_deflectors': False,
+                        'radius': None,
+                        'type': 'hemispherical',
+                    },
+                },
+                'analyzer_info': {
+                    'lens_mode': None,
+                    'lens_mode_name': 'Angular30',
+                    'acquisition_mode': 'swept',
+                    'pass_energy': 20,
+                    'slit_shape': 'curved',
+                    'slit_width': 0.5,
+                    'slit_number': 7,
+                    'lens_table': None,
+                    'analyzer_type': 'hemispherical',
+                    'mcp_voltage': 1550,
+                },
+                'beamline_info': {
+                    'hv': 90,
+                    'beam_current': 500.761,
+                    'linewidth': None,
+                    'photon_polarization': (0, 0),
+                    'entrance_slit': 50.1,
+                    'exit_slit': 50.1,
+                    'undulator_info': {
+                        'harmonic': 2,
+                        'type': 'elliptically_polarized_undulator',
+                        'gap': 41.720,
+                        'z': 0,
+                        'polarization': 0,
+                    },
+                    'repetition_rate': 5e8,
+                    'monochromator_info': {
+                        'grating_lines_per_mm': None,
+                    }
+                },
+                'daq_info': {
+                    'daq_type': None,
+                    'region': 'Swept_VB4',
+                    'region_name': 'Swept_VB4',
+                    'prebinning': {},
+                    'trapezoidal_correction_strategy': None,
+                    'dither_settings': None,
+                    'sweep_settings': {
+                        'n_sweeps': 4,
+                        'step': 0.002,
+                        'low_energy': 88.849,
+                        'high_energy': 90.199,
+                    },
+                    'frames_per_slice': None,
+                    'frame_duration': None,
+                    'center_energy': 87.5,
+                },
+                'sample_info': {
+                    'id': None,
+                    'name': 'LaSb_3',
+                    'source': None,
+                    'reflectivity': None,
+                }
+            }
+        }),
+        ('maestro_load_cut', {
+            'dataset': 'basic',
+            'id': 12,
+            'expected': {
+                'scan_info': {
+                    'time': '7:08:42 pm',
+                    'date': '10/11/2018',
+                    'type': None,
+                    'spectrum_type': 'spem',
+                    'experimenter': None,
+                    'sample': None,
+                },
+                'experiment_info': {
+                    'temperature': None,
+                    'temperature_cryotip': None,
+                    'pressure': None,
+                    'polarization': (None, None),
+                    'photon_flux': None,
+                    'photocurrent': None,
+                    'probe': None,
+                    'probe_detail': None,
+                    'analyzer': 'R4000',
+                    'analyzer_detail': {
+                        'type': 'hemispherical',
+                        'radius': None,
+                        'name': 'Scienta R4000',
+                        'parallel_deflectors': False,
+                        'perpendicular_deflectors': True,
+                    },
+                },
+                'analyzer_info': {
+                    'lens_mode': None,
+                    'lens_mode_name': 'Angular30',
+                    'acquisition_mode': None,
+                    'pass_energy': 50,
+                    'slit_shape': 'curved',
+                    'slit_width': 0.5,
+                    'slit_number': 7,
+                    'lens_table': None,
+                    'analyzer_type': 'hemispherical',
+                    'mcp_voltage': None,
+                },
+                'beamline_info': {
+                    'hv': pytest.approx(125, 1e-2),
+                    'linewidth': None,
+                    'beam_current': pytest.approx(500.44, 1e-2),
+                    'photon_polarization': (None, None),
+                    'repetition_rate': 5e8,
+                    'entrance_slit': None,
+                    'exit_slit': None,
+                    'undulator_info': {
+                        'harmonic': 1,
+                        'type': 'elliptically_polarized_undulator',
+                        'gap': None,
+                        'z': None,
+                        'polarization': None,
+                    },
+                    'monochromator_info': {
+                        'grating_lines_per_mm': 600,
+                    }
+                },
+                'daq_info': {
+                    'daq_type': None,
+                    'region': None,
+                    'region_name': None,
+                    'prebinning': {'eV': 2,},
+                    'trapezoidal_correction_strategy': None,
+                    'dither_settings': None,
+                    'sweep_settings': {
+                        'low_energy': None,
+                        'high_energy': None,
+                        'n_sweeps': None,
+                        'step': None,
+                    },
+                    'frames_per_slice': 10,
+                    'frame_duration': None,
+                    'center_energy': 33.2,
+                },
+                'sample_info': {
+                    'id': None,
+                    'name': None,
+                    'source': None,
+                    'reflectivity': None,
+                }
+            }
+        }),
+    ]
+
+    def test_load_file_and_basic_attributes(self, sandbox_configuration, dataset, id, expected):
+        data = sandbox_configuration.load(dataset, id)
+        assert isinstance(data, xr.Dataset)
+
+        for k, v in expected.items():
+            metadata = getattr(data.S, k)
+            assert k and (metadata == expected[k])
+
+
 class TestBasicDataLoading(object):
     """
-    Tests procedures/plugins for loading basic data. This is a bit gross because of how we are
-    parameterizing the test, ideally we would pass kwargs and then we can hide what we don't need.
+    Tests procedures/plugins for loading basic data.
     """
 
     data = None

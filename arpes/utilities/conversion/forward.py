@@ -4,36 +4,12 @@ import xarray as xr
 import numpy as np
 
 from arpes.utilities.conversion.bounds_calculations import euler_to_kx, euler_to_ky, euler_to_kz
+from arpes.provenance import update_provenance
 
 __all__ = ('convert_coordinates_to_kspace_forward',)
 
 
-def fill_coords(arr: xr.DataArray):
-    """
-    Ensures all standard kspace coordinates are represented
-    :param arr:
-    :return:
-    """
-
-    is_anglespace = any(d in arr.dims for d in ['phi', 'theta', 'beta', 'hv'])
-
-    new_coordinates = {}
-
-    if is_anglespace:
-        full_coordinates = arr.S.full_coords
-        for k, v in full_coordinates.items():
-            if k not in arr.coords:
-                arr.coords[k] = v
-    else:
-        pass
-
-    if 'eV' not in arr.coords:
-        warnings.warn('Assuming data is taken at the chemical potential. '
-                      'Setting missing binding energy coordinate to 0.')
-
-        arr.coords['eV'] = 0
-
-
+@update_provenance('Forward convert coordinates to momentum')
 def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
     """
     Forward converts all the individual coordinates of the data array
@@ -72,8 +48,6 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
 
     full_old_dims = old_dims + list(kept.keys())
     projection_vectors = np.ndarray(shape=tuple(len(arr.coords[d]) for d in full_old_dims), dtype=object)
-
-    fill_coords(arr)
 
     # these are a little special, depending on the scan type we might not have a phi coordinate
     # that aspect of this is broken for now, but we need not worry

@@ -14,8 +14,11 @@ from arpes.fits.fit_models import AffineBroadenedFD
 import xarray as xr
 import warnings
 
+from arpes.provenance import update_provenance
+
 __all__ = ('normalize_by_fermi_dirac', 'determine_broadened_fermi_distribution',
            'symmetrize')
+
 
 def determine_broadened_fermi_distribution(reference_data: DataType, fixed_temperature=True):
     """
@@ -51,6 +54,7 @@ def determine_broadened_fermi_distribution(reference_data: DataType, fixed_tempe
     return AffineBroadenedFD().guess_fit(reference_data.sum(sum_dims), params=params)
 
 
+@update_provenance('Normalize By Fermi Dirac')
 def normalize_by_fermi_dirac(data: DataType, reference_data: DataType=None, plot=False,
                              broadening=None,
                              temperature_axis=None,
@@ -165,6 +169,7 @@ def _shift_energy_interpolate(data: DataType,shift=None):
     return new_data
 
 
+@update_provenance('Symmetrize')
 def symmetrize(data: DataType, subpixel=False, full_spectrum=False):
     """
     Symmetrizes data across the chemical potential. This provides a crude tool by which

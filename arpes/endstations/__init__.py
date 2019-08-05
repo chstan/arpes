@@ -55,6 +55,8 @@ class EndstationBase(object):
     """
     ALIASES = []
     PRINCIPAL_NAME = None
+    ATTR_TRANSFORMS = {}
+    MERGE_ATTRS = {}
 
     # adjust as needed
     CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta', 'theta']
@@ -147,6 +149,20 @@ class EndstationBase(object):
                 data.spectrum.attrs['spectrum_type'] = spectrum_type
 
         ls = [data] + data.S.spectra
+        for l in ls:
+            for k, key_fn in self.ATTR_TRANSFORMS.items():
+                if k in l.attrs:
+                    transformed = key_fn(l.attrs[k])
+                    if isinstance(transformed, dict):
+                        l.attrs.update(transformed)
+                    else:
+                        l.attrs[k] = transformed
+
+        for l in ls:
+            for k, v in self.MERGE_ATTRS.items():
+                if k not in l.attrs:
+                    l.attrs[k] = v
+
         for l in ls:
             for c in ['x', 'y', 'z', 'theta', 'beta', 'chi', 'hv', 'alpha', 'psi']:
                 if c not in l.coords:

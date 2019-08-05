@@ -1,6 +1,8 @@
 from typing import List
 
 from functools import wraps
+
+from arpes.provenance import provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
@@ -74,6 +76,14 @@ def decomposition_along(data: DataType, axes: List[str], decomposition_cls, corr
 
     if stacked:
         into = into.unstack('fit_axis')
+
+    provenance(into, data, {
+        'what': 'sklearn decomposition',
+        'by': 'decomposition_along',
+        'axes': axes,
+        'correlation': False,
+        'decomposition_cls': decomposition_cls.__name__,
+    })
 
     return into, decomp
 
