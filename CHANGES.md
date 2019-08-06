@@ -8,7 +8,7 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
-## 2.1.0 (2019-08-04)
+## 2.1.0 (2019-08-06)
 
 ### New:
 
