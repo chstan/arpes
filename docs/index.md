@@ -1,5 +1,10 @@
 # Welcome to python-arpes’s documentation\!
 
+The core IO facilities supported by PyARPES. The most important here are
+the data loading functions (simpe\_load, fallback\_load,
+load\_without\_dataset, load\_example\_data), pickling utilities, data
+stitching, and dataset manipulation functions.
+
 **arpes.io.direct\_load(fragment, df: pandas.core.frame.DataFrame =
 None, workspace=None, file=None, basic\_prep=True,**kwargs)\*\*
 

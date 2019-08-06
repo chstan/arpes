@@ -1,8 +1,5 @@
 # arpes.corrections.fermi\_edge\_corrections module
 
-**arpes.corrections.fermi\_edge\_corrections.install\_fermi\_edge\_reference(arr:
-xarray.core.dataarray.DataArray)**
-
 **arpes.corrections.fermi\_edge\_corrections.build\_quadratic\_fermi\_edge\_correction(arr:
 xarray.core.dataarray.DataArray, fit\_limit=0.001, eV\_slice=None,
 plot=False) -\>

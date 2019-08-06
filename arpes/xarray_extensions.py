@@ -1,3 +1,15 @@
+"""
+This is another core part of PyARPES. It provides a lot of extensions to
+what comes out of the box in xarray. Some of these are useful generics,
+generally on the .T extension, others collect and manipulate metadata,
+interface with plotting routines, provide functional programming utilities,
+etc.
+
+If `f` is an ARPES spectrum, then `f.S` should provide a nice representation of your data
+in a Jupyter cell. This is a complement to the text based approach that merely printing `f`
+offers.
+"""
+
 import collections
 import itertools
 import copy
@@ -19,7 +31,6 @@ from arpes.typing import DataType
 from scipy import ndimage as ndi
 
 import arpes.constants
-import arpes.materials
 from arpes.models.band import MultifitBand
 from arpes.io import load_dataset_attrs
 import arpes.plotting as plotting
@@ -39,6 +50,17 @@ def _iter_groups(grouped):
                 yield k, li
         except TypeError:
             yield k, l
+
+
+def unwrap_xarray_item(item):
+    try:
+        return item.item()
+    except Exception:
+        return item
+
+
+def unwrap_xarray_dict(d):
+    return {k: unwrap_xarray_item(v) for k, v in d.items()}
 
 
 class ARPESAccessorBase(object):
@@ -125,17 +147,7 @@ class ARPESAccessorBase(object):
 
     @property
     def is_slit_vertical(self):
-        spectrometer = self.spectrometer
-        if spectrometer is not None:
-            try:
-                return spectrometer['is_slit_vertical']
-            except KeyError:
-                pass
-
-        if 'is_slit_vertical' in self._obj.attrs:
-            return self._obj.attrs['is_slit_vertical']
-
-        raise AnalysisError('Unknown spectrometer configuration.')
+        return np.abs(self.lookup_offset_coord('alpha') - np.pi / 2) < (np.pi / 180)
 
     @property
     def endstation(self):
@@ -165,7 +177,6 @@ class ARPESAccessorBase(object):
 
         return None
 
-
     def fetch_ref_attrs(self):
         if 'ref_attrs' in self._obj.attrs:
             return self._obj.attrs
@@ -178,6 +189,10 @@ class ARPESAccessorBase(object):
             return load_dataset_attrs(ref_id)
         except Exception:
             return {}
+
+    @property
+    def scan_type(self):
+        return None
 
     @property
     def spectrum_type(self):
@@ -653,6 +668,10 @@ class ARPESAccessorBase(object):
 
         return None
 
+    def apply_offsets(self, offsets):
+        for k, v in offsets.items():
+            self._obj.attrs['{}_offset'.format(k)] = v
+
     def lookup_offset_coord(self, name):
         offset = self.lookup_coord(name) - self._lookup_offset(name)
         try:
@@ -698,29 +717,25 @@ class ARPESAccessorBase(object):
         return self._lookup_offset('phi')
 
     @property
-    def material(self):
-        try:
-            return arpes.materials.material_by_formula[self._obj.attrs['sample']]
-        except:
-            return None
-
-    @property
     def work_function(self):
+        """
+        We should try to improve this.
+        :return:
+        """
+
         if 'sample_workfunction' in self._obj.attrs:
             return self._obj.attrs['sample_workfunction']
-
-        if self.material:
-            return self.material.get('work_function', 4.32)
 
         return 4.32
 
     @property
     def inner_potential(self):
+        """
+        We should improve this as well.
+        :return:
+        """
         if 'inner_potential' in self._obj.attrs:
             return self._obj.attrs['inner_potential']
-
-        if self.material:
-            return self.material.get('inner_potential', 10)
 
         return 10
 
@@ -1156,6 +1171,177 @@ class ARPESAccessorBase(object):
 
         full_coords.update(self._obj.coords)
         return full_coords
+
+    @property
+    def sample_info(self):
+        return unwrap_xarray_dict({
+            'id': self._obj.attrs.get('sample_id'),
+            'name': self._obj.attrs.get('sample_name'),
+            'source': self._obj.attrs.get('sample_source'),
+            'reflectivity': self._obj.attrs.get('sample_reflectivity'), # TODO improve
+        })
+
+    @property
+    def scan_info(self):
+        return unwrap_xarray_dict({
+            'time': self._obj.attrs.get('time'),
+            'date': self._obj.attrs.get('date'),
+            'type': self.scan_type,
+            'spectrum_type': self.spectrum_type,
+            'experimenter': self._obj.attrs.get('experimenter'),
+            'sample': self._obj.attrs.get('sample_name'),
+        })
+
+    @property
+    def experiment_info(self):
+        return unwrap_xarray_dict({
+            'temperature': self._obj.attrs.get('temperature'),
+            'temperature_cryotip': self._obj.attrs.get('temperature_cryotip'),
+            'pressure': self._obj.attrs.get('pressure'),
+            'polarization': self.probe_polarization,
+            'photon_flux': self._obj.attrs.get('photon_flux'),
+            'photocurrent': self._obj.attrs.get('photocurrent'),
+            'probe': self._obj.attrs.get('probe'),
+            'probe_detail': self._obj.attrs.get('probe_detail'),
+            'analyzer': self._obj.attrs.get('analyzer'),
+            'analyzer_detail': self.analyzer_detail,
+        })
+
+    @property
+    def pump_info(self):
+        return unwrap_xarray_dict({
+            'pump_wavelength': self._obj.attrs.get('pump_wavelength'),
+            'pump_energy': self._obj.attrs.get('pump_energy'),
+            'pump_fluence': self._obj.attrs.get('pump_fluence'),
+            'pump_pulse_energy': self._obj.attrs.get('pump_pulse_energy'),
+            'pump_spot_size': (self._obj.attrs.get('pump_spot_size_x'),
+                               self._obj.attrs.get('pump_spot_size_y')),
+            'pump_profile': self._obj.attrs.get('pump_profile'),
+            'pump_linewidth': self._obj.attrs.get('pump_linewidth'),
+            'pump_temporal_width': self._obj.attrs.get('pump_temporal_width'),
+            'pump_polarization': self.pump_polarization,
+        })
+
+    @property
+    def probe_info(self):
+        return unwrap_xarray_dict({
+            'probe_wavelength': self._obj.attrs.get('probe_wavelength'),
+            'probe_energy': self._obj.coords['hv'],
+            'probe_fluence': self._obj.attrs.get('probe_fluence'),
+            'probe_pulse_energy': self._obj.attrs.get('probe_pulse_energy'),
+            'probe_spot_size': (self._obj.attrs.get('probe_spot_size_x'),
+                               self._obj.attrs.get('probe_spot_size_y')),
+            'probe_profile': self._obj.attrs.get('probe_profile'),
+            'probe_linewidth': self._obj.attrs.get('probe_linewidth'),
+            'probe_temporal_width': self._obj.attrs.get('probe_temporal_width'),
+            'probe_polarization': self.probe_polarization,
+        })
+
+    @property
+    def laser_info(self):
+        return {
+            **self.probe_info,
+            **self.pump_info,
+            'repetition_rate': self._obj.attrs.get('repetition_rate'),
+        }
+
+    @property
+    def analyzer_info(self):
+        return unwrap_xarray_dict({
+            'lens_mode': self._obj.attrs.get('lens_mode'),
+            'lens_mode_name': self._obj.attrs.get('lens_mode_name'),
+            'acquisition_mode': self._obj.attrs.get('acquisition_mode'),
+            'pass_energy': self._obj.attrs.get('pass_energy'),
+            'slit_shape': self._obj.attrs.get('slit_shape'),
+            'slit_width': self._obj.attrs.get('slit_width'),
+            'slit_number': self._obj.attrs.get('slit_number'),
+            'lens_table': self._obj.attrs.get('lens_table'),
+            'analyzer_type': self._obj.attrs.get('analyzer_type'),
+            'mcp_voltage': self._obj.attrs.get('mcp_voltage'),
+        })
+
+    @property
+    def daq_info(self):
+        return unwrap_xarray_dict({
+            'daq_type': self._obj.attrs.get('daq_type'),
+            'region': self._obj.attrs.get('daq_region'),
+            'region_name': self._obj.attrs.get('daq_region_name'),
+            'center_energy': self._obj.attrs.get('daq_center_energy'),
+            'prebinning': self.prebinning,
+            'trapezoidal_correction_strategy': self._obj.attrs.get('trapezoidal_correction_strategy'),
+            'dither_settings': self._obj.attrs.get('dither_settings'),
+            'sweep_settings': self.sweep_settings,
+            'frames_per_slice': self._obj.attrs.get('frames_per_slice'),
+            'frame_duration': self._obj.attrs.get('frame_duration'),
+        })
+
+    @property
+    def beamline_info(self):
+        return unwrap_xarray_dict({
+            'hv': self._obj.coords['hv'],
+            'linewidth': self._obj.attrs.get('probe_linewidth'),
+            'photon_polarization': self.probe_polarization,
+            'undulator_info': self.undulator_info,
+            'repetition_rate': self._obj.attrs.get('repetition_rate'),
+            'beam_current': self._obj.attrs.get('beam_current'),
+            'entrance_slit': self._obj.attrs.get('entrance_slit'),
+            'exit_slit': self._obj.attrs.get('exit_slit'),
+            'monochromator_info': self.monochromator_info,
+        })
+
+    @property
+    def sweep_settings(self):
+        return {
+            'high_energy': self._obj.attrs.get('sweep_high_energy'),
+            'low_energy': self._obj.attrs.get('sweep_low_energy'),
+            'n_sweeps': self._obj.attrs.get('n_sweeps'),
+            'step': self._obj.attrs.get('sweep_step'),
+        }
+
+    @property
+    def probe_polarization(self):
+        return (self._obj.attrs.get('probe_polarization_theta'),
+                self._obj.attrs.get('probe_polarization_alpha'))
+
+    @property
+    def pump_polarization(self):
+        return (self._obj.attrs.get('pump_polarization_theta'),
+                self._obj.attrs.get('pump_polarization_alpha'))
+
+    @property
+    def prebinning(self):
+        prebinning = {}
+        for d in self._obj.indexes:
+            if '{}_prebinning'.format(d) in self._obj.attrs:
+                prebinning[d] = self._obj.attrs['{}_prebinning'.format(d)]
+
+        return prebinning
+
+    @property
+    def monochromator_info(self):
+        return {
+            'grating_lines_per_mm': self._obj.attrs.get('grating_lines_per_mm'),
+        }
+
+    @property
+    def undulator_info(self):
+        return {
+            'gap': self._obj.attrs.get('undulator_gap'),
+            'z': self._obj.attrs.get('undulator_z'),
+            'harmonic': self._obj.attrs.get('undulator_harmonic'),
+            'polarization': self._obj.attrs.get('undulator_polarization'),
+            'type': self._obj.attrs.get('undulator_type'),
+        }
+
+    @property
+    def analyzer_detail(self):
+        return {
+            'name': self._obj.attrs.get('analyzer_name'),
+            'parallel_deflectors': self._obj.attrs.get('parallel_deflectors'),
+            'perpendicular_deflectors': self._obj.attrs.get('perpendicular_deflectors'),
+            'type': self._obj.attrs.get('analyzer_type'),
+            'radius': self._obj.attrs.get('analyzer_radius'),
+        }
 
     @property
     def temp(self):
@@ -2065,21 +2251,3 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
         self._spectrum = None
-
-        # TODO consider how this should work
-        # data_arr_names = self._obj.data_vars.keys()
-        #
-        # spectrum_candidates = ['raw', 'spectrum', 'spec']
-        # if len(data_arr_names) == 1:
-        #     self._spectrum = self._obj.data_vars[data_arr_names[0]]
-        # else:
-        #     for candidate in spectrum_candidates:
-        #         if candidate in data_arr_names:
-        #             self._spectrum = self._obj.data_vars[candidate]
-        #             break
-        #
-        # if self._spectrum is None:
-        #     assert(False and "Dataset appears not to contain a spectrum among options {}".format(data_arr_names))
-
-
-

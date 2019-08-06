@@ -24,6 +24,14 @@ def r8000(slits):
 
 def analyzer_resolution(analyzer_information, slit_width=None, slit_number=None,
                         pass_energy=10):
+    """
+    Estimates analyzer resolution from slit dimensioons pass energy, and analyzer radius.
+    :param analyzer_information:
+    :param slit_width:
+    :param slit_number:
+    :param pass_energy:
+    :return:
+    """
     if slit_width is None:
         slit_width = analyzer_information['slits'][slit_number]
 

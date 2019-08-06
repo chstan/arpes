@@ -1,5 +1,8 @@
 # arpes.load\_pxt module
 
+Implements Igor \<-\> xarray interop, notably loading Igor waves and
+packed experiment files.
+
 **arpes.load\_pxt.read\_single\_pxt(reference\_path:
 Union\[pathlib.Path, str\], byte\_order=None)**
 

@@ -21,14 +21,55 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         'Polar Compens': 'theta', # these are caps-ed because they are dimensions in some cases!
         'BL Energy': 'hv',
         'tilt': 'beta', 'polar': 'theta', 'azimuth': 'chi',
-        'temperature_sensor_a': 'temp_cryotip',
-        'temperature_sensor_b': 'temp',
+        'temperature_sensor_a': 'temperature_cryotip',
+        'temperature_sensor_b': 'temperature',
         'cryostat_temp_a': 'temp_cryotip',
         'cryostat_temp_b': 'temp',
         'bl_energy': 'hv',
         'polar_compens': 'theta',
         'K2200 V':'volts',
-        'pwr_supply_v': 'volts'
+        'pwr_supply_v': 'volts',
+        
+        'mcp': 'mcp_voltage',
+        'slit_plate': 'slit_number',
+        'user': 'experimenter',
+        'sample': 'sample_name',
+        'mesh_current': 'photon_flux',
+        'ring_energy': 'beam_energy',
+        'epu_pol': 'undulator_polarization',
+        'epu_gap': 'undulator_gap',
+        'epu_z': 'undulator_z',
+        'center_energy': 'daq_center_energy',
+
+        'low_energy': 'sweep_low_energy',
+        'high_energy': 'sweep_high_energy',
+        'energy_step': 'sweep_step',
+        'number_of_sweeps': 'n_sweeps',
+    }
+
+    MERGE_ATTRS = {
+        'analyzer': 'R8000',
+        'analyzer_name': 'Scienta R8000',
+        'parallel_deflectors': False,
+        'perpendicular_deflectors': False,
+        'analyzer_radius': None,
+        'analyzer_type': 'hemispherical',
+        'repetition_rate': 5e8,
+        'undulator_harmonic': 2, # TODO
+        'undulator_type': 'elliptically_polarized_undulator',
+    }
+
+    ATTR_TRANSFORMS = {
+        'acquisition_mode': lambda l: l.lower(),
+        'lens_mode': lambda l: {
+            'lens_mode': None,
+            'lens_mode_name': l,
+        },
+        'undulator_polarization': lambda l: int(l),
+        'region_name': lambda l: {
+            'daq_region_name': l,
+            'daq_region': l,
+        }
     }
 
     def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict=None):
@@ -132,6 +173,26 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
         ls = [data] + data.S.spectra
+
+        for l in ls:
+            if 'slit_number' in l.attrs:
+                slit_lookup = {
+                    1: ('straight', 0.1),
+                    7: ('curved', 0.5),
+                }
+                shape, width = slit_lookup.get(l.attrs['slit_number'], (None, None))
+                l.attrs['slit_shape'] = shape
+                l.attrs['slit_width'] = width
+
+            if 'undulator_polarization' in l.attrs:
+                phase_angle_lookup = {
+                    0: (0, 0), # LH
+                    2: (np.pi/2, 0) # LV
+                }
+                polarization_theta, polarization_alpha = phase_angle_lookup[int(l.attrs['undulator_polarization'])]
+                l.attrs['probe_polarization_theta'] = polarization_theta
+                l.attrs['probe_polarization_alpha'] = polarization_alpha
+
         deg_to_rad_coords = {'theta', 'phi', 'beta', 'chi', 'psi'}
         deg_to_rad_attrs = {'theta', 'beta', 'chi', 'psi', 'alpha'}
 

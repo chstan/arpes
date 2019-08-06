@@ -12,11 +12,21 @@ direction='mdc', preferred\_k\_direction=None, step=None)**
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
 fit\_kwargs=None)**
 
+> Performs an effective mass fit by first fitting for Lorentzian
+> lineshapes and then fitting a quadratic model to the result. This is
+> an alternative to global effective mass fitting.
+> 
+> In the case that data is provided in anglespace, the Lorentzian fits
+> are performed in anglespace before being converted to momentum where
+> the effective mass is extracted.
+> 
 > We should probably include uncertainties here.
 > 
 >   - Parameters
 >     
 >       - **data** –
->       - **fit\_kwargs** –
+>     
+>       -   - **fit\_kwargs** – Passthrough for arguments to  
+>             *broadcast\_model*,
 > 
->   - Returns
+> used internally to obtain the Lorentzian peak locations :return:

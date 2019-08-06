@@ -10,6 +10,7 @@ def infer_center_pixel(arr: xr.DataArray):
     edges = arr.S.find_spectrum_angular_edges()
     return float((np.max(edges) + np.min(edges)) / 2 + np.min(arr.coords['pixel']))
 
+
 @update_provenance('Stitch maps together')
 def stitch_maps(arr: xr.DataArray, arr2: xr.DataArray, dimension='beta'):
     """

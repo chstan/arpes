@@ -1,3 +1,9 @@
+"""
+The core IO facilities supported by PyARPES. The most important here are the
+data loading functions (simpe_load, fallback_load, load_without_dataset, load_example_data),
+pickling utilities, data stitching, and dataset manipulation functions.
+"""
+
 import json
 import os.path
 import uuid
@@ -83,7 +89,18 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
     if sort:
         loaded.sort(key=lambda x: x.coords[built_axis_name])
 
-    return xr.concat(loaded, dim=built_axis_name)
+    concatenated = xr.concat(loaded, dim=built_axis_name)
+    if 'id' in concatenated.attrs:
+        del concatenated.attrs['id']
+
+    from arpes.provenance import provenance_multiple_parents
+    provenance_multiple_parents(concatenated, loaded, {
+        'what': 'Stitched together separate datasets',
+        'by': 'stitch',
+        'dim': built_axis_name,
+    })
+
+    return concatenated
 
 
 def file_for_pickle(name):

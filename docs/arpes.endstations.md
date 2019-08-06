@@ -44,20 +44,73 @@ a common format
 
 **arpes.endstations.endstation\_name\_from\_alias(alias)**
 
+> Lookup the data loading principal location from an alias. :param
+> alias: :return:
+
 **arpes.endstations.endstation\_from\_alias(alias)**
+
+> Lookup the data loading class from an alias. :param alias: :return:
 
 **arpes.endstations.add\_endstation(endstation\_cls)**
 
+> Registers a data loading plugin (Endstation class) together with its
+> aliases.
+> 
+>   - Parameters  
+>     **endstation\_cls** –
+> 
+>   - Returns
+
 **arpes.endstations.load\_scan(scan\_desc,**kwargs)\*\*
+
+> Determines which data loading class is appropriate for the data,
+> shuffles a bit of metadata, and calls the .load function on the
+> retrieved class to start the data loading process. :param scan\_desc:
+> :param kwargs: :return:
 
 **class arpes.endstations.EndstationBase**
 
 > Bases: `object`
 > 
+> Implements the core features of ARPES data loading. A thorough
+> documentation is available at [the plugin
+> documentation](https://arpes.netlify.com/#/writing-plugins).
+> 
+> To summarize, a plugin has a few core jobs:
+> 
+> 1.    - Load data, including collating any data that is in a
+>         multi-file  
+>         format This is accomplished with *.load*, which delegates
+>         loading *frames* (single files) to *load\_single\_frame*.
+>         Frame collation is then performed by *concatenate\_frames*.
+> 
+> 2.  Loading and attaching metadata.
+> 
+> 3.    - Normalizing metadata to standardized names. These are  
+>         documented at the [data model
+>         documentation](https://arpes.netlify.com/#/spectra).
+> 
+> 4.    - Ensuring all angles and necessary coordinates are attached
+>         to  
+>         the data. Data should permit immediate conversion to angle
+>         space after being loaded.
+> 
+> Plugins are in one-to-many correspondance with the values of the
+> “location” column in analysis spreadsheets. This binding is provided
+> by PRINCIPAL\_NAME and ALIASES.
+> 
+> The simplest way to normalize metadata is by renaming keys, but
+> sometimes additional work is required. RENAME\_KEYS is provided to
+> make this simpler, and is implemented in scan post-processessing.
+> 
 > `ALIASES = []`
+> 
+> `ATTR_TRANSFORMS = {}`
 > 
 > `CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta',
 > 'theta']`
+> 
+> `MERGE_ATTRS = {}`
 > 
 > `PRINCIPAL_NAME = None`
 > 
@@ -94,6 +147,19 @@ a common format
 
 > Bases:
 > 
+> Loads data from the .fits format produced by the MAESTRO software and
+> derivatives.
+> 
+> This ends up being somewhat complicated, because the FITS export is
+> written in LabView and does not conform to the standard specification
+> for the FITS archive format.
+> 
+> Many of the intricaces here are in fact those shared between MAESTRO’s
+> format and the Lanzara Lab’s format. Conrad does not forsee this as an
+> issue, because it is unlikely that mnay other ARPES labs will adopt
+> this data format moving forward, in light of better options derivative
+> of HDF like the NeXuS format.
+> 
 > `PREPPED_COLUMN_NAMES = {'Delay': 'delay-var ... e-var', 'time':
 > 'time'}`
 > 
@@ -127,11 +193,26 @@ a common format
 
 > Bases:
 > 
+> Synchrotron endstations have somewhat complicated light source
+> metadata. This stub exists to attach commonalities, such as a
+> resolution table which can be interpolated into to retrieve the x-ray
+> linewidth at the experimental settings. Additionally, subclassing this
+> is used in resolution calculations to signal that such a resolution
+> lookup is required.
+> 
 > `RESOLUTION_TABLE = None`
 
 **class arpes.endstations.SingleFileEndstation**
 
 > Bases:
+> 
+> Abstract endstation which loads data from a single file. This just
+> specializes the routine used to determine the location of files on
+> disk.
+> 
+> Unlike general endstations, if your data comes in a single file you
+> can trust that the file given to you in the spreadsheet or direct load
+> calls is all there is.
 > 
 > **resolve\_frame\_locations(scan\_desc: dict = None)**
 

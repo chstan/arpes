@@ -2,10 +2,12 @@ from arpes.analysis import rebin
 from arpes.typing import DataType
 from arpes.utilities.normalize import normalize_to_spectrum
 from arpes.fits import broadcast_model, GStepBModel
+from arpes.provenance import update_provenance
 
 __all__ = ('fs_gap',)
 
 
+@update_provenance('Broadcast Fermi Surface Gap')
 def fs_gap(data: DataType, shape=None, energy_range=None):
     data = normalize_to_spectrum(data)
 

@@ -1,3 +1,8 @@
+"""
+Primitive support for loading Laue data from the NorthStar x-ray
+backscattering DAQ program.
+"""
+
 # Laue file structure courtesy Jonathan Denlinger, MERLIN endstations at the ALS
 # 16-bit binary Laue histogram (.hs2) file
 # Format:  2 byte*256*256= 131072 long + header info at the end
@@ -17,7 +22,8 @@ import typing
 import numpy as np
 from pathlib import Path
 
-# removed some other stuff we did not need
+from arpes.provenance import provenance_from_file
+
 northstar_62_69_dtype = np.dtype([
     ('pad1', 'B', (2364,),), # unused
     ('sample','S52'),
@@ -37,10 +43,20 @@ def load_laue(path: typing.Union[Path, str]):
     table = np.fromstring(table, dtype=np.uint16).reshape(256, 256)
     header = np.fromstring(header, dtype=northstar_62_69_dtype).item()
 
-    return xarray.DataArray(
-        table, coords={'x': np.array(range(256)), 'y': np.array(range(256))},
-        dims=['x', 'y',], attrs={
+    arr = xarray.DataArray(
+        table,
+        coords={'x': np.array(range(256)), 'y': np.array(range(256))},
+        dims=['x', 'y',],
+        attrs={
             'sample': header[1].split(b'\0')[0].decode('ascii'),
             'user': header[2].split(b'\0')[0].decode('ascii'),
             'comment': header[3].split(b'\0')[0].decode('ascii'),
-        })
+        }
+    )
+
+    provenance_from_file(arr, str(path), {
+        'what': 'Loaded Laue dataset from Northstar.',
+        'by': 'load_laue',
+    })
+
+    return arr

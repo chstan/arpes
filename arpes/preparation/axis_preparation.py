@@ -9,13 +9,14 @@ from arpes.typing import DataType
 from arpes.utilities.normalize import normalize_to_spectrum
 from scipy.ndimage import geometric_transform
 
-from arpes.provenance import provenance
+from arpes.provenance import provenance, update_provenance
 from arpes.utilities import lift_dataarray_to_generic
 
 __all__ = ('flip_axis', 'normalize_dim', 'dim_normalizer', 'transform_dataarray_axis',
            'normalize_total', 'sort_axis',)
 
 
+@update_provenance('Sort Axis')
 def sort_axis(data: xr.DataArray, axis_name):
     assert(isinstance(data, xr.DataArray))
     copied = data.copy(deep=True)
@@ -27,6 +28,7 @@ def sort_axis(data: xr.DataArray, axis_name):
     return copied
 
 
+@update_provenance('Flip data along axis')
 def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):
     coords = copy.deepcopy(arr.coords)
     coords[axis_name] = coords[axis_name][::-1]
@@ -37,6 +39,7 @@ def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):
         arr.dims,
         attrs=arr.attrs
     )
+
 
 def soft_normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False, amp_limit=100):
     dims = dim_or_dims
@@ -63,6 +66,7 @@ def soft_normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False, amp_limit=
     })
 
     return to_return
+
 
 @lift_dataarray_to_generic
 def normalize_dim(arr: DataType, dim_or_dims, keep_id=False):
@@ -100,6 +104,7 @@ def normalize_dim(arr: DataType, dim_or_dims, keep_id=False):
     return to_return
 
 
+@update_provenance('Normalize total spectrum intensity')
 def normalize_total(data: DataType):
     data = normalize_to_spectrum(data)
 

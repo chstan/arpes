@@ -5,10 +5,12 @@ from arpes.utilities.math import shift_by
 from arpes.utilities.normalize import normalize_to_spectrum
 
 from arpes.typing import DataType
+from arpes.provenance import update_provenance
 
 __all__ = ('apply_cycle_fermi_edge_correction', 'build_cycle_fermi_edge_correction',)
 
 
+@update_provenance('Build Fermi edge correction for cycle dimension')
 def build_cycle_fermi_edge_correction(data: DataType, energy_range=None):
     arr = normalize_to_spectrum(data)
 
@@ -22,6 +24,7 @@ def build_cycle_fermi_edge_correction(data: DataType, energy_range=None):
     return broadcast_model(GStepBModel, arr.sel(eV=energy_range), 'cycle')
 
 
+@update_provenance('Apply Fermi edge correction for cycle dimension')
 def apply_cycle_fermi_edge_correction(data: DataType, energy_range=None, shift=True):
     correction = build_cycle_fermi_edge_correction(data, energy_range)
 

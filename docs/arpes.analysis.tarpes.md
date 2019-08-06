@@ -12,6 +12,16 @@ e\_bound=0.02, approx=True)**
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
 t0=None, buffer=0.3, normalize\_delay=True)**
 
+> Like normalized\_relative\_change, but only subtracts the before t0
+> data rather than normalizing by the original spectrum’s intensity in
+> each frame. :param data: :param t0: :param buffer: :param
+> normalize\_delay: :return:
+
 **arpes.analysis.tarpes.normalized\_relative\_change(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
 t0=None, buffer=0.3, normalize\_delay=True)**
+
+> Calculates a normalized relative change, obtained by normalizing along
+> the pump-probe “delay” axis and then subtracting the mean before t0
+> data and dividing by the original spectrum. :param data: :param t0:
+> :param buffer: :param normalize\_delay: :return:

@@ -14,16 +14,24 @@ from arpes.typing import DataType
 from arpes.constants import HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ
 from arpes.fits import broadcast_model, LorentzianModel, AffineBackgroundModel, QuadraticModel
 from arpes.utilities.conversion.forward import convert_coordinates_to_kspace_forward
+from arpes.provenance import update_provenance
 
 __all__ = ('fit_bands', 'fit_for_effective_mass',)
 
 
 def fit_for_effective_mass(data: DataType, fit_kwargs=None):
     """
+    Performs an effective mass fit by first fitting for Lorentzian lineshapes and then fitting a quadratic
+    model to the result. This is an alternative to global effective mass fitting.
+
+    In the case that data is provided in anglespace, the Lorentzian fits are performed in anglespace
+    before being converted to momentum where the effective mass is extracted.
+
     We should probably include uncertainties here.
 
     :param data:
-    :param fit_kwargs:
+    :param fit_kwargs: Passthrough for arguments to `broadcast_model`,
+    used internally to obtain the Lorentzian peak locations
     :return:
     """
     if fit_kwargs is None:
@@ -168,6 +176,7 @@ def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_w
     return bands
 
 
+@update_provenance('Fit bands from pattern')
 def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
                         fit_direction=None, avoid_crossings=None,
                         stray=None, background=True, preferred_k_direction=None,

@@ -17,6 +17,10 @@ __all__ = ('build_reference_set', 'reference_key', 'apply_from_reference_set',
 
 
 class HashableDict(OrderedDict):
+    """
+    Implements hashing for ordered dictionaries. The dictionary
+    must be ordered for the hash to be stable.
+    """
     def __hash__(self):
         return hash(frozenset(self.items()))
 

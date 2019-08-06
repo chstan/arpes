@@ -38,9 +38,8 @@
       - [Analysis Spreadsheets](/spreadsheets)
       - [Spectra + Data Representation](/spectra)
       - [Plugins](/writing-plugins)
-      - [IO + Data Normalization](/topic-io)
-      - [Ad Hoc: Opting out of Workspaces](/ad-hoc)
       - [Data Provenance](/data-provenance)
+      - [Phenomenological and Detector Models](/modeling)
 
 # arpes
 
@@ -68,12 +67,12 @@
                   - [arpes.io module](arpes.io)
                   - [arpes.laser module](arpes.laser)
                   - [arpes.load\_pxt module](arpes.load_pxt)
-                  - [arpes.materials module](arpes.materials)
                   - [arpes.optics module](arpes.optics)
                   - [arpes.pipeline module](arpes.pipeline)
                   - [arpes.pipelines module](arpes.pipelines)
                   - [arpes.provenance module](arpes.provenance)
                   - [arpes.repair module](arpes.repair)
+                  - [arpes.simulation module](arpes.simulation)
                   - [arpes.typing module](arpes.typing)
                   - [arpes.widgets module](arpes.widgets)
                   - [arpes.xarray\_extensions

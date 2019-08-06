@@ -1,6 +1,10 @@
 """
 For now we monkeypatch lmfit to make it easier to work with in Jupyter. We should consider forking
 or providing a pull at a later date after this settles down.
+
+The end goal here is to allow pleasing and functional representations of curve fitting sessions
+performed in Jupyter, so that they can be rapidly understood, and screencapped for simple purposes,
+like including in group meeting notes.
 """
 
 import numpy as np
@@ -8,6 +12,12 @@ from lmfit import model
 
 
 def repr_html_ModelResult(self, **kwargs):
+    """
+    Provides a better Jupyter representation of an `lmfit.ModelResult` instance.
+    :param self:
+    :param kwargs:
+    :return:
+    """
     template = """
         <div>
             <span><strong>Converged: </strong>{success}</span>
@@ -21,7 +31,13 @@ def repr_html_ModelResult(self, **kwargs):
         parameters=self.params._repr_html_(**kwargs)
     )
 
+
 def repr_html_Model(self):
+    """
+    Better Jupyter representation of `lmfit.Model` instances.
+    :param self:
+    :return:
+    """
     template = """
     <div>
     <strong>{name}</strong>
@@ -97,4 +113,5 @@ model.ModelResult._repr_html_ = repr_html_ModelResult
 
 model.Parameter.to_table_row = repr_html_Parameter
 
+# we don't export anything, just monkey-patch
 __all__ = tuple()

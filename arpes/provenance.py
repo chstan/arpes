@@ -1,3 +1,22 @@
+"""
+Provides data provenance for PyARPES. Most analysis routines built
+into PyARPES support provenance. Of course, Python is a dynamic language and nothing can be
+done to prevent the experimenter from circumventing the provenance scheme.
+
+All the same, between analysis notebooks and the data provenenace provided by PyARPES,
+we provide an environment with much higher standard for reproducible analysis than many
+other current analysis environments.
+
+This provenenace record is automatically exported when using the built in
+plotting utilities. Additionally, passing `used_data` to the PyARPES `savefig`
+wrapper allows saving provenance information even for bespoke plots created in
+a Jupyter cell.
+
+PyARPES also makes it easy to opt into data provenance for new analysis
+functions by providing convenient decorators. These decorators inspect data passed at runtime
+to look for and update provenance entries on arguments and return values.
+"""
+
 import datetime
 import functools
 import json
@@ -8,16 +27,33 @@ import warnings
 import xarray as xr
 
 import arpes.config
+from arpes import VERSION
 import typing
 from arpes.typing import *
 
 
 def attach_id(data):
+    """
+    Ensures that an ID is attached to a piece of data, if it does not already exist.
+    IDs are generated at the time of identification in an analysis notebook. Sometimes a piece of
+    data is created from nothing, and we might need to generate one for it on the spot.
+    :param data:
+    :return:
+    """
     if 'id' not in data.attrs:
         data.attrs['id'] = str(uuid.uuid1())
 
 
 def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file, record):
+    """
+    Builds a provenance entry for a dataset corresponding to loading data from a file. This is used
+    by data loaders at the start of an analysis.
+    :param child_arr:
+    :param file:
+    :param record:
+    :return:
+    """
+
     if 'id' not in child_arr.attrs:
         attach_id(child_arr)
 
@@ -26,6 +62,7 @@ def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file
         'file': file,
         'parents_provenance': 'filesystem',
         'time': datetime.datetime.now().isoformat(),
+        'version': VERSION,
     }
 
 
@@ -65,7 +102,8 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
                     provenance_fn(result, all_parents, {
                         'what': what,
                         'by': f.__name__,
-                        'time': datetime.datetime.now().isoformat()
+                        'time': datetime.datetime.now().isoformat(),
+                        'version': VERSION,
                     }, keep_parent_ref)
 
             return result
@@ -91,19 +129,18 @@ def save_plot_provenance(plot_fn):
         path = plot_fn(*args, **kwargs)
         if isinstance(path, str) and os.path.exists(path):
             workspace = arpes.config.CONFIG['WORKSPACE']
-            assert(workspace is not None)
 
             try:
                 workspace = workspace['name']
-            except TypeError:
+            except (TypeError, KeyError):
                 pass
 
-            if workspace not in path:
+            if workspace is None or workspace not in path:
                 warnings.warn(('Plotting function {} appears not to abide by '
                                'practice of placing plots into designated workspaces.').format(plot_fn.__name__))
 
             provenance_context = {
-                'VERSION': arpes.config.CONFIG['VERSION'],
+                'VERSION': VERSION,
                 'time': datetime.datetime.now().isoformat(),
                 'name': plot_fn.__name__,
                 'args': [arg.attrs.get('provenance', {}) for arg in args
@@ -122,6 +159,15 @@ def save_plot_provenance(plot_fn):
 
 
 def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typing.List[DataType]], record, keep_parent_ref=False):
+    """
+    Function that updates the provenance for a piece of data with a single parent.
+
+    :param child_arr:
+    :param parent_arr:
+    :param record:
+    :param keep_parent_ref:
+    :return:
+    """
     if isinstance(parent_arr, list):
         assert(len(parent_arr) == 1)
         parent_arr = parent_arr[0]
@@ -141,6 +187,7 @@ def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typin
         'parent_id': parent_id,
         'parents_provanence': parent_arr.attrs.get('provenance'),
         'time': datetime.datetime.now().isoformat(),
+        'version': VERSION,
     }
 
     if keep_parent_ref:
@@ -148,6 +195,17 @@ def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typin
 
 
 def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_parent_ref=False):
+    """
+    Similar to `provenance` updates the data provenance information for data with
+    multiple sources or "parents". For instance, if you normalize a piece of data "X" by a metal
+    reference "Y", then the returned data would list both "X" and "Y" in its history.
+    
+    :param child_arr:
+    :param parents:
+    :param record:
+    :param keep_parent_ref:
+    :return:
+    """
     if 'id' not in child_arr.attrs:
         attach_id(child_arr)
 

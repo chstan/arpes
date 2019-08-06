@@ -1,3 +1,19 @@
+"""
+Phenomenological models and detector simulation for accurate modelling
+of ARPES data.
+
+Currently we offer relatively rudimentary detecotor modeling, mostly providing
+only nonlinearity and some stubs, but a future release will provide reasonably
+accurate modeling of the trapezoidal effect in hemispherical analyzers,
+fixed mode artifacts, dust, and more.
+
+Additionally we offer the ability to model the detector response at the
+level of individual electron events using a point spread or more complicated
+response. This allows the creation of reasonably realistic spectra for testing
+new analysis techniques or working on machine learning based approaches that must
+be robust to the shortcomings of actual ARPES data.
+"""
+
 import numpy as np
 import scipy.signal as sig
 import scipy
@@ -32,6 +48,11 @@ __all__ = (
 
 
 class DetectorEffect(object):
+    """
+    Detector effects are callables that map a spectrum into a new
+    transformed one. This might be used to imprint the image of a grid,
+    dust, or impose detector nonlinearities.
+    """
     def __call__(self, spectrum):
         """
         By default, the identity function
@@ -42,6 +63,9 @@ class DetectorEffect(object):
 
 
 class NonlinearDetectorEffect(DetectorEffect):
+    """
+    Implements power law detector nonlinearities.
+    """
     def __init__(self, gamma=None, nonlinearity=None):
         self.gamma = gamma
         self.nonlinearity = nonlinearity
@@ -55,6 +79,11 @@ class NonlinearDetectorEffect(DetectorEffect):
 
 
 class FixedModeDetectorEffect(DetectorEffect):
+    """
+    Implements a grid or pore structure of an MCP or field termination mesh.
+    Talk to Danny or Sam about getting hyperuniform point cloud distributions to use
+    for the pore structure.
+    """
     def __init__(self, spacing=None, periodic='hex', detector_efficiency=None):
         if spacing is None:
             spacing = 5 # Five pixel average spacing
@@ -72,14 +101,25 @@ class FixedModeDetectorEffect(DetectorEffect):
 
 
 class DustDetectorEffect(DetectorEffect):
+    """
+    TODO, dust.
+    """
     pass
 
 
 class TrapezoidalDetectorEffect(DetectorEffect):
+    """
+    TODO model that phi(pixel) is also a function of binding energy,
+    i.e. that the detector has severe aberrations at low photoelectron
+    kinetic energy (high retardation ratio).
+    """
     pass
 
 
 class WindowedDetectorEffect(DetectorEffect):
+    """
+    TODO model the finite width of the detector window as recorded on a camera.
+    """
     pass
 
 
@@ -106,6 +146,16 @@ def cloud_to_arr(point_cloud, shape):
 
 
 def apply_psf_to_point_cloud(point_cloud, shape, sigma=None):
+    """
+    Takes a point cloud and turns it into a spectrum. Finally, smears it by a
+    gaussian PSF given through the `sigma` parameter.
+
+    In the future, we should also allow for specifying a particular PSF.
+    :param point_cloud:
+    :param shape:
+    :param sigma:
+    :return:
+    """
     if sigma is None:
         sigma = (10, 3)
     as_img = cloud_to_arr(point_cloud, shape)
@@ -114,6 +164,14 @@ def apply_psf_to_point_cloud(point_cloud, shape, sigma=None):
 
 
 def sample_from_distribution(distribution, N=5000):
+    """
+    Given a probability distribution in ND modeled by an array providing the PDF,
+    sample individual events coming from this PDF.
+
+    :param distribution:
+    :param N:
+    :return:
+    """
     cdf_rows = np.cumsum(np.sum(distribution.values, axis=1))
     norm_rows = np.cumsum(distribution.values / np.expand_dims(np.sum(distribution.values, axis=1), axis=1), axis=1)
 
@@ -131,6 +189,9 @@ def sample_from_distribution(distribution, N=5000):
 
 
 class SpectralFunction(object):
+    """
+    Model for a band with self energy.
+    """
     def fermi_dirac(self, omega):
         return 1 / (np.exp(omega / (K_BOLTZMANN_MEV_KELVIN * self.T)) + 1)
 
@@ -228,7 +289,7 @@ class SpectralFunctionMFL(SpectralFunction):
 class SpectralFunctionBSSCO(SpectralFunction):
     """
     Implements the spectral function for BSSCO as reported in PhysRevB.57.R11093 and explored in
-    https://arxiv.org/pdf/1707.02305.pdf
+    `"Collapse of superconductivity in cuprates via ultrafast quenching of phase coherence" <https://arxiv.org/pdf/1707.02305.pdf>`_.
     """
 
     def __init__(self, k=None, omega=None, T=None, delta=None, gamma_s=None, gamma_p=None):

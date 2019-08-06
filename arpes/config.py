@@ -84,6 +84,7 @@ update_configuration()
 
 CONFIG = {
     'WORKSPACE': None,
+    'CURRENT_CONTEXT': None,
 }
 
 
@@ -216,8 +217,6 @@ def load_plugins():
             loaded_module = importlib.import_module('arpes.endstations.plugin.{}'.format(module))
             for item in loaded_module.__all__:
                 add_endstation(getattr(loaded_module, item))
-            #plugin_cls = loaded_module
-            #experiment_classes[module] = loaded_module.Experiment
         except (AttributeError, ImportError) as e:
             pass
 
@@ -225,3 +224,5 @@ def load_plugins():
 def use_tex(rc_text_should_use=False):
     import matplotlib
     matplotlib.rcParams['text.usetex'] = rc_text_should_use
+
+load_plugins()

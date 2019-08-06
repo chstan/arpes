@@ -1,10 +1,12 @@
 import numpy as np
 import xarray as xr
+from sklearn.decomposition import PCA
+
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.conversion import slice_along_path
 from arpes.fits.fit_models import LorentzianModel, AffineBackgroundModel
-from sklearn.decomposition import PCA
+from arpes.provenance import update_provenance
 
 __all__ = ('curves_along_pocket', 'edcs_along_pocket', 'radial_edcs_along_pocket',
            'pocket_parameters',)
@@ -53,6 +55,7 @@ def pocket_parameters(data: DataType, kf_method=None, sel=None, method_kwargs=No
     }
 
 
+@update_provenance('Collect EDCs projected at an angle from pocket')
 def radial_edcs_along_pocket(data: DataType, angle, inner_radius=0, outer_radius=5,
                              n_points=None, select_radius=None, **kwargs):
     """
@@ -194,8 +197,21 @@ def find_kf_by_mdc(slice: DataType, offset=0, **kwargs):
     return result.params['center'].value + offset
 
 
+@update_provenance('Collect EDCs around pocket edge')
 def edcs_along_pocket(data: DataType, kf_method=None, select_radius=None,
                       sel=None, method_kwargs=None, **kwargs):
+    """
+    Collects EDCs around a pocket. This consists first in identifying the momenta
+    around the pocket, and then integrating small windows around each of these points.
+
+    :param data:
+    :param kf_method:
+    :param select_radius:
+    :param sel:
+    :param method_kwargs:
+    :param kwargs:
+    :return:
+    """
     slices, angles = curves_along_pocket(data, **kwargs)
 
     if kf_method is None:

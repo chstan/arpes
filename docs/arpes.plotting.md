@@ -51,6 +51,7 @@
   - [arpes.plotting.stack\_plot module](arpes.plotting.stack_plot)
   - [arpes.plotting.tarpes module](arpes.plotting.tarpes)
   - [arpes.plotting.tof module](arpes.plotting.tof)
+  - [arpes.plotting.utils module](arpes.plotting.utils)
   - [arpes.plotting.visualize\_3d module](arpes.plotting.visualize_3d)
 
 ## Module contents

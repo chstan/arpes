@@ -1,3 +1,8 @@
+"""
+This module contains monkey-patched versions of functions from xrft until improvements are made upstream.
+We don't generally use this module too much anyway, and it is not a default import.
+"""
+
 # TODO note that there is a slight bug in the inverse Fourier transform here where the coords are sometimes rolled
 
 import warnings

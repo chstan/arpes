@@ -2,6 +2,7 @@ import xarray as xr
 import numpy as np
 
 from arpes.typing import DataType
+from arpes.provenance import update_provenance
 
 __all__ = ('discretize_path', 'select_around_path', 'path_from_points',)
 
@@ -17,6 +18,7 @@ def path_from_points(data: DataType, symmetry_points_or_interpolation_points):
     raise NotImplementedError('')
 
 
+@update_provenance('Discretize Path')
 def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
     """
     Shares logic with slice_along_path
@@ -82,9 +84,14 @@ def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
     return xr.Dataset({k: to_dataarray(k) for k in order})
 
 
+@update_provenance('Select from data along a path')
 def select_along_path(path: xr.Dataset, data: DataType, radius=None, n_points=None, fast=True, scaling=None, **kwargs):
     """
-    Performs integration along the path des
+    Performs integration along a path. This functionally allows for performing a finite width
+    cut (with finite width perpendicular to the local path direction) along some path,
+    and integrating along this perpendicular selection. This allows for better statistics in
+    oversampled data.
+
     :param path:
     :param data:
     :param radius: A number or dictionary of radii to use for the selection along different dimensions, if none is provided

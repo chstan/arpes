@@ -1,5 +1,15 @@
 # arpes.xarray\_extensions module
 
+This is another core part of PyARPES. It provides a lot of extensions to
+what comes out of the box in xarray. Some of these are useful generics,
+generally on the .T extension, others collect and manipulate metadata,
+interface with plotting routines, provide functional programming
+utilities, etc.
+
+If *f* is an ARPES spectrum, then *f.S* should provide a nice
+representation of your data in a Jupyter cell. This is a complement to
+the text based approach that merely printing *f* offers.
+
 **class arpes.xarray\_extensions.ARPESDataArrayAccessor(xarray\_obj)**
 
 > Bases: `arpes.xarray_extensions.ARPESAccessorBase`

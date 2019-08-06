@@ -7,6 +7,13 @@ __all__ = ('read_data_attributes_from',)
 
 
 def read_data_attributes_from(group, paths):
+    """
+    Reads simple (float, string, int, etc) leaves from
+    a nested description of paths out of a NeXuS file.
+    :param group:
+    :param paths:
+    :return:
+    """
     read_attrs = {}
     original_group = group
     for path, attributes in paths:

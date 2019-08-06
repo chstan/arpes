@@ -11,10 +11,14 @@
 > 
 > `ALIASES = ['BL403', 'BL4', 'BL4.0.3', 'ALS-BL403', 'ALS-BL4']`
 > 
+> `ATTR_TRANSFORMS = {'acquisition_mode': ... ESEndstation.<lambda>>}`
+> 
+> `MERGE_ATTRS = {'analyzer': 'R8000' ... y_polarized_undulator'}`
+> 
 > `PRINCIPAL_NAME = 'ALS-BL403'`
 > 
-> `RENAME_KEYS = {'BL Energy': 'hv', ... 'temp', 'tilt':
-> 'beta'}`
+> `RENAME_KEYS = {'BL Energy': 'hv', ... 'user':
+> 'experimenter'}`
 > 
 > **concatenate\_frames(frames=typing.List\[xarray.core.dataset.Dataset\],
 > scan\_desc: dict = None)**

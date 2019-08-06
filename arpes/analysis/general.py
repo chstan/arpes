@@ -18,8 +18,16 @@ from .filters import gaussian_filter_arr
 __all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis', 'condense', 'rebin',
            'fit_fermi_edge')
 
+
 @update_provenance('Fit Fermi Edge')
 def fit_fermi_edge(data, energy_range=None):
+    """
+    Fits a Fermi edge. Not much easier than doing it manually, but this can be
+    useful sometimes inside procedures where you don't want to reimplement this logic.
+    :param data:
+    :param energy_range:
+    :return:
+    """
     if energy_range is None:
         energy_range = slice(-0.1, 0.1)
 
@@ -30,6 +38,7 @@ def fit_fermi_edge(data, energy_range=None):
     edge_fit = broadcast_model(GStepBModel, data.sel(eV=energy_range), broadcast_axis=broadcast_directions[0])
     return edge_fit
 
+
 @update_provenance('Normalized by the 1/Fermi Dirac Distribution at sample temp')
 def normalize_by_fermi_distribution(
         data: DataType, max_gain=None, rigid_shift=0, instrumental_broadening=None, total_broadening=None):
@@ -39,7 +48,7 @@ def normalize_by_fermi_distribution(
     "just works") via ``rigid_shift``.
 
     :param data: Input
-    :param clamp: Maximum value for the gain. By default the value used is the mean of the spectrum.
+    :param max_gain: Maximum value for the gain. By default the value used is the mean of the spectrum.
     :param rigid_shift: How much to shift the spectrum chemical potential.
     Pass the nominal value for the chemical potential in the scan. I.e. if the chemical potential is at BE=0.1, pass
     rigid_shift=0.1.
@@ -71,8 +80,19 @@ def normalize_by_fermi_distribution(
     return data / distrib_arr
 
 
-#@update_provenance('Symmetrize axis')
+@update_provenance('Symmetrize about axis')
 def symmetrize_axis(data, axis_name, flip_axes=None, shift_axis=True):
+    """
+    Symmetrizes data across an axis. It would be better ultimately to be able
+    to implement an arbitrary symmetry (such as a mirror or rotational symmetry
+    about a line or point) and to symmetrize data by that method.
+
+    :param data:
+    :param axis_name:
+    :param flip_axes:
+    :param shift_axis:
+    :return:
+    """
     data = data.copy(deep=True) # slow but make sure we don't bork axis on original
     data.coords[axis_name].values = data.coords[axis_name].values - data.coords[axis_name].values[0]
 

@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 
+from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
@@ -10,12 +11,20 @@ __all__ = (
     'remove_shirley_background',
 )
 
-
+@update_provenance('Remove Shirley background')
 def remove_shirley_background(xps: DataType, **kwargs):
+    """
+    Calculates and removes a Shirley background from a spectrum.
+    Only the background corrected spectrum is retrieved.
+    :param xps:
+    :param kwargs:
+    :return:
+    """
     xps = normalize_to_spectrum(xps)
     return xps - calculate_shirley_background(xps, **kwargs)
 
 
+@update_provenance('Calculate full range Shirley background')
 def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=50, n_samples=5):
     """
     Calculates a shirley background in the range of `energy_slice` according to:
@@ -78,6 +87,7 @@ def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=5
     return background
 
 
+@update_provenance('Calculate limited range Shirley background')
 def calculate_shirley_background(xps: DataType, energy_range: slice=None, eps=1e-7, max_iters=50, n_samples=5):
     """
     Calculates a shirley background iteratively over the full energy range `energy_range`.

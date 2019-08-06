@@ -5,6 +5,16 @@ ParamType = namedtuple('ParamType', ['value', 'stderr'])
 
 
 def param_getter(param_name, safe=True):
+    """
+    Constructs a function to extract a parameter value by name. Useful to extract data from inside an array of
+    `lmfit.ModelResult` instances.
+
+    :param param_name: Parameter name to retrieve. If you performed a composite model fit,
+    make sure to include the prefix.
+    :param safe: Guards against NaN values. This is typically desirable but sometimes it is advantageous
+    to have NaNs fail an analysis quickly.
+    :return:
+    """
     if safe:
         safe_param = ParamType(value=np.nan, stderr=np.nan)
 
@@ -20,6 +30,17 @@ def param_getter(param_name, safe=True):
 
 
 def param_stderr_getter(param_name, safe=True):
+    """
+    Constructs a function to extract a parameter value by name. Useful to extract data from inside an array of
+    `lmfit.ModelResult` instances.
+
+    :param param_name: Parameter name to retrieve. If you performed a composite model fit,
+    make sure to include the prefix.
+    :param safe: Guards against NaN values. This is typically desirable but sometimes it is advantageous
+    to have NaNs fail an analysis quickly.
+    :return:
+    """
+
     if safe:
         safe_param = ParamType(value=np.nan, stderr=np.nan)
 

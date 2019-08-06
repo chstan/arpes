@@ -1,9 +1,8 @@
 # arpes.utilities.conversion.core module
 
 Helper functions for coordinate transformations. All the functions here
-assume standard polar angles, for better or worse, so you might need to
-massage your inputs slightly in order to get them into an appropriate
-form.
+assume standard polar angles, as given in the [data model
+documentation](https://arpes.netlify.com/#/spectra).
 
 Functions here must accept constants or numpy arrays as valid inputs, so
 all standard math functions have been replaced by their equivalents out
@@ -12,25 +11,13 @@ that would encourage the use of direct iteration, but in case you need
 to write a conversion directly, be aware that any functions here must
 work on arrays as well for consistency with client code.
 
-Through the code that follows, there are some conventions on the names
-of angles to make the code easier to follow:
+Everywhere:
 
-Standard vertically oriented cryostats:
+Kinetic energy -\> ‘kinetic\_energy’ Binding energy -\> ‘eV’, for
+convenience (negative below 0) Photon energy -\> ‘hv’
 
-‘polar’ is the name of the angle that describes rotation around hat{z}
-‘beta’ is the name of the angle that describes rotation around hat{x}
-‘sample\_phi’ is the name of the angle that describes rotation around
-the sample normal ‘phi’ is the name of the angle that describes the
-angle along the analyzer entrance slit
-
-Additionally, everywhere, ‘eV’ denotes binding energies. Other energy
-units should be labelled as:
-
-Kinetic energy -\> ‘kinetic\_energy’ Binding energy -\>
-‘binding\_energy’ Photon energy -\> ‘hv’
-
-Other angles: Sample elevation/tilt/beta angle -\> ‘polar’ Analyzer
-polar angle -\> ‘phi’
+Better facilities should be added for ToFs to do simultaneous (timing,
+angle) to (binding energy, k-space).
 
 **arpes.utilities.conversion.core.convert\_to\_kspace(arr:
 xarray.core.dataarray.DataArray, forward=False,

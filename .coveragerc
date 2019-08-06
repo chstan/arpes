@@ -1,0 +1,4 @@
+[report]
+omit =
+    # for now, the plotting scripts
+    arpes/plotting/*

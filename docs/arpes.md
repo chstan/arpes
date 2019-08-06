@@ -198,6 +198,7 @@
                   - [arpes.plotting.tarpes
                     module](arpes.plotting.tarpes)
                   - [arpes.plotting.tof module](arpes.plotting.tof)
+                  - [arpes.plotting.utils module](arpes.plotting.utils)
                   - [arpes.plotting.visualize\_3d
                     module](arpes.plotting.visualize_3d)
         
@@ -232,6 +233,8 @@
                                     module](arpes.utilities.conversion.base)
                                   - [arpes.utilities.conversion.bounds\_calculations
                                     module](arpes.utilities.conversion.bounds_calculations)
+                                  - [arpes.utilities.conversion.core
+                                    module](arpes.utilities.conversion.core)
                                   - [arpes.utilities.conversion.forward
                                     module](arpes.utilities.conversion.forward)
                                   - [arpes.utilities.conversion.kx\_ky\_conversion
@@ -257,6 +260,7 @@
                     module](arpes.utilities.collections)
                   - [arpes.utilities.dataset
                     module](arpes.utilities.dataset)
+                  - [arpes.utilities.dict module](arpes.utilities.dict)
                   - [arpes.utilities.funcutils
                     module](arpes.utilities.funcutils)
                   - [arpes.utilities.geometry
@@ -270,6 +274,8 @@
                     module](arpes.utilities.region)
                   - [arpes.utilities.string
                     module](arpes.utilities.string)
+                  - [arpes.utilities.xarray
+                    module](arpes.utilities.xarray)
         
           - [Module contents](arpes.utilities#module-arpes.utilities)
 
@@ -283,12 +289,12 @@
   - [arpes.io module](arpes.io)
   - [arpes.laser module](arpes.laser)
   - [arpes.load\_pxt module](arpes.load_pxt)
-  - [arpes.materials module](arpes.materials)
   - [arpes.optics module](arpes.optics)
   - [arpes.pipeline module](arpes.pipeline)
   - [arpes.pipelines module](arpes.pipelines)
   - [arpes.provenance module](arpes.provenance)
   - [arpes.repair module](arpes.repair)
+  - [arpes.simulation module](arpes.simulation)
   - [arpes.typing module](arpes.typing)
   - [arpes.widgets module](arpes.widgets)
   - [arpes.xarray\_extensions module](arpes.xarray_extensions)

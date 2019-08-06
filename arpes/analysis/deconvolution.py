@@ -1,31 +1,20 @@
 import numpy as np
-from arpes.typing import DataType
-from arpes.utilities import normalize_to_spectrum
-
-from arpes.fits.fit_models import gaussian
 import xarray as xr
-
 import scipy
+import scipy.ndimage
 
 from tqdm import tqdm_notebook
 
+from arpes.fits.fit_models import gaussian
+from arpes.provenance import update_provenance
+from arpes.typing import DataType
+from arpes.utilities import normalize_to_spectrum
+
+
 __all__ = ('deconvolve_ice','deconvolve_rl','make_psf1d',)
 
-"""
-def _convolve(original_data, convolution_kernel):
-    if len(convolution_kernel.shape) == 1:
-        conv_kern_norm = convolution_kernel / np.sum(convolution_kernel)
-        n_points = min(len(original_data), len(conv_kern_norm))
-        padding = np.ones(n_points)
-        temp = np.concatenate((padding * original_data[0], original_data, padding * original_data[-1]))
-        convolved = np.convolve(temp, conv_kern_norm, mode='valid')
-        n_offset = int((len(convolved) - n_points) / 2)
-        result = (convolved[n_offset:])[:n_points]
-    elif len(convolution_kernel.shape) == 2:
-        raise NotImplementedError
-    return result
-"""
 
+@update_provenance('Approximate Iterative Deconvolution')
 def deconvolve_ice(data: DataType,psf,n_iterations=5,deg=None):
     """Deconvolves data by a given point spread function using the iterative convolution extrapolation method.
     
@@ -65,6 +54,8 @@ def deconvolve_ice(data: DataType,psf,n_iterations=5,deg=None):
         result.values = deconv
     return result
 
+
+@update_provenance('Lucy Richardson Deconvolution')
 def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
                   sigma=None, mode='reflect', progress=True):
     """Deconvolves data by a given point spread function using the Richardson-Lucy method.
@@ -169,6 +160,8 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
             
     return result
 
+
+@update_provenance('Make 1D-Point Spread Function')
 def make_psf1d(data: DataType,dim,sigma):
     """Produces a 1-dimensional gaussian point spread function for use in deconvolve_rl.
     
@@ -194,6 +187,8 @@ def make_psf1d(data: DataType,dim,sigma):
 
     return psf
 
+
+@update_provenance('Make Point Spread Function')
 def make_psf(data: DataType,sigmas):
     """Not yet operational; produces an n-dimensional gaussian point spread function for use in deconvolve_rl.
     
@@ -203,7 +198,7 @@ def make_psf(data: DataType,sigmas):
     :return DataArray:
     """
     
-    raise NotImplementedError
+    raise NotImplementedError()
     
     arr = normalize_to_spectrum(data)
     dims = arr.dims

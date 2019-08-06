@@ -4,37 +4,61 @@ Changes are listed with most recent versions at the top.
 
 Dates are in YYYY/MM/DD format.
 
-Primary (X.-.-) version numbers are used to denote backwards incompatibilities 
-between versions, while minor (-.X.-) numbers primarily indicate new features and 
-documentation.
+Primary (X.-.-) version numbers are used to denote backwards incompatibilities
+between versions, while minor (-.X.-) numbers primarily indicate new
+features and documentation.
+
+## 2.1.0 (2019-08-06)
+
+### New:
+
+1. Improved API documentation.
+2. Most recent interative plot context is saved to `arpes.config.CONFIG['CURRENT_CONTEXT']`.
+   This allows simple and transparent recovery in case you forget to save the context and
+   performed a lot of work in an interactive session.
+   Additionally, this means that matplotlib interactive tools should work transparently,
+   as the relevant widgets are guaranteed to be kept in memory.
+3. Improved provenance coverage for builtins.
+
+### Changed:
+
+1. Metadata reworked to a common format accross all endstations. 
+   This is now documented appropriately with the data model. 
+
+### Fixed:
+
+1. MBS data loader now warns about unsatisfiable attributes and
+   produces otherwise correct coordinates in the PyARPES format.
+2. Some improvements made in the ANTARES data loader, still not as high
+   quality as I would like though.
 
 ## 2.0.0 (2019-07-31)
 
-### New: 
+### New:
 
 1. Major rework in order to provide a consistent angle convention
-2. New momentum space conversion widget allows 
+2. New momentum space conversion widget allows
    setting offsets interactively
 3. Fermi surface conversion functions now allow azimuthal rotations
 4. New `experiment` module contains primitives for exporting
-   scan sequences. This is an early addition towards being able 
+   scan sequences. This is an early addition towards being able
    to perform ARPES experiments from inside PyARPES.
-    
-   1. As an example: After conducting nano-XPS, you can use PCA to 
+
+   1. As an example: After conducting nano-XPS, you can use PCA to
       select your sample region and export a scan sequnce just over the
       sample ROI or over the border between your sample and another area.
 
 ### Changed:
 
 1. All loaded data comes with all angles and positions as coordinates
-2. All loaded data should immediately convert to momentum space 
+2. All loaded data should immediately convert to momentum space
    without issue (though normal emission is not guaranteed!)
 3. Documentation changes to reflect these adjustments to the data model
 
 
 ### Fixed:
 
-1. Documentation link in README.rst is now correct.   
+1. Documentation link in README.rst is now correct.
 
 ## 1.2.0 (2019-07-18)
 

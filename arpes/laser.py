@@ -1,3 +1,8 @@
+"""
+Small utilities for estimating quantities of practical interest when using
+a laser for photoemission.
+"""
+
 from arpes.config import ureg
 
 __all__ = ('electrons_per_pulse',)

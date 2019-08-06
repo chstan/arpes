@@ -1,5 +1,7 @@
 # arpes.pipelines module
 
+Implements some pipelines for basic tasks.
+
 **arpes.pipelines.convert\_scan\_to\_kspace(data, \*args,**kwargs)\*\*
 
 **arpes.pipelines.convert\_scan\_to\_kspace\_no\_corr(data,

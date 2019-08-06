@@ -1,3 +1,19 @@
+"""
+Contains tools pertaining to statistical boostraps. It can sometimes be difficult
+to assess when bootstraps are appropriate, so make sure to consider this before you
+just stick a bootstrap around your code and stuff the resultant error bar
+into your papers.
+
+This is most useful on data coming from ToF experiments, where individual electron
+arrivals are counted, but even here you must be aware of tricky aspects of
+the experiment: ToF-ARPES analyzers are not perfect, their efficiency can vary dramatically
+across the detector due to MCP burn-in, and electron aberration and focusing
+must be considered.
+"""
+
+from typing import Union
+from tqdm import tqdm_notebook
+
 import numpy as np
 import random
 import copy
@@ -5,8 +21,7 @@ import xarray as xr
 import functools
 
 from arpes.analysis.sarpes import to_intensity_polarization
-from typing import Union
-from tqdm import tqdm_notebook
+from arpes.provenance import update_provenance
 from arpes.utilities.region import normalize_region
 from arpes.utilities.normalize import normalize_to_spectrum
 from arpes.typing import DataType
@@ -17,6 +32,7 @@ __all__ = ('bootstrap', 'estimate_prior_adjustment',
            'bootstrap_intensity_polarization',)
 
 
+@update_provenance('Estimate prior')
 def estimate_prior_adjustment(data: DataType, region: Union[dict, str]=None):
     """
     Estimates the parameters of a distribution generating the intensity
@@ -48,6 +64,7 @@ def estimate_prior_adjustment(data: DataType, region: Union[dict, str]=None):
     return np.std(values) / np.mean(values)
 
 
+@update_provenance('Resample cycle dimension')
 @lift_dataarray_to_generic
 def resample_cycle(data: xr.DataArray, **kwargs):
     """
@@ -67,6 +84,8 @@ def resample_cycle(data: xr.DataArray, **kwargs):
 
     return resampled
 
+
+@update_provenance('Resample with prior adjustment')
 @lift_dataarray_to_generic
 def resample(data: xr.DataArray, prior_adjustment=1, **kwargs):
     resampled = xr.DataArray(
@@ -82,6 +101,7 @@ def resample(data: xr.DataArray, prior_adjustment=1, **kwargs):
     return resampled
 
 
+@update_provenance('Resample electron-counted data')
 @lift_dataarray_to_generic
 def resample_true_counts(data: xr.DataArray) -> xr.DataArray:
     """
@@ -102,6 +122,8 @@ def resample_true_counts(data: xr.DataArray) -> xr.DataArray:
 
     return resampled
 
+
+@update_provenance('Bootstrap true electron counts')
 @lift_dataarray_to_generic
 def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
     """
@@ -138,6 +160,7 @@ def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
     return xr.Dataset(data_vars=vars, coords=data.coords, attrs=data.attrs.copy())
 
 
+@update_provenance('Bootstrap spin detector polarization and intensity')
 def bootstrap_intensity_polarization(data, N=100):
     """
     Uses the parametric bootstrap to get uncertainties on the intensity and polarization of ToF-SARPES data.

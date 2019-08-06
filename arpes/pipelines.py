@@ -1,3 +1,7 @@
+"""
+Implements some pipelines for basic tasks.
+"""
+
 import xarray as xr
 
 from arpes.corrections import apply_photon_energy_fermi_edge_correction, apply_quadratic_fermi_edge_correction

@@ -10,6 +10,15 @@ __all__ = ('find_t0', 'relative_change', 'normalized_relative_change')
 
 @update_provenance('Normalized subtraction map')
 def normalized_relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
+    """
+    Calculates a normalized relative change, obtained by normalizing along the pump-probe "delay"
+    axis and then subtracting the mean before t0 data and dividing by the original spectrum.
+    :param data:
+    :param t0:
+    :param buffer:
+    :param normalize_delay:
+    :return:
+    """
     spectrum = normalize_to_spectrum(data)
     if normalize_delay:
         spectrum = normalize_dim(spectrum, 'delay')
@@ -22,6 +31,15 @@ def normalized_relative_change(data: DataType, t0=None, buffer=0.3, normalize_de
 
 @update_provenance('Created simple subtraction map')
 def relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
+    """
+    Like normalized_relative_change, but only subtracts the before t0 data rather than
+    normalizing by the original spectrum's intensity in each frame.
+    :param data:
+    :param t0:
+    :param buffer:
+    :param normalize_delay:
+    :return:
+    """
     spectrum = normalize_to_spectrum(data)
     if normalize_delay:
         spectrum = normalize_dim(spectrum, 'delay')

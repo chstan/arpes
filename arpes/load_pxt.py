@@ -1,8 +1,12 @@
+"""
+Implements Igor <-> xarray interop, notably loading Igor waves and
+packed experiment files.
+"""
+
 import warnings
 from pathlib import Path
 
 import typing
-from arpes.utilities import rename_keys
 import numpy as np
 import re
 
@@ -33,11 +37,12 @@ igor_wave_header_dtype = np.dtype([
     ('final_spacer', 'b', 2 + 8 * 18),
 ])
 
+
 def read_igor_binary_wave(raw_bytes):
     """
-    Some weirdness here with the byte ordering and the target datatype.
-    Data loading might not be perfectly correct as a result, maybe don't trust
-    for now.
+    Some weirdness here with the byte ordering and the target datatype. Additionally,
+    newer Igor wave formats are very poorly documented. Data loading might not be perfectly
+    correct as a result. For most purposes, you can load from .pxp files anyway.
 
     :param raw_bytes:
     :return:
@@ -107,6 +112,7 @@ def read_header(header_bytes: bytes):
 
         header[first.lower().replace(' ', '_')] = rest
 
+    from arpes.utilities import rename_keys
     return rename_keys(header, {
         'sample_x': 'x',
         'sample_y_(vert)': 'y',
@@ -114,6 +120,7 @@ def read_header(header_bytes: bytes):
         'sample_z': 'z',
         'bl_energy': 'hv',
     })
+
 
 def wave_to_xarray(w): # : igor.Wave
     """

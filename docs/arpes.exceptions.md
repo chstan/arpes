@@ -1,5 +1,10 @@
 # arpes.exceptions module
 
+Some bespoke exceptions that can be used in control sequences and to
+provide more information to the user. I (Conrad) prefer to use warnings
+for the latter purpose, but there are reasons to throw these errors in a
+variety of circumstances.
+
 **exception arpes.exceptions.AnalysisError**
 
 > Bases: `Exception`
