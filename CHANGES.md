@@ -8,6 +8,20 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 2.1.1 (2019-08-06)
+
+### New
+
+1. Improved type annotations
+2. Slightly safer data loading in light of plugins: no need to call `load_plugins()` manually.
+
+### Changed
+
+### Fixed
+
+1. Data moved to a location where it is available in PyPI builds
+
+
 ## 2.1.0 (2019-08-06)
 
 ### New:
