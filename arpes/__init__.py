@@ -206,3 +206,5 @@ def setup(outer_globals, arpes_root=None):
     global_import_from('pathlib', 'Path')
     global_import_from('arpes.config', 'use_tex')
     global_import('importlib')
+
+

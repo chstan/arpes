@@ -2,6 +2,8 @@ import numpy as np
 import xarray as xr
 
 import arpes.constants
+from numpy import float64
+from typing import Union
 
 __all__ = ('calculate_kp_kz_bounds', 'calculate_kx_ky_bounds', 'calculate_kp_bounds')
 
@@ -34,7 +36,7 @@ def euler_to_kz(kinetic_energy, phi, beta, theta=0, inner_potential=10, slit_is_
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy * beta_term ** 2 + inner_potential)
 
 
-def spherical_to_kx(kinetic_energy, theta, phi):
+def spherical_to_kx(kinetic_energy: float64, theta: float64, phi: int) -> float64:
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.cos(phi)
 
 
@@ -42,7 +44,7 @@ def spherical_to_ky(kinetic_energy, theta, phi):
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.sin(phi)
 
 
-def spherical_to_kz(kinetic_energy, theta, phi, inner_V):
+def spherical_to_kz(kinetic_energy: float64, theta: Union[int, float64], phi: int, inner_V: int) -> float64:
     r"""
     K_INV_ANGSTROM encodes that k_z = \frac{\sqrt{2 * m * E_kin * \cos^2\theta + V_0}}{\hbar}
     :param kinetic_energy:

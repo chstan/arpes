@@ -22,6 +22,7 @@ from arpes.typing import DataType
 from arpes.utilities import (wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datavar_attrs,
                              WHITELIST_KEYS, FREEZE_PROPS, clean_xlsx_dataset)
 from arpes.endstations import load_scan
+from xarray.core.dataset import Dataset
 
 __all__ = (
     'simple_load', 'direct_load', 'fallback_load', 'load_dataset', 'save_dataset', 'delete_dataset',
@@ -42,8 +43,8 @@ def load_without_dataset(file: typing.Union[str, Path], location=None, **kwargs)
     return load_scan(dict(file=file, location=location), **kwargs)
 
 
-def load_example_data():
-    file = Path(__file__).parent.parent / 'resources' / 'example_data' / 'main_chamber_cut_0.fits'
+def load_example_data() -> Dataset:
+    file = Path(__file__).parent / 'example_data' / 'main_chamber_cut_0.fits'
     return load_without_dataset(file=file, location='ALG-MC')
 
 
@@ -338,13 +339,13 @@ def direct_load(fragment, df: pd.DataFrame=None, workspace=None, file=None, basi
 
                 df = clean_xlsx_dataset(file, with_inferred_cols=False, write=False)
 
-        def resolve_fragment(filename):
+        def resolve_fragment(filename: int) -> str:
             return str(filename).split('_')[-1]
 
         # find a soft match
         files = df.index
 
-        def strip_left_zeros(value):
+        def strip_left_zeros(value: str) -> str:
             if len(value) == 1:
                 return value
 

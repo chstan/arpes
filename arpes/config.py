@@ -8,11 +8,12 @@ import json
 import os.path
 import logging
 import pint
-import collections
+from typing import Any, Optional
 
 from pathlib import Path
 
 from arpes.exceptions import ConfigurationError
+
 
 ureg = pint.UnitRegistry()
 
@@ -42,7 +43,8 @@ CLEAVE_RECORD = None
 PIPELINE_SHELF = None
 PIPELINE_JSON_SHELF = None
 
-def generate_cache_files():
+
+def generate_cache_files() -> None:
     global DATASET_CACHE_RECORD
     global CLEAVE_RECORD
 
@@ -52,7 +54,8 @@ def generate_cache_files():
             with open(p, 'w') as f:
                 json.dump({}, f)
 
-def update_configuration(user_path=None):
+
+def update_configuration(user_path: Optional[str] = None) -> None:
     global FIGURE_PATH
     global DATASET_PATH
     global DATASET_CACHE_PATH
@@ -79,9 +82,6 @@ def update_configuration(user_path=None):
         pass
 
 
-
-update_configuration()
-
 CONFIG = {
     'WORKSPACE': None,
     'CURRENT_CONTEXT': None,
@@ -89,11 +89,11 @@ CONFIG = {
 
 
 class WorkspaceManager(object):
-    def __init__(self, workspace=None):
+    def __init__(self, workspace: Optional[Any] = None) -> None:
         self._cached_workspace = None
         self._workspace = workspace
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self._cached_workspace = CONFIG['WORKSPACE']
 
         if self._workspace is None:
@@ -111,7 +111,7 @@ class WorkspaceManager(object):
         else:
             raise ValueError('Could not find workspace: {}'.format(self._workspace))
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: Any) -> None:
         CONFIG['WORKSPACE'] = self._cached_workspace
 
 
@@ -198,8 +198,9 @@ try:
 except TypeError:
     pass
 
+
 # load plugins
-def load_plugins():
+def load_plugins() -> None:
     import arpes.endstations.plugin as plugin
     from arpes.endstations import add_endstation
     import importlib
@@ -225,4 +226,6 @@ def use_tex(rc_text_should_use=False):
     import matplotlib
     matplotlib.rcParams['text.usetex'] = rc_text_should_use
 
+
+update_configuration()
 load_plugins()
