@@ -16,7 +16,7 @@ import arpes.constants
 import os.path
 
 from arpes.load_pxt import read_single_pxt, find_ses_files_associated
-from arpes.utilities import rename_keys, case_insensitive_get, rename_dataarray_attrs
+from arpes.utilities.dict import case_insensitive_get, rename_dataarray_attrs
 from arpes.preparation import replace_coords
 from arpes.provenance import provenance_from_file
 from arpes.endstations.fits_utils import find_clean_coords
@@ -98,6 +98,8 @@ class EndstationBase(object):
         return xr.Dataset()
 
     def postprocess(self, frame: xr.Dataset):
+        from arpes.utilities import rename_keys
+
         frame = xr.Dataset({
             k: rename_dataarray_attrs(v, self.RENAME_KEYS) for k, v in frame.data_vars.items()
         }, attrs=rename_keys(frame.attrs, self.RENAME_KEYS))
@@ -436,6 +438,7 @@ class FITSEndstation(EndstationBase):
             if dropped_attr in attrs:
                 del attrs[dropped_attr]
 
+        from arpes.utilities import rename_keys
         built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs, mode='MC')
         attrs = rename_keys(attrs, self.RENAME_KEYS)
         scan_desc = rename_keys(scan_desc, self.RENAME_KEYS)

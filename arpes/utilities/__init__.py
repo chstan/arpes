@@ -20,10 +20,12 @@ import numpy as np
 import xarray as xr
 
 from arpes import constants
-from .dataset import *
 from .funcutils import *
 from .normalize import *
+from .dataset import *
+from .xarray import *
 from .region import *
+from .dict import *
 from .attrs import *
 from .collections import *
 
@@ -113,104 +115,6 @@ def unarrange_by_indices(items, indices):
     return [x for x, _ in sorted(zip(indices, items), key=itemgetter(0))]
 
 
-def apply_dataarray(arr: xr.DataArray, f, *args, **kwargs):
-    return xr.DataArray(
-        f(arr.values, *args, **kwargs),
-        arr.coords,
-        arr.dims,
-        attrs=arr.attrs
-    )
-
-
-def lift_dataarray(f):
-    """
-    Lifts a function that operates on an np.ndarray's values to one that
-    acts on the values of an xr.DataArray
-    :param f:
-    :return: g: Function operating on an xr.DataArray
-    """
-
-    def g(arr: xr.DataArray, *args, **kwargs):
-        return apply_dataarray(arr, f, *args, **kwargs)
-
-    return g
-
-
-def lift_dataarray_attrs(f):
-    """
-    Lifts a function that operates on a dictionary to a function that acts on the
-    attributes of an xr.DataArray, producing a new xr.DataArray. Another option
-    if you don't need to create a new DataArray is to modify the attributes.
-    :param f:
-    :return: g: Function operating on the attributes of an xr.DataArray
-    """
-
-    def g(arr: xr.DataArray, *args, **kwargs):
-        return xr.DataArray(
-            arr.values,
-            arr.coords,
-            arr.dims,
-            attrs=f(arr.attrs, *args, **kwargs)
-        )
-
-    return g
-
-
-def lift_datavar_attrs(f):
-    """
-    Lifts a function that operates on a dictionary to a function that acts on the
-    attributes of all the datavars in a xr.Dataset, as well as the Dataset attrs
-    themselves.
-    :param f: Function to apply
-    :return:
-    """
-
-    def g(data: DataType, *args, **kwargs):
-        arr_lifted = lift_dataarray_attrs(f)
-        if isinstance(data, xr.DataArray):
-            return arr_lifted(data, *args, **kwargs)
-
-        var_names = list(data.data_vars.keys())
-        new_vars = {k: arr_lifted(data[k], *args, **kwargs) for k in var_names}
-        new_root_attrs = f(data.attrs, *args, **kwargs)
-
-        return xr.Dataset(new_vars, data.coords, new_root_attrs)
-
-    return g
-
-
-def _rename_key(d, k, nk):
-    if k in d:
-        d[nk] = d[k]
-        del d[k]
-
-
-def rename_keys(d, keys_dict):
-    d = d.copy()
-    for k, nk in keys_dict.items():
-        _rename_key(d, k, nk)
-
-    return d
-
-
-def clean_keys(d):
-    def clean_single_key(k):
-        k = k.replace(' ', '_')
-        k = k.replace('.', '_')
-        k = k.lower()
-        k = re.sub(r'[()/?]', '', k)
-        k = k.replace('__', '_')
-        return k
-
-    return dict(zip([clean_single_key(k) for k in d.keys()], d.values()))
-
-
-rename_dataarray_attrs = lift_dataarray_attrs(rename_keys)
-clean_attribute_names = lift_dataarray_attrs(clean_keys)
-
-rename_datavar_attrs = lift_datavar_attrs(rename_keys)
-clean_datavar_attribute_names = lift_datavar_attrs(clean_keys)
-
 ATTRS_MAP = {
     'PuPol': 'pump_pol',
     'PrPol': 'probe_pol',
@@ -265,36 +169,6 @@ def walk_scans(path, only_id=False):
                     yield scan['id']
                 else:
                     yield scan
-
-
-def case_insensitive_get(d: dict, key: str, default=None, take_first=False):
-    """
-    Looks up a key in a dictionary ignoring case. We use this sometimes to be
-    nicer to users who don't provide perfectly sanitized data
-    :param d:
-    :param key:
-    :param default:
-    :param take_first:
-    :return:
-    """
-    found_value = False
-    value = None
-
-    for k, v in d.items():
-        if k.lower() == key.lower():
-            if not take_first and found_value:
-                raise ValueError('Duplicate case insensitive keys')
-
-            value = v
-            found_value = True
-
-            if take_first:
-                break
-
-    if not found_value:
-        return default
-
-    return value
 
 
 _wrappable = {'note', 'data_preparation', 'provenance', 'corrections', 'symmetry_points'}

@@ -7,7 +7,6 @@ import warnings
 from pathlib import Path
 
 import typing
-from arpes.utilities import rename_keys
 import numpy as np
 import re
 
@@ -113,6 +112,7 @@ def read_header(header_bytes: bytes):
 
         header[first.lower().replace(' ', '_')] = rest
 
+    from arpes.utilities import rename_keys
     return rename_keys(header, {
         'sample_x': 'x',
         'sample_y_(vert)': 'y',
