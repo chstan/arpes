@@ -37,6 +37,5 @@
     * [Analysis Spreadsheets](/spreadsheets)
     * [Spectra + Data Representation](/spectra)
     * [Plugins](/writing-plugins)
-    * [IO + Data Normalization](/topic-io)
-    * [Ad Hoc: Opting out of Workspaces](/ad-hoc)
     * [Data Provenance](/data-provenance)
+    * [Phenomenological and Detector Models](/modeling)

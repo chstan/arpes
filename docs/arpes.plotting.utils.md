@@ -8,7 +8,8 @@
 
 **arpes.plotting.utils.unit\_for\_dim(dim\_name, escaped=True)**
 
-**arpes.plotting.utils.savefig(desired\_path, dpi=400,**kwargs)\*\*
+**arpes.plotting.utils.savefig(desired\_path, dpi=400,
+data=None,**kwargs)\*\*
 
 **class arpes.plotting.utils.AnchoredHScaleBar(size=1, extent=0.03,
 label='', loc=2, ax=None, pad=0.4, borderpad=0.5, ppad=0, sep=2,

@@ -260,6 +260,7 @@
                     module](arpes.utilities.collections)
                   - [arpes.utilities.dataset
                     module](arpes.utilities.dataset)
+                  - [arpes.utilities.dict module](arpes.utilities.dict)
                   - [arpes.utilities.funcutils
                     module](arpes.utilities.funcutils)
                   - [arpes.utilities.geometry
@@ -273,6 +274,8 @@
                     module](arpes.utilities.region)
                   - [arpes.utilities.string
                     module](arpes.utilities.string)
+                  - [arpes.utilities.xarray
+                    module](arpes.utilities.xarray)
         
           - [Module contents](arpes.utilities#module-arpes.utilities)
 

@@ -11,11 +11,15 @@
 > 
 > `ALIASES = ['BL7', 'BL7.0.2', 'ALS-BL7.0.2']`
 > 
+> `ATTR_TRANSFORMS = {'SF_SLITN': <functi ... ESEndstation.<lambda>>}`
+> 
+> `MERGE_ATTRS = {'mcp_voltage': None ... ', 'undulator_z': None}`
+> 
 > `PRINCIPAL_NAME = 'ALS-BL702'`
 > 
 > `RENAME_COORDS = {'X': 'x', 'Y': 'y', 'Z': 'z'}`
 > 
-> `RENAME_KEYS = {'LMOTOR0': 'x', 'LM ... 'psi', 'mono_eV': 'hv'}`
+> `RENAME_KEYS = {'LMOTOR0': 'x', 'LM ... onic', 'mono_eV': 'hv'}`
 > 
 > **load(scan\_desc: dict = None,**kwargs)\*\*
 > 

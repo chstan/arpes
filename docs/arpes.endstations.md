@@ -105,8 +105,12 @@ a common format
 > 
 > `ALIASES = []`
 > 
+> `ATTR_TRANSFORMS = {}`
+> 
 > `CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta',
 > 'theta']`
+> 
+> `MERGE_ATTRS = {}`
 > 
 > `PRINCIPAL_NAME = None`
 > 
