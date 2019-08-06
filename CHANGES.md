@@ -8,6 +8,17 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 2.1.2 (2019-08-06)
+
+### New
+
+### Changed
+
+### Fixed
+
+1. Removed type annotation for optional library breaking builds
+
+
 ## 2.1.1 (2019-08-06)
 
 ### New
