@@ -1,14 +1,11 @@
 import numpy as np
 import collections
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Union
+from typing import Any, Dict
 
 __all__ = ('deep_equals', 'deep_update',)
 
 
-def deep_update(destination: Any, source: Any) -> Union[Dict[str, List[float]], Dict[str, List], Dict[str, int]]:
+def deep_update(destination: Any, source: Any) -> Dict[str, Any]:
     """
     Doesn't clobber keys further down trees like doing a shallow update would. Instead recurse down from the root
     and update as appropriate.

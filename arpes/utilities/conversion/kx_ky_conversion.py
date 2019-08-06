@@ -3,12 +3,7 @@ import numpy as np
 import arpes.constants
 from .base import *
 from .bounds_calculations import *
-from numpy import bool_
-from typing import Any
-from numpy import ndarray
-from typing import Callable
-from typing import List
-from xarray.core.dataarray import DataArray
+from typing import Any, Callable, List
 
 __all__ = ['ConvertKp', 'ConvertKxKy']
 
@@ -36,11 +31,11 @@ class ConvertKp(CoordinateConverter):
         coordinates.update(base_coords)
         return coordinates
 
-    def compute_k_tot(self, binding_energy: ndarray) -> None:
+    def compute_k_tot(self, binding_energy: np.ndarray) -> None:
         self.k_tot = arpes.constants.K_INV_ANGSTROM * np.sqrt(
             self.arr.S.hv - self.arr.S.work_function + binding_energy)
 
-    def kspace_to_phi(self, binding_energy: ndarray, kp: ndarray, *args: Any, **kwargs: Any) -> ndarray:
+    def kspace_to_phi(self, binding_energy: np.ndarray, kp: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
         # check signs again here
         if self.is_slit_vertical:
             polar_angle = self.arr.S.lookup_offset_coord('theta') + self.arr.S.lookup_offset_coord('psi')
@@ -70,7 +65,7 @@ class ConvertKxKy(CoordinateConverter):
     Please note that currently we assume that psi = 0 when you are not using an
     electrostatic deflector
     """
-    def __init__(self, arr: DataArray, *args: List[str], **kwargs: Any) -> None:
+    def __init__(self, arr: np.DataArray, *args: List[str], **kwargs: Any) -> None:
         super().__init__(arr, *args, **kwargs)
         self.k_tot = None
         self.phi = None
@@ -137,7 +132,7 @@ class ConvertKxKy(CoordinateConverter):
 
         return coordinates
 
-    def compute_k_tot(self, binding_energy: ndarray) -> None:
+    def compute_k_tot(self, binding_energy: np.ndarray) -> None:
         self.k_tot = arpes.constants.K_INV_ANGSTROM * np.sqrt(
             self.arr.S.hv - self.arr.S.work_function + binding_energy)
 
@@ -154,7 +149,7 @@ class ConvertKxKy(CoordinateConverter):
         }.get(dim, with_identity)
 
     @property
-    def needs_rotation(self) -> bool_:
+    def needs_rotation(self) -> bool:
         # force rotation when greater than 0.5 deg
         return np.abs(self.arr.S.lookup_offset_coord('chi')) > (0.5 * np.pi / 180)
 
@@ -174,7 +169,7 @@ class ConvertKxKy(CoordinateConverter):
 
         return self.rkx, self.rky
 
-    def kspace_to_phi(self, binding_energy: ndarray, kx: ndarray, ky: ndarray, *args: Any, **kwargs: Any) -> ndarray:
+    def kspace_to_phi(self, binding_energy: np.ndarray, kx: np.ndarray, ky: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
         if self.phi is not None:
             return self.phi
 
@@ -208,7 +203,7 @@ class ConvertKxKy(CoordinateConverter):
 
         return self.phi
 
-    def kspace_to_perp_angle(self, binding_energy: ndarray, kx: ndarray, ky: ndarray, *args: Any, **kwargs: Any) -> ndarray:
+    def kspace_to_perp_angle(self, binding_energy: np.ndarray, kx: np.ndarray, ky: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
         if self.perp_angle is not None:
             return self.perp_angle
 

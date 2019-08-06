@@ -124,7 +124,7 @@ def read_header(header_bytes: bytes):
     })
 
 
-def wave_to_xarray(w: Wave) -> DataArray: # : igor.Wave
+def wave_to_xarray(w: Wave) -> DataArray:
     """
     Converts a wave to an xarray.DataArray
     :param w:

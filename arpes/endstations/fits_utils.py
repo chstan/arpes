@@ -4,14 +4,9 @@ import functools
 from collections import Iterable
 
 from arpes.utilities.funcutils import iter_leaves, collect_leaves
-from typing import List
-from typing import Tuple
-from typing import Union
+from typing import List, Tuple, Union, Dict, Any, Optional
 from numpy import ndarray
-from typing import Dict
-from typing import Any
 from astropy.io.fits.hdu.table import BinTableHDU
-from typing import Optional
 
 __all__ = ('extract_coords', 'find_clean_coords',)
 
@@ -27,8 +22,12 @@ DEFAULT_DIMENSION_RENAMINGS = {
     'Z': 'z',
 }
 
+CoordsDict = Dict[str, ndarray]
+Dimension = str
 
-def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = None) -> Tuple[Dict[str, ndarray], List[str], List[int]]:
+
+def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = None) \
+        -> Tuple[CoordsDict, List[Dimension], List[int]]:
     """
     Does the hard work of extracting coordinates from the scan description.
     :param attrs:
@@ -99,7 +98,9 @@ def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = 
     return scan_coords, scan_dimension, scan_shape
 
 
-def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional[Any] = None, mode: str = 'ToF', dimension_renamings: Optional[Any] = None) -> Tuple[Dict[str, ndarray], Dict[str, List[str]], Dict[str, Any]]:
+def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional[Any] = None, mode: str = 'ToF',
+                      dimension_renamings: Optional[Any] = None) \
+        -> Tuple[CoordsDict, Dict[str, List[Dimension]], Dict[str, Any]]:
     """
     Determines the scan degrees of freedom, the shape of the actual "spectrum"
     and reads and parses the coordinates from the header information in the recorded
@@ -231,7 +232,7 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
                   for o, d, s in zip(offset, delta, rest_shape)]
 
         # We need to do smarter inference here
-        def infer_hemisphere_dimensions() -> List[str]:
+        def infer_hemisphere_dimensions() -> List[Dimension]:
             # scans can be two dimensional per frame, or a
             # scan can be either E or K integrated, or something I've never seen before
             # try to get the description or the UNIT
@@ -345,10 +346,11 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
 
         conflicted = [c for c in conflicted if not can_resolve_conflict(c)]
 
-        def clarify_dimensions(dims: Union[List[str], Tuple[str, str, str]], sname: str) -> List[str]:
+        def clarify_dimensions(dims: List[Dimension], sname: str) -> List[Dimension]:
             return [d if d not in conflicted else d + '-' + sname for d in dims]
 
-        def clarify_coordinate(coordinates: Union[Dict[str, ndarray], ndarray], sname: str) -> Union[Dict[str, ndarray], ndarray]:
+        def clarify_coordinate(coordinates: Union[CoordsDict, ndarray], sname: str) -> \
+                Union[CoordsDict, ndarray]:
             if not isinstance(coordinates, dict):
                 return coordinates
 

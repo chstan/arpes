@@ -1,9 +1,6 @@
 import xarray as xr
 import numpy as np
 
-import arpes.utilities
-from numpy import bool_
-from numpy import ndarray
 from typing import Any
 
 __all__ = ['CoordinateConverter', 'K_SPACE_BORDER', 'MOMENTUM_BREAKPOINTS']
@@ -37,11 +34,11 @@ class CoordinateConverter(object):
         pass
 
     @property
-    def is_slit_vertical(self) -> bool_:
+    def is_slit_vertical(self) -> bool:
         # 89 - 91 degrees
         return np.abs(self.arr.S.lookup_offset_coord('alpha') - np.pi / 2) < (np.pi / 180)
 
-    def kspace_to_BE(self, binding_energy: ndarray, *args: ndarray, **kwargs: Any) -> ndarray:
+    def kspace_to_BE(self, binding_energy: np.ndarray, *args: np.ndarray, **kwargs: Any) -> np.ndarray:
         return binding_energy
 
     def conversion_for(self, dim):

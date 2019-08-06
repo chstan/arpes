@@ -5,12 +5,7 @@ import time
 
 from arpes.typing import DataType
 from numpy import ndarray
-from typing import Dict
-from typing import Tuple
-from typing import Any
-from typing import Optional
-from typing import Callable
-from typing import Iterator
+from typing import Dict, Tuple, Any, Optional, Callable, Iterator
 
 __all__ = ['Debounce', 'lift_dataarray_to_generic', 'iter_leaves']
 

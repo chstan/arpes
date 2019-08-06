@@ -10,6 +10,7 @@ from astropy.io import fits
 
 from pathlib import Path
 import typing
+from typing import Any, Dict
 import copy
 import arpes.config
 import arpes.constants
@@ -22,8 +23,6 @@ from arpes.provenance import provenance_from_file
 from arpes.endstations.fits_utils import find_clean_coords
 from arpes.endstations.igor_utils import shim_wave_note
 from arpes.repair import negate_energy
-from typing import Any
-from typing import Dict
 from xarray.core.dataset import Dataset
 
 __all__ = ('endstation_name_from_alias', 'endstation_from_alias', 'add_endstation', 'load_scan',

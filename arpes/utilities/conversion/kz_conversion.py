@@ -3,9 +3,8 @@ import numpy as np
 import arpes.constants
 from .base import *
 from .bounds_calculations import *
-from numpy import ndarray
-from typing import Any
-from typing import Callable
+from typing import Any, Callable
+
 
 __all__ = ['ConvertKpKzV0', 'ConvertKxKyKz', 'ConvertKpKz']
 
@@ -53,7 +52,7 @@ class ConvertKpKz(CoordinateConverter):
 
         return coordinates
 
-    def kspace_to_hv(self, binding_energy: ndarray, kp: ndarray, kz: ndarray, *args: Any, **kwargs: Any) -> ndarray:
+    def kspace_to_hv(self, binding_energy: np.ndarray, kp: np.ndarray, kz: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
         # x = kp, y = kz, z = BE
         if self.hv is None:
             inner_v = self.arr.S.inner_potential
@@ -63,11 +62,11 @@ class ConvertKpKz(CoordinateConverter):
 
         return self.hv
 
-    def kspace_to_phi(self, binding_energy: ndarray, kp: ndarray, kz: ndarray, *args: Any, **kwargs: Any) -> ndarray:
+    def kspace_to_phi(self, binding_energy: np.ndarray, kp: np.ndarray, kz: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
         if self.hv is None:
             self.kspace_to_hv(binding_energy, kp, kz, *args, **kwargs)
 
-        def kp_to_polar(kinetic_energy_out: ndarray, kp: ndarray) -> ndarray:
+        def kp_to_polar(kinetic_energy_out: np.ndarray, kp: np.ndarray) -> np.ndarray:
             return np.arcsin(kp / (arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy_out)))
 
         return kp_to_polar(self.hv + self.arr.S.work_function, kp) + self.arr.S.phi_offset

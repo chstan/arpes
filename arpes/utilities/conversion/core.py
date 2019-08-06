@@ -33,9 +33,7 @@ from arpes.exceptions import AnalysisError
 from arpes.utilities import normalize_to_spectrum
 from .kx_ky_conversion import *
 from .kz_conversion import *
-from numpy import ndarray
 from typing import Union
-from xarray.core.dataarray import DataArray
 
 __all__ = ['convert_to_kspace', 'slice_along_path']
 
@@ -436,7 +434,7 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
     converted_volume = grid_interpolator(np.array([tr(*meshed_coordinates) for tr in ordered_transformations]).T)
 
     # Wrap it all up
-    def acceptable_coordinate(c: Union[ndarray, DataArray]) -> bool:
+    def acceptable_coordinate(c: Union[np.ndarray, xr.DataArray]) -> bool:
         # Currently we do this to filter out coordinates that are functions of the old angular dimensions,
         # we could forward convert these, but right now we do not
         try:
