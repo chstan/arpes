@@ -6,13 +6,15 @@ packed experiment files.
 import warnings
 from pathlib import Path
 
+from typing import Any
+
 import typing
 import numpy as np
 import re
 
 import xarray as xr
-from igor.igorpy import Wave
 from xarray.core.dataarray import DataArray
+
 
 __all__ = ('read_single_pxt', 'read_separated_pxt', 'read_experiment',
            'find_ses_files_associated',)
@@ -124,7 +126,7 @@ def read_header(header_bytes: bytes):
     })
 
 
-def wave_to_xarray(w: Wave) -> DataArray:
+def wave_to_xarray(w: Any) -> DataArray: # w: igor.Wave
     """
     Converts a wave to an xarray.DataArray
     :param w:
