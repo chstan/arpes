@@ -22,6 +22,7 @@ from arpes.typing import DataType
 from arpes.utilities import (wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datavar_attrs,
                              WHITELIST_KEYS, FREEZE_PROPS, clean_xlsx_dataset)
 from arpes.endstations import load_scan
+from arpes.provenance import provenance_multiple_parents
 
 __all__ = (
     'simple_load', 'direct_load', 'fallback_load', 'load_dataset', 'save_dataset', 'delete_dataset',
@@ -89,7 +90,17 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
     if sort:
         loaded.sort(key=lambda x: x.coords[built_axis_name])
 
-    return xr.concat(loaded, dim=built_axis_name)
+    concatenated = xr.concat(loaded, dim=built_axis_name)
+    if 'id' in concatenated.attrs:
+        del concatenated.attrs['id']
+
+    provenance_multiple_parents(concatenated, loaded, {
+        'what': 'Stitched together separate datasets',
+        'by': 'stitch',
+        'dim': built_axis_name,
+    })
+
+    return concatenated
 
 
 def file_for_pickle(name):
