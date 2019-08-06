@@ -12,6 +12,7 @@ import pandas as pd
 import arpes.config
 from arpes.exceptions import ConfigurationError
 from arpes.utilities.string import snake_case
+from typing import List, Union, Any, Optional
 
 __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
            'attach_extra_dataset_columns', 'swap_reference_map',
@@ -58,7 +59,7 @@ def rename_files(dry=True, path=None, extensions=None, starting_index=1):
             os.rename(str(file), str(new_file))
 
 
-def is_blank(item):
+def is_blank(item: Union[float, str]) -> bool:
     if isinstance(item, str):
         return item == ''
 
@@ -71,7 +72,7 @@ def is_blank(item):
     return False
 
 
-def infer_data_path(file, scan_desc, allow_soft_match=False, use_regex=True):
+def infer_data_path(file: int, scan_desc: pd.Series, allow_soft_match: bool = False, use_regex: bool = True) -> str:
     if not isinstance(file, str):
         file = str(int(file))
 
@@ -156,7 +157,7 @@ def swap_reference_map(df: pd.DataFrame, old_reference, new_reference):
     return df
 
 
-def default_dataset(workspace=None, match=None, **kwargs):
+def default_dataset(workspace: Optional[Any] = None, match: Optional[str] = None, **kwargs: Any) -> pd.DataFrame:
     if workspace is not None:
         arpes.config.CONFIG['WORKSPACE'] = workspace
 
@@ -169,7 +170,7 @@ def default_dataset(workspace=None, match=None, **kwargs):
 
     dir = os.path.join(arpes.config.DATASET_PATH, material_class)
 
-    def is_dataset(filename):
+    def is_dataset(filename: str) -> bool:
         if filename.startswith('~$') or filename.startswith('._'):
             # temporary files on Windows
             return False
@@ -277,7 +278,7 @@ def with_inferred_columns(df: pd.DataFrame):
     return df
 
 
-def cleaned_path(path):
+def cleaned_path(path: str) -> str:
     base_filename, extension = os.path.splitext(path)
     if '.cleaned' in base_filename:
         return base_filename + extension
@@ -296,11 +297,11 @@ def cleaned_dataset_exists(path):
     return os.path.exists(cleaned_path(path))
 
 
-def safe_read(path, **kwargs):
+def safe_read(path: str, **kwargs: Any) -> pd.DataFrame:
     REATTEMPT_LIMIT = 8
     skiprows = kwargs.pop('skiprows', None)
 
-    def read_snake(x):
+    def read_snake(x: Union[int, str]) -> Union[List[int], List[str]]:
         try:
             return [x, snake_case(x.strip())]
         except:
@@ -374,7 +375,8 @@ def modern_clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=T
     return joined
 
 
-def clean_xlsx_dataset(path, allow_soft_match=False, write=True, with_inferred_cols=True, warn_on_exists=False, **kwargs):
+def clean_xlsx_dataset(path: str, allow_soft_match: bool = False, write: bool = True, with_inferred_cols: bool = True,
+                       warn_on_exists: bool = False, **kwargs: Any) -> pd.DataFrame:
     reload = kwargs.pop('reload', False)
     _, extension = os.path.splitext(path)
     if extension not in _DATASET_EXTENSIONS:

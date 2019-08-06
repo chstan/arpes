@@ -82,10 +82,11 @@ You can install PyARPES from PyPI
 pip install arpes
 ```
 
-or from the Anaconda package repositories through the `arpes` channel
+or from the Anaconda package repositories through the `arpes` channel. You will also need to specify 
+`conda-forge` in order to pick up a few dependencies
 
 ```bash
-conda install -c arpes arpes
+conda install -c arpes -c conda-forge arpes
 ```
 
 If you want to install with `pip`, you will need to install also the platform specific libraries for `h5py` and `netCDF4`.

@@ -4,11 +4,13 @@ import xarray as xr
 import time
 
 from arpes.typing import DataType
+from numpy import ndarray
+from typing import Dict, Tuple, Any, Optional, Callable, Iterator
 
 __all__ = ['Debounce', 'lift_dataarray_to_generic', 'iter_leaves']
 
 
-def collect_leaves(tree, is_leaf=None):
+def collect_leaves(tree: Dict[str, Any], is_leaf: Optional[Any] = None) -> Dict:
     """
     Produces a flat representation of the leaves, leaves with the same key are
     collected into a list in the order of appearance, but this depends on the
@@ -21,14 +23,14 @@ def collect_leaves(tree, is_leaf=None):
     :param is_leaf:
     :return:
     """
-    def reducer(dd, item):
+    def reducer(dd: Dict, item: Tuple[str, ndarray]) -> Dict:
         dd[item[0]].append(item[1])
         return dd
 
     return functools.reduce(reducer, iter_leaves(tree, is_leaf), defaultdict(list))
 
 
-def iter_leaves(tree, is_leaf=None):
+def iter_leaves(tree: Dict[str, Any], is_leaf: Optional[Callable] = None) -> Iterator[Tuple[str, ndarray]]:
     """
     Iterates across the leaves of a nested dictionary. Whether a particular piece
     of data counts as a leaf is controlled by the predicate `is_leaf`. By default,

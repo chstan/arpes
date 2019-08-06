@@ -10,6 +10,7 @@ from astropy.io import fits
 
 from pathlib import Path
 import typing
+from typing import Any, Dict
 import copy
 import arpes.config
 import arpes.constants
@@ -22,6 +23,7 @@ from arpes.provenance import provenance_from_file
 from arpes.endstations.fits_utils import find_clean_coords
 from arpes.endstations.igor_utils import shim_wave_note
 from arpes.repair import negate_energy
+from xarray.core.dataset import Dataset
 
 __all__ = ('endstation_name_from_alias', 'endstation_from_alias', 'add_endstation', 'load_scan',
            'EndstationBase', 'FITSEndstation', 'HemisphericalEndstation', 'SynchrotronEndstation',
@@ -443,7 +445,7 @@ class FITSEndstation(EndstationBase):
         attrs = rename_keys(attrs, self.RENAME_KEYS)
         scan_desc = rename_keys(scan_desc, self.RENAME_KEYS)
 
-        def clean_key_name(k):
+        def clean_key_name(k: str) -> str:
             if '#' in k:
                 k = k.replace('#', 'num')
 
@@ -607,7 +609,7 @@ class HemisphericalEndstation(EndstationBase):
     PIXELS_PER_DEG = None
 
 
-def endstation_from_alias(alias):
+def endstation_from_alias(alias: str) -> type:
     """
     Lookup the data loading class from an alias.
     :param alias:
@@ -625,7 +627,7 @@ def endstation_name_from_alias(alias):
     return endstation_from_alias(alias).PRINCIPAL_NAME
 
 
-def add_endstation(endstation_cls):
+def add_endstation(endstation_cls: type) -> None:
     """
     Registers a data loading plugin (Endstation class) together with
     its aliases.
@@ -657,12 +659,13 @@ def load_scan_for_endstation(scan_desc, endstation_cls, **kwargs):
     return endstation_cls().load(scan_desc, **kwargs)
 
 
-def load_scan(scan_desc, **kwargs):
+def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> Dataset:
     """
     Determines which data loading class is appropriate for the data,
     shuffles a bit of metadata, and calls the .load function on the
     retrieved class to start the data loading process.
     :param scan_desc:
+    :param retry: Used to attempt a reload of plugins and subsequent data load attempt.
     :param kwargs:
     :return:
     """
@@ -673,9 +676,13 @@ def load_scan(scan_desc, **kwargs):
     endstation_name = case_insensitive_get(full_note, 'location', case_insensitive_get(full_note, 'endstation'))
     try:
         endstation_cls = endstation_from_alias(endstation_name)
+        return endstation_cls().load(scan_desc, **kwargs)
     except KeyError:
-        raise ValueError('Could not identify endstation. '
-                         'Did you set the endstation or location? Find a description of the available options '
-                         'in the endstations module.')
-
-    return endstation_cls().load(scan_desc, **kwargs)
+        if retry:
+            import arpes.config
+            arpes.config.load_plugins()
+            return load_scan(full_note, retry=False, **kwargs)
+        else:
+            raise ValueError('Could not identify endstation. '
+                             'Did you set the endstation or location? Find a description of the available options '
+                             'in the endstations module.')

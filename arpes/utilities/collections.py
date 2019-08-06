@@ -1,10 +1,11 @@
 import numpy as np
 import collections
+from typing import Any, Dict
 
 __all__ = ('deep_equals', 'deep_update',)
 
 
-def deep_update(destination, source):
+def deep_update(destination: Any, source: Any) -> Dict[str, Any]:
     """
     Doesn't clobber keys further down trees like doing a shallow update would. Instead recurse down from the root
     and update as appropriate.
@@ -21,7 +22,7 @@ def deep_update(destination, source):
     return destination
 
 
-def deep_equals(a, b):
+def deep_equals(a: Any, b: Any) -> bool:
     if not isinstance(b, type(a)):
         print(b, a)
         return False

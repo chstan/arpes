@@ -11,6 +11,8 @@ import numpy as np
 import re
 
 import xarray as xr
+from igor.igorpy import Wave
+from xarray.core.dataarray import DataArray
 
 __all__ = ('read_single_pxt', 'read_separated_pxt', 'read_experiment',
            'find_ses_files_associated',)
@@ -122,7 +124,7 @@ def read_header(header_bytes: bytes):
     })
 
 
-def wave_to_xarray(w): # : igor.Wave
+def wave_to_xarray(w: Wave) -> DataArray:
     """
     Converts a wave to an xarray.DataArray
     :param w:
@@ -133,7 +135,7 @@ def wave_to_xarray(w): # : igor.Wave
     extra_names = iter(['W','X','Y','Z'])
     n_dims = len([a for a in w.axis if len(a)])
 
-    def get_axis_name(index):
+    def get_axis_name(index: int) -> str:
         unit = w.axis_units[index]
         if unit:
             return {

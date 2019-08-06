@@ -1,17 +1,19 @@
 import re
 
 from arpes.utilities.xarray import lift_dataarray_attrs, lift_datavar_attrs
+from collections import OrderedDict
+from typing import Any, Dict, Union
 
 __all__ = ('rename_keys', 'clean_keys', 'rename_dataarray_attrs', 'rename_datavar_attrs',
            'clean_datavar_attribute_names', 'clean_attribute_names', 'case_insensitive_get')
 
-def _rename_key(d, k, nk):
+def _rename_key(d: Union[Dict[str, Any], OrderedDict], k: str, nk: str) -> None:
     if k in d:
         d[nk] = d[k]
         del d[k]
 
 
-def rename_keys(d, keys_dict):
+def rename_keys(d: Union[Dict[str, Any], OrderedDict], keys_dict: Dict[str, str]) -> Union[Dict[str, Any], OrderedDict]:
     d = d.copy()
     for k, nk in keys_dict.items():
         _rename_key(d, k, nk)

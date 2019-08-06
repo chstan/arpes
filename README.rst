@@ -60,11 +60,12 @@ available below.
 Conda installation
 ------------------
 
-PyARPES is distributed through the ``arpes`` Anaconda channel. A minimal install looks like
+PyARPES is distributed through the ``arpes`` Anaconda channel, but includes dependencies through ``conda-forge``.
+A minimal install looks like
 
 ::
 
-   conda install -c arpes arpes
+   conda install -c arpes -c conda-forge arpes
 
 
 Local installation from source

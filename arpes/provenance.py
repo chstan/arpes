@@ -23,16 +23,17 @@ import json
 import os.path
 import uuid
 import warnings
-
 import xarray as xr
 
-import arpes.config
-from arpes import VERSION
 import typing
+from typing import Any
+
+
+from arpes import VERSION
+import arpes.config
 from arpes.typing import *
 
-
-def attach_id(data):
+def attach_id(data: xr.DataArray) -> None:
     """
     Ensures that an ID is attached to a piece of data, if it does not already exist.
     IDs are generated at the time of identification in an analysis notebook. Sometimes a piece of
@@ -77,7 +78,7 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
     """
     def update_provenance_decorator(f):
         @functools.wraps(f)
-        def func_wrapper(*args, **kwargs):
+        def func_wrapper(*args: Any, **kwargs: Any) -> xr.DataArray:
 
             arg_parents = [v for v in args if isinstance(v, xr_types) and 'id' in v.attrs]
             kwarg_parents = {k: v for k, v in kwargs.items()
