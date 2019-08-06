@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xr
 
 import arpes.constants
 from .base import *
@@ -65,7 +66,7 @@ class ConvertKxKy(CoordinateConverter):
     Please note that currently we assume that psi = 0 when you are not using an
     electrostatic deflector
     """
-    def __init__(self, arr: np.DataArray, *args: List[str], **kwargs: Any) -> None:
+    def __init__(self, arr: xr.DataArray, *args: List[str], **kwargs: Any) -> None:
         super().__init__(arr, *args, **kwargs)
         self.k_tot = None
         self.phi = None
