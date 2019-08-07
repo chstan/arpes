@@ -5,7 +5,7 @@ import contextlib
 
 from typing import Union
 
-VERSION = '2.1.2'
+VERSION = '2.1.3'
 
 
 def check() -> None:
@@ -35,10 +35,11 @@ def check() -> None:
             if igor.__version__ <= '0.3':
                 raise ValueError('Not using patched version of igorpy.')
 
-        except ImportError:
-            return warning
         except ValueError:
             return warning_incompatible
+        except (ImportError, AttributeError):
+            return warning
+
         return None
 
     def verify_bokeh() -> Union[str, None]:
