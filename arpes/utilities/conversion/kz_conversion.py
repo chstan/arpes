@@ -1,10 +1,10 @@
 import numpy as np
 
 import arpes.constants
-from .base import *
-from .bounds_calculations import *
 from typing import Any, Callable
 
+from .base import CoordinateConverter, K_SPACE_BORDER, MOMENTUM_BREAKPOINTS
+from .bounds_calculations import calculate_kp_kz_bounds
 
 __all__ = ['ConvertKpKzV0', 'ConvertKxKyKz', 'ConvertKpKz']
 
@@ -80,5 +80,3 @@ class ConvertKpKz(CoordinateConverter):
             'hv': self.kspace_to_hv,
             'phi': self.kspace_to_phi,
         }.get(dim, with_identity)
-
-

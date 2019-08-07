@@ -2,15 +2,13 @@ import copy
 import functools
 
 import numpy as np
-import xarray as xr
-
-from arpes.typing import DataType
-
-from arpes.utilities.normalize import normalize_to_spectrum
 from scipy.ndimage import geometric_transform
 
+import xarray as xr
 from arpes.provenance import provenance, update_provenance
+from arpes.typing import DataType
 from arpes.utilities import lift_dataarray_to_generic
+from arpes.utilities.normalize import normalize_to_spectrum
 
 __all__ = ('flip_axis', 'normalize_dim', 'dim_normalizer', 'transform_dataarray_axis',
            'normalize_total', 'sort_axis',)
@@ -18,7 +16,7 @@ __all__ = ('flip_axis', 'normalize_dim', 'dim_normalizer', 'transform_dataarray_
 
 @update_provenance('Sort Axis')
 def sort_axis(data: xr.DataArray, axis_name):
-    assert(isinstance(data, xr.DataArray))
+    assert isinstance(data, xr.DataArray)
     copied = data.copy(deep=True)
     coord = data.coords[axis_name].values
     order = np.argsort(coord)

@@ -1,11 +1,12 @@
-import matplotlib.pyplot as plt
 import itertools
 
-from arpes.provenance import save_plot_provenance
-from arpes.utilities import normalize_to_spectrum
-from arpes.plotting.utils import path_for_plot
+import matplotlib.pyplot as plt
+
 from arpes.io import simple_load
 from arpes.plotting import annotate_point
+from arpes.plotting.utils import path_for_plot
+from arpes.provenance import save_plot_provenance
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('reference_scan_spatial',)
 

@@ -1,7 +1,7 @@
-from arpes.typing import DataType
 import numpy as np
 
 from arpes.fits import LinearModel
+from arpes.typing import DataType
 
 __all__ = ('kfermi_from_mdcs',)
 
@@ -30,7 +30,7 @@ def kfermi_from_mdcs(mdc_results: DataType, param=None):
         if param is not None:
             best_names = [p for p in best_names if param in p]
 
-        assert(len(best_names) == 1)
+        assert len(best_names) == 1
         real_param_name = best_names[0]
 
     def nan_sieve(_, x):

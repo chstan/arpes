@@ -26,14 +26,15 @@ from copy import deepcopy
 
 import numpy as np
 import scipy.interpolate
-import xarray as xr
 
-from arpes.provenance import provenance, update_provenance
+import xarray as xr
 from arpes.exceptions import AnalysisError
+from arpes.provenance import provenance, update_provenance
 from arpes.utilities import normalize_to_spectrum
-from .kx_ky_conversion import *
-from .kz_conversion import *
 from typing import Union
+
+from .kx_ky_conversion import ConvertKxKy, ConvertKp
+from .kz_conversion import ConvertKpKz
 
 __all__ = ['convert_to_kspace', 'slice_along_path']
 
@@ -50,7 +51,7 @@ def infer_kspace_coordinate_transform(arr: xr.DataArray):
     conversion functions
     """
     old_coords = deepcopy(list(arr.coords))
-    assert ('eV' in old_coords)
+    assert 'eV' in old_coords
     old_coords.remove('eV')
     old_coords.sort()
 
@@ -370,7 +371,7 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
 
     old_dims.sort()
 
-    if len(old_dims) == 0:
+    if not old_dims:
         return arr # no need to convert, might be XPS or similar
 
     converted_dims = (['eV'] if has_eV else []) + {

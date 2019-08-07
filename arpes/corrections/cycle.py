@@ -1,11 +1,9 @@
 import xarray as xr
-
 from arpes.fits import GStepBModel, broadcast_model
+from arpes.provenance import update_provenance
+from arpes.typing import DataType
 from arpes.utilities.math import shift_by
 from arpes.utilities.normalize import normalize_to_spectrum
-
-from arpes.typing import DataType
-from arpes.provenance import update_provenance
 
 __all__ = ('apply_cycle_fermi_edge_correction', 'build_cycle_fermi_edge_correction',)
 

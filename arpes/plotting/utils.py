@@ -1,23 +1,21 @@
+import collections
 import datetime
 import errno
+import itertools
 import json
 import os.path
 import warnings
-
-import numpy as np
-import matplotlib.offsetbox
-import matplotlib
-import matplotlib.cm
-import collections
-import xarray as xr
-from matplotlib.lines import Line2D
-import itertools
-
 from collections import Counter
 
-from matplotlib import colors, colorbar, gridspec
+import matplotlib
+import matplotlib.cm
+import matplotlib.offsetbox
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import colorbar, colors, gridspec
+from matplotlib.lines import Line2D
 
+import xarray as xr
 from arpes import VERSION
 from arpes.config import CONFIG, FIGURE_PATH
 from arpes.typing import DataType
@@ -51,8 +49,8 @@ __all__ = (
 
     'imshow_arr',
     'imshow_mask',
-    'lineplot_arr', # 1D version of imshow_arr
-    'plot_arr', # generic dimension version of imshow_arr, plot_arr
+    'lineplot_arr',  # 1D version of imshow_arr
+    'plot_arr',  # generic dimension version of imshow_arr, plot_arr
 
     # insets related
     'inset_cut_locator',
@@ -112,15 +110,14 @@ def summarize(data: DataType, axes=None):
     data = normalize_to_spectrum(data)
 
     axes_shapes_for_dims = {
-        1: (1,1),
-        2: (1,1),
-        3: (2,2), # one extra here
-        4: (3,2), # corresponds to 4 choose 2 axes
+        1: (1, 1),
+        2: (1, 1),
+        3: (2, 2),  # one extra here
+        4: (3, 2),  # corresponds to 4 choose 2 axes
     }
 
     if axes is None:
-        fig, axes = plt.subplots(axes_shapes_for_dims.get(len(data.dims)), figsize=(8,8))
-
+        fig, axes = plt.subplots(axes_shapes_for_dims.get(len(data.dims)), figsize=(8, 8))
 
     flat_axes = axes.ravel()
     combinations = list(itertools.combinations(data.dims, 2))
@@ -173,7 +170,10 @@ def quick_tex(latex_fragment, ax=None, fontsize=30):
     return ax
 
 
-def lineplot_arr(arr, ax=None, method='plot', mask=None, mask_kwargs=dict(), **kwargs):
+def lineplot_arr(arr, ax=None, method='plot', mask=None, mask_kwargs=None, **kwargs):
+    if mask_kwargs is None:
+        mask_kwargs = dict()
+
     if ax is None:
         _, ax = plt.subplots()
 
@@ -185,7 +185,6 @@ def lineplot_arr(arr, ax=None, method='plot', mask=None, mask_kwargs=dict(), **k
 
         xs = arr.coords[arr.dims[0]].values
         fn(xs, arr.values, **kwargs)
-
 
     if mask is not None:
         y_lim = ax.get_ylim()
@@ -220,7 +219,7 @@ def plot_arr(arr=None, ax=None, over=None, mask=None, **kwargs):
 
 
 def imshow_mask(mask, ax=None, over=None, cmap=None, **kwargs):
-    assert(over is not None)
+    assert over is not None
 
     if ax is None:
         ax = plt.gca()
@@ -273,10 +272,9 @@ def dos_axes(orientation='horiz', figsize=None, with_cbar=True):
     :return:
     """
     if figsize is None:
-        figsize = (12,9,) if orientation == 'vert' else (9, 9)
+        figsize = (12, 9,) if orientation == 'vert' else (9, 9)
 
     fig = plt.figure(figsize=figsize)
-
 
     outer_grid = gridspec.GridSpec(4, 4, wspace=0.0, hspace=0.0)
 
@@ -296,7 +294,6 @@ def dos_axes(orientation='horiz', figsize=None, with_cbar=True):
         plt.setp(axes[0].get_yticklabels(), visible=False)
 
     return fig, axes
-
 
 
 def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=None, **kwargs):
@@ -329,6 +326,7 @@ def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=N
     ordered_selector = [location.get(d, missing_values.get(d)) for d in data.dims]
 
     n = 200
+
     def resolve(name, value):
         if isinstance(value, slice):
             low = value.start
@@ -346,8 +344,8 @@ def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=N
     n_cut_dims = len([d for d in ordered_selector if isinstance(d, (collections.Iterable, slice))])
     ordered_selector = [resolve(d, v) for d, v in zip(data.dims, ordered_selector)]
 
-    if len(missing_dims):
-        assert(reference_data is not None)
+    if missing_dims:
+        assert reference_data is not None
         print(missing_dims)
 
     if n_cut_dims == 2:
@@ -370,10 +368,12 @@ def generic_colormap(low, high):
     delta = (high - low)
     low = low - delta / 6
     high = high + delta / 6
+
     def get_color(value):
         return matplotlib.cm.Blues(float((value - low) / (high - low)))
 
     return get_color
+
 
 def phase_angle_colormap(low=0, high=np.pi * 2):
     def get_color(value):
@@ -407,7 +407,6 @@ def temperature_colormap_around(central, range=50):
 
 
 def generic_colorbar(low, high, label='', ax=None, ticks=None, **kwargs):
-
     extra_kwargs = {
         'orientation': 'horizontal',
         'label': label,
@@ -496,11 +495,10 @@ def get_colorbars(fig=None):
 
 def remove_colorbars(fig=None):
     """Removes colorbars from given (or, if no given figure, current) matplotlib figure.
-    
+
     :param fig (default plt.gcf()):
     """
-    
-    
+
     # TODO after colorbar removal, plots should be relaxed/rescaled to occupy space previously allocated to colorbars
     # for now, can follow this with plt.tight_layout()
     try:
@@ -537,7 +535,7 @@ def polarization_colorbar(ax=None):
 def calculate_aspect_ratio(data: DataType):
     data = normalize_to_spectrum(data)
 
-    assert(len(data.dims) == 2)
+    assert len(data.dims) == 2
 
     x_extent = np.ptp(data.coords[data.dims[0]].values)
     y_extent = np.ptp(data.coords[data.dims[1]].values)
@@ -554,8 +552,8 @@ class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
     extent : height of bar ends in axes units
     """
 
-    def __init__(self, size=1, extent = 0.03, label="", loc=2, ax=None,
-                 pad=0.4, borderpad=0.5, ppad = 0, sep=2, prop=None,
+    def __init__(self, size=1, extent=0.03, label="", loc=2, ax=None,
+                 pad=0.4, borderpad=0.5, ppad=0, sep=2, prop=None,
                  label_color=None,
                  frameon=True, **kwargs):
         if not ax:
@@ -563,26 +561,27 @@ class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
         trans = ax.get_xaxis_transform()
 
         size_bar = matplotlib.offsetbox.AuxTransformBox(trans)
-        line = Line2D([0,size],[0,0], **kwargs)
-        vline1 = Line2D([0,0],[-extent/2.,extent/2.], **kwargs)
-        vline2 = Line2D([size,size],[-extent/2.,extent/2.], **kwargs)
+        line = Line2D([0, size], [0, 0], **kwargs)
+        vline1 = Line2D([0, 0], [-extent / 2., extent / 2.], **kwargs)
+        vline2 = Line2D([size, size], [-extent / 2., extent / 2.], **kwargs)
         size_bar.add_artist(line)
         size_bar.add_artist(vline1)
         size_bar.add_artist(vline2)
         txt = matplotlib.offsetbox.TextArea(label, minimumdescent=False, textprops={
             'color': label_color,
         })
-        self.vpac = matplotlib.offsetbox.VPacker(children=[size_bar,txt],
-                                 align="center", pad=ppad, sep=sep)
+        self.vpac = matplotlib.offsetbox.VPacker(children=[size_bar, txt],
+                                                 align="center", pad=ppad, sep=sep)
         matplotlib.offsetbox.AnchoredOffsetbox.__init__(self, loc, pad=pad,
-                 borderpad=borderpad, child=self.vpac, prop=prop, frameon=frameon)
+                                                        borderpad=borderpad, child=self.vpac, prop=prop,
+                                                        frameon=frameon)
 
 
 def savefig(desired_path, dpi=400, data=None, **kwargs):
     full_path = path_for_plot(desired_path)
 
     if data is not None:
-        assert(isinstance(data, (list, tuple, set,)))
+        assert isinstance(data, (list, tuple, set,))
 
         def extract(for_data):
             try:
@@ -606,7 +605,7 @@ def savefig(desired_path, dpi=400, data=None, **kwargs):
 def path_for_plot(desired_path):
     workspace = CONFIG['WORKSPACE']
 
-    if workspace is None:
+    if not workspace:
         warnings.warn('Saving locally, no workspace found.')
         return os.path.join(os.getcwd(), desired_path)
 
@@ -657,6 +656,7 @@ def name_for_dim(dim_name, escaped=True):
 
     return name
 
+
 def unit_for_dim(dim_name, escaped=True):
     unit = {
         'theta': r'rad',
@@ -677,6 +677,7 @@ def unit_for_dim(dim_name, escaped=True):
         unit = unit.replace('$', '')
 
     return unit
+
 
 def label_for_colorbar(data):
     if not data.S.is_differentiated:
@@ -702,7 +703,7 @@ def label_for_colorbar(data):
 
     return r'$\frac{\partial' + partial_frag + r' \textnormal{Int.}}{' + \
            r''.join([r'\partial {}^{}'.format(name_for_dim(item, escaped=False), n)
-                     for item, n in c.items()])+ '}$ (arb.)'
+                     for item, n in c.items()]) + '}$ (arb.)'
 
 
 def label_for_dim(data=None, dim_name=None, escaped=True):
@@ -734,6 +735,7 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
         from titlecase import titlecase
     except ImportError:
         warnings.warn('Using alternative titlecase, for better results `pip install titlecase`.')
+
         def titlecase(s):
             """
             Poor man's titlecase
@@ -791,7 +793,7 @@ class CoincidentLinesPlot():
     <https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit>`_.
     """
 
-    linewidth=3
+    linewidth = 3
 
     def __init__(self, **kwargs):
         self.ax = kwargs.pop('ax', plt.gca())
@@ -806,10 +808,10 @@ class CoincidentLinesPlot():
             'button_release_event': self.ax.figure.canvas.mpl_connect('button_release_event', self._resize),
         }
         self.handles = []
-        self.lines = [] # saved args and kwargs for plotting, does not verify coincidence
+        self.lines = []  # saved args and kwargs for plotting, does not verify coincidence
 
     def add_line(self, *args, **kwargs):
-        assert(not self.has_drawn)
+        assert not self.has_drawn
         self.lines.append((args, kwargs,))
 
     def draw(self):
@@ -828,7 +830,7 @@ class CoincidentLinesPlot():
     def data_units_per_pixel(self):
         trans = self.ax.transData.transform
         inverse = ((trans((1, 1)) - trans((0, 0))) * self.ppd)
-        return (1/inverse[0], 1/inverse[1])
+        return (1 / inverse[0], 1 / inverse[1])
 
     def normalize_line_args(self, args):
         def is_data_type(value):
@@ -836,7 +838,7 @@ class CoincidentLinesPlot():
                 np.array, np.ndarray, list, tuple
             ))
 
-        assert(is_data_type(args[0]))
+        assert is_data_type(args[0])
 
         if len(args) > 1 and is_data_type(args[1]) and len(args[0]) == len(args[1]):
             # looks like we have x and y data
@@ -844,7 +846,6 @@ class CoincidentLinesPlot():
 
         # otherwise we should pad the args with the x data
         return [range(len(args[0]))] + args
-
 
     def _resize(self, event=None):
         # Keep the trace in here until we can test appropriately.

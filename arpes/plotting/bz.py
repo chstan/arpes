@@ -1,20 +1,21 @@
+# pylint: disable=import-error
+
+import itertools
 import warnings
 
-import numpy as np
-import itertools
-import matplotlib.pyplot as plt
 import matplotlib.cm
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from matplotlib.patches import FancyArrowPatch
 
 from arpes.analysis.mask import apply_mask_to_coords
+from arpes.plotting.utils import path_for_plot
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
-from arpes.utilities.geometry import polyhedron_intersect_plane
 from arpes.utilities.bz import build_2dbz_poly, process_kpath
-from arpes.plotting.utils import path_for_plot
-
+from arpes.utilities.geometry import polyhedron_intersect_plane
 
 __all__ = ('annotate_special_paths', 'bz2d_plot', 'bz3d_plot', 'bz_plot',
            'plot_data_to_bz', 'plot_data_to_bz2d', 'plot_data_to_bz3d', 'plot_plane_to_bz',)
@@ -133,7 +134,7 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     :return:
     """
     try:
-        import ase
+        from ase.dft.bz import bz_vertices  # dynamic because we do not require ase
     except ImportError:
         warnings.warn('You will need to install ASE (Atomic Simulation Environment) to use this feature.')
         raise ImportError('You will need to install ASE before using Brillouin Zone plotting')
@@ -153,8 +154,7 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     kpoints = points
 
     if isinstance(paths, str):
-        from ase.dft.kpoints import (get_special_points, special_paths,
-                                     parse_path_string, get_cellinfo,
+        from ase.dft.kpoints import (get_special_points, special_paths, parse_path_string,
                                      crystal_structure_from_cell)
         special_points = get_special_points(cell)
         structure = crystal_structure_from_cell(cell)
@@ -177,7 +177,6 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     y = np.cos(azim)
     view = [x * np.cos(elev), y * np.cos(elev), np.sin(elev)]
 
-    from ase.dft.bz import bz_vertices # dynamic because we do not require ase
     bz1 = bz_vertices(icell)
 
     maxp = 0.0
@@ -357,7 +356,6 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
     :param points:
     :return:
     """
-    import matplotlib.pyplot as plt
     from ase.dft.bz import bz_vertices
 
     # 2d in x-y plane
@@ -375,8 +373,7 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
     bz1 = bz_vertices(icell)
 
     if isinstance(paths, str):
-        from ase.dft.kpoints import (get_special_points, special_paths,
-                                     parse_path_string, get_cellinfo,
+        from ase.dft.kpoints import (get_special_points, special_paths, parse_path_string,
                                      crystal_structure_from_cell)
         special_points = get_special_points(cell)
         structure = crystal_structure_from_cell(cell)
@@ -445,4 +442,3 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
     s = maxp * 1.05
 
     ax.set_aspect('equal')
-

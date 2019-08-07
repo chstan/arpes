@@ -1,8 +1,7 @@
 import numpy as np
-import xarray as xr
 
 import arpes.constants
-from typing import Union
+import xarray as xr
 
 __all__ = ('calculate_kp_kz_bounds', 'calculate_kx_ky_bounds', 'calculate_kp_bounds')
 
@@ -126,5 +125,3 @@ def calculate_kx_ky_bounds(arr: xr.DataArray):
         (round(np.min(kxs), 2), round(np.max(kxs), 2)),
         (round(np.min(kys), 2), round(np.max(kys), 2)),
     )
-
-

@@ -26,26 +26,29 @@ we start to run into the limits of these ones. But between this and `qt_tool`
 we are doing fine for now.
 """
 
-import matplotlib.gridspec as gridspec
-import matplotlib
-import numpy as np
 import itertools
-import matplotlib.pyplot as plt
 from functools import wraps
-from matplotlib.widgets import LassoSelector, Button, TextBox, RectangleSelector, SpanSelector, Slider
+
+import matplotlib
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import numpy as np
+
 from matplotlib.path import Path
+from matplotlib.widgets import (Button, LassoSelector, RectangleSelector, Slider, SpanSelector, TextBox)
 
 import arpes.config
-from arpes.plotting.utils import imshow_arr, fancy_labels, invisible_axes
 from arpes.fits import LorentzianModel, broadcast_model
+from arpes.plotting.utils import fancy_labels, imshow_arr, invisible_axes
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.conversion import convert_to_kspace
 
 __all__ = ('pick_rectangles', 'pick_points', 'pca_explorer', 'kspace_tool', 'fit_initializer',)
 
 
-class SelectFromCollection(object):
-    """Select indices from a matplotlib collection using `LassoSelector`.
+class SelectFromCollection:
+    """
+    Select indices from a matplotlib collection using `LassoSelector`.
 
     Modified from https://matplotlib.org/gallery/widgets/lasso_selector_demo_sgskip.html
 
@@ -64,15 +67,16 @@ class SelectFromCollection(object):
         self.alpha_other = alpha_other
 
         self.xys = collection.get_offsets()
-        self.Npts = len(self.xys)
+        self.n_pts = len(self.xys)
         self._on_select = on_select
 
         # Ensure that we have separate colors for each object
-        self.fc = collection.get_facecolors()
-        if len(self.fc) == 0:
+        self.facecolors = collection.get_facecolors()
+        if not self.facecolors:
             raise ValueError('Collection must have a facecolor')
-        elif len(self.fc) == 1:
-            self.fc = np.tile(self.fc, (self.Npts, 1))
+
+        if len(self.facecolors) == 1:
+            self.facecolors = np.tile(self.facecolors, (self.n_pts, 1))
 
         self.lasso = LassoSelector(ax, onselect=self.onselect)
         self.ind = []
@@ -81,9 +85,9 @@ class SelectFromCollection(object):
         try:
             path = Path(verts)
             self.ind = np.nonzero(path.contains_points(self.xys))[0]
-            self.fc[:, -1] = self.alpha_other
-            self.fc[self.ind, -1] = 1
-            self.collection.set_facecolors(self.fc)
+            self.facecolors[:, -1] = self.alpha_other
+            self.facecolors[self.ind, -1] = 1
+            self.collection.set_facecolors(self.facecolors)
             self.canvas.draw_idle()
 
             if self._on_select is not None:
@@ -93,8 +97,8 @@ class SelectFromCollection(object):
 
     def disconnect(self):
         self.lasso.disconnect_events()
-        self.fc[:, -1] = 1
-        self.collection.set_facecolors(self.fc)
+        self.facecolors[:, -1] = 1
+        self.collection.set_facecolors(self.facecolors)
         self.canvas.draw_idle()
 
 
@@ -124,7 +128,7 @@ def popout(plotting_function):
     return wrapped
 
 
-class DataArrayView(object):
+class DataArrayView:
     """
     Offers support for 1D and 2D DataArrays with masks, selection tools, and a simpler interface
     than the matplotlib primitives.
@@ -171,7 +175,7 @@ class DataArrayView(object):
 
     def attach_selector(self, on_select):
         # data should already have been set
-        assert(self.n_dims is not None)
+        assert self.n_dims is not None
 
         self._inner_on_select = on_select
 
@@ -268,7 +272,8 @@ class DataArrayView(object):
 
             x = self.data.coords[self.data.dims[0]].values
             low, high = self.ax.get_ylim()
-            self._mask_image = self.ax.fill_between(x, low, for_mask * high, color=self.mask_cmap(1.), **self.mask_kwargs)
+            calc_cmap = self.mask_cmap
+            self._mask_image = self.ax.fill_between(x, low, for_mask * high, color=calc_cmap(1.), **self.mask_kwargs)
 
     def autoscale(self):
         if self.n_dims == 2:
@@ -311,10 +316,11 @@ def fit_initializer(data, peak_type=LorentzianModel, **kwargs):
         center = (selection.start + selection.stop) / 2
         sigma = (selection.stop - selection.start)
 
-        model_settings.append({'center': {'value': center, 'min': center - sigma, 'max': center + sigma}, 'sigma': {'value': sigma}, 'amplitude': {'min': 0, 'value': amplitude}})
+        model_settings.append({'center': {'value': center, 'min': center - sigma, 'max': center + sigma},
+                               'sigma': {'value': sigma}, 'amplitude': {'min': 0, 'value': amplitude}})
         model_defs.append(LorentzianModel)
 
-        if len(model_defs):
+        if model_defs:
             results = broadcast_model(model_defs, for_fit, 'fit_dim', params=compute_parameters())
             result = results.results[0].item()
 
@@ -373,7 +379,7 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
         'sum_data': None,
         'map_data': None,
         'selector': None,
-        'integration_region': None,
+        'integration_region': {},
     }
     arpes.config.CONFIG['CURRENT_CONTEXT'] = context
 
@@ -403,14 +409,14 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
 
     def update_from_selection(ind):
         # Calculate the new data
-        if ind is None or len(ind) == 0:
+        if ind is None or not ind:
             context['selected_indices'] = []
             context['sum_data'] = data.stack(pca_dims=pca_dims).sum('pca_dims')
         else:
             context['selected_indices'] = ind
             context['sum_data'] = data.stack(pca_dims=pca_dims).isel(pca_dims=ind).sum('pca_dims')
 
-        if context['integration_region'] is not None:
+        if context['integration_region']:
             data_sel = data.sel(**context['integration_region']).sum(other_dims)
         else:
             data_sel = data.sum(other_dims)
@@ -426,7 +432,7 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
         for_scatter, size = compute_for_scatter()
         pts = ax_components.scatter(for_scatter.values[0], for_scatter.values[1], s=size)
 
-        if context['selector'] != None:
+        if context['selector'] is not None:
             context['selector'].disconnect()
 
         context['selector'] = SelectFromCollection(ax_components, pts, on_select=update_from_selection)
@@ -450,10 +456,10 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
 
             val_x, val_y = clamp(val_x, 0, maximum), clamp(val_y, 0, maximum)
 
-            assert(val_x != val_y)
+            assert val_x != val_y
 
             set_axes(val_x, val_y)
-        except Exception as e:
+        except Exception:
             pass
 
     context['axis_button'] = Button(ax_widget_1, 'Change Decomp Axes')
@@ -530,7 +536,7 @@ def kspace_tool(data, **kwargs):
     for convert_dim in convert_dims:
         widget_ax = next(axes)
         low, high, delta = default_ranges.get(convert_dim, ang_range)
-        init = data.S._lookup_offset(convert_dim)
+        init = data.S.lookup_offset(convert_dim)
         sliders[convert_dim] = Slider(widget_ax, convert_dim, init + low, init + high, valinit=init, valstep=delta)
         sliders[convert_dim].on_changed(update_kspace_plot)
 
@@ -604,7 +610,7 @@ def pick_rectangles(data, **kwargs):
         ctx['rect_next'] = not ctx['rect_next']
         plt.draw()
 
-    cid = plt.connect('button_press_event', onclick)
+    _ = plt.connect('button_press_event', onclick)
 
     return rects
 
@@ -633,7 +639,7 @@ def pick_gamma(data, **kwargs):
 
         plt.draw()
 
-    cid = plt.connect('button_press_event', onclick)
+    _ = plt.connect('button_press_event', onclick)
 
     return data
 
@@ -665,8 +671,6 @@ def pick_points(data, **kwargs):
 
         plt.draw()
 
-    cid = plt.connect('button_press_event', onclick)
+    _ = plt.connect('button_press_event', onclick)
 
     return ctx['points']
-
-

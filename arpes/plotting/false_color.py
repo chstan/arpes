@@ -1,12 +1,12 @@
-import xarray as xr
-
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.colors
+import matplotlib.pyplot as plt
+import numpy as np
 
+import xarray as xr
 from arpes.plotting.utils import imshow_arr, path_for_plot
 from arpes.provenance import save_plot_provenance
 from arpes.utilities import normalize_to_spectrum
+
 
 @save_plot_provenance
 def false_color_plot(data_r: xr.Dataset, data_g: xr.Dataset, data_b: xr.Dataset, ax=None, out=None, invert=False, pmin=0, pmax=1, **kwargs):
@@ -46,4 +46,3 @@ def false_color_plot(data_r: xr.Dataset, data_g: xr.Dataset, data_b: xr.Dataset,
         return path_for_plot(out)
 
     return fig, ax
-

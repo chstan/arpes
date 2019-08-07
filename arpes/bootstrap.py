@@ -11,21 +11,21 @@ across the detector due to MCP burn-in, and electron aberration and focusing
 must be considered.
 """
 
+import copy
+import functools
+import random
+
 from typing import Union
+import numpy as np
 from tqdm import tqdm_notebook
 
-import numpy as np
-import random
-import copy
 import xarray as xr
-import functools
-
 from arpes.analysis.sarpes import to_intensity_polarization
 from arpes.provenance import update_provenance
-from arpes.utilities.region import normalize_region
-from arpes.utilities.normalize import normalize_to_spectrum
 from arpes.typing import DataType
 from arpes.utilities import lift_dataarray_to_generic
+from arpes.utilities.normalize import normalize_to_spectrum
+from arpes.utilities.region import normalize_region
 
 __all__ = ('bootstrap', 'estimate_prior_adjustment',
            'resample_true_counts', 'bootstrap_counts',
@@ -33,8 +33,8 @@ __all__ = ('bootstrap', 'estimate_prior_adjustment',
 
 
 @update_provenance('Estimate prior')
-def estimate_prior_adjustment(data: DataType, region: Union[dict, str]=None):
-    """
+def estimate_prior_adjustment(data: DataType, region: Union[dict, str] = None) -> float:
+    r"""
     Estimates the parameters of a distribution generating the intensity
     histogram of pixels in a spectrum. In a perfectly linear, single-electron
     single-count detector, this would be a poisson distribution with
@@ -153,11 +153,11 @@ def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
     mean = np.mean(resampled_arr, axis=0)
     mean = xr.DataArray(mean, data.coords, data.dims)
 
-    vars = {}
-    vars[name] = mean
-    vars[name + '_std'] = std
+    data_vars = {}
+    data_vars[name] = mean
+    data_vars[name + '_std'] = std
 
-    return xr.Dataset(data_vars=vars, coords=data.coords, attrs=data.attrs.copy())
+    return xr.Dataset(data_vars=data_vars, coords=data.coords, attrs=data.attrs.copy())
 
 
 @update_provenance('Bootstrap spin detector polarization and intensity')

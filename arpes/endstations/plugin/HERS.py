@@ -1,16 +1,15 @@
-import warnings
 import copy
 import itertools
 import os.path
+import warnings
 
 import numpy as np
-import xarray as xr
-
 from astropy.io import fits
 
 import arpes.config
-from arpes.endstations import SynchrotronEndstation, HemisphericalEndstation
-from arpes.endstations import find_clean_coords
+import xarray as xr
+from arpes.endstations import (HemisphericalEndstation, SynchrotronEndstation,
+                               find_clean_coords)
 from arpes.provenance import provenance_from_file
 from arpes.utilities import rename_keys
 
@@ -41,7 +40,7 @@ class HERSEndstation(SynchrotronEndstation, HemisphericalEndstation):
         header_hdu, hdu = hdulist[0], hdulist[1]
 
         coords, dimensions, spectrum_shape = find_clean_coords(hdu, scan_desc)
-        columns = hdu.columns
+        columns = hdu.columns # pylint: disable=no-member
 
         column_renamings = {}
         take_columns = columns
@@ -53,7 +52,7 @@ class HERSEndstation(SynchrotronEndstation, HemisphericalEndstation):
         scan_desc = {k: v for k, v in scan_desc.items()
                     if not any(pred(k) for pred in skip_predicates)}
 
-        data_vars = {k: (dimensions[k], hdu.data[k].reshape(spectrum_shape[k]), scan_desc)
+        data_vars = {k: (dimensions[k], hdu.data[k].reshape(spectrum_shape[k]), scan_desc)  # pylint: disable=no-member
                      for k in spectra_names}
         data_vars = rename_keys(data_vars, column_renamings)
 

@@ -1,4 +1,5 @@
 from enum import Enum
+
 from typing import Union
 
 __all__ = ['REGIONS', 'normalize_region', 'DesignatedRegions']

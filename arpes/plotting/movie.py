@@ -1,10 +1,9 @@
-import xarray as xr
 import numpy as np
-import arpes.config
-
 from matplotlib import pyplot as plt
 from matplotlib import animation
 
+import arpes.config
+import xarray as xr
 from arpes.plotting.utils import path_for_plot
 from arpes.provenance import save_plot_provenance
 

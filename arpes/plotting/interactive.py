@@ -2,12 +2,12 @@ import copy
 import warnings
 
 import numpy as np
+
 import colorcet as cc
-
-from .interactive_utils import SaveableTool, CursorTool
-
-from arpes.fits import GStepBModel, ExponentialDecayCModel
+from arpes.fits import ExponentialDecayCModel, GStepBModel
 from arpes.io import save_dataset
+
+from .interactive_utils import CursorTool, SaveableTool
 
 __all__ = ('ImageTool',)
 
@@ -32,7 +32,8 @@ class ImageTool(SaveableTool, CursorTool):
             if self.app_context['color_mode'] == 'linear':
                 return image_arr.values
 
-            from skimage import exposure  # avoid dependency conflict with numpy v0.16 for now
+            # avoid dependency conflict with numpy v0.16 for now
+            from skimage import exposure  # pylint: disable=import-error
             return exposure.equalize_adapthist(image_arr.values, clip_limit=0.03)
 
     def tool_handler(self, doc):
@@ -52,9 +53,6 @@ class ImageTool(SaveableTool, CursorTool):
         arr = self.arr
         # Set up the data
         x_coords, y_coords = arr.coords[arr.dims[0]], arr.coords[arr.dims[1]]
-
-        t0 = None
-        fit_data = None
 
         # Styling
         default_palette = self.default_palette
@@ -256,7 +254,7 @@ class ImageTool(SaveableTool, CursorTool):
                 for axis, value in cursor_dict.items():
                     options = [point[axis] for point in arr.attrs['symmetry_points'].values() if axis in point]
                     options = sorted(options, key=lambda x: np.abs(x - value))
-                    if len(options) and np.abs(options[0] - value) < snap_distance[axis]:
+                    if options and np.abs(options[0] - value) < snap_distance[axis]:
                         snapped[axis] = options[0]
 
             arr.attrs['symmetry_points'][symmetry_point_name_input.value] = snapped
@@ -354,9 +352,6 @@ class ImageTool(SaveableTool, CursorTool):
         arr = self.arr
         # Set up the data
         x_coords, y_coords, z_coords = arr.coords[arr.dims[0]], arr.coords[arr.dims[1]], arr.coords[arr.dims[2]]
-
-        t0 = None
-        fit_data = None
 
         info_formatters = {
             'eV': """<div>
@@ -671,7 +666,7 @@ class ImageTool(SaveableTool, CursorTool):
                 for axis, value in cursor_dict.items():
                     options = [point[axis] for point in arr.attrs['symmetry_points'].values() if axis in point]
                     options = sorted(options, key=lambda x: np.abs(x - value))
-                    if len(options) and np.abs(options[0] - value) < snap_distance[axis]:
+                    if options and np.abs(options[0] - value) < snap_distance[axis]:
                         snapped[axis] = options[0]
 
             arr.attrs['symmetry_points'][symmetry_point_name_input.value] = snapped

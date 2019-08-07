@@ -1,9 +1,8 @@
 import numpy as np
 
 from arpes.analysis.mask import apply_mask
-from arpes.plotting.interactive_utils import CursorTool, SaveableTool
 from arpes.exceptions import AnalysisError
-
+from arpes.plotting.interactive_utils import CursorTool, SaveableTool
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
@@ -102,14 +101,14 @@ class MaskTool(SaveableTool, CursorTool):
             ('Region', 'region',),
         ]
 
-        def mask(data=None, **kwargs):
+        def perform_mask(data=None, **kwargs):
             if data is None:
                 data = arr
 
             data = normalize_to_spectrum(data)
             return apply_mask(data, self.app_context['mask'], **kwargs)
 
-        self.app_context['perform_mask'] = mask
+        self.app_context['perform_mask'] = perform_mask
         self.app_context['mask'] = None
 
         pointer_dropdown = widgets.Dropdown(label='Pointer Mode', button_type='primary', menu=POINTER_MODES)

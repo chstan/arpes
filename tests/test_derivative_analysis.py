@@ -1,10 +1,8 @@
 import numpy as np
-
 import pytest
 
 from arpes.analysis.derivative import dn_along_axis
 from arpes.analysis.filters import gaussian_filter_arr
-
 
 
 def test_dataarray_derivatives(sandbox_configuration):

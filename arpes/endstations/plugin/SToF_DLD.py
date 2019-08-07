@@ -1,14 +1,12 @@
-import warnings
 import copy
 import os.path
+import warnings
 
 import h5py
 import numpy as np
-import xarray as xr
 
 import arpes.config
-
-
+import xarray as xr
 from arpes.endstations import EndstationBase
 from arpes.provenance import provenance_from_file
 

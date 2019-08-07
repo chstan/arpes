@@ -1,9 +1,8 @@
-from bokeh import events
-import xarray as xr
 import numpy as np
+from bokeh import events
 
+import xarray as xr
 from arpes.plotting.interactive_utils import BokehInteractiveTool, CursorTool
-
 
 __all__ = ('FitCheckTool',)
 
@@ -224,7 +223,7 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
                 coord_vals = raw_data.coords[raw_data.dims[0 if target == 'bottom' else 1]].values
 
             if current_fit is not None:
-                app_widgets['fit_info_div'].text = current_fit._repr_html_(short=True)
+                app_widgets['fit_info_div'].text = current_fit._repr_html_(short=True) # pylint: disable=protected-access
             else:
                 app_widgets['fit_info_div'].text = 'No fit here.'
                 plots['{}_residual'.format(target)].data_source.data = {
@@ -353,4 +352,3 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
 
         doc.add_root(layout)
         doc.title = 'Band Tool'
-

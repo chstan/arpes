@@ -5,12 +5,13 @@ import argparse
 import os
 import sys
 
+import arpes.config
+from arpes.utilities import modern_clean_xlsx_dataset
+from arpes.utilities.dataset import walk_datasets
+
 sys.path.append(os.getenv('ARPES_ROOT'))
 sys.path.append(os.path.join(os.getenv('ARPES_ROOT'), 'arpes'))
 
-from arpes.utilities import modern_clean_xlsx_dataset
-from arpes.utilities.dataset import walk_datasets
-import arpes.config
 
 
 DESCRIPTION = """

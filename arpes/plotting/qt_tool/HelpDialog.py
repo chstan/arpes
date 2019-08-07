@@ -1,6 +1,9 @@
-from PyQt5 import QtWidgets, QtCore
+# pylint: disable=import-error
 
-from .utils import PRETTY_KEYS, vlayout, label
+from PyQt5 import QtCore, QtWidgets
+
+from .utils import PRETTY_KEYS, label, vlayout
+
 
 class HelpDialog(QtWidgets.QDialog):
     def __init__(self, shortcuts=None):
@@ -45,5 +48,5 @@ class HelpDialog(QtWidgets.QDialog):
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_H or event.key() == QtCore.Qt.Key_Escape:
-            self._main_window._help_dialog = None
+            self._main_window._help_dialog = None # pylint: disable=protected-access
             self.close()

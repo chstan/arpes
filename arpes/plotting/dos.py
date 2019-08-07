@@ -1,12 +1,13 @@
-import numpy as np
 import matplotlib
+import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import colors, gridspec
 
+from arpes.analysis.xps import approximate_core_levels
 from arpes.provenance import save_plot_provenance
 from arpes.utilities import normalize_to_spectrum
-from arpes.analysis.xps import approximate_core_levels
-from .utils import *
+
+from .utils import path_for_plot, savefig
 
 __all__ = ('plot_dos', 'plot_core_levels',)
 

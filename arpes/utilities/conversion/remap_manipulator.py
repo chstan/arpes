@@ -1,5 +1,6 @@
-import numpy as np
 from copy import deepcopy
+
+import numpy as np
 
 __all__ = ['remap_coords_to']
 
@@ -21,7 +22,7 @@ def remap_coords_to(arr, reference_arr):
     irrelevant_coordinates = list({'hv', 'eV',}.intersection(set(arr.dims)))
     arr = arr.sum(*irrelevant_coordinates, keep_attrs=True) # sum is not so fast, but ensures there is data
 
-    assert(arr.S.is_kspace == reference_arr.S.is_kspace)
+    assert arr.S.is_kspace == reference_arr.S.is_kspace
 
     full_coords = arr.S.full_coords
     full_reference_coords = reference_arr.S.full_coords

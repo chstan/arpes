@@ -1,8 +1,8 @@
 from arpes.analysis import rebin
+from arpes.fits import GStepBModel, broadcast_model
+from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities.normalize import normalize_to_spectrum
-from arpes.fits import broadcast_model, GStepBModel
-from arpes.provenance import update_provenance
 
 __all__ = ('fs_gap',)
 
@@ -16,7 +16,7 @@ def fs_gap(data: DataType, shape=None, energy_range=None):
 
     data.sel(eV=energy_range)
 
-    reduction=None
+    reduction = None
     if shape is None:
         # Just rebin the data along 'phi'
         reduction = {'phi': 16}

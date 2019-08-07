@@ -1,8 +1,8 @@
 import numpy as np
 
+from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
-from arpes.provenance import update_provenance
 
 __all__ = ('remove_incoherent_background',)
 
@@ -29,4 +29,3 @@ def remove_incoherent_background(data: DataType, set_zero=True):
         new.values[new.values < 0] = 0
 
     return new
-

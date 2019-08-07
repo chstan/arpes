@@ -1,12 +1,11 @@
-from bokeh import events
 import numpy as np
+from bokeh import events
 
 import xarray as xr
+from arpes.analysis.band_analysis import fit_patterned_bands
+from arpes.exceptions import AnalysisError
 from arpes.models import band
 from arpes.plotting.interactive_utils import CursorTool, SaveableTool
-from arpes.exceptions import AnalysisError
-
-from arpes.analysis.band_analysis import fit_patterned_bands
 from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('BandTool',)
@@ -137,7 +136,7 @@ class BandTool(SaveableTool, CursorTool):
         def pack_bands():
             packed_bands = {}
             for band_name, band_description in self.app_context['bands'].items():
-                if len(band_description['points']) == 0:
+                if not band_description['points']:
                     raise AnalysisError('Band {} is empty.'.format(band_name))
 
                 stray = None
@@ -172,10 +171,11 @@ class BandTool(SaveableTool, CursorTool):
             angular_direction = dims[0]
             if isinstance(override_data, xr.Dataset):
                 override_data = normalize_to_spectrum(override_data)
-            return fit_patterned_bands(override_data if override_data is not None else self.arr, packed_bands,
-                                       fit_direction='eV' if self.app_context[
-                                                                 'fit_mode'] == 'edc' else angular_direction,
-                                       direction_normal=self.app_context['direction_normal'])
+            return fit_patterned_bands(
+                override_data if override_data is not None else self.arr, packed_bands,
+                fit_direction='eV' if self.app_context['fit_mode'] == 'edc' else angular_direction,
+                direction_normal=self.app_context['direction_normal']
+            )
 
         self.app_context['pack_bands'] = pack_bands
         self.app_context['fit'] = fit
@@ -215,8 +215,8 @@ class BandTool(SaveableTool, CursorTool):
                 self.save_app()
 
         def on_copy_center_float():
-            for band in self.app_context['bands'].keys():
-                self.app_context['bands'][band]['center_float'] = self.app_context['center_float']
+            for band_name in self.app_context['bands'].keys():
+                self.app_context['bands'][band_name]['center_float'] = self.app_context['center_float']
                 self.save_app()
 
         def on_change_active_band(attr, old_band_id, band_id):

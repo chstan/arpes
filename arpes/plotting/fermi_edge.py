@@ -1,14 +1,14 @@
+import math
 import warnings
 
-import math
 import matplotlib.pyplot as plt
 import numpy as np
 
+from arpes.fits import GStepBModel, broadcast_model
 from arpes.provenance import save_plot_provenance
-from .utils import *
-
-from arpes.fits import broadcast_model, GStepBModel
 from arpes.utilities import apply_dataarray
+
+from .utils import path_for_plot, label_for_dim
 
 __all__ = ['fermi_edge_reference', 'plot_fit']
 
@@ -41,7 +41,7 @@ def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
     is_bootstrapped = 'bootstrap' in data.dims
 
     if axes is None:
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 6))
+        _, axes = plt.subplots(n_rows, n_cols, figsize=(15, 6))
 
     for i, param in enumerate(param_names):
         row = i // MAX_COLS
@@ -108,7 +108,7 @@ def fermi_edge_reference(data, title=None, ax=None, out=None, norm=None, **kwarg
     widths = apply_dataarray(edge_fit, np.vectorize(lambda x: x.params['width'].value, otypes=[np.float]))
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=(8, 5))
+        _, ax = plt.subplots(figsize=(8, 5))
 
     if title is None:
         title = data.S.label.replace('_', ' ')

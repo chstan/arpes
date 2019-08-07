@@ -1,5 +1,4 @@
 import xarray as xr
-
 from arpes.analysis import savitzky_golay
 from arpes.provenance import update_provenance
 from arpes.typing import DataType

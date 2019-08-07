@@ -1,7 +1,8 @@
 import numpy as np
-import xarray as xr
 
-from arpes.endstations import HemisphericalEndstation, SynchrotronEndstation, FITSEndstation
+import xarray as xr
+from arpes.endstations import (FITSEndstation, HemisphericalEndstation,
+                               SynchrotronEndstation)
 
 __all__ = ('MAESTROARPESEndstation',)
 

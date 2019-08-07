@@ -1,10 +1,11 @@
+import logging
+import os
+import re
+import uuid
 import warnings
 from collections import namedtuple
 from pathlib import Path
-import os
-import uuid
-import logging
-import re
+from typing import Iterator
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,7 @@ import pandas as pd
 import arpes.config
 from arpes.exceptions import ConfigurationError
 from arpes.utilities.string import snake_case
-from typing import List, Union, Any, Optional
+from typing import Any, List, Optional, Union
 
 __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
            'attach_extra_dataset_columns', 'swap_reference_map',
@@ -79,12 +80,9 @@ def infer_data_path(file: int, scan_desc: pd.Series, allow_soft_match: bool = Fa
     if 'path' in scan_desc and not is_blank(scan_desc['path']):
         return scan_desc['path']
 
-    assert('WORKSPACE' in arpes.config.CONFIG)
     workspace = arpes.config.CONFIG['WORKSPACE']
-    workspace_path = None
-    if isinstance(workspace, dict):
-        workspace_path = os.path.join(workspace['path'], 'data')
-        workspace = workspace['name']
+    workspace_path = os.path.join(workspace['path'], 'data')
+    workspace = workspace['name']
 
     base_dir = workspace_path or os.path.join(arpes.config.DATA_PATH, workspace)
     dir_options = [os.path.join(base_dir, option) for option in _SEARCH_DIRECTORIES]
@@ -133,7 +131,7 @@ def infer_data_path(file: int, scan_desc: pd.Series, allow_soft_match: bool = Fa
         except FileNotFoundError:
             pass
 
-    if len(file) and file[0] == 'f':  # try trimming the f off
+    if file and file[0] == 'f':  # try trimming the f off
         return infer_data_path(file[1:], scan_desc, allow_soft_match=allow_soft_match, use_regex=use_regex)
 
     raise ConfigurationError('Could not find file associated to {}'.format(file))
@@ -161,14 +159,13 @@ def default_dataset(workspace: Optional[Any] = None, match: Optional[str] = None
     if workspace is not None:
         arpes.config.CONFIG['WORKSPACE'] = workspace
 
-    material_class = arpes.config.CONFIG['WORKSPACE']
-    if isinstance(material_class, dict):
-        material_class = material_class['name']
+    workspace = arpes.config.CONFIG['WORKSPACE']
 
-    if material_class is None:
+    if not workspace:
         raise ConfigurationError('You need to set the WORKSPACE attribute on CONFIG!')
 
-    dir = os.path.join(arpes.config.DATASET_PATH, material_class)
+    workspace_name = workspace['name']
+    data_dir = os.path.join(arpes.config.DATASET_PATH, workspace_name)
 
     def is_dataset(filename: str) -> bool:
         if filename.startswith('~$') or filename.startswith('._'):
@@ -179,7 +176,7 @@ def default_dataset(workspace: Optional[Any] = None, match: Optional[str] = None
 
         return ext in _DATASET_EXTENSIONS and internal_ext != '.cleaned'
 
-    candidates = list(filter(is_dataset, os.listdir(dir)))
+    candidates = list(filter(is_dataset, os.listdir(data_dir)))
     if match is not None:
         candidates = list(filter(lambda p: match in p, candidates))
 
@@ -187,14 +184,14 @@ def default_dataset(workspace: Optional[Any] = None, match: Optional[str] = None
         print('Available candidates are:')
         print(candidates)
 
-    assert(len(candidates) == 1)
+    assert len(candidates) == 1
 
-    return clean_xlsx_dataset(os.path.join(dir, candidates[0]), **kwargs)
+    return clean_xlsx_dataset(os.path.join(data_dir, candidates[0]), **kwargs)
 
 
 def attach_extra_dataset_columns(path, **kwargs):
     from arpes.io import load_dataset
-    import arpes.xarray_extensions # this avoids a circular import
+    import arpes.xarray_extensions # pylint: disable=unused-import, redefined-outer-name
 
     base_filename, extension = os.path.splitext(path)
     if extension not in _DATASET_EXTENSIONS:
@@ -205,7 +202,7 @@ def attach_extra_dataset_columns(path, **kwargs):
         new_filename = base_filename + extension
     else:
         new_filename = base_filename + '.cleaned' + extension
-    assert(os.path.exists(new_filename))
+    assert os.path.exists(new_filename)
 
     ds = pd.read_excel(new_filename, **kwargs)
 
@@ -333,12 +330,12 @@ def safe_read(path: str, **kwargs: Any) -> pd.DataFrame:
 
 
 def modern_clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=True, write=False, **kwargs):
-    original_path, cleaned_path = cleaned_pair_paths(path)
+    original_path, cleaned_path_str = cleaned_pair_paths(path)
     original = safe_read(original_path, **kwargs)
     original = original[original.file.notnull()]
     cleaned = pd.DataFrame({'id': [], 'path': [], 'file': [], 'spectrum_type': []})
-    if os.path.exists(cleaned_path):
-        cleaned = safe_read(cleaned_path, skiprows=0, **kwargs)
+    if os.path.exists(cleaned_path_str):
+        cleaned = safe_read(cleaned_path_str, skiprows=0, **kwargs)
         if 'file' in cleaned.columns:
             cleaned = cleaned[cleaned.file.notnull()]
         else:
@@ -365,7 +362,7 @@ def modern_clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=T
         last_index = index
 
     if write:
-        excel_writer = pd.ExcelWriter(cleaned_path)
+        excel_writer = pd.ExcelWriter(cleaned_path_str)
         joined.to_excel(excel_writer, index=False)
         excel_writer.save()
 
@@ -455,8 +452,9 @@ def clean_xlsx_dataset(path: str, allow_soft_match: bool = False, write: bool = 
     return ds.set_index('file')
 
 
-def walk_datasets(skip_cleaned=True, use_workspace=False):
+def walk_datasets(skip_cleaned: bool = True, use_workspace: bool = False) -> Iterator[str]:
     root = os.getcwd()
+
     if use_workspace:
         root = arpes.config.CONFIG['WORKSPACE']['path']
 

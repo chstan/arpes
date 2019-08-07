@@ -1,10 +1,8 @@
-import warnings
-
-import xarray as xr
 import numpy as np
+import xarray as xr
 
-from arpes.utilities.conversion.bounds_calculations import euler_to_kx, euler_to_ky, euler_to_kz
 from arpes.provenance import update_provenance
+from arpes.utilities.conversion.bounds_calculations import euler_to_kx, euler_to_ky, euler_to_kz
 
 __all__ = ('convert_coordinates_to_kspace_forward',)
 
@@ -29,7 +27,7 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
     old_dims = list(all.keys())
     old_dims.sort()
 
-    if len(old_dims) == 0:
+    if not old_dims:
         return None
 
     dest_coords = {
@@ -53,7 +51,7 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
     # that aspect of this is broken for now, but we need not worry
     def broadcast_by_dim_location(data, target_shape, dim_location=None):
         if isinstance(data, xr.DataArray):
-            if len(data.dims) == 0:
+            if not data.dims:
                 data = data.item()
 
         if isinstance(data, (int, float,)):
@@ -150,5 +148,3 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
         data_vars[dest_coord] = (full_old_dims, np.squeeze(raw_translated[dest_coord]))
 
     return xr.Dataset(data_vars, coords=arr.indexes)
-
-

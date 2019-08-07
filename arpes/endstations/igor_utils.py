@@ -1,6 +1,6 @@
-import subprocess
-import os.path
 import itertools
+import os.path
+import subprocess
 
 __all__ = ('shim_wave_note',)
 
@@ -21,7 +21,7 @@ def shim_wave_note(path):
     h5_out = subprocess.getoutput(cmd)
 
     split_data = h5_out[h5_out.index('DATA {'):]
-    assert(len(split_data.split('"')) == 3)
+    assert len(split_data.split('"')) == 3
     data = split_data.split('"')[1]
 
     # remove stuff below the end of the header

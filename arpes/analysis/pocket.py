@@ -1,12 +1,12 @@
 import numpy as np
-import xarray as xr
 from sklearn.decomposition import PCA
 
+import xarray as xr
+from arpes.fits.fit_models import AffineBackgroundModel, LorentzianModel
+from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.conversion import slice_along_path
-from arpes.fits.fit_models import LorentzianModel, AffineBackgroundModel
-from arpes.provenance import update_provenance
 
 __all__ = ('curves_along_pocket', 'edcs_along_pocket', 'radial_edcs_along_pocket',
            'pocket_parameters',)
@@ -24,7 +24,7 @@ def pocket_parameters(data: DataType, kf_method=None, sel=None, method_kwargs=No
     :param kwargs:
     :return:
     """
-    slices, angles = curves_along_pocket(data, **kwargs)
+    slices, _ = curves_along_pocket(data, **kwargs) # slices, angles =
 
     if kf_method is None:
         kf_method = find_kf_by_mdc
@@ -75,7 +75,7 @@ def radial_edcs_along_pocket(data: DataType, angle, inner_radius=0, outer_radius
     data = normalize_to_spectrum(data)
     fermi_surface_dims = list(data.dims)
 
-    assert('eV' in fermi_surface_dims)
+    assert 'eV' in fermi_surface_dims
     fermi_surface_dims.remove('eV')
 
     center_point = {k: v for k, v in kwargs.items() if k in data.dims}
@@ -185,7 +185,7 @@ def find_kf_by_mdc(slice: DataType, offset=0, **kwargs):
     if isinstance(slice, xr.Dataset):
         slice = slice.data
 
-    assert(isinstance(slice, xr.DataArray))
+    assert isinstance(slice, xr.DataArray)
 
     if 'eV' in slice.dims:
         slice = slice.sum('eV')

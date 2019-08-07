@@ -1,11 +1,10 @@
-from arpes.typing import DataType
-from matplotlib.path import Path
-import xarray as xr
-
 import numpy as np
+from matplotlib.path import Path
 
-from arpes.utilities import normalize_to_spectrum
+import xarray as xr
 from arpes.provenance import update_provenance
+from arpes.typing import DataType
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('polys_to_mask', 'apply_mask', 'raw_poly_to_mask',
            'apply_mask_to_coords',)

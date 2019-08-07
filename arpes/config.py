@@ -4,16 +4,18 @@ for loading configuration in via external files, to allow better modularity
 between different projects.
 """
 
+# pylint: disable=global-statement
+
+
 import json
-import os.path
 import logging
+import os.path
 import pint
-from typing import Any, Optional
 
 from pathlib import Path
+from typing import Any, Optional
 
 from arpes.exceptions import ConfigurationError
-
 
 ureg = pint.UnitRegistry()
 
@@ -48,10 +50,9 @@ def generate_cache_files() -> None:
     global DATASET_CACHE_RECORD
     global CLEAVE_RECORD
 
-    for p in [DATASET_CACHE_RECORD, CLEAVE_RECORD]:
-        fp = Path(p)
-        if not fp.exists():
-            with open(p, 'w') as f:
+    for record_file in [DATASET_CACHE_RECORD, CLEAVE_RECORD]:
+        if not Path(record_file).exists():
+            with open(record_file, 'w') as f:
                 json.dump({}, f)
 
 
@@ -73,9 +74,8 @@ def update_configuration(user_path: Optional[str] = None) -> None:
         DATASET_CACHE_RECORD = os.path.join(user_path, 'datasets', 'cache.json')
         CLEAVE_RECORD = os.path.join(user_path, 'datasets', 'cleaves.json')
 
-        # TODO use a real database here
-        PIPELINE_SHELF = os.path.join(user_path, 'datasets','pipeline.shelf')
-        PIPELINE_JSON_SHELF = os.path.join(user_path, 'datasets','pipeline.shelf.json')
+        PIPELINE_SHELF = os.path.join(user_path, 'datasets', 'pipeline.shelf')
+        PIPELINE_JSON_SHELF = os.path.join(user_path, 'datasets', 'pipeline.shelf.json')
 
         generate_cache_files()
     except TypeError:
@@ -83,35 +83,37 @@ def update_configuration(user_path: Optional[str] = None) -> None:
 
 
 CONFIG = {
-    'WORKSPACE': None,
+    'WORKSPACE': {},
     'CURRENT_CONTEXT': None,
 }
 
 
-class WorkspaceManager(object):
+class WorkspaceManager:
     def __init__(self, workspace: Optional[Any] = None) -> None:
         self._cached_workspace = None
         self._workspace = workspace
 
     def __enter__(self) -> None:
+        global CONFIG
         self._cached_workspace = CONFIG['WORKSPACE']
 
-        if self._workspace is None:
+        if not self._workspace:
             return
 
-        if CONFIG['WORKSPACE'] is None:
+        if not CONFIG['WORKSPACE']:
             attempt_determine_workspace()
 
-        p = Path(CONFIG['WORKSPACE']['path']).parent / self._workspace
+        workspace_path = Path(CONFIG['WORKSPACE']['path']).parent / self._workspace
 
-        if p.exists():
+        if workspace_path.exists():
             CONFIG['WORKSPACE'] = dict(CONFIG['WORKSPACE'])
             CONFIG['WORKSPACE']['name'] = self._workspace
-            CONFIG['WORKSPACE']['path'] = str(p)
+            CONFIG['WORKSPACE']['path'] = str(workspace_path)
         else:
             raise ValueError('Could not find workspace: {}'.format(self._workspace))
 
     def __exit__(self, *args: Any) -> None:
+        global CONFIG
         CONFIG['WORKSPACE'] = self._cached_workspace
 
 
@@ -128,7 +130,7 @@ def workspace_matches(path):
 
 def attempt_determine_workspace(value=None, permissive=False, lazy=False, current_path=None):
     # first search upwards from the current directory at most three folders:
-    if lazy and CONFIG['WORKSPACE'] is not None:
+    if lazy and not CONFIG['WORKSPACE']:
         return
 
     try:
@@ -143,10 +145,10 @@ def attempt_determine_workspace(value=None, permissive=False, lazy=False, curren
                 return
 
             current_path = Path(current_path).parent
-    except Exception:
+    except Exception: # pylint: disable=broad-except
         pass
 
-    if CONFIG['WORKSPACE'] is None:
+    if not CONFIG['WORKSPACE']:
         if current_path is None:
             current_path = os.path.realpath(os.getcwd())
 
@@ -165,7 +167,7 @@ def attempt_determine_workspace(value=None, permissive=False, lazy=False, curren
             logging.warning('Automatically inferring that the workspace is "{}"'.format(option))
             CONFIG['WORKSPACE'] = option
 
-    if CONFIG['WORKSPACE'] is None and not permissive:
+    if not CONFIG['WORKSPACE'] and not permissive:
         raise ConfigurationError('You must provide a workspace.')
 
 
@@ -179,8 +181,8 @@ def load_json_configuration(filename):
 
 
 try:
-    from local_config import *
-except:
+    from local_config import * # pylint: disable=wildcard-import
+except ImportError:
     logging.warning("Could not find local configuration file. If you don't "
                     "have one, you can safely ignore this message.")
 
@@ -204,7 +206,6 @@ def load_plugins() -> None:
     import arpes.endstations.plugin as plugin
     from arpes.endstations import add_endstation
     import importlib
-    from pathlib import Path
 
     skip_modules = {'__pycache__', '__init__'}
     plugins_dir = str(Path(plugin.__file__).parent)
@@ -212,13 +213,12 @@ def load_plugins() -> None:
     modules = [m if os.path.isdir(os.path.join(plugins_dir, m))
                else os.path.splitext(m)[0] for m in modules if m not in skip_modules]
 
-    endstation_classes = {}
     for module in modules:
         try:
             loaded_module = importlib.import_module('arpes.endstations.plugin.{}'.format(module))
             for item in loaded_module.__all__:
                 add_endstation(getattr(loaded_module, item))
-        except (AttributeError, ImportError) as e:
+        except (AttributeError, ImportError):
             pass
 
 

@@ -1,15 +1,16 @@
 import numpy as np
 import scipy.ndimage.filters
-import xarray as xr
 
 import arpes.fits
-from arpes.analysis.band_analysis_utils import param_getter, param_stderr_getter
+import xarray as xr
+from arpes.analysis.band_analysis_utils import (param_getter,
+                                                param_stderr_getter)
 
 __all__ = ['Band', 'MultifitBand', 'VoigtBand', 'BackgroundBand', 'FermiEdgeBand',
            'AffineBackgroundBand']
 
 
-class Band(object):
+class Band:
     def __init__(self, label, display_label=None, data=None):
         self.label = label
         self._display_label = display_label

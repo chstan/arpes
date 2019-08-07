@@ -1,6 +1,8 @@
-from .pattern_imports import *
 from arpes.fits import *
 from arpes.models.band import *
+
+from .pattern_imports import *
+
 
 def band_plot():
     test = {}
@@ -87,4 +89,3 @@ def band_plot():
             make_band_plot(name, scan, region_name, bands, fig, axes,
                            out='{}_{}_{}.png'.format(region_name, kp_offset, window_offset), color=colors[idx])
         plt.show()
-

@@ -1,10 +1,12 @@
-import typing
-import numpy as np
-import xarray as xr
 import re
 from pathlib import Path
 
-from arpes.endstations import HemisphericalEndstation, SynchrotronEndstation, SESEndstation
+import numpy as np
+
+import typing
+import xarray as xr
+from arpes.endstations import (HemisphericalEndstation, SESEndstation,
+                               SynchrotronEndstation)
 
 __all__ = ('BL403ARPESEndstation',)
 
@@ -15,10 +17,10 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
     """
 
     PRINCIPAL_NAME = 'ALS-BL403'
-    ALIASES = ['BL403', 'BL4', 'BL4.0.3', 'ALS-BL403', 'ALS-BL4',]
+    ALIASES = ['BL403', 'BL4', 'BL4.0.3', 'ALS-BL403', 'ALS-BL4', ]
 
     RENAME_KEYS = {
-        'Polar Compens': 'theta', # these are caps-ed because they are dimensions in some cases!
+        'Polar Compens': 'theta',  # these are caps-ed because they are dimensions in some cases!
         'BL Energy': 'hv',
         'tilt': 'beta', 'polar': 'theta', 'azimuth': 'chi',
         'temperature_sensor_a': 'temperature_cryotip',
@@ -27,9 +29,9 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         'cryostat_temp_b': 'temp',
         'bl_energy': 'hv',
         'polar_compens': 'theta',
-        'K2200 V':'volts',
+        'K2200 V': 'volts',
         'pwr_supply_v': 'volts',
-        
+
         'mcp': 'mcp_voltage',
         'slit_plate': 'slit_number',
         'user': 'experimenter',
@@ -55,7 +57,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         'analyzer_radius': None,
         'analyzer_type': 'hemispherical',
         'repetition_rate': 5e8,
-        'undulator_harmonic': 2, # TODO
+        'undulator_harmonic': 2,  # TODO
         'undulator_type': 'elliptically_polarized_undulator',
     }
 
@@ -65,25 +67,26 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
             'lens_mode': None,
             'lens_mode_name': l,
         },
-        'undulator_polarization': lambda l: int(l),
+        'undulator_polarization': int,
         'region_name': lambda l: {
             'daq_region_name': l,
             'daq_region': l,
         }
     }
 
-    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict=None):
+    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
         if len(frames) < 2:
             return super().concatenate_frames(frames)
 
         # determine which axis to stitch them together along, and then do this
         original_filename = scan_desc.get('file', scan_desc.get('path'))
-        assert(original_filename is not None)
+        assert original_filename is not None
 
         internal_match = re.match(r'([a-zA-Z0-9\w+_]+)_[S][0-9][0-9][0-9]\.pxt', Path(original_filename).name)
         if internal_match is not None:
-            if len(internal_match.groups()):
-                motors_path = str(Path(original_filename).parent / '{}_Motor_Pos.txt'.format(internal_match.groups()[0]))
+            if internal_match.groups():
+                motors_path = str(
+                    Path(original_filename).parent / '{}_Motor_Pos.txt'.format(internal_match.groups()[0]))
                 try:
                     with open(motors_path, 'r') as f:
                         lines = f.readlines()
@@ -109,7 +112,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
                     pass
         else:
             internal_match = re.match(r'([a-zA-Z0-9\w+_]+)_[R][0-9][0-9][0-9]\.pxt', Path(original_filename).name)
-            if len(internal_match.groups()):
+            if internal_match.groups():
                 return xr.merge(frames)
 
         return super().concatenate_frames(frames)
@@ -120,8 +123,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         from arpes.repair import negate_energy
         from arpes.load_pxt import read_single_pxt, find_ses_files_associated
 
-        name, ext = os.path.splitext(frame_path)
-
+        _, ext = os.path.splitext(frame_path)
         if 'nc' in ext:
             # was converted to hdf5/NetCDF format with Conrad's Igor scripts
             scan_desc = copy.deepcopy(scan_desc)
@@ -133,7 +135,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         p = Path(original_data_loc)
 
         # find files with same name stem, indexed in format R###
-        regions = find_ses_files_associated(p,separator='R')
+        regions = find_ses_files_associated(p, separator='R')
 
         if len(regions) == 1:
             pxt_data = negate_energy(read_single_pxt(frame_path))
@@ -154,7 +156,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
                     region_files[i] = reg.rename({dim: 'eV'})
             else:
                 pass
-            
+
             return self.concatenate_frames(region_files, scan_desc=scan_desc)
 
     def load_single_region(self, region_path: str = None, scan_desc: dict = None, **kwargs):
@@ -166,12 +168,13 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         num = name[-3:]
 
         pxt_data = negate_energy(read_single_pxt(region_path))
-        pxt_data = pxt_data.rename({'eV': 'eV'+num})
+        pxt_data = pxt_data.rename({'eV': 'eV' + num})
         pxt_data.attrs['Rnum'] = num
         pxt_data.attrs['alpha'] = np.pi / 2
-        return xr.Dataset({'spectrum' + num: pxt_data}, attrs=pxt_data.attrs)  # separate spectra for possibly unrelated data
+        return xr.Dataset({'spectrum' + num: pxt_data},
+                          attrs=pxt_data.attrs)  # separate spectra for possibly unrelated data
 
-    def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
+    def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
         ls = [data] + data.S.spectra
 
         for l in ls:
@@ -186,8 +189,8 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
 
             if 'undulator_polarization' in l.attrs:
                 phase_angle_lookup = {
-                    0: (0, 0), # LH
-                    2: (np.pi/2, 0) # LV
+                    0: (0, 0),  # LH
+                    2: (np.pi / 2, 0)  # LV
                 }
                 polarization_theta, polarization_alpha = phase_angle_lookup[int(l.attrs['undulator_polarization'])]
                 l.attrs['probe_polarization_theta'] = polarization_theta

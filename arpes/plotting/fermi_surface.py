@@ -1,20 +1,19 @@
-import xarray as xr
-import matplotlib.pyplot as plt
 import matplotlib.patches
 import matplotlib.path
+import matplotlib.pyplot as plt
 import numpy as np
 
+import xarray as xr
+from arpes.plotting.utils import path_for_holoviews, path_for_plot
 from arpes.provenance import save_plot_provenance
-from arpes.utilities import normalize_to_spectrum
 from arpes.typing import DataType
-
-from arpes.plotting.utils import path_for_plot, path_for_holoviews
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('fermi_surface_slices', 'magnify_circular_regions_plot',)
 
 @save_plot_provenance
 def fermi_surface_slices(arr: xr.DataArray, n_slices=9, ev_per_slice=0.02, bin=0.01, out=None, **kwargs):
-    import holoviews as hv
+    import holoviews as hv  # pylint: disable=import-error
     slices = []
     for i in range(n_slices):
         high = - ev_per_slice * i

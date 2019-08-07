@@ -24,4 +24,3 @@ def test_deep_equals(destination, source, expected_equal):
 ])
 def test_deep_update(destination, source, expected):
     assert deep_equals(deep_update(destination, source), expected)
-

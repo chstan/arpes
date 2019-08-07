@@ -1,11 +1,12 @@
-from collections import defaultdict
 import functools
-import xarray as xr
 import time
+from collections import defaultdict
 
-from arpes.typing import DataType
 from numpy import ndarray
-from typing import Dict, Tuple, Any, Optional, Callable, Iterator
+
+import xarray as xr
+from arpes.typing import DataType
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple
 
 __all__ = ['Debounce', 'lift_dataarray_to_generic', 'iter_leaves']
 
@@ -77,7 +78,7 @@ def lift_dataarray_to_generic(f):
         if isinstance(data, xr.DataArray):
             return f(data, *args, **kwargs)
         else:
-            assert(isinstance(data, xr.Dataset))
+            assert isinstance(data, xr.Dataset)
             new_vars = {
                 datavar: f(data[datavar], *args, **kwargs) for datavar in data.data_vars
             }
@@ -92,7 +93,7 @@ def lift_dataarray_to_generic(f):
     return func_wrapper
 
 
-class Debounce(object):
+class Debounce:
     def __init__(self, period):
         self.period = period  # never call the wrapped function more often than this (in seconds)
         self.count = 0  # how many times have we successfully called the function

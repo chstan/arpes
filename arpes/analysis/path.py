@@ -1,10 +1,10 @@
-import xarray as xr
 import numpy as np
 
-from arpes.typing import DataType
+import xarray as xr
 from arpes.provenance import update_provenance
+from arpes.typing import DataType
 
-__all__ = ('discretize_path', 'select_around_path', 'path_from_points',)
+__all__ = ('discretize_path', 'select_along_path', 'path_from_points',)
 
 
 def path_from_points(data: DataType, symmetry_points_or_interpolation_points):

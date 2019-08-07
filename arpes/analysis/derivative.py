@@ -2,10 +2,10 @@ import functools
 import warnings
 
 import numpy as np
-import xarray as xr
 
-from arpes.typing import DataType
+import xarray as xr
 from arpes.provenance import provenance, update_provenance
+from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('curvature', 'dn_along_axis', 'd2_along_axis', 'd1_along_axis', 'minimum_gradient', 'vector_diff')
@@ -61,14 +61,14 @@ def gradient_modulus(data: DataType, delta=1):
     values = spectrum.values
     gradient_vector = np.zeros(shape=(8,) + values.shape)
 
-    gradient_vector[0,:-delta,:] = vector_diff(values, (delta, 0,))
-    gradient_vector[1,:,:-delta] = vector_diff(values, (0, delta,))
-    gradient_vector[2,delta:,:] = vector_diff(values, (-delta, 0,))
-    gradient_vector[3,:,delta:] = vector_diff(values, (0, -delta,))
-    gradient_vector[4,:-delta,:-delta] = vector_diff(values, (delta, delta,))
-    gradient_vector[5,:-delta,delta:] = vector_diff(values, (delta, -delta,))
-    gradient_vector[6,delta:,:-delta] = vector_diff(values, (-delta, delta,))
-    gradient_vector[7,delta:,delta:] = vector_diff(values, (-delta, -delta,))
+    gradient_vector[0, :-delta, :] = vector_diff(values, (delta, 0,))
+    gradient_vector[1, :, :-delta] = vector_diff(values, (0, delta,))
+    gradient_vector[2, delta:, :] = vector_diff(values, (-delta, 0,))
+    gradient_vector[3, :, delta:] = vector_diff(values, (0, -delta,))
+    gradient_vector[4, :-delta, :-delta] = vector_diff(values, (delta, delta,))
+    gradient_vector[5, :-delta, delta:] = vector_diff(values, (delta, -delta,))
+    gradient_vector[6, delta:, :-delta] = vector_diff(values, (-delta, delta,))
+    gradient_vector[7, delta:, delta:] = vector_diff(values, (-delta, -delta,))
 
     data_copy = spectrum.copy(deep=True)
     data_copy.values = np.linalg.norm(gradient_vector, axis=0)
@@ -163,7 +163,7 @@ def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
     axis_order = ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'beta', 'theta']
     if axis is None:
         axes = [a for a in axis_order if a in arr.dims]
-        if len(axes):
+        if axes:
             axis = axes[0]
         else:
             # have to do something

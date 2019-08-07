@@ -1,5 +1,4 @@
 import xarray as xr
-
 from arpes.typing import DataType
 
 __all__ = ('apply_dataarray', 'lift_datavar_attrs', 'lift_dataarray_attrs', 'lift_dataarray',)

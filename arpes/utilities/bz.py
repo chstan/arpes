@@ -7,9 +7,10 @@ Brillouin zones.
 """
 
 import re
-from collections import namedtuple, Counter
-import numpy as np
+from collections import Counter, namedtuple
+
 import matplotlib.path
+import numpy as np
 
 __all__ = ('bz_symmetry', 'bz_cutter', 'reduced_bz_selection',
            'reduced_bz_axes', 'reduced_bz_mask', 'reduced_bz_poly',
@@ -44,12 +45,12 @@ def parse_single_path(path):
     for token in tokens:
         name, rest = token[0], token[1:]
         negate = False
-        if len(rest) and rest[0] == 'n':
+        if rest and rest[0] == 'n':
             negate = True
             rest = rest[1:]
 
         bz_coords = (0, 0, 0,)
-        if len(rest):
+        if rest:
             rest = ''.join(c for c in rest if c not in '( \t\n\r)')
             bz_coords = tuple([int(c) for c in rest.split(',')])
 
@@ -85,7 +86,7 @@ def special_point_to_vector(special_point, icell, special_points):
     base = np.dot(icell.T, special_points[special_point.name])
 
     if special_point.negate:
-        base = -base
+        base = -np.array(base)
 
     coord = np.array(special_point.bz_coord)
     return base + coord.dot(icell)
@@ -100,7 +101,7 @@ def process_kpath(paths, cell, special_points=None):
     icell = np.linalg.inv(cell).T
 
     if special_points is None:
-        from ase.dft.kpoints import get_special_points
+        from ase.dft.kpoints import get_special_points  # pylint: disable=import-error
         special_points = get_special_points(cell)
 
     points = [[special_point_to_vector(elem, icell, special_points) for elem in p]
@@ -135,7 +136,7 @@ def build_2dbz_poly(vertices=None, icell=None, cell=None):
     :return:
     """
     from arpes.analysis.mask import raw_poly_to_mask
-    from ase.dft.bz import bz_vertices
+    from ase.dft.bz import bz_vertices  # pylint: disable=import-error
 
     assert(cell is not None or vertices is not None or icell is not None)
 
@@ -145,10 +146,11 @@ def build_2dbz_poly(vertices=None, icell=None, cell=None):
 
         vertices = bz_vertices(icell)
 
-    points, normal = vertices[0]
+    points, _ = vertices[0]  # points, normal
     points_2d = [p[:2] for p in points]
 
     return raw_poly_to_mask(points_2d)
+
 
 def bz_symmetry(flat_symmetry_points):
     if isinstance(flat_symmetry_points, dict):
@@ -181,7 +183,7 @@ def reduced_bz_axis_to(data, S, include_E=False):
             return coords_by_point['X'] - coords_by_point['G']
         return coords_by_point['Y'] - coords_by_point['G']
     elif symmetry == 'square':
-        assert (False)  # FIXME to use other BZ point
+        raise NotImplementedError()
         return coords_by_point['X'] - coords_by_point['G']
     elif symmetry == 'hex':
         if S == 'X':
@@ -203,7 +205,7 @@ def reduced_bz_axes(data):
         dx = coords_by_point['X'] - coords_by_point['G']
         dy = coords_by_point['Y'] - coords_by_point['G']
     elif symmetry == 'square':
-        assert (False)  # FIXME to use other BZ point
+        raise NotImplementedError()
         dx = coords_by_point['X'] - coords_by_point['G']
         dy = coords_by_point['X'] - coords_by_point['G']
     elif symmetry == 'hex':
@@ -274,7 +276,7 @@ def reduced_bz_E_mask(data, S, e_cut, scale_zone=False):
     symmetry_points, _ = data.S.symmetry_points()
     symmetry = bz_symmetry(data.S.iter_own_symmetry_points)
     point_names = _POINT_NAMES_FOR_SYMMETRY[symmetry]
-    bz_dims = tuple(d for d in data.dims if d in list(symmetry_points.values())[0][0].keys())
+    # bz_dims = tuple(d for d in data.dims if d in list(symmetry_points.values())[0][0].keys())
 
 
     symmetry_points, _ = data.S.symmetry_points()
@@ -299,7 +301,7 @@ def reduced_bz_E_mask(data, S, e_cut, scale_zone=False):
         if np.all(poly_points[:, i] == poly_points[0, i]):
             skip_col = i
 
-    assert(skip_col is not None)
+    assert skip_col is not None
     selector_val = poly_points[0, skip_col]
     poly_points = np.concatenate((poly_points[:, 0:skip_col], poly_points[:, skip_col+1:]), axis=1)
 

@@ -1,14 +1,12 @@
 import warnings
 
 import matplotlib
+import matplotlib.animation as manimation
 import matplotlib.pyplot as plt
 import numpy as np
-import xarray as xr
 
 from arpes.provenance import save_plot_provenance
-import matplotlib.animation as manimation
 
-from .utils import *
 
 __all__ = ('plot_subtraction_reference',)
 
@@ -22,7 +20,7 @@ def plot_subtraction_reference(data, title=None, out=None, norm=None, **kwargs):
     sum_dimensions = {'cycle',}
     sum_dimensions.intersection_update(set(data.dims))
 
-    summed_data = data.sum(*list(sum_dimensions))
+    # summed_data = data.sum(*list(sum_dimensions))
 
     matplotlib.use("Agg")
     if title is None:

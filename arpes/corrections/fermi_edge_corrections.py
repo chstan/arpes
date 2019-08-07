@@ -1,13 +1,14 @@
-import numpy as np
 import lmfit as lf
 import matplotlib.pyplot as plt
-import xarray as xr
+import numpy as np
 
-from arpes.fits import QuadraticModel, GStepBModel, LinearModel, broadcast_model
+import xarray as xr
+from arpes.fits import (GStepBModel, LinearModel, QuadraticModel,
+                        broadcast_model)
 from arpes.provenance import provenance, update_provenance
 from arpes.typing import DataType
-from arpes.utilities.math import shift_by
 from arpes.utilities import normalize_to_spectrum
+from arpes.utilities.math import shift_by
 
 
 def _exclude_from_set(excluded):
@@ -82,7 +83,7 @@ def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args
     if correction is None:
         correction = build_direct_fermi_edge_correction(arr, *args, **kwargs)
 
-    shift_amount = -correction / arr.T.stride(generic_dim_names=False)['eV']
+    shift_amount = -correction / arr.T.stride(generic_dim_names=False)['eV']  # pylint: disable=invalid-unary-operand-type
     energy_axis = list(arr.dims).index('eV')
 
     correction_axis = list(arr.dims).index(correction.dims[0])
@@ -220,7 +221,7 @@ def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None
 
 
 def apply_quadratic_fermi_edge_correction(arr: xr.DataArray, correction: lf.model.ModelResult=None, offset=None):
-    assert(isinstance(arr, xr.DataArray))
+    assert isinstance(arr, xr.DataArray)
     if correction is None:
         correction = build_quadratic_fermi_edge_correction(arr)
 

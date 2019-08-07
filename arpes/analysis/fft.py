@@ -3,15 +3,18 @@ This module contains monkey-patched versions of functions from xrft until improv
 We don't generally use this module too much anyway, and it is not a default import.
 """
 
+# pylint: disable=import-error,no-member
+
 # TODO note that there is a slight bug in the inverse Fourier transform here where the coords are sometimes rolled
 
 import warnings
+import xrft
 
 import dask as dsar
 import numpy as np
-import pandas as pd
 import xarray as xr
-import xrft
+
+from pandas.api.types import is_timedelta64_dtype
 from xrft.xrft import _hanning
 
 from arpes.provenance import provenance
@@ -68,7 +71,7 @@ def _spacing(da, dims):
     for d in dims:
         coord = da[d]
         diff = np.diff(coord)
-        if pd.core.common.is_timedelta64_dtype(diff):
+        if is_timedelta64_dtype(diff):
             # convert to seconds so we get hertz
             diff = diff.astype('timedelta64[s]').astype('f8')
         delta = diff[0]
@@ -124,9 +127,6 @@ def rdft(da, dim=None, shift=True, remove_mean=True, window=False):
     if window:
         da = _hanning(da, N)
 
-    # the hard work
-    #f = np.fft.rfftn(da.values, axes=axis_num)
-    # need special path for dask
     # is this the best way to check for dask?
     data = da.data
     if hasattr(data, 'dask'):
@@ -330,4 +330,3 @@ def idft(da, dim=None, shift=True, window=False):
 xrft.rdft = rdft
 xrft.irdft = irdft
 xrft.idft = idft
-

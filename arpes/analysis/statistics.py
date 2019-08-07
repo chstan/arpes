@@ -1,5 +1,4 @@
 import xarray as xr
-
 from arpes.provenance import update_provenance
 from arpes.utilities import lift_dataarray_to_generic
 
@@ -25,7 +24,7 @@ def mean_and_deviation(data: xr.DataArray, axis=None, name=None):
     preferred_axes = ['bootstrap', 'cycle', 'idx']
 
     name = data.name if data.name is not None else name
-    assert(name is not None)
+    assert name is not None
 
     if axis is None:
         for pref_axis in preferred_axes:
@@ -33,5 +32,5 @@ def mean_and_deviation(data: xr.DataArray, axis=None, name=None):
                 axis = pref_axis
                 break
 
-    assert(axis in data.dims)
+    assert axis in data.dims
     return xr.Dataset(data_vars={name: data.mean(axis), name + '_std': data.std(axis)}, attrs=data.attrs)

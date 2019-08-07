@@ -1,8 +1,8 @@
-import pytest
 import numpy as np
-import xarray as xr
+import pytest
 
 import arpes.xarray_extensions
+import xarray as xr
 from arpes.utilities.conversion import convert_to_kspace
 
 

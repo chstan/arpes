@@ -15,15 +15,15 @@ be robust to the shortcomings of actual ARPES data.
 """
 
 import numpy as np
-import scipy.signal as sig
 import scipy
-import xarray as xr
+import scipy.signal as sig
 
+import xarray as xr
 from arpes.constants import K_BOLTZMANN_MEV_KELVIN
 
 __all__ = (
     # sampling utilities
-    'point_cloud_to_arr',
+    'cloud_to_arr',
     'apply_psf_to_point_cloud',
     'sample_from_distribution',
 
@@ -47,7 +47,7 @@ __all__ = (
 )
 
 
-class DetectorEffect(object):
+class DetectorEffect:
     """
     Detector effects are callables that map a spectrum into a new
     transformed one. This might be used to imprint the image of a grid,
@@ -104,7 +104,6 @@ class DustDetectorEffect(DetectorEffect):
     """
     TODO, dust.
     """
-    pass
 
 
 class TrapezoidalDetectorEffect(DetectorEffect):
@@ -113,14 +112,12 @@ class TrapezoidalDetectorEffect(DetectorEffect):
     i.e. that the detector has severe aberrations at low photoelectron
     kinetic energy (high retardation ratio).
     """
-    pass
 
 
 class WindowedDetectorEffect(DetectorEffect):
     """
     TODO model the finite width of the detector window as recorded on a camera.
     """
-    pass
 
 
 def cloud_to_arr(point_cloud, shape):
@@ -136,11 +133,11 @@ def cloud_to_arr(point_cloud, shape):
     for x, y in zip(*point_cloud):
         frac_low_x = 1 - (x - np.floor(x))
         frac_low_y = 1 - (y - np.floor(y))
-        sx, sy = shape
-        cloud_as_image[int(np.floor(x)) % sx][int(np.floor(y)) % sy] += frac_low_x * frac_low_y
-        cloud_as_image[(int(np.floor(x)) + 1) % sx][int(np.floor(y)) % sy] += (1 - frac_low_x) * frac_low_y
-        cloud_as_image[int(np.floor(x)) % sx][(int(np.floor(y)) + 1) % sy] += frac_low_x * (1 - frac_low_y)
-        cloud_as_image[(int(np.floor(x)) + 1) % sx][(int(np.floor(y)) + 1) % sy] += (1 - frac_low_x) * (1 - frac_low_y)
+        shape_x, shape_y = shape
+        cloud_as_image[int(np.floor(x)) % shape_x][int(np.floor(y)) % shape_y] += frac_low_x * frac_low_y
+        cloud_as_image[(int(np.floor(x)) + 1) % shape_x][int(np.floor(y)) % shape_y] += (1 - frac_low_x) * frac_low_y
+        cloud_as_image[int(np.floor(x)) % shape_x][(int(np.floor(y)) + 1) % shape_y] += frac_low_x * (1 - frac_low_y)
+        cloud_as_image[(int(np.floor(x)) + 1) % shape_x][(int(np.floor(y)) + 1) % shape_y] += (1 - frac_low_x) * (1 - frac_low_y)
 
     return cloud_as_image
 
@@ -180,24 +177,26 @@ def sample_from_distribution(distribution, N=5000):
     sample_xs = np.searchsorted(cdf_rows, np.random.random(N,) * total)
     sample_ys_rows = norm_rows[sample_xs, :]
 
+    # take N samples between 0 and 1, which is now the normalized full range of the data
+    # and find the index, this effectively samples the index in the array if it were a PDF
     sample_ys = []
-    rys = np.random.random(N, )
-    for ry, row_y in zip(rys, sample_ys_rows):
-        sample_ys.append(np.searchsorted(row_y, ry))
+    random_ys = np.random.random(N,)
+    for random_y, row_y in zip(random_ys, sample_ys_rows):
+        sample_ys.append(np.searchsorted(row_y, random_y))
 
     return (1. * sample_xs + np.random.random(N, )), (1. * np.array(sample_ys) + np.random.random(N, ))
 
 
-class SpectralFunction(object):
+class SpectralFunction:
     """
     Model for a band with self energy.
     """
     def fermi_dirac(self, omega):
-        return 1 / (np.exp(omega / (K_BOLTZMANN_MEV_KELVIN * self.T)) + 1)
+        return 1 / (np.exp(omega / (K_BOLTZMANN_MEV_KELVIN * self.temperature)) + 1)
 
-    def __init__(self, k=None, omega=None, T=None):
-        if T is None:
-            T = 20
+    def __init__(self, k=None, omega=None, temperature=None):
+        if temperature is None:
+            temperature = 20
         if k is None:
             k = np.linspace(-200, 200, 800)
         elif len(k) == 3:
@@ -208,12 +207,12 @@ class SpectralFunction(object):
         elif len(omega) == 3:
             omega = np.linspace(*omega)
 
-        self.T = T
+        self.temperature = temperature
         self.omega = omega
         self.k = k
 
     def imag_self_energy(self):
-        raise NotImplementedError()
+        return np.zeros(shape=self.omega.shape,)
 
     def real_self_energy(self):
         """
@@ -265,25 +264,25 @@ class SpectralFunction(object):
         return xr.DataArray(data, coords={'k': self.k, 'omega': self.omega}, dims=['omega', 'k'])
 
 
-class SpectralFunctionMFL(SpectralFunction):
+class SpectralFunctionMFL(SpectralFunction): # pylint: disable=invalid-name
     """
     Implements the Marginal Fermi Liquid spectral function, more or less.
     """
 
-    def __init__(self, k=None, omega=None, T=None, a=None, b=None):
+    def __init__(self, k=None, omega=None, temperature=None, a=None, b=None):
         if a is None:
             a = 10
 
         if b is None:
             b = 1
 
-        super().__init__(k, omega, T)
+        super().__init__(k, omega, temperature)
 
         self.a = a
         self.b = b
 
     def imag_self_energy(self):
-        return np.sqrt((self.a + self.b * self.omega) ** 2 + self.T ** 2)
+        return np.sqrt((self.a + self.b * self.omega) ** 2 + self.temperature ** 2)
 
 
 class SpectralFunctionBSSCO(SpectralFunction):
@@ -292,7 +291,7 @@ class SpectralFunctionBSSCO(SpectralFunction):
     `"Collapse of superconductivity in cuprates via ultrafast quenching of phase coherence" <https://arxiv.org/pdf/1707.02305.pdf>`_.
     """
 
-    def __init__(self, k=None, omega=None, T=None, delta=None, gamma_s=None, gamma_p=None):
+    def __init__(self, k=None, omega=None, temperature=None, delta=None, gamma_s=None, gamma_p=None):
         if delta is None:
             delta = 50
         if gamma_s is None:
@@ -303,7 +302,7 @@ class SpectralFunctionBSSCO(SpectralFunction):
         self.delta = delta
         self.gamma_s = gamma_s
         self.gamma_p = gamma_p
-        super().__init__(k, omega, T)
+        super().__init__(k, omega, temperature)
 
     def self_energy(self):
         shape = (len(self.omega), len(self.k))
@@ -340,8 +339,8 @@ class SpectralFunctionPhaseCoherent(SpectralFunctionBSSCO):
 
         full_omegas = np.outer(self.omega, np.ones(shape=bare.shape))
 
-        se = (g_one + (self.delta ** 2) / (full_omegas + bare + 1.j * self.gamma_p))
-        ise = np.imag(se)
-        rse = np.imag(sig.hilbert(ise, axis=0))
+        self_e = (g_one + (self.delta ** 2) / (full_omegas + bare + 1.j * self.gamma_p))
+        imag_self_e = np.imag(self_e)
+        real_self_e = np.imag(sig.hilbert(imag_self_e, axis=0))
 
-        return se + 3 * (np.random.random(se.shape) + np.random.random(se.shape) * 1.j)
+        return self_e + 3 * (np.random.random(self_e.shape) + np.random.random(self_e.shape) * 1.j)

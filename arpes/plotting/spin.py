@@ -1,22 +1,19 @@
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
+import matplotlib.pyplot as plt
 import numpy as np
-import xarray as xr
-
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.collections import LineCollection
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from arpes.analysis.statistics import mean_and_deviation
+import xarray as xr
 from arpes.analysis.sarpes import to_intensity_polarization
-from arpes.provenance import save_plot_provenance
-from arpes.utilities.math import (
-    polarization,
-    propagate_statistical_error
-)
+from arpes.analysis.statistics import mean_and_deviation
 from arpes.bootstrap import bootstrap
 from arpes.plotting.tof import scatter_with_std
-from .utils import *
+from arpes.plotting.utils import label_for_dim, savefig, path_for_plot, polarization_colorbar
+from arpes.provenance import save_plot_provenance
+from arpes.utilities.math import polarization, propagate_statistical_error
+
 
 __all__ = ('spin_polarized_spectrum', 'spin_colored_spectrum',
            'spin_difference_spectrum',)
@@ -40,14 +37,14 @@ def spin_colored_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False,
         pol.values[np.isnan(pol.values)] = 0
         pol.values[pol.values > 1] = 1
         pol.values[pol.values < -1] = -1
-        colors = cm.get_cmap('RdBu')(pol.values[:-1])
+        pol_colors = cm.get_cmap('RdBu')(pol.values[:-1])
 
         if scatter:
-            colors = cm.get_cmap('RdBu')(pol.values)
-            ax.scatter(coord.values, intensity.values, c=colors, s=1.5)
+            pol_colors = cm.get_cmap('RdBu')(pol.values)
+            ax.scatter(coord.values, intensity.values, c=pol_colors, s=1.5)
         else:
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
-            lc = LineCollection(segments, colors=colors)
+            lc = LineCollection(segments, colors=pol_colors)
 
             ax.add_collection(lc)
 
@@ -85,14 +82,14 @@ def spin_difference_spectrum(spin_dr, title=None, ax=None, out=None, scatter=Fal
         pol.values[np.isnan(pol.values)] = 0
         pol.values[pol.values > 1] = 1
         pol.values[pol.values < -1] = -1
-        colors = cm.get_cmap('RdBu')(pol.values[:-1])
+        pol_colors = cm.get_cmap('RdBu')(pol.values[:-1])
 
         if scatter:
-            colors = cm.get_cmap('RdBu')(pol.values)
-            ax.scatter(coord.values, intensity.values, c=colors, s=1.5)
+            pol_colors = cm.get_cmap('RdBu')(pol.values)
+            ax.scatter(coord.values, intensity.values, c=pol_colors, s=1.5)
         else:
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
-            lc = LineCollection(segments, colors=colors)
+            lc = LineCollection(segments, colors=pol_colors)
 
             ax.add_collection(lc)
 

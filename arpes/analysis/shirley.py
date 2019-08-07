@@ -1,4 +1,5 @@
 import warnings
+
 import numpy as np
 
 from arpes.provenance import update_provenance
@@ -57,10 +58,10 @@ def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=5
     i_left = np.mean(xps.values[:n_samples])
     i_right = np.mean(xps.values[-n_samples:])
 
-    i = 0
+    iter_count = 0
 
     k = i_left - i_right
-    for i in range(max_iters):
+    for iter_count in range(max_iters):
         cumulative_background = np.cumsum(background.values)
         total_background = np.sum(background.values)
 
@@ -78,11 +79,9 @@ def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=5
         if rel_error < eps:
             break
 
-    if (i + 1) == max_iters:
+    if (iter_count + 1) == max_iters:
         warnings.warn('Shirley background calculation did not converge ' +
-                      'after {} steps with relative error {}!'.format(
-            max_iters, rel_error
-        ))
+                      'after {} steps with relative error {}!'.format(max_iters, rel_error))
 
     return background
 

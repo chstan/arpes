@@ -7,6 +7,8 @@ performed in Jupyter, so that they can be rapidly understood, and screencapped f
 like including in group meeting notes.
 """
 
+# pylint: disable=protected-access
+
 import numpy as np
 from lmfit import model
 
@@ -76,11 +78,7 @@ def repr_html_Parameter(self, short=False):
                 <th>{value:.3f}</th>
                 <th>{stderr:.3f}</th>
             </tr>
-            """.format(
-            name=self.name,
-            value=self.value,
-            stderr=self.stderr,
-        )
+            """.format(name=self.name, value=self.value, stderr=self.stderr,)
 
     template = """
             <tr>

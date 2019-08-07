@@ -3,18 +3,15 @@ Implements Igor <-> xarray interop, notably loading Igor waves and
 packed experiment files.
 """
 
+import re
+import typing
 import warnings
-from pathlib import Path
 
+from pathlib import Path
 from typing import Any
 
-import typing
 import numpy as np
-import re
-
 import xarray as xr
-from xarray.core.dataarray import DataArray
-
 
 __all__ = ('read_single_pxt', 'read_separated_pxt', 'read_experiment',
            'find_ses_files_associated',)
@@ -56,9 +53,9 @@ def read_igor_binary_wave(raw_bytes):
 
     point_size = 8
     n_points = header[6]
-    wave_name = header[9]
+    _ = header[9] # wave_name
     dim_sizes, dim_scales, dim_offsets = header[11], header[12], header[13]
-    data_units = header[14]
+    _ = header[14] # data_units
     dim_units = header[15]
 
     # approximate offsets
@@ -102,8 +99,8 @@ def read_header(header_bytes: bytes):
     lines = [x for x in lines if '=' in x]
 
     header = {}
-    for l in lines:
-        fragments = l.split('=')
+    for line in lines:
+        fragments = line.split('=')
         first, rest = fragments[0], '='.join(fragments[1:])
 
         try:
@@ -126,7 +123,7 @@ def read_header(header_bytes: bytes):
     })
 
 
-def wave_to_xarray(w: Any) -> DataArray: # w: igor.Wave
+def wave_to_xarray(wave: Any) -> xr.DataArray: # wave: igor.Wave
     """
     Converts a wave to an xarray.DataArray
     :param w:
@@ -134,11 +131,11 @@ def wave_to_xarray(w: Any) -> DataArray: # w: igor.Wave
     """
 
     # only need four because Igor only supports four dimensions!
-    extra_names = iter(['W','X','Y','Z'])
-    n_dims = len([a for a in w.axis if len(a)])
+    extra_names = iter(['W', 'X', 'Y', 'Z'])
+    n_dims = len([a for a in wave.axis if len(a)])
 
     def get_axis_name(index: int) -> str:
-        unit = w.axis_units[index]
+        unit = wave.axis_units[index]
         if unit:
             return {
                 'eV': 'eV',
@@ -150,13 +147,13 @@ def wave_to_xarray(w: Any) -> DataArray: # w: igor.Wave
         return next(extra_names)
 
     axis_names = [get_axis_name(i) for i in range(n_dims)]
-    coords = dict(zip(axis_names, w.axis))
+    coords = dict(zip(axis_names, wave.axis))
 
     return xr.DataArray(
-        w.data,
+        wave.data,
         coords=coords,
         dims=axis_names,
-        attrs=read_header(w.notes),
+        attrs=read_header(wave.notes),
     )
 
 
@@ -205,7 +202,7 @@ def read_single_pxt(reference_path: typing.Union[Path, str], byte_order=None):
             try:
                 loaded = igor.load(reference_path, initial_byte_order=try_byte_order)
                 break
-            except Exception:
+            except Exception: # pylint: disable=broad-except
                 # bad byte ordering probably
                 pass
     else:
@@ -240,17 +237,18 @@ def read_single_pxt_old(reference_path: Path, separator=None):
     header = read_header(header)
 
     return content, header
-    wave = read_igor_binary_wave(content[10:])
-    wave.attrs.update(header)
-    return wave
+    #wave = read_igor_binary_wave(content[10:])
+    #wave.attrs.update(header)
+    #return wave
 
 
-def find_ses_files_associated(reference_path: Path, separator: str='S'):
+def find_ses_files_associated(reference_path: Path, separator: str = 'S'):
     """
     SES Software creates a series of PXT files they are all sequenced with _S[0-9][0-9][0-9].pxt
     `find_ses_files_associated` will collect all the files in the sequence
     pointed to by `reference_path`
     :param reference_path:
+    :param separator:
     :return:
     """
     name_match = re.match(r'([\w+]+)[{}][0-9][0-9][0-9]\.pxt'.format(separator), reference_path.name)
@@ -275,7 +273,7 @@ def read_separated_pxt(reference_path: Path, separator=None, byte_order=None):
         return frames[0]
 
     # adjust as needed
-    scan_coords = ['hv', 'polar', 'timed_power', 'tilt','volts']
+    scan_coords = ['hv', 'polar', 'timed_power', 'tilt', 'volts']
 
     scan_coord = None
     max_different_values = -np.inf

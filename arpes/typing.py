@@ -12,9 +12,8 @@ literally already data.
 
 import uuid
 
-import xarray as xr
-
 import typing
+import xarray as xr
 
 __all__ = ['DataType', 'NormalizableDataType', 'xr_types']
 

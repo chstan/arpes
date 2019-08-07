@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-import os
-import sys
 import argparse
+import os
 import subprocess
+import sys
+
+from arpes.config import CONFIG, DATA_PATH, DATASET_PATH
 
 sys.path.append('/Users/chstansbury/PyCharmProjects/python-arpes/')
 
-from arpes.config import DATA_PATH, DATASET_PATH, CONFIG
 
 DESCRIPTION = """
 Sync data from the group server to the appropriate data folder. You will need 

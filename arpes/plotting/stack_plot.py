@@ -1,19 +1,17 @@
-import matplotlib.pyplot as plt
-import xarray as xr
 import matplotlib.colors
-from matplotlib import cm
+import matplotlib.pyplot as plt
 import numpy as np
-
-from arpes.analysis import rebin
-from arpes.typing import DataType
-from arpes.plotting.utils import *
-from arpes.provenance import save_plot_provenance
-from arpes.utilities import normalize_to_spectrum
-from arpes.plotting.utils import colorbarmaps_for_axis
-from arpes.plotting.tof import scatter_with_std
-
+from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+import xarray as xr
+from arpes.analysis import rebin
+from arpes.plotting.tof import scatter_with_std
+from arpes.plotting.utils import (colorbarmaps_for_axis, generic_colorbarmap_for_data, fancy_labels,
+                                  path_for_plot, label_for_dim)
+from arpes.provenance import save_plot_provenance
+from arpes.typing import DataType
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('stack_dispersion_plot', 'flat_stack_plot',)
 
@@ -21,13 +19,13 @@ __all__ = ('stack_dispersion_plot', 'flat_stack_plot',)
 @save_plot_provenance
 def offset_scatter_plot(data: DataType, name_to_plot=None, stack_axis=None, fermi_level=True, cbarmap=None, ax=None,
                         out=None, scale_coordinate=0.5, ylim=None, aux_errorbars=True, **kwargs):
-    assert(isinstance(data, xr.Dataset))
+    assert isinstance(data, xr.Dataset)
 
     if name_to_plot is None:
         var_names = [k for k in data.data_vars.keys() if '_std' not in k]
-        assert (len(var_names) == 1)
+        assert len(var_names) == 1
         name_to_plot = var_names[0]
-        assert ((name_to_plot + '_std') in data.data_vars.keys())
+        assert (name_to_plot + '_std') in data.data_vars.keys()
 
     if len(data.data_vars[name_to_plot].dims) != 2:
         raise ValueError('In order to produce a stack plot, data must be image-like.'
@@ -82,7 +80,7 @@ def offset_scatter_plot(data: DataType, name_to_plot=None, stack_axis=None, ferm
         scatter_with_std(data_for, name_to_plot, ax=ax, color=cmap(coord[stack_axis]))
 
         if aux_errorbars:
-            assert(ylim is not None)
+            assert ylim is not None
             data_for = data_for.copy(deep=True)
             flattened = data_for.data_vars[name_to_plot].copy(deep=True)
             flattened.values = ylim[0] * np.ones(flattened.values.shape)
@@ -162,13 +160,13 @@ def flat_stack_plot(data: DataType, stack_axis=None, fermi_level=True, cbarmap=N
             if mode == 'line':
                 ax.plot(marginal.values, marginal.coords[marginal.dims[0]].values, color=cmap(coord_dict[stack_axis]), **kwargs)
             else:
-                assert(mode == 'scatter')
+                assert mode == 'scatter'
                 raise NotImplementedError()
         else:
             if mode == 'line':
                 marginal.plot(ax=ax, color=cmap(coord_dict[stack_axis]), **kwargs)
             else:
-                assert(mode == 'scatter')
+                assert mode == 'scatter'
                 ax.scatter(*marginal.T.to_arrays(), color=cmap(coord_dict[stack_axis]))
                 ax.set_xlabel(marginal.dims[0])
 
@@ -271,12 +269,12 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
                       / max_over_stacks
             ys = scale_factor * true_ys + coord_value
 
-        colors = color or c or 'black'
+        raw_colors = color or c or 'black'
 
         if palette:
             if isinstance(palette, str):
                 palette = cm.get_cmap(palette)
-            colors = palette(np.abs(true_ys / max_over_stacks))
+            raw_colors = palette(np.abs(true_ys / max_over_stacks))
 
         if transpose:
             xs, ys = ys, xs
@@ -290,11 +288,11 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
             labeled = True
             label_for = label
 
-        color_for_plot = colors
+        color_for_plot = raw_colors
         if callable(color_for_plot):
             color_for_plot = color_for_plot(coord_value)
 
-        if isinstance(colors, (str, tuple)) or no_scatter:
+        if isinstance(raw_colors, (str, tuple)) or no_scatter:
             ax.plot(xs, ys, linewidth=linewidth, color=color_for_plot, label=label_for, **kwargs)
         else:
             ax.scatter(xs, ys, color=color_for_plot, s=s, label=label_for, **kwargs)
@@ -383,19 +381,19 @@ def overlapped_stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, t
                       / max_over_stacks
             ys = scale_factor * true_ys + coord_value
 
-        colors = 'black'
+        raw_colors = 'black'
         if palette:
             if isinstance(palette, str):
                 palette = cm.get_cmap(palette)
-            colors = palette(np.abs(true_ys / max_over_stacks))
+            raw_colors = palette(np.abs(true_ys / max_over_stacks))
 
         if transpose:
             xs, ys = ys, xs
 
-        if isinstance(colors, str):
-            plt.plot(xs, ys, linewidth=linewidth, color=colors, **kwargs)
+        if isinstance(raw_colors, str):
+            plt.plot(xs, ys, linewidth=linewidth, color=raw_colors, **kwargs)
         else:
-            plt.scatter(xs, ys, color=colors, s=s, **kwargs)
+            plt.scatter(xs, ys, color=raw_colors, s=s, **kwargs)
 
     x_label = other_axis
     y_label = stack_axis
