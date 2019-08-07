@@ -3,11 +3,8 @@
 
 import io
 import os
-import re
-import sys
-from shutil import rmtree
 
-from setuptools import Command, find_packages, setup
+from setuptools import find_packages, setup
 from setuptools.command.install import install
 
 NAME = 'arpes'
