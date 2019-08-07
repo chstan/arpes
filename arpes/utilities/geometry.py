@@ -1,5 +1,4 @@
 import numpy as np
-
 from scipy.spatial import ConvexHull
 
 __all__ = ('polyhedron_intersect_plane', 'segment_contains_point', 'point_plane_intersection',)
@@ -100,4 +99,3 @@ def polyhedron_intersect_plane(poly_faces, plane_normal, plane_point, epsilon=1e
     dot = for_sort[0].dot(for_sort.T)
 
     return points[np.argsort(np.arctan2(det, dot))]
-

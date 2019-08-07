@@ -1,10 +1,11 @@
-import pytest
 import os
+
+import pytest
 
 import arpes.config
 import arpes.endstations
-
 from tests.utils import load_test_scan
+
 
 class AttrAccessorDict(dict):
     __getattr__ = dict.__getitem__
@@ -40,4 +41,3 @@ def sandbox_configuration(tmpdir_factory):
     arpes.config.CONFIG['WORKSPACE'] = None
     arpes.config.update_configuration(user_path=None)
     arpes.endstations._ENDSTATION_ALIASES = {}
-

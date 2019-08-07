@@ -1,9 +1,8 @@
-import xarray as xr
 import numpy as np
 
-import arpes.xarray_extensions
-from arpes.endstations import HemisphericalEndstation, FITSEndstation
-
+import arpes.xarray_extensions # pylint: disable=unused-import
+import xarray as xr
+from arpes.endstations import FITSEndstation, HemisphericalEndstation
 
 __all__ = ('ALGMainChamber',)
 

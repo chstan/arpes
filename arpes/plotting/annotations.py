@@ -1,6 +1,7 @@
-from arpes.utilities.conversion.forward import convert_coordinates_to_kspace_forward
-from arpes.plotting.utils import unit_for_dim, name_for_dim
 import numpy as np
+
+from arpes.plotting.utils import name_for_dim, unit_for_dim
+from arpes.utilities.conversion.forward import convert_coordinates_to_kspace_forward
 
 __all__ = ('annotate_cuts', 'annotate_point', 'annotate_experimental_conditions',)
 
@@ -63,7 +64,7 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation='to
             prefix = '\\textbf{Linear Dichroism, }'
 
         symbol = symbol_pol[pol]
-        if len(symbol):
+        if symbol:
             return prefix + '$' + symbol + '$/\\textbf{' + pol + '}'
 
         return prefix + '\\textbf{' + pol + '}'
@@ -101,7 +102,7 @@ def annotate_cuts(ax, data, plotted_axes, include_text_labels=False, **kwargs):
     :return:
     """
     converted_coordinates = convert_coordinates_to_kspace_forward(data)
-    assert (len(plotted_axes) == 2)
+    assert len(plotted_axes) == 2
 
     for k, v in kwargs.items():
         if not isinstance(v, (tuple, list, np.ndarray,)):

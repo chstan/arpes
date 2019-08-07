@@ -1,10 +1,10 @@
-import copy
 import collections
+import copy
 import functools
+
 import numpy as np
 
 import xarray as xr
-
 from arpes.provenance import update_provenance
 
 __all__ = ('replace_coords', 'disambiguate_coordinates',)
@@ -20,16 +20,13 @@ def disambiguate_coordinates(datasets, possibly_clashing_coordinates):
     conflicted = []
     for c in possibly_clashing_coordinates:
         different_coords = coords_set[c]
-        if len(different_coords) == 0:
+        if not different_coords:
             continue
 
         if not functools.reduce(lambda x, y: (
                     np.array_equal(x[1], y) and x[0], y),
                                 different_coords, (True, different_coords[0]))[0]:
             conflicted.append(c)
-
-    def clarify_dimensions(dims, sname):
-        return [d if d not in conflicted else d + '-' + sname for d in dims]
 
     after_deconflict = []
     for d in datasets:

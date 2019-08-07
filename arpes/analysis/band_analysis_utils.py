@@ -1,5 +1,6 @@
-import numpy as np
 from collections import namedtuple
+
+import numpy as np
 
 ParamType = namedtuple('ParamType', ['value', 'stderr'])
 

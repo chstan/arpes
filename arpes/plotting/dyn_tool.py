@@ -1,11 +1,12 @@
-import typing
 import inspect
+
 import numpy as np
 
+import typing
 from arpes.exceptions import AnalysisError
 from arpes.plotting.interactive_utils import BokehInteractiveTool, CursorTool
-from arpes.utilities import normalize_to_spectrum, Debounce
 from arpes.typing import DataType
+from arpes.utilities import Debounce, normalize_to_spectrum
 
 __all__ = ('DynamicTool', 'dyn',)
 
@@ -48,8 +49,8 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
             },
         })
 
-        figures, plots, app_widgets = self.app_context['figures'], self.app_context['plots'], \
-                                      self.app_context['widgets']
+        figures, plots = self.app_context['figures'], self.app_context['plots']
+
         self.cursor = [np.mean(self.data_range['x']),
                        np.mean(self.data_range['y'])]
 
@@ -114,7 +115,7 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
 
         # add lines
         self.add_cursor_lines(figures['main'])
-        band_lines = figures['main'].multi_line(xs=[], ys=[], line_color='white', line_width=1)
+        _ = figures['main'].multi_line(xs=[], ys=[], line_color='white', line_width=1) # band lines
 
         # prep the widgets for the analysis function
         signature = inspect.signature(self.analysis_fn)

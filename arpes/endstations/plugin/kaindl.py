@@ -1,13 +1,18 @@
-import typing
-import numpy as np
-import xarray as xr
 import re
-import pandas as pd
+import os
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+
+import typing
+import xarray as xr
+
+import arpes
 from arpes.endstations import HemisphericalEndstation, SESEndstation
 
 __all__ = ('KaindlEndstation',)
+
 
 def find_kaindl_files_associated(reference_path: Path):
     name_match = re.match(r'([\w+]+_scan_[0-9][0-9][0-9]_)[0-9][0-9][0-9]\.pxt', reference_path.name)
@@ -22,6 +27,7 @@ def find_kaindl_files_associated(reference_path: Path):
 
     return components
 
+
 class KaindlEndstation(HemisphericalEndstation, SESEndstation):
     """
     The Robert Kaindl Endstation For HHG ARPES
@@ -33,7 +39,8 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
     RENAME_KEYS = {
         'Delay Stage': 'delay',
     }
-    def resolve_frame_locations(self, scan_desc: dict=None):
+
+    def resolve_frame_locations(self, scan_desc: dict = None):
         if scan_desc is None:
             raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
 
@@ -45,18 +52,16 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
         p = Path(original_data_loc)
         return find_kaindl_files_associated(p)
 
-    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict=None):
+    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
         if len(frames) < 2:
             return super().concatenate_frames(frames)
-
 
         # determine which axis to stitch them together along, and then do this
         original_filename = scan_desc.get('path', scan_desc.get('file'))
 
         internal_match = re.match(r'([a-zA-Z0-9\w+_]+)_[0-9][0-9][0-9]\.pxt', Path(original_filename).name)
-        if len(internal_match.groups()):
+        if internal_match.groups():
             motors_path = str(Path(original_filename).parent / '{}_Motor_Pos.txt'.format(internal_match.groups()[0]))
-            AI_path = str(Path(original_filename).parent / '{}_AI.txt'.format(internal_match.groups()[0]))
             try:
                 with open(motors_path, 'r') as f:
                     lines = f.readlines()
@@ -73,26 +78,26 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
             except Exception:
                 pass
 
-    def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
+    def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
         original_filename = scan_desc.get('path', scan_desc.get('file'))
         internal_match = re.match(r'([a-zA-Z0-9\w+_]+_[0-9][0-9][0-9])\.pxt', Path(original_filename).name)
         all_filenames = find_kaindl_files_associated(Path(original_filename))
-        all_filenames = ['{}\\{}_AI.txt'.format(f.parent,f.stem) for f in all_filenames]
+        all_filenames = ['{}\\{}_AI.txt'.format(f.parent, f.stem) for f in all_filenames]
 
         def load_attr_for_frame(filename, attr_name):
             df = pd.read_csv(filename, sep='\t', skiprows=6)
             return np.mean(df[attr_name])
 
         def attach_attr(data, attr_name, as_name):
-            photocurrents = np.array([load_attr_for_frame(f, attr_name) 
+            photocurrents = np.array([load_attr_for_frame(f, attr_name)
                                       for f in all_filenames])
-        
+
             if len(photocurrents) == 1:
                 data[as_name] = photocurrents[0]
             else:
-            
+
                 non_spectrometer_dims = [d for d in data.spectrum.dims if d not in {'eV', 'phi'}]
-                non_spectrometer_coords = {c: v for c, v in data.spectrum.coords.items() 
+                non_spectrometer_coords = {c: v for c, v in data.spectrum.coords.items()
                                            if c in non_spectrometer_dims}
 
                 new_shape = [len(data.coords[d]) for d in non_spectrometer_dims]
@@ -102,6 +107,7 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
                 data = xr.merge([data, xr.Dataset(dict([[as_name, photocurrent_arr]]))])
 
             return data
+
         try:
             data = attach_attr(data, 'Photocurrent', 'photocurrent')
             data = attach_attr(data, 'Temperature B', 'temp')
@@ -109,7 +115,7 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
         except FileNotFoundError as e:
             print(e)
 
-        if len(internal_match.groups()):
+        if internal_match.groups():
             attrs_path = str(Path(original_filename).parent / '{}_AI.txt'.format(internal_match.groups()[0]))
 
             try:

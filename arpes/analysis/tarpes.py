@@ -1,8 +1,8 @@
 import numpy as np
 
+from arpes.preparation import normalize_dim
 from arpes.provenance import update_provenance
 from arpes.typing import DataType
-from arpes.preparation import normalize_dim
 from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('find_t0', 'relative_change', 'normalized_relative_change')
@@ -50,7 +50,7 @@ def relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
     if t0 is None:
         t0 = spectrum.S.t0 or find_t0(spectrum)
 
-    assert(t0 - buffer > delay_start)
+    assert t0 - buffer > delay_start
 
     before_t0 = spectrum.sel(delay=slice(None, t0 - buffer))
     subtracted = spectrum - before_t0.mean('delay')
@@ -67,8 +67,8 @@ def find_t0(data: DataType, e_bound=0.02, approx=True):
     """
     spectrum = normalize_to_spectrum(data)
 
-    assert('delay' in spectrum.dims)
-    assert('eV' in spectrum.dims)
+    assert 'delay' in spectrum.dims
+    assert 'eV' in spectrum.dims
 
     sum_dims = set(spectrum.dims)
     sum_dims.remove('delay')
@@ -78,4 +78,3 @@ def find_t0(data: DataType, e_bound=0.02, approx=True):
     coord_max = summed.argmax().item()
 
     return summed.coords['delay'].values[coord_max]
-

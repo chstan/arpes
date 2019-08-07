@@ -1,8 +1,9 @@
-import pandas as pd
+from pprint import pprint
+
 import numpy as np
+import pandas as pd
 
 from arpes.typing import DataType
-from pprint import pprint
 
 __all__ = ('diff_attrs',)
 

@@ -1,17 +1,17 @@
-import warnings
+# pylint: disable=no-member
+
 import copy
-import os.path
-import xarray as xr
-import numpy as np
 import itertools
+import os.path
+import warnings
 
 import h5py
+import numpy as np
+from astropy.io import fits
 
 import arpes.config
-
-from astropy.io import fits
-from arpes.endstations import EndstationBase
-from arpes.endstations import find_clean_coords
+import xarray as xr
+from arpes.endstations import EndstationBase, find_clean_coords
 from arpes.provenance import provenance_from_file
 from arpes.utilities import rename_keys
 
@@ -222,4 +222,3 @@ class SpinToFEndstation(EndstationBase):
             return self.load_SToF_fits(scan_desc)
 
         return self.load_SToF_hdf5(scan_desc)
-    

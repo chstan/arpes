@@ -1,8 +1,9 @@
 import warnings
 from pathlib import Path
-import xarray as xr
+
 import numpy as np
 
+import xarray as xr
 from arpes.endstations import HemisphericalEndstation
 from arpes.utilities import clean_keys
 

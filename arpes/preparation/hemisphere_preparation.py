@@ -1,11 +1,12 @@
 import numpy as np
+
 import xarray as xr
 from arpes.provenance import update_provenance
 
 __all__ = ('infer_center_pixel', 'stitch_maps', )
 
 def infer_center_pixel(arr: xr.DataArray):
-    import arpes.xarray_extensions
+    import arpes.xarray_extensions # pylint: disable=unused-import
 
     edges = arr.S.find_spectrum_angular_edges()
     return float((np.max(edges) + np.min(edges)) / 2 + np.min(arr.coords['pixel']))

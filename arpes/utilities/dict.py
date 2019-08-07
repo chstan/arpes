@@ -1,7 +1,7 @@
 import re
+from collections import OrderedDict
 
 from arpes.utilities.xarray import lift_dataarray_attrs, lift_datavar_attrs
-from collections import OrderedDict
 from typing import Any, Dict, Union
 
 __all__ = ('rename_keys', 'clean_keys', 'rename_dataarray_attrs', 'rename_datavar_attrs',

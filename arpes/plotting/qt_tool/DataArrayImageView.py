@@ -1,3 +1,5 @@
+# pylint: disable=import-error
+
 import pyqtgraph as pg
 
 __all__ = ('DataArrayImageView',)
@@ -27,4 +29,3 @@ class DataArrayImageView(pg.ImageView):
 
     def recompute(self):
         pass
-

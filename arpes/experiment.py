@@ -8,12 +8,12 @@ More capabiities are also available for Tr-ARPES (shuffling to prevent laser and
 skewing datasets) with more to come.
 """
 
-from itertools import chain, product
-
 import json
-import numpy as np
-
+from itertools import chain, product
 from pathlib import Path
+from typing import Any, Iterable, Iterator, Union
+
+import numpy as np
 
 __all__ = ('JSONExperimentDriver', 'linspace', 'shuffled', 'move', 'comment', 'collect')
 
@@ -22,7 +22,7 @@ def flatten(lists):
     return chain.from_iterable([l if np.iterable(l) else [l] for l in lists])
 
 
-class ExperimentTreeItem(object):
+class ExperimentTreeItem:
     def __add__(self, other):
         if isinstance(other, ExperimentTreeItem):
             return [self] + [other]
@@ -38,16 +38,17 @@ class Product(ExperimentTreeItem):
 
     def __init__(self, *args):
         self.items = args
+        self._iter = None
 
     def __len__(self):
         return np.product([len(item) for item in self.items])
 
     def __iter__(self):
-        def safeiter(x):
+        def safeiter(item_or_iterable: Union[Any, Iterable[Any]]) -> Iterator[Any]:
             try:
-                return iter(x)
+                return iter(item_or_iterable)
             except TypeError:
-                return [x]
+                return iter([item_or_iterable])
 
         self._iter = product(*[safeiter(i) for i in self.items])
         return self
@@ -97,8 +98,8 @@ class Move(ExperimentTreeItem):
 class Comment(ExperimentTreeItem):
     comment = ''
 
-    def __init__(self, comment):
-        self.comment = comment
+    def __init__(self, the_comment):
+        self.comment = the_comment
 
 
 class Shuffled(ExperimentTreeItem):
@@ -110,8 +111,10 @@ class Shuffled(ExperimentTreeItem):
     def __repr__(self):
         front = '<Shuffled>'
         try:
-            content = '\n[\n{}\n]\n'.format((', \n'.join(['\t' + repr(f) for f in list(flatten(self.values))])))
-        except Exception:
+            content = '\n[\n{}\n]\n'.format((', \n'.join([
+                '\t' + repr(v) for v in list(flatten(self.values))
+            ])))
+        except Exception: # pylint: disable=broad-except
             content = repr(self.values)
 
         back = '</ Shuffled>'
@@ -149,6 +152,7 @@ class Linspace(ExperimentTreeItem):
         back = '</ Linspace>'
         return front + content + back
 
+# pylint: disable=invalid-name
 
 linspace = Linspace
 shuffled = Shuffled
@@ -156,8 +160,10 @@ move = Move
 comment = Comment
 collect = Collect
 
+# pylint: enable=invalid-name
 
-class ExperimentDriver(object):
+
+class ExperimentDriver:
     queue_location = None
     seconds_per_frame = 1
 
@@ -183,21 +189,19 @@ class ExperimentDriver(object):
     def ext(self):
         return 'drive'
 
-    def dump(self, f, o, **kwargs):
-        s = self.dumps(o, **kwargs)
-        print(s)
-        f.write(s)
+    def dump(self, file, input_object, **kwargs):
+        file.write(self.dumps(input_object, **kwargs))
 
-    def dumps(self, o, desired_total_time=None):
+    def dumps(self, input_object, desired_total_time=None):
         return ''
 
-    def dump_to_queue(self, name, o, **kwargs):
+    def dump_to_queue(self, name, input_object, **kwargs):
         if self.queue_location is None:
             raise ValueError('Must supply a queue location.')
 
-        p = Path(self.queue_location) / '{}.{}'.format(name, self.ext)
-        with open(p, 'w') as f:
-            self.dump(f, o, **kwargs)
+        dump_path = Path(self.queue_location) / '{}.{}'.format(name, self.ext)
+        with open(str(dump_path), 'w') as f:
+            self.dump(f, input_object, **kwargs)
 
     def calculate_overhead(self, o):
         return self.calculate_duration(o)[1:]
@@ -225,7 +229,7 @@ class ExperimentDriver(object):
 
 
 class ExperimentEncoder(json.JSONEncoder):
-    def default(self, obj):
+    def default(self, obj):  # pylint: disable=method-hidden
         if isinstance(obj, Product):
             return {
                 'type': 'product',
@@ -254,11 +258,11 @@ class ExperimentEncoder(json.JSONEncoder):
                 'duration': obj.duration,
                 'configuration': obj.configuration,
             }
-        return json.JSONEncoder.default(self, obj)
+        return super().default(obj)
 
 
 class FlatExperimentEncoder(json.JSONEncoder):
-    def default(self, obj):
+    def default(self, obj):  # pylint: disable=method-hidden
         if isinstance(obj, Product):
             return flatten(iter(obj))
         if isinstance(obj, Linspace):
@@ -277,7 +281,7 @@ class FlatExperimentEncoder(json.JSONEncoder):
                 'duration': obj.duration,
                 'configuration': obj.configuration,
             }
-        return json.JSONEncoder.default(self, obj)
+        return super().default(obj)
 
 
 class JSONExperimentDriver(ExperimentDriver):

@@ -1,6 +1,7 @@
 import numpy as np
 
-from arpes.analysis import curvature, d1_along_axis, d2_along_axis, gaussian_filter, boxcar_filter
+from arpes.analysis import (boxcar_filter, curvature, d1_along_axis,
+                            d2_along_axis, gaussian_filter)
 from arpes.plotting.interactive_utils import BokehInteractiveTool
 from arpes.utilities.funcutils import Debounce
 

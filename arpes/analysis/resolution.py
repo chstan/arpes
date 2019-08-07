@@ -2,12 +2,12 @@
 Contains calibrations and information for spectrometer resolution.
 """
 import math
-import numpy as np
 
-from arpes.typing import DataType
+import numpy as np
 
 # all resolutions are given by (photon energy, entrance slit, exit slit size)
 from arpes.constants import K_BOLTZMANN_MEV_KELVIN
+from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('total_resolution_estimate',)

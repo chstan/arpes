@@ -32,7 +32,7 @@ __all__ = ('endstation_name_from_alias', 'endstation_from_alias', 'add_endstatio
 _ENDSTATION_ALIASES = {}
 
 
-class EndstationBase(object):
+class EndstationBase:
     """
     Implements the core features of ARPES data loading. A thorough documentation
     is available at `the plugin documentation <https://arpes.netlify.com/#/writing-plugins>`_.
@@ -68,29 +68,30 @@ class EndstationBase(object):
 
     RENAME_KEYS = {}
 
-    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict=None):
-        if len(frames) == 0:
+    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
+        if not frames:
             raise ValueError('Could not read any frames.')
-        elif len(frames) == 1:
+
+        if len(frames) == 1:
             return frames[0]
-        else:
-            # determine which axis to stitch them together along, and then do this
-            scan_coord = None
-            max_different_values = -np.inf
-            for possible_scan_coord in self.CONCAT_COORDS:
-                coordinates = [f.attrs.get(possible_scan_coord, None) for f in frames]
-                n_different_values = len(set(coordinates))
-                if n_different_values > max_different_values and None not in coordinates:
-                    max_different_values = n_different_values
-                    scan_coord = possible_scan_coord
 
-            assert (scan_coord is not None)
+        # determine which axis to stitch them together along, and then do this
+        scan_coord = None
+        max_different_values = -np.inf
+        for possible_scan_coord in self.CONCAT_COORDS:
+            coordinates = [f.attrs.get(possible_scan_coord, None) for f in frames]
+            n_different_values = len(set(coordinates))
+            if n_different_values > max_different_values and None not in coordinates:
+                max_different_values = n_different_values
+                scan_coord = possible_scan_coord
 
-            for f in frames:
-                f.coords[scan_coord] = f.attrs[scan_coord]
+        assert scan_coord is not None
 
-            frames.sort(key=lambda x: x.coords[scan_coord])
-            return xr.concat(frames, scan_coord)
+        for f in frames:
+            f.coords[scan_coord] = f.attrs[scan_coord]
+
+        frames.sort(key=lambda x: x.coords[scan_coord])
+        return xr.concat(frames, scan_coord)
 
     def resolve_frame_locations(self, scan_desc: dict = None):
         return []
@@ -111,12 +112,12 @@ class EndstationBase(object):
             if len(frame.coords[dim]) == 1 and dim in self.SUMMABLE_NULL_DIMS:
                 sum_dims.append(dim)
 
-        if len(sum_dims):
+        if sum_dims:
             frame = frame.sum(sum_dims, keep_attrs=True)
 
         return frame
 
-    def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
+    def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
         # attach the 'spectrum_type'
         # TODO move this logic into xarray extensions and customize here
         # only as necessary
@@ -208,7 +209,7 @@ class SingleFileEndstation(EndstationBase):
     Unlike general endstations, if your data comes in a single file you can trust that the
     file given to you in the spreadsheet or direct load calls is all there is.
     """
-    def resolve_frame_locations(self, scan_desc: dict=None):
+    def resolve_frame_locations(self, scan_desc: dict = None):
         if scan_desc is None:
             raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
 
@@ -228,7 +229,7 @@ class SESEndstation(EndstationBase):
 
     These files have special frame names, at least at the beamlines Conrad has encountered.
     """
-    def resolve_frame_locations(self, scan_desc: dict=None):
+    def resolve_frame_locations(self, scan_desc: dict = None):
         if scan_desc is None:
             raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
 
@@ -240,7 +241,7 @@ class SESEndstation(EndstationBase):
         p = Path(original_data_loc)
         return find_ses_files_associated(p)
 
-    def load_single_frame(self, frame_path: str=None, scan_desc: dict=None, **kwargs):
+    def load_single_frame(self, frame_path: str=None, scan_desc: dict = None, **kwargs):
         name, ext = os.path.splitext(frame_path)
 
         if 'nc' in ext:
@@ -254,12 +255,12 @@ class SESEndstation(EndstationBase):
         return xr.Dataset({'spectrum': pxt_data}, attrs=pxt_data.attrs)
 
     def postprocess(self, frame: xr.Dataset):
-        import arpes.xarray_extensions
+        import arpes.xarray_extensions  # pylint: disable=unused-import, redefined-outer-name
 
         frame = super().postprocess(frame)
         return frame.assign_attrs(frame.S.spectrum.attrs)
 
-    def load_SES_nc(self, scan_desc: dict=None, robust_dimension_labels=False, **kwargs):
+    def load_SES_nc(self, scan_desc: dict = None, robust_dimension_labels=False, **kwargs):
         """
         Imports an hdf5 dataset exported from Igor that was originally generated by a Scienta spectrometer
         in the SESb format. In order to understand the structure of these files have a look at Conrad's
@@ -397,7 +398,7 @@ class FITSEndstation(EndstationBase):
         'LMOTOR6': 'alpha',
     }
 
-    def resolve_frame_locations(self, scan_desc: dict=None):
+    def resolve_frame_locations(self, scan_desc: dict = None):
         if scan_desc is None:
             raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
 
@@ -408,7 +409,7 @@ class FITSEndstation(EndstationBase):
 
         return [original_data_loc]
 
-    def load_single_frame(self, frame_path: str=None, scan_desc: dict=None, **kwargs):
+    def load_single_frame(self, frame_path: str=None, scan_desc: dict = None, **kwargs):
         # Use dimension labels instead of
         hdulist = fits.open(frame_path, ignore_missing_end=True)
         primary_dataset_name = None
@@ -635,11 +636,10 @@ def add_endstation(endstation_cls: type) -> None:
     :param endstation_cls:
     :return:
     """
-    assert(endstation_cls.PRINCIPAL_NAME is not None)
+    assert endstation_cls.PRINCIPAL_NAME is not None
     for alias in endstation_cls.ALIASES:
         if alias in _ENDSTATION_ALIASES:
             continue
-            print('Alias ({}) already registered. Skipping...'.format(alias))
 
         _ENDSTATION_ALIASES[alias] = endstation_cls
 
@@ -679,7 +679,7 @@ def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> Dataset:
         return endstation_cls().load(scan_desc, **kwargs)
     except KeyError:
         if retry:
-            import arpes.config
+            import arpes.config  # pylint: disable=redefined-outer-name
             arpes.config.load_plugins()
             return load_scan(full_note, retry=False, **kwargs)
         else:

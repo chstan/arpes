@@ -3,18 +3,20 @@ import functools
 import itertools
 
 import numpy as np
-import xarray as xr
 from scipy.spatial import distance
 
 import arpes.models.band
 import arpes.utilities.math
-from arpes.utilities import enumerate_dataarray, normalize_to_spectrum
-from arpes.utilities.jupyter_utils import wrap_tqdm
-from arpes.typing import DataType
+import xarray as xr
 from arpes.constants import HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ
-from arpes.fits import broadcast_model, LorentzianModel, AffineBackgroundModel, QuadraticModel
-from arpes.utilities.conversion.forward import convert_coordinates_to_kspace_forward
+from arpes.fits import (AffineBackgroundModel, LorentzianModel, QuadraticModel,
+                        broadcast_model)
 from arpes.provenance import update_provenance
+from arpes.typing import DataType
+from arpes.utilities import enumerate_dataarray, normalize_to_spectrum
+from arpes.utilities.conversion.forward import \
+    convert_coordinates_to_kspace_forward
+from arpes.utilities.jupyter_utils import wrap_tqdm
 
 __all__ = ('fit_bands', 'fit_for_effective_mass',)
 
@@ -205,7 +207,7 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
     :return: Dataset or DataArray, as controlled by the parameter "dataset"
     """
 
-    if background == True:
+    if background:
         from arpes.models.band import AffineBackgroundBand
         background = AffineBackgroundBand
 
@@ -225,7 +227,7 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
         :return:
         """
 
-        assert(len(points[0]) == 2) # only support 2D interpolation
+        assert len(points[0]) == 2 # only support 2D interpolation
 
         for point_low, point_high in zip(points, points[1:]):
             coord_other_index = 1 - coord_index
@@ -256,12 +258,12 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
         coord_name = [d for d in dims if d in coord_dict][0]
         iter_coord_value = coord_dict[coord_name]
         partial_band_locations = list(interpolate_itersecting_fragments(
-           iter_coord_value, arr.dims.index(coord_name), points or []))
+            iter_coord_value, arr.dims.index(coord_name), points or []))
 
         def build_params(old_params, center, center_stray=None):
             new_params = copy.deepcopy(old_params)
             new_params.update({
-                'center': { 'value': center, }
+                'center': {'value': center,}
             })
             if center_stray is not None:
                 new_params['center']['min'] = center - center_stray
@@ -302,7 +304,7 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
 
         partial_bands = [p for p in partial_bands if len(p)]
 
-        if background is not None and len(partial_bands):
+        if background is not None and partial_bands:
             partial_bands = partial_bands + [[{
                 'band': background,
                 'name': '',
@@ -320,7 +322,7 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
 
         internal_models = [instantiate_band(b) for bs in partial_bands for b in bs]
 
-        if len(internal_models) == 0:
+        if not internal_models:
             band_results.loc[coord_dict] = None
             continue
 
@@ -445,13 +447,13 @@ def fit_bands(arr: xr.DataArray, band_description, background=None,
         # parameters, this should be good enough because the order of the iterator will
         # be stable
         closest_model_params = initial_fits # fix me
-        distance = float('inf')
+        dist = float('inf')
         frozen_coordinate = tuple(coordinate[k] for k in template.dims)
         for c, v in all_fit_parameters.items():
             delta = np.array(c) - frozen_coordinate
             current_distance = delta.dot(delta)
-            if current_distance < distance:
-                current_distance = distance
+            if current_distance < dist:
+                # current_distance = dist
                 if direction == 'mdc': # TODO remove me
                     closest_model_params = v
 
@@ -478,4 +480,3 @@ def fit_bands(arr: xr.DataArray, band_description, background=None,
     residual = None
 
     return band_results, unpacked_bands, residual
-

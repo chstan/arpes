@@ -1,19 +1,19 @@
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.tri import Triangulation, TriAnalyzer, UniformTriRefiner
 import numpy as np
-from arpes.provenance import save_plot_provenance
-from arpes.analysis import filters
-from mpl_toolkits.mplot3d import Axes3D # need this import to enable 3D axes
+from matplotlib import cm
+from matplotlib.tri import TriAnalyzer, Triangulation, UniformTriRefiner
 
-from .utils import *
+from arpes.analysis import filters
+from arpes.provenance import save_plot_provenance
+
+from .utils import path_for_plot
 
 __all__ = ['plot_isosurface', 'plot_trisurf', 'plotly_trisurf']
 
 
 @save_plot_provenance
 def plot_isosurface(data, level=None, percentile=99.5, smoothing=None, out=None, ax=None):
-    assert ('eV' in data.dims)
+    assert 'eV' in data.dims
 
     new_dim_order = list(data.dims)
     new_dim_order.remove('eV')
@@ -29,7 +29,8 @@ def plot_isosurface(data, level=None, percentile=99.5, smoothing=None, out=None,
     if level is None:
         level = np.percentile(data.data, percentile)
 
-    from skimage import measure # try to avoid skimage incompatibility with numpy v0.16 as much as possible
+    # try to avoid skimage incompatibility with numpy v0.16 as much as possible
+    from skimage import measure  # pylint: disable=import-error
     verts, faces, normals, values = measure.marching_cubes(data.values, level, spacing=spacing)
 
     if ax is None:
@@ -47,9 +48,8 @@ def plot_isosurface(data, level=None, percentile=99.5, smoothing=None, out=None,
 
 
 def plotly_trisurf(data):
-    import plotly.plotly as py
-    import plotly.offline as pyo
-    import plotly.graph_objs as go
+    import plotly.offline as pyo  # pylint: disable=import-error
+    import plotly.graph_objs as go  # pylint: disable=import-error
 
     x = data.coords[data.dims[0]].values
     y = data.coords[data.dims[1]].values
@@ -128,7 +128,7 @@ def plot_trisurface(data, out=None, ax=None):
 
     # meshing with Delaunay triangulation
     x_dim, y_dim = tuple(data.dims)
-    x_coord, y_coord = data.coords[x_dim].data, data.coords[y_dim].data
+    # x_coord, y_coord = data.coords[x_dim].data, data.coords[y_dim].data
 
     tri = Triangulation(data.coords[data.dims[0]].data, y_test)
     ntri = tri.triangles.shape[0]
@@ -198,4 +198,3 @@ def plot_trisurface(data, out=None, ax=None):
         return path_for_plot(out)
 
     plt.show()
-

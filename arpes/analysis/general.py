@@ -1,18 +1,20 @@
-import numpy as np
-import xarray as xr
-import typing
-from arpes.typing import DataType
+import itertools
 from collections import defaultdict
+
+import numpy as np
+
 import arpes.constants
 import arpes.models.band
 import arpes.utilities
 import arpes.utilities.math
-import itertools
-
+import typing
+import xarray as xr
 from arpes.fits import GStepBModel, broadcast_model
 from arpes.provenance import update_provenance
+from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.math import fermi_distribution
+
 from .filters import gaussian_filter_arr
 
 __all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis', 'condense', 'rebin',
@@ -33,9 +35,9 @@ def fit_fermi_edge(data, energy_range=None):
 
     broadcast_directions = list(data.dims)
     broadcast_directions.remove('eV')
-    assert(len(broadcast_directions) == 1) # for now we don't support more
+    assert len(broadcast_directions) == 1 # for now we don't support more
 
-    edge_fit = broadcast_model(GStepBModel, data.sel(eV=energy_range), broadcast_axis=broadcast_directions[0])
+    edge_fit = broadcast_model(GStepBModel, data.sel(eV=energy_range), broadcast_directions[0])
     return edge_fit
 
 
@@ -184,7 +186,7 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
     # factor evenly divides the real shape of the input data.
     slices = defaultdict(lambda: slice(None))
 
-    if len(data.dims) == 0:
+    if not data.dims:
         return data
 
     for dim, reduction_factor in reduction.items():
@@ -211,4 +213,3 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
         data.dims,
         attrs=data.attrs
     )
-

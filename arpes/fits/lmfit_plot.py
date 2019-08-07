@@ -4,9 +4,10 @@ Monkeypatch the lmfit plotting to avoid TeX errors, and to allow plotting model 
 This is a very safe monkey patch as we defer to the original plotting function in cases
 where it is appropriate, rather than reimplementing this functionality.
 """
-import xarray as xr
 import matplotlib.pyplot as plt
 from lmfit import model
+
+import xarray as xr
 
 original_plot = model.ModelResult.plot
 

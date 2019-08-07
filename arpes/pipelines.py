@@ -3,9 +3,10 @@ Implements some pipelines for basic tasks.
 """
 
 import xarray as xr
+from arpes.corrections import (apply_photon_energy_fermi_edge_correction,
+                               apply_quadratic_fermi_edge_correction)
 
-from arpes.corrections import apply_photon_energy_fermi_edge_correction, apply_quadratic_fermi_edge_correction
-from .pipeline import pipeline, compose
+from .pipeline import compose, pipeline
 from .preparation import dim_normalizer
 from .provenance import update_provenance
 from .utilities import conversion
@@ -13,8 +14,6 @@ from .utilities import conversion
 __all__ = ['convert_scan_to_kspace', 'convert_scan_to_kspace_no_corr',
            'tr_prep_scan_ammeter', 'tr_prep_scan_simple', 'convert_mc_map_to_kspace_fft_filter',
            'prep_for_d2']
-
-# TODO Implement chemical potential shift as a function of cycle number for delay scans
 
 @pipeline()
 def correct_e_fermi_hv(arr: xr.DataArray):
@@ -44,14 +43,6 @@ def sum_cycles(arr: xr.DataArray):
     return arr.sum('cycle', keep_attrs=True)
 
 
-@pipeline()
-def normalize_from_ammeter(arr: xr.DataArray):
-    # TODO this will require a refactor where most of the data processing in the project
-    # should allow either a DataArray or a DataSet, there should be a principled place
-    # to put the spectrum in a DataSet in this case, probably `.spectrum`
-    raise NotImplementedError()
-
-
 # TODO: implement pipelines better so that arguments are interned correctly
 # in the case where a pipeline step has extra arguments
 
@@ -59,9 +50,6 @@ def normalize_from_ammeter(arr: xr.DataArray):
 # Scans are already normalized at this point, they should be whenever they are first
 # interned in the netCDF format
 convert_scan_to_kspace = compose(
-    #remove_dead_pixels, TODO implement
-    #lucy_richardson_deconvolution, TODO implement
-    #trapezoid_correction, TODO implement, consider order
     pipeline('normalize_hv_axis')(dim_normalizer('hv')),
     correct_e_fermi_hv,
     correct_e_fermi_spectrometer,
@@ -101,8 +89,7 @@ tr_prep_scan_simple = compose(
     sum_cycles,
 )
 
-tr_prep_scan_ammeter = compose( # TODO implement
-    normalize_from_ammeter,
+tr_prep_scan_ammeter = compose(
+    #normalize_from_ammeter,
     sum_cycles,
 )
-

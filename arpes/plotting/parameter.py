@@ -1,6 +1,6 @@
-import xarray as xr
-
 import matplotlib.pyplot as plt
+
+import xarray as xr
 from arpes.provenance import save_plot_provenance
 
 __all__ = ('plot_parameter',)

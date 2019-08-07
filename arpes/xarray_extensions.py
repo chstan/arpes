@@ -11,51 +11,56 @@ offers.
 """
 
 import collections
-import itertools
 import copy
+import itertools
 import warnings
 from collections import OrderedDict
-
-import numpy as np
-import xarray as xr
-import matplotlib.pyplot as plt
-
-from arpes.plotting.utils import fancy_labels, remove_colorbars
 from typing import Optional, Union
 
-from arpes.analysis.band_analysis_utils import param_getter, param_stderr_getter
-from arpes.analysis import rebin
-from arpes.exceptions import AnalysisError
-from arpes.typing import DataType
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
 
 from scipy import ndimage as ndi
 
 import arpes.constants
-from arpes.models.band import MultifitBand
-from arpes.io import load_dataset_attrs
 import arpes.plotting as plotting
-from arpes.plotting import ImageTool, CurvatureTool, BandTool, FitCheckTool
-from arpes.utilities.conversion import slice_along_path
+
+from arpes.analysis import rebin
+from arpes.analysis.band_analysis_utils import (param_getter,
+                                                param_stderr_getter)
+from arpes.io import load_dataset_attrs
+from arpes.models.band import MultifitBand
+from arpes.plotting import BandTool, CurvatureTool, FitCheckTool, ImageTool
+from arpes.plotting.utils import fancy_labels, remove_colorbars
+from arpes.typing import DataType
 from arpes.utilities import apply_dataarray
-from arpes.utilities.region import DesignatedRegions, normalize_region
+from arpes.utilities.conversion import slice_along_path
 from arpes.utilities.math import shift_by
+from arpes.utilities.region import DesignatedRegions, normalize_region
+
 
 __all__ = ['ARPESDataArrayAccessor', 'ARPESDatasetAccessor', 'ARPESFitToolsAccessor']
 
 
 def _iter_groups(grouped):
-    for k, l in grouped.items():
+    """
+    Iterates through a flattened sequence
+    :param grouped:
+    :return:
+    """
+    for k, value_or_list in grouped.items():
         try:
-            for li in l:
-                yield k, li
+            for list_item in value_or_list:
+                yield k, list_item
         except TypeError:
-            yield k, l
+            yield k, value_or_list
 
 
 def unwrap_xarray_item(item):
     try:
         return item.item()
-    except Exception:
+    except (AttributeError, ValueError):
         return item
 
 
@@ -63,7 +68,7 @@ def unwrap_xarray_dict(d):
     return {k: unwrap_xarray_item(v) for k, v in d.items()}
 
 
-class ARPESAccessorBase(object):
+class ARPESAccessorBase:
     """
     Base class for the xarray extensions that we put onto our datasets to make working with ARPES data a
     little cleaner. This allows you to access common attributes
@@ -77,11 +82,11 @@ class ARPESAccessorBase(object):
 
     @property
     def sherman_function(self):
-        return 0.2
+        # TODO Need to improve spin-metadata
 
-        for option in ['sherman', 'sherman_function', 'SHERMAN']:
-            if option in self._obj.attrs:
-                return self._obj.attrs[option]
+        # for option in ['sherman', 'sherman_function', 'SHERMAN']:
+        #     if option in self._obj.attrs:
+        #         return self._obj.attrs[option]
 
         return 0.2
 
@@ -226,13 +231,13 @@ class ARPESAccessorBase(object):
 
     def transpose_to_front(self, dim):
         dims = list(self._obj.dims)
-        assert(dim in dims)
+        assert dim in dims
         dims.remove(dim)
         return self._obj.transpose(*([dim] + dims))
 
     def transpose_to_back(self, dim):
         dims = list(self._obj.dims)
-        assert(dim in dims)
+        assert dim in dims
         dims.remove(dim)
         return self._obj.transpose(*(dims + [dim]))
 
@@ -289,13 +294,13 @@ class ARPESAccessorBase(object):
         else:
             collected_terms = set('{}_r'.format(k) for k in points.keys()).intersection(
                 set(kwargs.keys()))
-            if len(collected_terms):
+            if collected_terms:
                 radius = {d: kwargs.get('{}_r'.format(d), default_radii.get(d, unspecified))
                           for d in points.keys()}
             elif radius is None:
                 radius = {d: default_radii.get(d, unspecified) for d in points.keys()}
 
-        assert (isinstance(radius, dict))
+        assert isinstance(radius, dict)
         radius = {d: radius.get(d, default_radii.get(d, unspecified)) for d in points.keys()}
 
         along_dims = list(points.values())[0].dims
@@ -323,7 +328,7 @@ class ARPESAccessorBase(object):
             else:
                 raise NotImplementedError()
 
-            if len(nearest_sel_params):
+            if nearest_sel_params:
                 selected = selected.sel(**nearest_sel_params, method='nearest')
 
             for d in nearest_sel_params:
@@ -383,13 +388,13 @@ class ARPESAccessorBase(object):
         else:
             collected_terms = set('{}_r'.format(k) for k in point.keys()).intersection(
                 set(kwargs.keys()))
-            if len(collected_terms):
+            if collected_terms:
                 radius = {d: kwargs.get('{}_r'.format(d), default_radii.get(d, unspecified))
                           for d in point.keys()}
             elif radius is None:
                 radius = {d: default_radii.get(d, unspecified) for d in point.keys()}
 
-        assert (isinstance(radius, dict))
+        assert isinstance(radius, dict)
         radius = {d: radius.get(d, default_radii.get(d, unspecified)) for d in point.keys()}
 
         # make sure we are taking at least one pixel along each
@@ -410,7 +415,7 @@ class ARPESAccessorBase(object):
             # selected = self._obj
             raise NotImplementedError()
 
-        if len(nearest_sel_params):
+        if nearest_sel_params:
             selected = selected.sel(**nearest_sel_params, method='nearest')
 
         for d in nearest_sel_params:
@@ -515,7 +520,7 @@ class ARPESAccessorBase(object):
             if isinstance(rest, list):
                 warnings.warn('Encountered multiple parents in history extraction, '
                               'throwing away all but the first.')
-                if len(rest):
+                if rest:
                     rest = rest[0]
                 else:
                     rest = None
@@ -531,7 +536,6 @@ class ARPESAccessorBase(object):
             return first + _unwrap_provenance(rest)
 
         return _unwrap_provenance(provenance)
-
 
     @property
     def spectrometer(self):
@@ -623,7 +627,7 @@ class ARPESAccessorBase(object):
             indices = [df[df['spectrum_type'].eq(s)] for s in spectrum_type]
             indices = [d.index[0] for d in indices if not d.empty]
 
-            if len(indices) == 0:
+            if not indices:
                 raise IndexError()
 
             min_index = min(indices)
@@ -673,7 +677,7 @@ class ARPESAccessorBase(object):
             self._obj.attrs['{}_offset'.format(k)] = v
 
     def lookup_offset_coord(self, name):
-        offset = self.lookup_coord(name) - self._lookup_offset(name)
+        offset = self.lookup_coord(name) - self.lookup_offset(name)
         try:
             return offset.item()
         except (AttributeError, ValueError):
@@ -691,7 +695,7 @@ class ARPESAccessorBase(object):
 
         raise ValueError('Could not find coordinate {}.'.format(name))
 
-    def _lookup_offset(self, attr_name):
+    def lookup_offset(self, attr_name):
         symmetry_points = self.symmetry_points(raw=True)
         if 'G' in symmetry_points:
             gamma_point = symmetry_points['G']
@@ -706,15 +710,15 @@ class ARPESAccessorBase(object):
 
     @property
     def beta_offset(self):
-        return self._lookup_offset('beta')
+        return self.lookup_offset('beta')
 
     @property
     def theta_offset(self):
-        return self._lookup_offset('theta')
+        return self.lookup_offset('theta')
 
     @property
     def phi_offset(self):
-        return self._lookup_offset('phi')
+        return self.lookup_offset('phi')
 
     @property
     def work_function(self):
@@ -747,7 +751,8 @@ class ARPESAccessorBase(object):
         embedded[:] = energy_marginal.values
         embedded = ndi.gaussian_filter(embedded, embed_size / 3)
 
-        from skimage import feature  # try to avoid dependency conflict with numpy v0.16
+        # try to avoid dependency conflict with numpy v0.16
+        from skimage import feature # pylint: disable=import-error
         edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
                               low_threshold=0.3) * 1
         edges = np.where(edges[int(embed_size / 2)] == 1)[0]
@@ -791,7 +796,8 @@ class ARPESAccessorBase(object):
             embedded[:] = values
             embedded = ndi.gaussian_filter(embedded, embed_size / 1.5)
 
-            from skimage import feature  # try to avoid dependency conflict with numpy v0.16
+            # try to avoid dependency conflict with numpy v0.16
+            from skimage import feature # pylint: disable=import-error
             edges = feature.canny(embedded, sigma=4, use_quantiles=False,
                                   low_threshold=0.7, high_threshold=1.5) * 1
             edges = np.where(edges[int(embed_size / 2)] == 1)[0]
@@ -806,14 +812,7 @@ class ARPESAccessorBase(object):
         low_edges = np.array(low_edges) * delta[angular_dim] + rebinned.coords[angular_dim].values[0]
         high_edges = np.array(high_edges) * delta[angular_dim] + rebinned.coords[angular_dim].values[0]
 
-        # DEBUG
-        # import matplotlib.pyplot as plt
-        # energy_cut.plot()
-        # plt.plot(rebinned.coords['eV'], low_edges)
-        # plt.plot(rebinned.coords['eV'], high_edges)
-
         return low_edges, high_edges, rebinned.coords['eV']
-
 
     def zero_spectrometer_edges(self, edge_type='hard', cut_margin=None, interp_range=None, low=None, high=None):
         """
@@ -825,8 +824,8 @@ class ARPESAccessorBase(object):
         """
 
         if low is not None:
-            assert(high is not None)
-            assert(len(low) == len(high) == 2)
+            assert high is not None
+            assert len(low) == len(high) == 2
 
             low_edges = low
             high_edges = high
@@ -844,7 +843,7 @@ class ARPESAccessorBase(object):
                 cut_margin = int(0.08 / self._obj.T.stride(generic_dim_names=False)[angular_dim])
         else:
             if isinstance(cut_margin, float):
-                assert(angular_dim == 'phi')
+                assert angular_dim == 'phi'
                 cut_margin = int(cut_margin / self._obj.T.stride(generic_dim_names=False)[angular_dim])
 
         if interp_range is not None:
@@ -894,7 +893,8 @@ class ARPESAccessorBase(object):
         embedded[:] = near_ef.values
         embedded = ndi.gaussian_filter(embedded, embed_size / 3)
 
-        from skimage import feature  # try to avoid dependency conflict with numpy v0.16
+        # try to avoid dependency conflict with numpy v0.16
+        from skimage import feature # pylint: disable=import-error
         edges = feature.canny(embedded, sigma=embed_size / 5, use_quantiles=True,
                               low_threshold=0.2) * 1
         edges = np.where(edges[int(embed_size / 2)] == 1)[0]
@@ -952,13 +952,13 @@ class ARPESAccessorBase(object):
             }
 
             options_for_dim = options.get(dimension_name, [d for d in DesignatedRegions])
-            assert(selector in options_for_dim)
+            assert selector in options_for_dim
 
             # now we need to resolve out the region
             resolution_methods = {
                 DesignatedRegions.ABOVE_EF: slice(0, None),
                 DesignatedRegions.BELOW_EF: slice(None, 0),
-                DesignatedRegions.EF_NARROW: slice(-0.1, 0.1),  # TODO do this better
+                DesignatedRegions.EF_NARROW: slice(-0.1, 0.1),
                 DesignatedRegions.MESO_EF: slice(-0.3, -0.1),
                 DesignatedRegions.MESO_EFFECTIVE_EF: self.meso_effective_selector,
 
@@ -970,10 +970,10 @@ class ARPESAccessorBase(object):
             resolution_method = resolution_methods[selector]
             if isinstance(resolution_method, slice):
                 return resolution_method
-            elif callable(resolution_method):
+            if callable(resolution_method):
                 return resolution_method()
-            else:
-                raise NotImplementedError('FIXME')
+
+            raise NotImplementedError('Unable to determine resolution method.')
 
         obj = self._obj
 
@@ -1021,8 +1021,8 @@ class ARPESAccessorBase(object):
 
         extra_kwargs = {k: v for k, v in kwargs.items() if k not in self._obj.dims}
         slice_kwargs = {k: v for k, v in kwargs.items() if k not in extra_kwargs}
-        slice_widths = {k: widths.get(k, extra_kwargs.get(k + '_width',
-            default_widths.get(k))) for k in slice_kwargs}
+        slice_widths = {k: widths.get(k, extra_kwargs.get(k + '_width', default_widths.get(k)))
+                        for k in slice_kwargs}
 
         slices = {k: slice(v - slice_widths[k] / 2, v + slice_widths[k] / 2)
                   for k, v in slice_kwargs.items()}
@@ -1125,39 +1125,15 @@ class ARPESAccessorBase(object):
     def sample_angles(self):
         return (
             # manipulator
-            self.beta,
-            self.theta,
-            self.chi,
+            self.lookup_coord('beta'),
+            self.lookup_coord('theta'),
+            self.lookup_coord('chi'),
 
             # analyzer
-            self.phi,
-            self.psi,
-            self.alpha,
+            self.lookup_coord('phi'),
+            self.lookup_coord('psi'),
+            self.lookup_coord('alpha'),
         )
-
-    """
-    For a description of the PyARPES angular conventions, visit
-    """
-    @property
-    def theta(self):
-        try:
-            return float(self._obj.attrs['theta'])
-        except KeyError:
-            return None
-
-    @property
-    def phi(self):
-        try:
-            return float(self._obj.attrs['phi'])
-        except KeyError:
-            return None
-
-    @property
-    def beta(self):
-        try:
-            return float(self._obj.attrs['beta'])
-        except KeyError:
-            return None
 
     @property
     def full_coords(self):
@@ -1178,7 +1154,7 @@ class ARPESAccessorBase(object):
             'id': self._obj.attrs.get('sample_id'),
             'name': self._obj.attrs.get('sample_name'),
             'source': self._obj.attrs.get('sample_source'),
-            'reflectivity': self._obj.attrs.get('sample_reflectivity'), # TODO improve
+            'reflectivity': self._obj.attrs.get('sample_reflectivity'),
         })
 
     @property
@@ -1230,7 +1206,7 @@ class ARPESAccessorBase(object):
             'probe_fluence': self._obj.attrs.get('probe_fluence'),
             'probe_pulse_energy': self._obj.attrs.get('probe_pulse_energy'),
             'probe_spot_size': (self._obj.attrs.get('probe_spot_size_x'),
-                               self._obj.attrs.get('probe_spot_size_y')),
+                                self._obj.attrs.get('probe_spot_size_y')),
             'probe_profile': self._obj.attrs.get('probe_profile'),
             'probe_linewidth': self._obj.attrs.get('probe_linewidth'),
             'probe_temporal_width': self._obj.attrs.get('probe_temporal_width'),
@@ -1377,7 +1353,7 @@ class ARPESAccessorBase(object):
             df = self._obj.attrs['df']
             return df[(df.spectrum_type != 'map') & (df.ref_id == self._obj.id)]
         else:
-            assert(self.spectrum_type in {'ucut', 'spem'})
+            assert self.spectrum_type in {'ucut', 'spem'}
             df = self.df_until_type(spectrum_type=('ucut', 'spem',))
             return df
 
@@ -1392,7 +1368,8 @@ class ARPESAccessorBase(object):
         self._obj = xarray_obj
 
 
-    def dict_to_html(self, d):
+    @staticmethod
+    def dict_to_html(d):
         return """
         <table>
           <thead>
@@ -1420,7 +1397,7 @@ class ARPESAccessorBase(object):
                 delta=value.values[1] - value.values[0],
             )
 
-        return self.dict_to_html({k: coordinate_dataarray_to_flat_rep(v) for k, v in coords.items()})
+        return ARPESAccessorBase.dict_to_html({k: coordinate_dataarray_to_flat_rep(v) for k, v in coords.items()})
 
     def _repr_html_spectrometer_info(self):
         skip_keys = {'dof',}
@@ -1428,9 +1405,10 @@ class ARPESAccessorBase(object):
         ordered_settings.update({k: v for k, v in self.spectrometer.items()
                                  if k not in skip_keys})
 
-        return self.dict_to_html(ordered_settings)
+        return ARPESAccessorBase.dict_to_html(ordered_settings)
 
-    def _repr_html_experimental_conditions(self, conditions):
+    @staticmethod
+    def _repr_html_experimental_conditions(conditions):
         transforms = {
             'polarization': lambda p: {
                 'p': 'Linear Horizontal',
@@ -1442,13 +1420,14 @@ class ARPESAccessorBase(object):
                 'rc-lc': 'Circular Dichroism',
                 'lc-rc': 'Circular Dichroism',
             }.get(p, p),
-            'hv': lambda hv: '{} eV'.format(hv),
-            'temp': lambda temp: '{} Kelvin'.format(temp),
+            'hv': '{} eV'.format,
+            'temp': '{} Kelvin'.format,
         }
 
         id = lambda x: x
 
-        return self.dict_to_html({k: transforms.get(k, id)(v) for k, v in conditions.items() if v is not None})
+        return ARPESAccessorBase.dict_to_html(
+            {k: transforms.get(k, id)(v) for k, v in conditions.items() if v is not None})
 
     def _repr_html_(self):
         skip_data_vars = {'time',}
@@ -1458,8 +1437,8 @@ class ARPESAccessorBase(object):
             to_plot = [k for k in to_plot if 1 <= len(self._obj[k].dims) < 3]
             to_plot = to_plot[:5]
 
-            if len(to_plot):
-                fig, ax = plt.subplots(1, len(to_plot), figsize=(len(to_plot) * 3, 3,))
+            if to_plot:
+                _, ax = plt.subplots(1, len(to_plot), figsize=(len(to_plot) * 3, 3,))
                 if len(to_plot) == 1:
                     ax = [ax]
 
@@ -1552,7 +1531,7 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
             kwargs['out'] = out
         return plotting.cut_dispersion_plot(self._obj, **kwargs)
 
-    def dispersion_plot(self, pattern='{}.png',**kwargs):
+    def dispersion_plot(self, pattern='{}.png', **kwargs):
         out = kwargs.get('out')
         if out is not None and isinstance(out, bool):
             out = pattern.format('{}_dispersion'.format(self.label))
@@ -1642,7 +1621,7 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
         """
 
         data = self._obj.copy(deep=True)
-        assert(isinstance(data, xr.DataArray))
+        assert isinstance(data, xr.DataArray)
         data.values[np.isnan(data.values)] = x
         return data
 
@@ -1677,7 +1656,7 @@ NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 
 @xr.register_dataset_accessor('T')
 @xr.register_dataarray_accessor('T')
-class GenericAccessorTools(object):
+class GenericAccessorTools:
     _obj = None
 
     def extent(self, *args, dims=None):
@@ -1687,12 +1666,12 @@ class GenericAccessorTools(object):
         """
 
         if dims is None:
-            if len(args) == 0:
+            if not args:
                 dims = self._obj.dims
             else:
                 dims = args
 
-        assert(len(dims) == 2 and 'You must supply exactly two dims to `.T.extent` not {}'.format(dims))
+        assert len(dims) == 2 and 'You must supply exactly two dims to `.T.extent` not {}'.format(dims)
         return [
             self._obj.coords[dims[0]][0].item(),
             self._obj.coords[dims[0]][-1].item(),
@@ -1701,7 +1680,7 @@ class GenericAccessorTools(object):
         ]
 
     def drop_nan(self):
-        assert(len(self._obj.dims) == 1)
+        assert len(self._obj.dims) == 1
 
         mask = np.logical_not(np.isnan(self._obj.values))
         return self._obj.isel(**dict([[self._obj.dims[0], mask]]))
@@ -1744,12 +1723,12 @@ class GenericAccessorTools(object):
         else:
             transformed = transform(as_array)
 
-        copy = self._obj.copy(deep=True)
+        copied = self._obj.copy(deep=True)
 
         for d, arr in zip(dims, np.split(transformed, transformed.shape[-1], axis=-1)):
-            copy.data_vars[d].values = np.squeeze(arr, axis=-1)
+            copied.data_vars[d].values = np.squeeze(arr, axis=-1)
 
-        return copy
+        return copied
 
     def filter_vars(self, f):
         return xr.Dataset(data_vars={
@@ -1773,7 +1752,7 @@ class GenericAccessorTools(object):
 
         :return:
         """
-        assert(len(self._obj.dims) == 1)
+        assert len(self._obj.dims) == 1
 
         d = self._obj.dims[0]
         o = self._obj.rename(dict([[d, as_coordinate_name]])).copy(deep=True)
@@ -1792,23 +1771,23 @@ class GenericAccessorTools(object):
         :return:
         """
 
-        assert (isinstance(self._obj, xr.DataArray))
+        assert isinstance(self._obj, xr.DataArray)
 
         dims = self._obj.dims
         coords_as_list = [self._obj.coords[d].values for d in dims]
         raveled_coordinates = dict(zip(dims, [cs.ravel() for cs in np.meshgrid(*coords_as_list)]))
-        assert ('data' not in raveled_coordinates)
+        assert 'data' not in raveled_coordinates
         raveled_coordinates['data'] = self._obj.values.ravel()
 
         return raveled_coordinates
 
     def meshgrid(self, as_dataset=False):
-        assert (isinstance(self._obj, xr.DataArray))
+        assert isinstance(self._obj, xr.DataArray)
 
         dims = self._obj.dims
         coords_as_list = [self._obj.coords[d].values for d in dims]
         meshed_coordinates = dict(zip(dims, [cs for cs in np.meshgrid(*coords_as_list)]))
-        assert ('data' not in meshed_coordinates)
+        assert 'data' not in meshed_coordinates
         meshed_coordinates['data'] = self._obj.values
 
         if as_dataset:
@@ -1830,16 +1809,16 @@ class GenericAccessorTools(object):
         plt.scatter(*data.T.as_arrays(), marker='s')
         :return:
         """
-        assert(len(self._obj.dims) == 1)
+        assert len(self._obj.dims) == 1
 
         return [self._obj.coords[self._obj.dims[0]].values, self._obj.values]
 
     def clean_outliers(self, clip=0.5):
         low, high = np.percentile(self._obj.values, [clip, 100 - clip])
-        copy = self._obj.copy(deep=True)
-        copy.values[copy.values < low] = low
-        copy.values[copy.values > high] = high
-        return copy
+        copied = self._obj.copy(deep=True)
+        copied.values[copied.values < low] = low
+        copied.values[copied.values > high] = high
+        return copied
 
     def as_movie(self, time_dim=None, pattern='{}.png', **kwargs):
         if time_dim is None:
@@ -1847,7 +1826,7 @@ class GenericAccessorTools(object):
 
         out = kwargs.get('out')
         if out is not None and isinstance(out, bool):
-            out = pattern.format('{}_animation'.format(self.label))
+            out = pattern.format('{}_animation'.format(self._obj.S.label))
             kwargs['out'] = out
         return plotting.plot_movie(self._obj, time_dim, **kwargs)
 
@@ -1937,10 +1916,10 @@ class GenericAccessorTools(object):
             dim_names = NORMALIZED_DIM_NAMES[:len(dim_names)]
 
         result = dict(zip(dim_names, indexed_strides))
-        
-        if len(args):
+
+        if args:
             if len(args) == 1:
-                if not isinstance(args[0],str):
+                if not isinstance(args[0], str):
                     # if passed list of strs as argument
                     result = [result[selected_names] for selected_names in args[0]]
                 else:
@@ -1949,7 +1928,7 @@ class GenericAccessorTools(object):
             else:
                 # if passed several names as arguments
                 result = [result[selected_names] for selected_names in args]
-            
+
         return result
 
     def shift_by(self, other, shift_axis=None, zero_nans=True, shift_coords=False):
@@ -1957,7 +1936,7 @@ class GenericAccessorTools(object):
 
         data = self._obj
 
-        assert(len(other.dims) == 1)
+        assert len(other.dims) == 1
 
         if shift_coords:
             mean_shift = np.mean(other)
@@ -1967,14 +1946,14 @@ class GenericAccessorTools(object):
         if shift_axis is None:
             option_dims = list(data.dims)
             option_dims.remove(by_axis)
-            assert(len(option_dims) == 1)
+            assert len(option_dims) == 1
             shift_axis = option_dims[0]
 
         shift_amount = -other.values / data.T.stride(generic_dim_names=False)[shift_axis]
 
         shifted_data = shift_by(data.values, shift_amount,
-                     axis=list(data.dims).index(shift_axis),
-                     by_axis=list(data.dims).index(by_axis), order=1)
+                                axis=list(data.dims).index(shift_axis),
+                                by_axis=list(data.dims).index(by_axis), order=1)
 
         if zero_nans:
             shifted_data[np.isnan(shifted_data)] = 0
@@ -1996,7 +1975,7 @@ class GenericAccessorTools(object):
 
 
 @xr.register_dataset_accessor('F')
-class ARPESDatasetFitToolAccessor(object):
+class ARPESDatasetFitToolAccessor:
     _obj = None
 
     def __init__(self, xarray_obj: DataType):
@@ -2020,7 +1999,7 @@ class ARPESDatasetFitToolAccessor(object):
 
 
 @xr.register_dataarray_accessor('F')
-class ARPESFitToolsAccessor(object):
+class ARPESFitToolsAccessor:
     _obj = None
 
     def __init__(self, xarray_obj: DataType):
@@ -2038,9 +2017,6 @@ class ARPESFitToolsAccessor(object):
     def show(self):
         fit_diagnostic_tool = FitCheckTool()
         return fit_diagnostic_tool.make_tool(self._obj)
-
-    def show_fit_diagnostic(self):
-        return self.show()
 
     def p(self, param_name):
         return self._obj.T.map(param_getter(param_name), otypes=[np.float])
@@ -2239,7 +2215,6 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             integrated_over_scan.S.spectrum.S.reference_plot(pattern=prefix + 'sum_spec_DoF_{}.png', **kwargs)
 
         if 'delay' in self._obj.coords:
-            # TODO fermi location scans
             dims = self.spectrum_degrees_of_freedom
             dims.remove('eV')
             angle_integrated = self._obj.sum(*list(dims))

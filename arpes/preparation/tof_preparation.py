@@ -1,9 +1,10 @@
 import math
 
 import numpy as np
-import xarray as xr
 
+import xarray as xr
 from arpes.provenance import update_provenance
+
 from .axis_preparation import transform_dataarray_axis
 
 __all__ = ['build_KE_coords_to_time_pixel_coords', 'build_KE_coords_to_time_coords', 'process_DLD', 'process_SToF',]
@@ -39,7 +40,7 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
     new_dim_order[0] = 'eV'
 
     timing = dataarray.coords['time'].values
-    assert(timing[1] > timing[0])
+    assert timing[1] > timing[0]
     t_min, t_max = np.min(timing), np.max(timing)
 
     # Prep arrays

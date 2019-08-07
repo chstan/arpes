@@ -21,17 +21,18 @@ import datetime
 import functools
 import json
 import os.path
+import typing
 import uuid
 import warnings
-import xarray as xr
 
-import typing
 from typing import Any
 
+import xarray as xr
 
-from arpes import VERSION
 import arpes.config
-from arpes.typing import *
+from arpes import VERSION
+from arpes.typing import xr_types, DataType
+
 
 def attach_id(data: xr.DataArray) -> None:
     """
@@ -76,15 +77,15 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
     :param keep_parent_ref: Whether to keep a pointer to the parents in the hierarchy or not.
     :return: decorator
     """
-    def update_provenance_decorator(f):
-        @functools.wraps(f)
+    def update_provenance_decorator(fn):
+        @functools.wraps(fn)
         def func_wrapper(*args: Any, **kwargs: Any) -> xr.DataArray:
 
             arg_parents = [v for v in args if isinstance(v, xr_types) and 'id' in v.attrs]
             kwarg_parents = {k: v for k, v in kwargs.items()
                              if isinstance(v, xr_types) and 'id' in v.attrs}
             all_parents = arg_parents + list(kwarg_parents.values())
-            result = f(*args, **kwargs)
+            result = fn(*args, **kwargs)
 
             # we do not want to record provenance or change the id if ``f`` opted not to do anything
             # to its input. This reduces the burden on client code by allowing them to return the input
@@ -99,10 +100,10 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
                 if len(all_parents) > 1:
                     provenance_fn = provenance_multiple_parents
 
-                if len(all_parents) > 0:
+                if all_parents:
                     provenance_fn(result, all_parents, {
                         'what': what,
-                        'by': f.__name__,
+                        'by': fn.__name__,
                         'time': datetime.datetime.now().isoformat(),
                         'version': VERSION,
                     }, keep_parent_ref)
@@ -136,7 +137,7 @@ def save_plot_provenance(plot_fn):
             except (TypeError, KeyError):
                 pass
 
-            if workspace is None or workspace not in path:
+            if not workspace or workspace not in path:
                 warnings.warn(('Plotting function {} appears not to abide by '
                                'practice of placing plots into designated workspaces.').format(plot_fn.__name__))
 
@@ -170,7 +171,7 @@ def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typin
     :return:
     """
     if isinstance(parent_arr, list):
-        assert(len(parent_arr) == 1)
+        assert len(parent_arr) == 1
         parent_arr = parent_arr[0]
 
     if 'id' not in child_arr.attrs:
@@ -200,7 +201,7 @@ def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_paren
     Similar to `provenance` updates the data provenance information for data with
     multiple sources or "parents". For instance, if you normalize a piece of data "X" by a metal
     reference "Y", then the returned data would list both "X" and "Y" in its history.
-    
+
     :param child_arr:
     :param parents:
     :param record:

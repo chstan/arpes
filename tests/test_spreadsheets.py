@@ -66,5 +66,3 @@ def test_normalize_and_complete_data(sandbox_configuration):
     assert (list(df['hv']) == [5.93] + [4.2] * 5)
 
     assert(sorted(list(df.columns)) == ['hv', 'id', 'location', 'path'])
-
-

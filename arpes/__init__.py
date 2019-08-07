@@ -1,16 +1,30 @@
+# pylint: disable=unused-import
+
 import warnings
 import contextlib
 
-VERSION = '2.1.2'
+from typing import Union
+
+VERSION = '2.1.3'
 
 
-def check():
+def check() -> None:
     """
     Verifies certain aspects of the installation and provides guidance for semi-broken installations.
     :return:
     """
 
-    def verify_igor_pro():
+    def verify_qt_tool() -> Union[str, None]:
+        pip_command = 'pip install pyqtgraph'
+        warning = 'Using qt_tool, the PyARPES version of Image Tool, requires ' \
+                  'pyqtgraph and Qt5:\n\n\tYou can install with: {}'.format(pip_command)
+        try:
+            import pyqtgraph
+        except ImportError:
+            return warning
+        return None
+
+    def verify_igor_pro() -> Union[str, None]:
         pip_command = 'pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1'
         warning = 'For Igor support, install igorpy with: {}'.format(pip_command)
         warning_incompatible = 'PyARPES requires a patched copy of igorpy, ' \
@@ -18,15 +32,17 @@ def check():
                                '{}'.format(pip_command)
         try:
             import igor
-            if not igor.__version__ > '0.3':
+            if igor.__version__ <= '0.3':
                 raise ValueError('Not using patched version of igorpy.')
 
-        except ImportError:
-            return warning
         except ValueError:
             return warning_incompatible
+        except (ImportError, AttributeError):
+            return warning
 
-    def verify_bokeh():
+        return None
+
+    def verify_bokeh() -> Union[str, None]:
         pip_command = 'pip install bokeh==0.12.10'
 
         warning = 'For bokeh support, install version 0.12.10\n\t with {}'.format(pip_command)
@@ -41,8 +57,9 @@ def check():
             return warning
         except ValueError:
             return warning_incompatible
+        return None
 
-    def verify_everything():
+    def verify_everything() -> Union[str, None]:
         import os
         phony_datasets = os.path.abspath(__file__ + '../../../tests/resources')
         try:
@@ -52,12 +69,15 @@ def check():
                     with contextlib.redirect_stdout(devnull):
                         setup({}, arpes_root=phony_datasets)
 
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             return str(e)
+
+        return None
 
     checks = [
         ('Igor Pro Support', verify_igor_pro,),
         ('Bokeh Support', verify_bokeh,),
+        ('qt_tool Support', verify_qt_tool,),
         ('Import almost everything in PyARPES', verify_everything,),
     ]
 
@@ -139,18 +159,11 @@ def setup(outer_globals, arpes_root=None):
 
     global_import('scipy.ndimage', 'ndi')
 
-    import os
     import os.path
     outer_globals['os'] = os
 
     global_import('bokeh')
-
-
-    import arpes
-    import arpes.config
-    outer_globals['arpes'] = arpes
     global_import_from('arpes.config', ['CONFIG', 'FIGURE_PATH'])
-
 
     global_import_from('arpes.laue', 'load_laue')
 
@@ -195,7 +208,7 @@ def setup(outer_globals, arpes_root=None):
     try:
         import matplotlib
         matplotlib.rcParams['animation.html'] = 'html5'
-    except Exception:
+    except Exception: # pylint: disable=broad-except
         pass
 
     arpes.config.attempt_determine_workspace(permissive=True)
@@ -206,5 +219,3 @@ def setup(outer_globals, arpes_root=None):
     global_import_from('pathlib', 'Path')
     global_import_from('arpes.config', 'use_tex')
     global_import('importlib')
-
-

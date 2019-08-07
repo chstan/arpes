@@ -6,23 +6,25 @@ pickling utilities, data stitching, and dataset manipulation functions.
 
 import json
 import os.path
-import uuid
-import numpy as np
-import typing
 import pickle
+import typing
+import uuid
+
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
 import arpes.config
-from arpes.config import DATASET_CACHE_PATH, DATASET_CACHE_RECORD, CLEAVE_RECORD, CONFIG, WorkspaceManager
+from arpes.config import (CLEAVE_RECORD, CONFIG, DATASET_CACHE_PATH,
+                          DATASET_CACHE_RECORD, WorkspaceManager)
+from arpes.endstations import load_scan
 from arpes.exceptions import ConfigurationError
 from arpes.typing import DataType
-from arpes.utilities import (wrap_datavar_attrs, unwrap_attrs_dict, unwrap_datavar_attrs,
-                             WHITELIST_KEYS, FREEZE_PROPS, clean_xlsx_dataset)
-from arpes.endstations import load_scan
-from xarray.core.dataset import Dataset
+from arpes.utilities import (FREEZE_PROPS, WHITELIST_KEYS, clean_xlsx_dataset,
+                             unwrap_attrs_dict, unwrap_datavar_attrs,
+                             wrap_datavar_attrs)
 
 __all__ = (
     'simple_load', 'direct_load', 'fallback_load', 'load_dataset', 'save_dataset', 'delete_dataset',
@@ -43,7 +45,7 @@ def load_without_dataset(file: typing.Union[str, Path], location=None, **kwargs)
     return load_scan(dict(file=file, location=location), **kwargs)
 
 
-def load_example_data() -> Dataset:
+def load_example_data() -> xr.Dataset:
     file = Path(__file__).parent / 'example_data' / 'main_chamber_cut_0.fits'
     return load_without_dataset(file=file, location='ALG-MC')
 
@@ -70,22 +72,22 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
     if built_axis_name is None:
         built_axis_name = attr_or_axis
 
-    if len(list_of_files) == 0:
+    if not list_of_files:
         raise ValueError('Must supply at least one file to stitch')
 
     loaded = [f if isinstance(f, (xr.DataArray, xr.Dataset)) else simple_load(f)
               for f in list_of_files]
 
-    for i, f in enumerate(loaded):
+    for i, loaded_file in enumerate(loaded):
         value = None
         if isinstance(attr_or_axis, (list, tuple)):
             value = attr_or_axis[i]
-        elif attr_or_axis in f.attrs:
-            value = f.attrs[attr_or_axis]
-        elif attr_or_axis in f.coords:
-            value = f.coords[attr_or_axis]
+        elif attr_or_axis in loaded_file.attrs:
+            value = loaded_file.attrs[attr_or_axis]
+        elif attr_or_axis in loaded_file.coords:
+            value = loaded_file.coords[attr_or_axis]
 
-        f.coords[built_axis_name] = value
+        loaded_file.coords[built_axis_name] = value
 
     if sort:
         loaded.sort(key=lambda x: x.coords[built_axis_name])
@@ -105,14 +107,14 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
 
 
 def file_for_pickle(name):
-    p = Path('picklejar', '{}.pickle'.format(name))
-    p.parent.mkdir(exist_ok=True)
-    return str(p)
+    path = Path('picklejar', '{}.pickle'.format(name))
+    path.parent.mkdir(exist_ok=True)
+    return str(path)
 
 
 def load_pickle(name):
-    with open(file_for_pickle(name), 'rb') as f:
-        return pickle.load(f)
+    with open(file_for_pickle(name), 'rb') as file:
+        return pickle.load(file)
 
 
 def save_pickle(data, name):
@@ -123,12 +125,12 @@ def easy_pickle(data_or_str, name=None):
     if isinstance(data_or_str, str) or name is None:
         return load_pickle(data_or_str)
 
-    assert (isinstance(name, str))
+    assert isinstance(name, str)
     save_pickle(data_or_str, name)
 
 
 def _id_for(data):
-    if isinstance(data, xr.DataArray) or isinstance(data, xr.Dataset):
+    if isinstance(data, (xr.DataArray, xr.Dataset)):
         data = data.attrs['id']
 
     if isinstance(data, pd.Series):
@@ -152,7 +154,7 @@ def delete_dataset(arr_or_uuid):
     if isinstance(arr_or_uuid, xr.DataArray):
         return delete_dataset(arr_or_uuid.attrs['id'])
 
-    assert (isinstance(arr_or_uuid, str))
+    assert isinstance(arr_or_uuid, str)
 
     fname = _filename_for(arr_or_uuid)
     if os.path.exists(fname):
@@ -171,9 +173,8 @@ def save_dataset(arr: DataType, filename=None, force=False):
     :param force:
     :return:
     """
-    import arpes.xarray_extensions
+    import arpes.xarray_extensions # pylint: disable=unused-import, redefined-outer-name
 
-    # TODO human readable caching in addition to FS caching
     with open(DATASET_CACHE_RECORD, 'r') as cache_record:
         records = json.load(cache_record)
 
@@ -199,8 +200,8 @@ def save_dataset(arr: DataType, filename=None, force=False):
     ref_attrs = arr.attrs.pop('ref_attrs', None)
 
     arr.to_netcdf(filename, engine='netcdf4')
-    with open(attrs_filename, 'w') as f:
-        json.dump(arr.attrs, f)
+    with open(attrs_filename, 'w') as file:
+        json.dump(arr.attrs, file)
 
     if 'id' in arr.attrs:
         first_write = arr.attrs['id'] not in records
@@ -232,7 +233,7 @@ def save_dataset_for_export(arr: DataType, index, **kwargs):
 
 
 def is_a_dataset(dataset):
-    if isinstance(dataset, xr.Dataset) or isinstance(dataset, xr.DataArray):
+    if isinstance(dataset, (xr.Dataset, xr.DataArray)):
         return True
 
     if isinstance(dataset, str):
@@ -246,7 +247,7 @@ def is_a_dataset(dataset):
 
 
 def dataset_exists(dataset):
-    if isinstance(dataset, xr.Dataset) or isinstance(dataset, xr.DataArray):
+    if isinstance(dataset, (xr.Dataset, xr.DataArray)):
         return True
 
     if isinstance(dataset, str):
@@ -260,18 +261,18 @@ def load_dataset_attrs(dataset_uuid):
     filename = _filename_for_attrs(dataset_uuid)
     if not os.path.exists(filename):
         try:
-            ds = load_dataset(dataset_uuid)
-            save_dataset(ds, force=True)
+            dataset = load_dataset(dataset_uuid)
+            save_dataset(dataset, force=True)
         except ValueError as e:
             raise ConfigurationError(
                 'Could not load attributes for {}'.format(dataset_uuid)) from e
 
-    with open(filename, 'r') as f:
-        attrs = json.load(f)
+    with open(filename, 'r') as file:
+        attrs = json.load(file)
         return unwrap_attrs_dict(attrs)
 
 
-def simple_load(fragment, df: pd.DataFrame=None, workspace=None, basic_prep=True):
+def simple_load(fragment, df: pd.DataFrame = None, workspace=None, basic_prep=True):
     with WorkspaceManager(workspace):
         if df is None:
             from arpes.utilities import default_dataset  # break circular dependency
@@ -296,7 +297,7 @@ def simple_load(fragment, df: pd.DataFrame=None, workspace=None, basic_prep=True
         else:
             fragment = str(fragment)
             matches = [i for i, f in enumerate(files) if fragment in f]
-            if len(matches) == 0:
+            if not matches:
                 raise ValueError('No match found for {}'.format(fragment))
             if len(matches) > 1:
                 raise ValueError('Unique match not found for {}. Options are: {}'.format(
@@ -312,7 +313,7 @@ def simple_load(fragment, df: pd.DataFrame=None, workspace=None, basic_prep=True
         return data
 
 
-def direct_load(fragment, df: pd.DataFrame=None, workspace=None, file=None, basic_prep=True, **kwargs):
+def direct_load(fragment, df: pd.DataFrame = None, workspace=None, file=None, basic_prep=True, **kwargs):
     """
     Loads a dataset directly, in the same manner that prepare_raw_files does, from the denormalized source format.
     This is useful for testing data loading procedures, and for quickly opening data at beamlines.
@@ -321,6 +322,7 @@ def direct_load(fragment, df: pd.DataFrame=None, workspace=None, file=None, basi
     the DataFrame with all the files at the beginning, and finally loading the data at the end.
     :param fragment:
     :param df:
+    :param workspace:
     :param file:
     :param basic_prep:
     :return:
@@ -358,7 +360,7 @@ def direct_load(fragment, df: pd.DataFrame=None, workspace=None, file=None, basi
         else:
             fragment = str(fragment)
             matches = [i for i, f in enumerate(files) if fragment in f]
-            if len(matches) == 0:
+            if not matches:
                 raise ValueError('No match found for {}'.format(fragment))
             if len(matches) > 1:
                 raise ValueError('Unique match not found for {}. Options are: {}'.format(
@@ -378,10 +380,11 @@ def direct_load(fragment, df: pd.DataFrame=None, workspace=None, file=None, basi
 sld = simple_load
 dld = direct_load
 
+
 def fallback_load(*args, **kwargs):
     try:
         return sld(*args, **kwargs)
-    except:
+    except: # pylint: disable=bare-except
         return dld(*args, **kwargs)
 
 
@@ -401,7 +404,7 @@ def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame = None):
         try:
             from arpes.utilities import default_dataset  # break circular dependency
             df = default_dataset()
-        except Exception:
+        except Exception: # pylint: disable=broad-except
             pass
 
     if filename is None:
@@ -420,8 +423,8 @@ def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame = None):
     if 'sample' in arr.attrs and 'cleave' in arr.attrs:
         full_cleave_name = '%s-%s' % (arr.attrs['sample'], arr.attrs['cleave'])
 
-        with open(CLEAVE_RECORD, 'r') as f:
-            cleaves = json.load(f)
+        with open(CLEAVE_RECORD, 'r') as file:
+            cleaves = json.load(file)
 
         skip_keys = {'included_scans', 'note'}
         for k, v in cleaves.get(full_cleave_name, {}).items():

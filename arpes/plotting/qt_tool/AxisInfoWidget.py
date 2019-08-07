@@ -1,4 +1,6 @@
-from PyQt5 import QtWidgets, QtGui
+# pylint: disable=import-error
+
+from PyQt5 import QtGui, QtWidgets
 
 __all__ = ('AxisInfoWidget',)
 

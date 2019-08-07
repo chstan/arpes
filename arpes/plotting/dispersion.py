@@ -1,16 +1,17 @@
+import warnings
+from collections import defaultdict
+
 import matplotlib.pyplot as plt
 import numpy as np
-from collections import defaultdict
+
 import xarray as xr
-from arpes.utilities import bz
 from arpes.io import load_dataset
-from arpes.utilities.conversion import remap_coords_to
 from arpes.preparation import normalize_dim
-
-import warnings
-
 from arpes.provenance import save_plot_provenance
-from .utils import *
+from arpes.utilities import bz
+from arpes.utilities.conversion import remap_coords_to
+
+from .utils import path_for_plot, label_for_dim, label_for_symmetry_point, label_for_colorbar
 
 __all__ = ['plot_dispersion', 'labeled_fermi_surface',
            'cut_dispersion_plot', 'fancy_dispersion', 'reference_scan_fermi_surface',
@@ -18,7 +19,7 @@ __all__ = ['plot_dispersion', 'labeled_fermi_surface',
 
 
 def band_path(band):
-    import holoviews as hv
+    import holoviews as hv  # pylint: disable=import-error
     return hv.Path([band.center.values, band.coords[band.dims[0]].values])
 
 
@@ -58,8 +59,8 @@ def cut_dispersion_plot(data: xr.DataArray, e_floor=None, title=None, ax=None, i
         'low': 40,
     }.get(quality, 100)
 
-    assert('eV' in data.dims)
-    assert(e_floor is not None)
+    assert 'eV' in data.dims
+    assert e_floor is not None
 
     new_dim_order = list(data.dims)
     new_dim_order.remove('eV')
@@ -76,7 +77,7 @@ def cut_dispersion_plot(data: xr.DataArray, e_floor=None, title=None, ax=None, i
     mask_for = lambda x: left_mask if x.shape == left_mask.shape else right_mask
 
     x_dim, y_dim, z_dim = tuple(new_dim_order)
-    x_coords, y_coords, z_coords = data.coords[x_dim], data.coords[y_dim], data.coords[z_dim]
+    x_coords, y_coords, _ = data.coords[x_dim], data.coords[y_dim], data.coords[z_dim] # x_coords, y_coords, z_coords
 
     if ax is None:
         fig = plt.figure(figsize=(7, 7))
@@ -115,7 +116,7 @@ def cut_dispersion_plot(data: xr.DataArray, e_floor=None, title=None, ax=None, i
     edge_val = np.min(lower_part.coords[y_dim].data)
     left_sel[y_dim] = edge_val
     left_edge = lower_part.S.fat_sel(**left_sel)
-    max_left_edge = np.max(left_edge.data)
+    # max_left_edge = np.max(left_edge.data)
 
     Xs, Zs = np.meshgrid(lower_part.coords[x_dim], lower_part.coords[z_dim])
     Ys = np.ones(left_edge.shape) * edge_val
@@ -190,7 +191,7 @@ def hv_reference_scan(data, out=None, e_cut=-0.05, bkg_subtraction=0.8, **kwargs
     fs.data -= bkg_subtraction * np.mean(fs.data)
     fs.data[fs.data < 0] = 0
 
-    fig, ax = labeled_fermi_surface(fs, hold=True, **kwargs)
+    _, ax = labeled_fermi_surface(fs, hold=True, **kwargs)
 
     all_scans = data.attrs['df']
     all_scans = all_scans[all_scans.id != data.attrs['id']]
@@ -198,7 +199,7 @@ def hv_reference_scan(data, out=None, e_cut=-0.05, bkg_subtraction=0.8, **kwargs
                           (all_scans.spectrum_type == 'hv_map')]
 
     scans_by_hv = defaultdict(list)
-    for index, row in all_scans.iterrows():
+    for _, row in all_scans.iterrows():
         scan = load_dataset(row.id)
 
         scans_by_hv[round(scan.S.hv)].append(scan.S.label.replace('_', ' '))
@@ -208,9 +209,9 @@ def hv_reference_scan(data, out=None, e_cut=-0.05, bkg_subtraction=0.8, **kwargs
     handle_labels = []
 
     prop_cycle = plt.rcParams['axes.prop_cycle']
-    colors = prop_cycle.by_key()['color']
+    colors_cycle = prop_cycle.by_key()['color']
 
-    for line_color, (hv, labels) in zip(colors, scans_by_hv.items()):
+    for line_color, (hv, labels) in zip(colors_cycle, scans_by_hv.items()):
         full_label = '\n'.join(labels)
 
         # determine direction
@@ -234,7 +235,7 @@ def hv_reference_scan(data, out=None, e_cut=-0.05, bkg_subtraction=0.8, **kwargs
 @save_plot_provenance
 def reference_scan_fermi_surface(data, out=None, **kwargs):
     fs = data.S.fermi_surface
-    fig, ax = labeled_fermi_surface(fs, hold=True, **kwargs)
+    _, ax = labeled_fermi_surface(fs, hold=True, **kwargs)
 
     referenced_scans = data.S.referenced_scans
     handles = []
@@ -312,7 +313,7 @@ def labeled_fermi_surface(data, title=None, ax=None, hold=False,
 def fancy_dispersion(data, title=None, ax=None, out=None, include_symmetry_points=True,
                      norm=None, **kwargs):
     if ax is None:
-        fig, ax = plt.subplots(figsize=(8, 5))
+        _, ax = plt.subplots(figsize=(8, 5))
 
     if title is None:
         title = data.S.label.replace('_', ' ')
@@ -355,7 +356,7 @@ def fancy_dispersion(data, title=None, ax=None, out=None, include_symmetry_point
 @save_plot_provenance
 def scan_var_reference_plot(data, title=None, ax=None, norm=None, out=None, **kwargs):
     if ax is None:
-        fig, ax = plt.subplots(figsize=(8, 5))
+        _, ax = plt.subplots(figsize=(8, 5))
 
     if title is None:
         title = data.S.label.replace('_', ' ')

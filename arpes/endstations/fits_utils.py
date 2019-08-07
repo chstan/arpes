@@ -1,12 +1,13 @@
-import numpy as np
-from ast import literal_eval
 import functools
+from ast import literal_eval
 from collections import Iterable
 
-from arpes.utilities.funcutils import iter_leaves, collect_leaves
-from typing import List, Tuple, Union, Dict, Any, Optional
-from numpy import ndarray
+import numpy as np
 from astropy.io.fits.hdu.table import BinTableHDU
+from numpy import ndarray
+
+from arpes.utilities.funcutils import collect_leaves, iter_leaves
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 __all__ = ('extract_coords', 'find_clean_coords',)
 
@@ -211,7 +212,7 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
             dimensions_for_spectra[spectrum_name] = scan_dimension
             continue
 
-        if len(scan_shape) == 0 and shape[0] == 1:
+        if not scan_shape and shape[0] == 1:
             # the ToF pads with ones on single EDCs
             shape = shape[1:]
 

@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 
 from arpes.provenance import save_plot_provenance
-from .utils import *
 
+from .utils import path_for_plot, label_for_colorbar
 
 __all__ = ('plot_with_bands',)
 

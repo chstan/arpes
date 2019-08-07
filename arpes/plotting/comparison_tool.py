@@ -1,13 +1,10 @@
-from typing import Optional
-
-import xarray as xr
-import colorcet as cc
 import numpy as np
 import scipy.ndimage.interpolation
 
-from arpes.typing import DataType
-
+import colorcet as cc
+import xarray as xr
 from arpes.plotting.interactive_utils import BokehInteractiveTool
+from arpes.typing import DataType
 from arpes.utilities.funcutils import Debounce
 from arpes.utilities.normalize import normalize_to_spectrum
 

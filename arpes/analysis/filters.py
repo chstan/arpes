@@ -1,9 +1,9 @@
 import copy
 
 import numpy as np
-import xarray as xr
 from scipy import ndimage
 
+import xarray as xr
 from arpes.provenance import provenance
 
 __all__ = ('gaussian_filter_arr', 'gaussian_filter', 'boxcar_filter_arr', 'boxcar_filter',)
@@ -34,7 +34,7 @@ def gaussian_filter_arr(arr: xr.DataArray, sigma=None, n=1, default_size=1):
     sigma = tuple(sigma[k] for k in arr.dims)
 
     values = arr.values
-    for i in range(n):
+    for _ in range(n):
         values = ndimage.filters.gaussian_filter(values, sigma)
 
     filtered_arr = xr.DataArray(
@@ -118,7 +118,7 @@ def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1, default_size=1, skip_na
         values = np.copy(arr.values)
         values[values != values] = 0
 
-        for i in range(n):
+        for _ in range(n):
             values = ndimage.filters.uniform_filter(values, size) / filtered_mask
             values[nan_mask == 0] = 0
     else:

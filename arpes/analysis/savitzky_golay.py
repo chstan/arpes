@@ -1,14 +1,13 @@
 import warnings
-
-import typing
-import scipy.signal
-
-import xarray as xr
-import numpy as np
 from math import factorial
 
-from arpes.typing import DataType
+import numpy as np
+import scipy.signal
+
+import typing
+import xarray as xr
 from arpes.provenance import update_provenance
+from arpes.typing import DataType
 
 __all__ = ('savitzky_golay',)
 
@@ -35,7 +34,7 @@ def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, 
         transformed_data = savitzky_golay_array(data.values, window_size, order, deriv, rate)
     else:
         # only 1D, 2D, 3D supported for the moment
-        assert(len(data.dims) <= 3)
+        assert len(data.dims) <= 3
 
         if deriv == 0:
             deriv = None

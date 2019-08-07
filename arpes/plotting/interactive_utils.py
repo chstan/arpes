@@ -1,26 +1,23 @@
-import warnings
-import os
 import json
-
+import os
+import warnings
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 import numpy as np
-import xarray as xr
-import colorcet as cc
-
-from abc import ABC, abstractmethod
-
-from arpes.analysis.general import rebin
-from arpes.utilities import deep_equals
 
 import arpes.config
+import colorcet as cc
+import xarray as xr
+from arpes.analysis.general import rebin
 from arpes.io import load_dataset
+from arpes.utilities import deep_equals
 from typing import Union
 
 __all__ = ('BokehInteractiveTool', 'CursorTool',)
 
 
-class CursorTool(object):
+class CursorTool:
     _cursor = None
     _cursor_info = None
     _horiz_cursor_x = None
@@ -29,6 +26,11 @@ class CursorTool(object):
     _vert_cursor_y = None
     _cursor_lines = None
     _cursor_dims = None
+
+    def __init__(self):
+        self.data_range = {}
+        self.arr = None
+        self.app_context = {}
 
     @property
     def cursor_dims(self):
@@ -210,7 +212,7 @@ class BokehInteractiveTool(ABC):
                 warnings.warn('Summing over cycle')
                 arr = arr.sum('cycle', keep_attrs=True)
 
-        if self.auto_zero_nans and len({'kx', 'ky', 'kz', 'kp'}.intersection(set(arr.dims))) > 0:
+        if self.auto_zero_nans and {'kx', 'ky', 'kz', 'kp'}.intersection(set(arr.dims)):
             # We need to copy and make sure to clear any nan values, because bokeh
             # does not send these over the wire for some reason
             arr = arr.copy()

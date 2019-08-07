@@ -30,21 +30,23 @@ analyses without sacrificing interativity and a tight feedback loop for the expe
 
 import json
 
+from typing import Union
+
 import xarray as xr
 
 import arpes.config
 import arpes.io
 
 
-def normalize_data(data):
+def normalize_data(data: Union[xr.DataArray, xr.Dataset, str]):
     if isinstance(data, xr.DataArray):
-        assert('id' in data.attrs)
+        assert 'id' in data.attrs
         return data.attrs['id']
 
     if isinstance(data, xr.Dataset):
         raise TypeError('xarray.Dataset is not supported as a normalizable dataset')
 
-    assert(isinstance(data, str))
+    assert isinstance(data, str)
 
     return data
 
@@ -75,7 +77,7 @@ def cache_computation(key, data):
 
         return data
     except Exception as e:
-        raise(e)
+        raise e
 
 
 class PipelineRollbackException(Exception):
@@ -98,32 +100,31 @@ def pipeline(pipeline_name=None, intern_kwargs=None):
                 if verbose:
                     print('{}: {}'.format(pipeline_name or f.__name__, v))
 
-            with open(arpes.config.PIPELINE_JSON_SHELF, 'r') as fp:
+            with open(arpes.config.PIPELINE_JSON_SHELF, 'r') as file:
                 # Currently we are using JSON because of a bug in the implementation
                 # of python's shelf that causes it to hang forever.
                 # A better long term solution here is to use a database or KV-store
-                records = json.load(fp)
+                records = json.load(file)
 
             if key in records and not force:
                 if (not arpes.io.is_a_dataset(key) or arpes.io.dataset_exists(key)):
                     value = records[key]
                     if flush:
-                        flushed = True
                         # remove the record of the cached computation, and delete the filesystem cache
                         # for the computation
                         del records[key]
                         if arpes.io.dataset_exists(key):
                             arpes.io.delete_dataset(key)
 
-                    with open(arpes.config.PIPELINE_JSON_SHELF, 'w') as fp:
-                        json.dump(records, fp)
+                    with open(arpes.config.PIPELINE_JSON_SHELF, 'w') as file:
+                        json.dump(records, file)
 
                     echo(value)
                     return value
                 else:
                     del records[key]
-                    with open(arpes.config.PIPELINE_JSON_SHELF, 'w') as fp:
-                        json.dump(records, fp)
+                    with open(arpes.config.PIPELINE_JSON_SHELF, 'w') as file:
+                        json.dump(records, file)
                     raise PipelineRollbackException()
             elif flush:
                 return None
@@ -136,10 +137,11 @@ def pipeline(pipeline_name=None, intern_kwargs=None):
             finally:
                 computed = f(data, *args, **kwargs)
                 records[key] = cache_computation(key, computed)
-                with open(arpes.config.PIPELINE_JSON_SHELF, 'w') as fp:
-                    json.dump(records, fp)
+                with open(arpes.config.PIPELINE_JSON_SHELF, 'w') as file:
+                    json.dump(records, file)
                 echo(normalize_data(computed))
-                return computed
+
+            return computed
 
         return func_wrapper
 
@@ -153,8 +155,8 @@ def compose(*pipelines):
             data_in_process = data
 
             try:
-                for p in pipelines:
-                    data_in_process = p(data_in_process, *args, **kwargs)
+                for next_pipeline in pipelines:
+                    data_in_process = next_pipeline(data_in_process, *args, **kwargs)
 
                 return data_in_process
             except PipelineRollbackException as e:

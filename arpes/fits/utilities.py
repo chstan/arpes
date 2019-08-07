@@ -11,26 +11,26 @@ but in the future we would like to provide:
 """
 
 import functools
+import operator
 import warnings
 from string import ascii_lowercase
-import operator
-import numpy as np
-import xarray as xr
 
-import typing
-from arpes.typing import DataType
+import lmfit
+import numpy as np
 from tqdm import tqdm_notebook
 
-from arpes.utilities import normalize_to_spectrum
+import arpes.fits.fit_models
+import typing
+import xarray as xr
 from arpes.provenance import update_provenance
+from arpes.typing import DataType
+from arpes.utilities import normalize_to_spectrum
 
 __all__ = ('broadcast_model',)
 
 
 TypeIterable = typing.Union[typing.List[type], typing.Tuple[type]]
 
-import arpes.fits.fit_models
-import lmfit
 
 
 def parse_model(model):
@@ -81,7 +81,7 @@ def _parens_to_nested(items):
     """
 
     parens = [(token, idx,) for idx, token in enumerate(items) if isinstance(token, str) and token in '()']
-    if len(parens):
+    if parens:
         first_idx, last_idx = parens[0][1], parens[-1][1]
         if parens[0][0] != '(' or parens[-1][0] != ')':
             raise ValueError('Parentheses do not match!')
@@ -213,7 +213,7 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     n_fits = np.prod(np.array(list(template.S.dshape.values())))
     wrap_progress = lambda x, *args, **kwargs: x
     if progress:
-        wrap_progress = lambda x, *args, **kwargs: tqdm_notebook(x, *args, **kwargs)
+        wrap_progress = tqdm_notebook
 
     for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting', total=n_fits):
         current_params = unwrap_params(params, cut_coords)

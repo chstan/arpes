@@ -26,8 +26,8 @@ from arpes.provenance import provenance_from_file
 
 northstar_62_69_dtype = np.dtype([
     ('pad1', 'B', (2364,),), # unused
-    ('sample','S52'),
-    ('user','S52'),
+    ('sample', 'S52'),
+    ('user', 'S52'),
     ('comment', 'S512',),
     ('pad2', 'B', (228,),), # unused
 ])

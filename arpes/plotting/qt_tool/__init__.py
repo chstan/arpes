@@ -1,8 +1,9 @@
+# pylint: disable=import-error
+
 import sys
 import traceback
 
 from PyQt5 import QtGui, QtCore, QtWidgets
-import PyQt5.QtGui
 import pyqtgraph as pg
 import numpy as np
 from collections import namedtuple, defaultdict
@@ -159,7 +160,7 @@ class QtToolWindow(QtGui.QMainWindow, QtCore.QObject):
         if self._help_dialog is None:
             self._help_dialog = HelpDialog(shortcuts=self._keyBindings)
             self._help_dialog.show()
-            self._help_dialog._main_window = self
+            self._help_dialog._main_window = self # pylint: disable=protected-access
         else:
             self._help_dialog.close()
             self._help_dialog = None
@@ -205,7 +206,7 @@ class QtToolWindow(QtGui.QMainWindow, QtCore.QObject):
                 print(event.key())
 
 
-class QtTool(object):
+class QtTool:
     """
     QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5 for now we retain a number of the
     metaphors from BokehTool, including a "context" that stores the state, and can be used to programmatically interface
@@ -224,9 +225,11 @@ class QtTool(object):
 
         self.axis_info_widgets = []
         self.binning_info_widgets = []
+        self.kspace_info_widgets = []
 
         self.axes_tab = None
         self.binning_tab = None
+        self.kspace_tab = None
         self._binning = None
 
         self.settings = arpes.config.SETTINGS.copy()
@@ -356,20 +359,20 @@ class QtTool(object):
             return slice(vlow, vhigh)
 
         for reactive in self.reactive_views:
-            if len(set(reactive.dims).intersection(set(changed_dimensions))) or force:
+            if set(reactive.dims).intersection(set(changed_dimensions)) or force:
                 try:
                     select_coord = dict(zip([self.data.dims[i] for i in reactive.dims],
                                             [safe_slice(int(new_cursor[i]), int(new_cursor[i] + self.binning[i]), i)
                                              for i in reactive.dims]))
                     if isinstance(reactive.view, DataArrayImageView):
                         image_data = self.data.isel(**select_coord)
-                        if len(select_coord):
+                        if select_coord:
                             image_data = image_data.mean(list(select_coord.keys()))
                         reactive.view.setImage(image_data)
 
                     elif isinstance(reactive.view, pg.PlotWidget):
                         for_plot = self.data.isel(**select_coord)
-                        if len(select_coord):
+                        if select_coord:
                             for_plot = for_plot.mean(list(select_coord.keys()))
                         for_plot = for_plot.values
 
@@ -402,7 +405,7 @@ class QtTool(object):
                 widget.addItem(cursor, ignoreBounds=False)
                 self.connect_cursor(remaining_dims[0], cursor)
         else:
-            assert(len(remaining_dims) == 2)
+            assert len(remaining_dims) == 2
             widget = DataArrayImageView(name=name, root=self)
             widget.view.setAspectLocked(False)
             self.views[name] = widget
@@ -437,14 +440,20 @@ class QtTool(object):
 
         return hlayout(binning_options, *inner_items), inner_items
 
+    def construct_kspace_tab(self):
+        inner_items = []
+        return hlayout(*inner_items), inner_items
+
     def add_contextual_widgets(self):
         self.axes_tab, self.axis_info_widgets = self.construct_axes_tab()
         self.binning_tab, self.binning_info_widgets = self.construct_binning_tab()
+        self.kspace_tab, self.kspace_info_widgets = self.construct_kspace_tab()
 
         self.tabs = tabs(
             ['Info', self.info_tab,],
             ['Axes', self.axes_tab,],
             ['Binning', self.binning_tab,],
+            ['K-Space', self.kspace_tab,],
         )
         self.tabs.setFixedHeight(150)
 

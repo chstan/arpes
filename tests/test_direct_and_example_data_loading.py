@@ -1,8 +1,7 @@
 from pathlib import Path
 
 import xarray as xr
-
-from arpes.io import load_without_dataset, load_example_data
+from arpes.io import load_example_data, load_without_dataset
 
 
 def test_load_without_dataset(sandbox_configuration):
@@ -19,7 +18,3 @@ def test_load_example_data(sandbox_configuration):
 
     assert isinstance(data, xr.Dataset)
     assert data.spectrum.shape == (240, 240)
-
-
-
-

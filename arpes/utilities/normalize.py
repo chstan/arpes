@@ -1,5 +1,4 @@
 import xarray as xr
-
 from arpes.typing import DataType
 
 __all__ = ('normalize_to_spectrum', 'normalize_to_dataset',)

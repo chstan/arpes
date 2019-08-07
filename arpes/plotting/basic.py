@@ -1,11 +1,12 @@
 import warnings
 
 import pandas as pd
-from arpes.pipelines import convert_scan_to_kspace
-from arpes.utilities import default_dataset
-from arpes.preparation import normalize_dim
-from arpes.io import simple_load
+
 import xarray as xr
+from arpes.io import simple_load
+from arpes.pipelines import convert_scan_to_kspace
+from arpes.preparation import normalize_dim
+from arpes.utilities import default_dataset
 
 __all__ = ['make_reference_plots']
 
@@ -45,4 +46,3 @@ def make_reference_plots(df: pd.DataFrame=None, with_kspace=False):
         except Exception as e:
             print(str(e))
             warnings.warn('Cannot make plots for {}'.format(index))
-

@@ -1,10 +1,11 @@
 import warnings
 
-import xarray as xr
-import numpy as np
 import h5py
+import numpy as np
 
-from arpes.endstations import HemisphericalEndstation, SynchrotronEndstation, SingleFileEndstation
+import xarray as xr
+from arpes.endstations import (HemisphericalEndstation, SingleFileEndstation,
+                               SynchrotronEndstation)
 from arpes.endstations.nexus_utils import read_data_attributes_from
 from arpes.preparation import disambiguate_coordinates
 
@@ -184,7 +185,7 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
 
         loaded = [self.load_top_level_scan(f[key], scan_desc, spectrum_index=i) for i, key in enumerate(top_level)]
 
-        if isinstance(loaded, list) and len(loaded) > 0:
+        if isinstance(loaded, list) and loaded:
             loaded = disambiguate_coordinates(loaded, ['phi', 'eV'])
             loaded = xr.merge(loaded)
         else:

@@ -1,5 +1,7 @@
-import numpy as np
 import collections
+
+import numpy as np
+
 from typing import Any, Dict
 
 __all__ = ('deep_equals', 'deep_update',)

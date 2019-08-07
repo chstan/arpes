@@ -5,15 +5,18 @@ import argparse
 import os
 import sys
 
+import arpes.config
+from arpes.io import dataset_exists, save_dataset
+from arpes.models.spectrum import load_scan
+from arpes.utilities import (attach_extra_dataset_columns,
+                             clean_datavar_attribute_names,
+                             modern_clean_xlsx_dataset,
+                             rename_datavar_standard_attrs)
+from arpes.utilities.dataset import walk_datasets
+
 sys.path.append(os.getenv('ARPES_ROOT'))
 sys.path.append(os.path.join(os.getenv('ARPES_ROOT'), 'arpes'))
 
-import arpes.config
-from arpes.models.spectrum import load_scan
-from arpes.utilities import modern_clean_xlsx_dataset, \
-    attach_extra_dataset_columns, rename_datavar_standard_attrs, clean_datavar_attribute_names
-from arpes.utilities.dataset import walk_datasets
-from arpes.io import save_dataset, dataset_exists
 
 DESCRIPTION = """
 Command line tool for loading ARPES datasets from spreadsheet. Typical workflow is to call

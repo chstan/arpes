@@ -1,21 +1,22 @@
+# pylint: disable=redefined-outer-name
+
+import os
 import warnings
 
-import arpes
-import os
-import sys
-import arpes.config
 from arpes.endstations import load_scan
-from arpes.utilities import modern_clean_xlsx_dataset, \
-    attach_extra_dataset_columns, rename_datavar_standard_attrs, \
-    clean_datavar_attribute_names
+from arpes.io import dataset_exists, save_dataset, save_dataset_for_export
+from arpes.utilities import (attach_extra_dataset_columns,
+                             clean_datavar_attribute_names,
+                             modern_clean_xlsx_dataset,
+                             rename_datavar_standard_attrs)
 from arpes.utilities.dataset import walk_datasets
-from arpes.io import save_dataset, save_dataset_for_export, dataset_exists
 
 __all__ = ('prepare_raw_files',)
 
 
 def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quiet=False, export=False, **kwargs):
     import arpes.xarray_extensions
+    import arpes.config
 
     stop_debug = False
     if debug == 'first':
@@ -23,7 +24,7 @@ def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quie
         debug = True
 
     arpes.config.attempt_determine_workspace(workspace)
-    assert(isinstance(arpes.config.CONFIG['WORKSPACE'], dict))
+    assert 'path' in arpes.config.CONFIG['WORKSPACE']
     workspace_path = arpes.config.CONFIG['WORKSPACE']['path']
 
     print('Found: {}'.format(workspace_path))
