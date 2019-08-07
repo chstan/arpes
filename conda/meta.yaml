@@ -11,18 +11,10 @@ package:
   version: "{{ data.version }}"
 
 source:
-  # Source from a local path
-  # path: ..
-
   # Source from tarball
-  # note: must 'make dist-pypi' or `python setup.py sdist` before running conda-build as we now rely on MANIFEST.IN to only pick desired files and avoid copying data folders and alike - and its puts its clean tarball under /dist/:
+  # note: must 'make dist-pypi' or `python setup.py sdist` before running conda-build as we now rely on MANIFEST.IN to
+  # only pick desired files and avoid copying data folders and alike - and its puts its clean tarball under /dist/:
   url: ../dist/{{ data.name }}-{{ data.version }}.tar.gz
-  # url: https://pypi.python.org/packages/source/arpes/arpes/
-  # sha1: FILLMEIN
-
-  # Source from git
-  # git_rev: v0.13.1
-  # git_url: https://gitlab.com/lanzara-group/python-arpes
 
 build:
   number: 1
@@ -79,12 +71,10 @@ about:
   home: https://arpes.netlify.com/#/
   license: GPL-3.0
   license_family: GPL
-#  license_file: LICENSE
-  summary: {{ data['description'] }}
-  description: |
-    {{ data['long_description'] | replace("\n", "\n    ") | replace("#", '\#')}}
-  doc_url: https://pypes.netlify.com/#/
-  dev_url: {{ data.get('url') }}
+  summary: 'Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)'
+  description: 'Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)'
+  doc_url: https://arpes.netlify.com/#/
+  dev_url: https://gitlab.com/lanzara-group/python-arpes
 
 extra:
   recipe-maintainers:
