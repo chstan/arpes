@@ -1,44 +1,73 @@
 # Get Started with PyARPES
 
-## Workspaces
+## Checking your installation
 
-PyARPES makes a few assumptions about the organization of your data and analysis so that it can organize figures and 
-cross-reference data from the same sample or experiment. In the desired location (for instance your Documents folder
-or wherever you would like to keep your analysis notebooks), copy or clone the folder structure from the
-[arpes-analysis-scaffold repository](https://gitlab.com/lanzara-group/arpes-analysis-scaffold).
+Some features in PyARPES require libraries that are not installed by default, 
+either because they are heavy dependencies we don't want to force on users, or there 
+are possible issues of platform compatibility.
 
-Separate analysis workspaces are stored as folders inside `datasets`. All data for a given project/workspace is 
-stored in the `data` folder inside a workspace. Once you have copied the analysis scaffold structure, start a Jupyter session, inside the `example` 
-folder you should find these files:
+You can check whether your installation in a Python session or in Jupyter
 
-![Example Folder Structure](static/jupyter-file-structure.png)
+```python
+import arpes
+arpes.check()
+```
 
-Every project will have roughly this structure at its core: a `data` folder with the raw data for analysis,
-some or many analysis notebooks, and one or more spreadsheets which the analysis code uses to order and add 
-extra information to the raw data.
+You should see something like this depending on the state of your optional dependencies:
 
-The analysis code will only load data that is listed in a spreadsheet. A minimal spreadsheet includes two columns: 
-`file` and `location` 
+```text
+[✘] Igor Pro Support:
+	For Igor support, install igorpy with: 
+	pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
+[✔] Bokeh Support
+[✔] qt_tool Support
+[✔] Import almost everything in PyARPES
+```
 
-![Example Spreadsheet](static/spreadsheet.png)
+## Loading example data
 
-`file` refers to a fragment of the filename or the file index for the raw data inside `data`, while `location` 
-indicates which lab spectrometer or synchrotron endstation produced the data (necessary to automate data-loading).
-Currently most ARPES endstations at the Advanced Light Source (ALS) are supported 
-(location values: BL4, BL403, BL7, BL702, BL10). More endstations can be added quickly as [plugins](/writing-plugins).
+At this point, you should be able to load the example data, an ARPES spectrum of 
+the topological insulator bismuth selenide:
 
-## Configuring imports and startup
+```python
+from arpes.io import load_example_data
+load_example_data()
+```
 
-Because you have the freedom to place your data/analysis folders wherever you like, 
-PyARPES has to be told where you put it in order to organize data and figures for you (alternatively, 
-you can [load data ad-hoc](/ad-hoc)). You can either perform this configuration in an IPython Kernel startup script (see for 
-instance [this guide](http://www.gilgalad.co.uk/post/jupyter-kernel/) or talk to Conrad), or just run 
-the `setup` function, which will also import useful pieces of code into the global scope.
+## Loading your own data
 
-![arpes.setup](static/call-setup.png)
+If you have the path to a piece of data you want to load as well as the data source it 
+comes from (see the section on [plugins](/writing-plugins) for more detail), you can load it
+with `arpes.io.load_without_dataset`:
 
-The second argument should be the full path to the folder containing the `datasets` and `figures` folder. 
-This should be performed at the top of every notebook you use, or in your kernel startup, which has the same effect.
+```python
+from arpes.io import load_without_dataset
+load_without_dataset('/path/to/my/data.h5', location='ALS-BL7')
+```   
 
-That's all! You can move onto [loading data](/loading-data)!
+**Note**: Although you can do all your analysis this way by loading data directly and 
+specifying  the originating experiment, PyARPES works better and can keep figures and 
+data organized if you opt into using [workspaces](/workspaces).  
+
+
+## A minimal and useful set of imports
+
+Although you can manage and directly import everything from PyARPES as you need it, 
+you can also import all the useful bits into your global scope up front, which makes 
+working in Jupyter and similar environments a bit more convenient.
+
+```python
+import arpes
+arpes.setup(globals(), '/path/to/your/datasets/')
+```
+
+The second argument is the location of your workspaces tree, if you use this approach, you 
+can read more about this in the last section of the [workspaces documentation](/workspaces).  
+
+## What's next?
+
+With the example data in hand, you can jump into the rest of the examples on the site. 
+A good place to start is on the section for [exploration](/basic-data-exploration) of 
+ARPES data. 
+
 

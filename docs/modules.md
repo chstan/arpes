@@ -8,7 +8,7 @@
                         
                           - [Submodules](arpes.analysis#submodules)
                           - [Module
-                            contents](arpes.analysis#module-arpes.analysis)
+                            contents](arpes.analysis#module-contents)
                 
                   -   - [arpes.corrections package](arpes.corrections)
                         

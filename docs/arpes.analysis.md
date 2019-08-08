@@ -15,6 +15,7 @@
   - [arpes.analysis.general module](arpes.analysis.general)
   - [arpes.analysis.kfermi module](arpes.analysis.kfermi)
   - [arpes.analysis.mask module](arpes.analysis.mask)
+  - [arpes.analysis.moire module](arpes.analysis.moire)
   - [arpes.analysis.path module](arpes.analysis.path)
   - [arpes.analysis.pocket module](arpes.analysis.pocket)
   - [arpes.analysis.resolution module](arpes.analysis.resolution)

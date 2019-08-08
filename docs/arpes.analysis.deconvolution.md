@@ -5,21 +5,11 @@ Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
 psf, n\_iterations=5, deg=None)**
 
 > Deconvolves data by a given point spread function using the iterative
-> convolution extrapolation method.
-> 
->   - Parameters
->     
->       - **data** –
->     
->       - **psf** –
->     
->       -   - **-- the number of convolutions to use for the fit**\*\*  
->             (\***\*default 5)** (*n\_iterations*) –
->     
->       - **-- the degree of the fitting polynominal**\*\*
->         (\***\*default n\_iterations-3)** (*deg*) –
-> 
->   - Return DataArray or numpy.ndarray – based on input type
+> convolution extrapolation method. :param data: :param psf: :param
+> n\_iterations – the number of convolutions to use for the fit (default
+> 5): :param deg – the degree of the fitting polynominal (default
+> n\_iterations-3): :return DataArray or numpy.ndarray – based on input
+> type:
 
 **arpes.analysis.deconvolution.deconvolve\_rl(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],

@@ -20,7 +20,9 @@
 > i.e. one that will operate either over xr.DataArrays or xr.Datasets.
 > :param f: :return:
 
-**arpes.utilities.funcutils.iter\_leaves(tree, is\_leaf=None)**
+**arpes.utilities.funcutils.iter\_leaves(tree: Dict\[str, Any\],
+is\_leaf: Optional\[Callable\] = None) -\> Iterator\[Tuple\[str,
+numpy.ndarray\]\]**
 
 > Iterates across the leaves of a nested dictionary. Whether a
 > particular piece of data counts as a leaf is controlled by the

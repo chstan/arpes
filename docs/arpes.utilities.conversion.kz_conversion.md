@@ -18,10 +18,12 @@ arpes.utilities.conversion.kz\_conversion.ConvertKpKz(\*args,**kwargs)\*\*
 > Bases:
 > [arpes.utilities.conversion.base.CoordinateConverter](arpes.utilities.conversion.base#arpes.utilities.conversion.base.CoordinateConverter)
 > 
-> **conversion\_for(dim)**
+> **conversion\_for(dim: str) -\> Callable**
 > 
 > **get\_coordinates(resolution: dict = None)**
 > 
-> **kspace\_to\_hv(binding\_energy, kp, kz, \*args,**kwargs)\*\*
+> **kspace\_to\_hv(binding\_energy: numpy.ndarray, kp: numpy.ndarray,
+> kz: numpy.ndarray, \*args,**kwargs) -\> numpy.ndarray\*\*
 > 
-> **kspace\_to\_phi(binding\_energy, kp, kz, \*args,**kwargs)\*\*
+> **kspace\_to\_phi(binding\_energy: numpy.ndarray, kp: numpy.ndarray,
+> kz: numpy.ndarray, \*args,**kwargs) -\> numpy.ndarray\*\*

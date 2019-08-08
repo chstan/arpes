@@ -1,8 +1,9 @@
 # arpes.utilities.collections module
 
-**arpes.utilities.collections.deep\_equals(a, b)**
+**arpes.utilities.collections.deep\_equals(a: Any, b: Any) -\> bool**
 
-**arpes.utilities.collections.deep\_update(destination, source)**
+**arpes.utilities.collections.deep\_update(destination: Any, source:
+Any) -\> Dict\[str, Any\]**
 
 > Doesn’t clobber keys further down trees like doing a shallow update
 > would. Instead recurse down from the root and update as appropriate.

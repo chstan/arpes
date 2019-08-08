@@ -28,4 +28,4 @@ pathlib.Path, separator: str = 'S')**
 > SES Software creates a series of PXT files they are all sequenced with
 > \_S\[0-9\]\[0-9\]\[0-9\].pxt *find\_ses\_files\_associated* will
 > collect all the files in the sequence pointed to by *reference\_path*
-> :param reference\_path: :return:
+> :param reference\_path: :param separator: :return:

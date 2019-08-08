@@ -5,7 +5,7 @@ import contextlib
 
 from typing import Union
 
-VERSION = '2.1.3'
+VERSION = '2.1.4'
 
 
 def check() -> None:
@@ -19,7 +19,9 @@ def check() -> None:
         warning = 'Using qt_tool, the PyARPES version of Image Tool, requires ' \
                   'pyqtgraph and Qt5:\n\n\tYou can install with: {}'.format(pip_command)
         try:
-            import pyqtgraph
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                import pyqtgraph
         except ImportError:
             return warning
         return None

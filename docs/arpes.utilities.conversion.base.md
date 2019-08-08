@@ -13,7 +13,8 @@ xarray.core.dataarray.DataArray, dim\_order=None, \*args,**kwargs)\*\*
 > 
 > `is_slit_vertical`
 > 
-> **kspace\_to\_BE(binding\_energy, \*args,**kwargs)\*\*
+> **kspace\_to\_BE(binding\_energy: numpy.ndarray, \*args,**kwargs) -\>
+> numpy.ndarray\*\*
 > 
 > **prep(arr: xarray.core.dataarray.DataArray)**
 > 

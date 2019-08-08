@@ -15,7 +15,7 @@ to MCP burn-in, and electron aberration and focusing must be considered.
 
 **arpes.bootstrap.estimate\_prior\_adjustment(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
-region: Union\[dict, str\] = None)**
+region: Union\[dict, str\] = None) -\> float**
 
 > Estimates the parameters of a distribution generating the intensity
 > histogram of pixels in a spectrum. In a perfectly linear,

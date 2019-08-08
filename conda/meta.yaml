@@ -35,8 +35,9 @@ requirements:
     - astropy
     - xarray ==0.9.6
     - h5py ==2.7.0
-    - netcdf4 ==1.3.0
+    - netcdf4
     - colorcet
+    - colorama
     - pint
     - pandas
     - dask

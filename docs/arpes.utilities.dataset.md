@@ -1,15 +1,18 @@
 # arpes.utilities.dataset module
 
-**arpes.utilities.dataset.clean\_xlsx\_dataset(path,
-allow\_soft\_match=False, write=True, with\_inferred\_cols=True,
-warn\_on\_exists=False,**kwargs)\*\*
+**arpes.utilities.dataset.clean\_xlsx\_dataset(path: str,
+allow\_soft\_match: bool = False, write: bool = True,
+with\_inferred\_cols: bool = True, warn\_on\_exists: bool =
+False,**kwargs) -\> pandas.core.frame.DataFrame\*\*
 
-**arpes.utilities.dataset.default\_dataset(workspace=None,
-match=None,**kwargs)\*\*
+**arpes.utilities.dataset.default\_dataset(workspace: Optional\[Any\] =
+None, match: Optional\[str\] = None,**kwargs) -\>
+pandas.core.frame.DataFrame\*\*
 
-**arpes.utilities.dataset.infer\_data\_path(file, scan\_desc,
-allow\_soft\_match=False,
-use\_regex=True)**
+**arpes.utilities.dataset.infer\_data\_path(file: int, scan\_desc:
+pandas.core.series.Series, allow\_soft\_match: bool = False, use\_regex:
+bool = True) -\>
+str**
 
 **arpes.utilities.dataset.attach\_extra\_dataset\_columns(path,**kwargs)\*\*
 

@@ -54,17 +54,16 @@ Pip installation
 
    pip install arpes
 
-Platform specific instructions to install the HDF and NetCDF libraries are
-available below.
 
 Conda installation
 ------------------
 
 PyARPES is distributed through the ``arpes`` Anaconda channel, but includes dependencies through ``conda-forge``.
+Please make sure not to put conda-forge above the main channel priority, as this can cause issues with installing BLAS.
 A minimal install looks like
 
 ::
-
+   conda config --apend channels conda-forge
    conda install -c arpes -c conda-forge arpes
 
 

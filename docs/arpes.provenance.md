@@ -19,7 +19,8 @@ functions by providing convenient decorators. These decorators inspect
 data passed at runtime to look for and update provenance entries on
 arguments and return values.
 
-**arpes.provenance.attach\_id(data)**
+**arpes.provenance.attach\_id(data: xarray.core.dataarray.DataArray) -\>
+None**
 
 > Ensures that an ID is attached to a piece of data, if it does not
 > already exist. IDs are generated at the time of identification in an

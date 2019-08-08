@@ -28,7 +28,8 @@ through the [crash course](/how-to) to learn about supported workflows.
 
 By default, PyARPES supports a variety of data formats from synchrotron and laser-ARPES sources including ARPES at 
 the Advanced Light Source (ALS), the data produced by Scienta Omicron GmbH's "SES Wrapper", data and experiment 
-files from Igor Pro, NeXuS files, and others. Additional data formats can be added via a user plugin system.
+files from Igor Pro (see in particular the section on [importing Igor Data](/igor-pro)), NeXuS files, and others. 
+Additional data formats can be added via a user plugin system.
 
 If PyARPES helps you in preparing a conference presentation or publication, please respect the guidelines 
 for citation laid out in the notes on [user contribution](/contributing). Contributions and suggestions from the 
@@ -63,7 +64,7 @@ preventing use with Python 3.4+.
 
 We currently require the following strict versions
 
-```python
+```pip
 tornado==4.5.3     # for Bokeh
 xarray==0.9.6      # due to Issue 2097 (https://github.com/pydata/xarray/issues/2097)
 h5py==2.7.0        # avoids an OS X bug, but should be safe to relax on other systems
@@ -83,15 +84,13 @@ pip install arpes
 ```
 
 or from the Anaconda package repositories through the `arpes` channel. You will also need to specify 
-`conda-forge` in order to pick up a few dependencies
+`conda-forge` in order to pick up a few dependencies. Make sure you don't add conda-forge with higher priority 
+than the Anaconda channel, as this might cause issues with installing BLAS into your environment. We recommend
 
 ```bash
-conda install -c arpes -c conda-forge arpes
+conda config --append channels conda-forge
+conda install -c arpes arpes
 ```
-
-If you want to install with `pip`, you will need to install also the platform specific libraries for `h5py` and `netCDF4`.
-You can find details on the netCDF library [here (under the Install section)](https://unidata.github.io/netcdf4-python/netCDF4/index.html)
-and for the HDF library [here](http://docs.h5py.org/en/latest/build.html).
 
 ### Installation from Source
 
@@ -114,8 +113,7 @@ or
 git clone https://github.com/chstan/arpes
 ```
 
-3. Install requirements that are hard to manage with pip: `conda install -y h5py==2.7.0 netCDF4==1.3.0`
-4. Install PyARPES into your conda environment `pip install -e .`
+3. Install PyARPES into your conda environment `pip install -e .`
 
 
 ### Additional Suggested Steps

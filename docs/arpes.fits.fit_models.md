@@ -39,7 +39,7 @@ name=None,**kws)\*\*
 > **xguess(data,**kwargs)\*\*
 
 **class
-arpes.fits.fit\_models.FermiLorentzianModel(independent\_vars=\['x'\],
+arpes.fits.fit\_models.FermiLorentzianModel(independent\_vars=('x', ),
 prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
@@ -56,7 +56,7 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > > 
 > > params : Parameters
 
-**class arpes.fits.fit\_models.GStepBModel(independent\_vars=\['x'\],
+**class arpes.fits.fit\_models.GStepBModel(independent\_vars=('x', ),
 prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
@@ -75,7 +75,7 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > > 
 > > params : Parameters
 
-**class arpes.fits.fit\_models.QuadraticModel(independent\_vars=\['x'\],
+**class arpes.fits.fit\_models.QuadraticModel(independent\_vars=('x', ),
 prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
@@ -95,7 +95,7 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > > params : Parameters
 
 **class
-arpes.fits.fit\_models.ExponentialDecayCModel(independent\_vars=\['x'\],
+arpes.fits.fit\_models.ExponentialDecayCModel(independent\_vars=('x', ),
 prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
@@ -162,7 +162,7 @@ prefix='', nan\_policy='raise',**kwargs)\*\*
 > > NotImplementedError
 
 **class
-arpes.fits.fit\_models.GStepBStandardModel(independent\_vars=\['x'\],
+arpes.fits.fit\_models.GStepBStandardModel(independent\_vars=('x', ),
 prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
@@ -182,7 +182,7 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > > params : Parameters
 
 **class
-arpes.fits.fit\_models.AffineBackgroundModel(independent\_vars=\['x'\],
+arpes.fits.fit\_models.AffineBackgroundModel(independent\_vars=('x', ),
 prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
@@ -210,9 +210,8 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > > 
 > > NotImplementedError
 
-**class
-arpes.fits.fit\_models.AffineBroadenedFD(independent\_vars=\['x'\],
-prefix='', missing='raise', name=None,**kwargs)\*\*
+**class arpes.fits.fit\_models.AffineBroadenedFD(independent\_vars=('x',
+), prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
 > 
@@ -231,9 +230,8 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > > 
 > > params : Parameters
 
-**class
-arpes.fits.fit\_models.FermiDiracModel(independent\_vars=\['x'\],
-prefix='', missing='drop', name=None,**kwargs)\*\*
+**class arpes.fits.fit\_models.FermiDiracModel(independent\_vars=('x',
+), prefix='', missing='drop', name=None,**kwargs)\*\*
 
 > Bases:
 > 
@@ -251,7 +249,7 @@ prefix='', missing='drop', name=None,**kwargs)\*\*
 > > 
 > > params : Parameters
 
-**class arpes.fits.fit\_models.BandEdgeBModel(independent\_vars=\['x'\],
+**class arpes.fits.fit\_models.BandEdgeBModel(independent\_vars=('x', ),
 prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
@@ -285,8 +283,26 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > Produces a model that consists of convolution with a Gaussian kernel
 > :param model\_instance: :return:
 
-**class
-arpes.fits.fit\_models.TwoGaussianModel(independent\_vars=\['x'\],
+**class arpes.fits.fit\_models.TwoGaussianModel(independent\_vars=('x',
+), prefix='', missing='raise', name=None,**kwargs)\*\*
+
+> Bases:
+> 
+> A model for two gaussian functions with a linear background
+> 
+> **guess(data, x=None,**kwargs)\*\*
+> 
+> > Guess starting values for the parameters of a model.
+> > 
+> >   - data : array\_like  
+> >     Array of data to use to guess parameter values.
+> > 
+> >   - \>\>\*\*\<\<kws : optional  
+> >     Additional keyword arguments, passed to model function.
+> > 
+> > params : Parameters
+
+**class arpes.fits.fit\_models.TwoLorModel(independent\_vars=('x', ),
 prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
@@ -305,28 +321,8 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > > 
 > > params : Parameters
 
-**class arpes.fits.fit\_models.TwoLorModel(independent\_vars=\['x'\],
-prefix='', missing='raise', name=None,**kwargs)\*\*
-
-> Bases:
-> 
-> A model for two gaussian functions with a linear background
-> 
-> **guess(data, x=None,**kwargs)\*\*
-> 
-> > Guess starting values for the parameters of a model.
-> > 
-> >   - data : array\_like  
-> >     Array of data to use to guess parameter values.
-> > 
-> >   - \>\>\*\*\<\<kws : optional  
-> >     Additional keyword arguments, passed to model function.
-> > 
-> > params : Parameters
-
-**class
-arpes.fits.fit\_models.TwoLorEdgeModel(independent\_vars=\['x'\],
-prefix='', missing='raise', name=None,**kwargs)\*\*
+**class arpes.fits.fit\_models.TwoLorEdgeModel(independent\_vars=('x',
+), prefix='', missing='raise', name=None,**kwargs)\*\*
 
 > Bases:
 > 

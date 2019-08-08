@@ -48,6 +48,8 @@ the experimenter.
 
 **arpes.pipeline.denormalize\_data(data)**
 
-**arpes.pipeline.normalize\_data(data)**
+**arpes.pipeline.normalize\_data(data:
+Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset,
+str\])**
 
 **arpes.pipeline.pipeline(pipeline\_name=None, intern\_kwargs=None)**

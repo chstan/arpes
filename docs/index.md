@@ -15,7 +15,8 @@ None, workspace=None, file=None, basic\_prep=True,**kwargs)\*\*
 > The structure of this is very similar to simple\_load, and could be
 > shared. The only differences are in selecting the DataFrame with all
 > the files at the beginning, and finally loading the data at the end.
-> :param fragment: :param df: :param file: :param basic\_prep: :return:
+> :param fragment: :param df: :param workspace: :param file: :param
+> basic\_prep: :return:
 
 **arpes.io.load\_dataset(dataset\_uuid=None, filename=None, df:
 pandas.core.frame.DataFrame = None)**
@@ -53,7 +54,8 @@ workspace=None, file=None, basic\_prep=True,**kwargs)\*\*
 > The structure of this is very similar to simple\_load, and could be
 > shared. The only differences are in selecting the DataFrame with all
 > the files at the beginning, and finally loading the data at the end.
-> :param fragment: :param df: :param file: :param basic\_prep: :return:
+> :param fragment: :param df: :param workspace: :param file: :param
+> basic\_prep: :return:
 
 **arpes.io.stitch(df\_or\_list, attr\_or\_axis, built\_axis\_name=None,
 sort=True)**

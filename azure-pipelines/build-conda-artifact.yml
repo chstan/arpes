@@ -36,3 +36,9 @@ steps:
     anaconda upload -u arpes conda-dist/noarch/$(ls conda-dist/noarch/ | grep ".tar.bz2")
   displayName: 'Upload to conda'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/release'))
+
+- bash: |
+    pip install twine
+    twine upload -u $(pypi.user) -p $(pypi.password) dist/*
+  displayName: 'Upload to PyPI'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/release'))

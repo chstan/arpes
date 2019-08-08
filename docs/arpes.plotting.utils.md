@@ -84,7 +84,7 @@ origin='lower', aspect='auto',**kwargs)\*\*
 cmap=None,**kwargs)\*\*
 
 **arpes.plotting.utils.lineplot\_arr(arr, ax=None, method='plot',
-mask=None, mask\_kwargs={},**kwargs)\*\*
+mask=None, mask\_kwargs=None,**kwargs)\*\*
 
 **arpes.plotting.utils.plot\_arr(arr=None, ax=None, over=None,
 mask=None,**kwargs)\*\*
