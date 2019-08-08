@@ -1,6 +1,8 @@
 # arpes.utilities.dict module
 
-**arpes.utilities.dict.rename\_keys(d, keys\_dict)**
+**arpes.utilities.dict.rename\_keys(d: Union\[Dict\[str, Any\],
+collections.OrderedDict\], keys\_dict: Dict\[str, str\]) -\>
+Union\[Dict\[str, Any\], collections.OrderedDict\]**
 
 **arpes.utilities.dict.clean\_keys(d)**
 

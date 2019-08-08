@@ -30,7 +30,7 @@ DEPENDENCY_GROUPS = {
         'xarray==0.9.6',
 
         'h5py==2.7.0',
-        'netCDF4==1.3.0',
+        'netCDF4',
         'colorcet',
 
         'pint',

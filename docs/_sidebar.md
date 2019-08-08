@@ -9,6 +9,7 @@
   - [How To](/how-to)
     
       - [Getting Started](/getting-started)
+      - [Workspaces](/workspaces)
       - [Loading Data](/loading-data)
       - [Basic Data Exploration](/basic-data-exploration)
           - [Intermediate Data Manipulation](/data-manipulation)
@@ -34,12 +35,14 @@
 
   - [Topics](/how-to)
     
+      - [Igor Pro](/igor-pro)
       - [Condensed Matter Physics Software Stack](/cmp-stack)
       - [Analysis Spreadsheets](/spreadsheets)
       - [Spectra + Data Representation](/spectra)
       - [Plugins](/writing-plugins)
       - [Data Provenance](/data-provenance)
       - [Phenomenological and Detector Models](/modeling)
+      - [Developer’s Guide](/dev-guide)
 
 # arpes
 

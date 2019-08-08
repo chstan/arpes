@@ -21,19 +21,21 @@ Things to offer in the future:
 
 **arpes.optics.waist\_R(waist\_0, m\_squared=1)**
 
-**arpes.optics.rayleigh\_range(wavelength, waist, m\_squared=1)**
+**arpes.optics.rayleigh\_range(wavelength, beam\_waist, m\_squared=1)**
 
-**arpes.optics.lens\_transfer(s, f, rayleigh\_range, m\_squared=1)**
+**arpes.optics.lens\_transfer(s, f, beam\_rayleigh\_range,
+m\_squared=1)**
 
-> Produces s’’ :param s: :param f: :param f\_p: :param m\_squared:
-> :return:
+> Produces s’’ :param s: :param f: :param beam\_rayleigh\_range: :param
+> m\_squared: :return:
 
-**arpes.optics.magnification(s, f, rayleigh\_range, m\_squared=1)**
+**arpes.optics.magnification(s, f, beam\_rayleigh\_range,
+m\_squared=1)**
 
 > Calculates the magnification offered by a lens system. :param s:
-> :param f: :param rayleigh\_range: :param m\_squared: :return:
+> :param f: :param beam\_rayleigh\_range: :param m\_squared: :return:
 
 **arpes.optics.waist\_from\_divergence(wavelength,
 half\_angle\_divergence)**
 
-**arpes.optics.waist\_from\_rr(wavelength, rayleigh\_range)**
+**arpes.optics.waist\_from\_rr(wavelength, rayleigh\_rng)**

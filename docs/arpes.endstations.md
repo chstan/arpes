@@ -47,11 +47,11 @@ a common format
 > Lookup the data loading principal location from an alias. :param
 > alias: :return:
 
-**arpes.endstations.endstation\_from\_alias(alias)**
+**arpes.endstations.endstation\_from\_alias(alias: str) -\> type**
 
 > Lookup the data loading class from an alias. :param alias: :return:
 
-**arpes.endstations.add\_endstation(endstation\_cls)**
+**arpes.endstations.add\_endstation(endstation\_cls: type) -\> None**
 
 > Registers a data loading plugin (Endstation class) together with its
 > aliases.
@@ -61,12 +61,14 @@ a common format
 > 
 >   - Returns
 
-**arpes.endstations.load\_scan(scan\_desc,**kwargs)\*\*
+**arpes.endstations.load\_scan(scan\_desc: Dict\[str, str\],
+retry=True,**kwargs) -\> xarray.core.dataset.Dataset\*\*
 
 > Determines which data loading class is appropriate for the data,
 > shuffles a bit of metadata, and calls the .load function on the
 > retrieved class to start the data loading process. :param scan\_desc:
-> :param kwargs: :return:
+> :param retry: Used to attempt a reload of plugins and subsequent data
+> load attempt. :param kwargs: :return:
 
 **class arpes.endstations.EndstationBase**
 

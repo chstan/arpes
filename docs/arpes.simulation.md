@@ -15,6 +15,12 @@ spectra for testing new analysis techniques or working on machine
 learning based approaches that must be robust to the shortcomings of
 actual ARPES data.
 
+**arpes.simulation.cloud\_to\_arr(point\_cloud, shape)**
+
+> Converts a point cloud (list of xy pairs) to an array representation.
+> Uses linear interpolation for points that have non-integral
+> coordinates. :param point\_cloud: :param shape: :return:
+
 **arpes.simulation.apply\_psf\_to\_point\_cloud(point\_cloud, shape,
 sigma=None)**
 
@@ -36,7 +42,8 @@ sigma=None)**
 > 
 >   - Returns
 
-**class arpes.simulation.SpectralFunction(k=None, omega=None, T=None)**
+**class arpes.simulation.SpectralFunction(k=None, omega=None,
+temperature=None)**
 
 > Bases: `object`
 > 
@@ -72,7 +79,7 @@ sigma=None)**
 > dust, or impose detector nonlinearities.
 
 **class arpes.simulation.SpectralFunctionBSSCO(k=None, omega=None,
-T=None, delta=None, gamma\_s=None, gamma\_p=None)**
+temperature=None, delta=None, gamma\_s=None, gamma\_p=None)**
 
 > Bases:
 > 
@@ -85,8 +92,8 @@ T=None, delta=None, gamma\_s=None, gamma\_p=None)**
 > 
 > **spectral\_function()**
 
-**class arpes.simulation.SpectralFunctionMFL(k=None, omega=None, T=None,
-a=None, b=None)**
+**class arpes.simulation.SpectralFunctionMFL(k=None, omega=None,
+temperature=None, a=None, b=None)**
 
 > Bases:
 > 
@@ -95,7 +102,8 @@ a=None, b=None)**
 > **imag\_self\_energy()**
 
 **class arpes.simulation.SpectralFunctionPhaseCoherent(k=None,
-omega=None, T=None, delta=None, gamma\_s=None, gamma\_p=None)**
+omega=None, temperature=None, delta=None, gamma\_s=None,
+gamma\_p=None)**
 
 > Bases:
 > 

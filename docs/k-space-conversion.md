@@ -6,19 +6,40 @@ PyARPES provides a consistent interface for converting ARPES data from angle to 
 This means that there is only a single function that provides an entrypoint for converting 
 volumetric data: `arpes.utilities.conversion.convert_to_kspace`.
 
-You will need to provide some data, including angular coordinates of normal emission (provided by 
-setting 'G' in the symmetry points), as well as potentially the photon energy and base coordinate 
-values, if these are not provided by your data acquisition hardware in the loaded file.
+Using the PyARPES data plugins, you can be confident that your data 
+will convert to momentum immediately after you load it. 
+You can set the symmetry point by using `{coord_name}_offset` attributes:
+
+```python
+from arpes.io import load_example_data
+from arpes.utilities.conversion import convert_to_kspace
+
+f = load_example_data().spectrum
+
+f.attrs['phi_offset'] = 0.3
+convert_to_kspace(f).plot()
+```
+
+There is also an interactive tool for setting the offset
+
+```python
+from arpes.io import load_example_data
+from arpes.widgets import kspace_tool
+
+f = load_example_data().spectrum
+ctx = kspace_tool(f)
+```
 
 For photon energy dependence scans, you can also set the attribute `inner_potential`, and the 
 `work_function` can be set for all scans as well.
 
-Converting a single cut is straightforward.
-
-![Converting a cut](static/kp-conversion.png)
+## Correcting the chemical potential before converting
 
 We can also first correct for the slit distortion to the chemical potential for full map, 
-before converting an entire Fermi surface.  
+before converting an entire Fermi surface.
+
+This method shows an alternative way of setting the coordinate offsets, which is to label
+normal emission by setting the `G` point high symmetry location in angle-space.  
 
 ![Converting a Fermi Surface](static/kxky-conversion.png)
 

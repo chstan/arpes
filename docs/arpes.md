@@ -26,6 +26,7 @@
                   - [arpes.analysis.kfermi
                     module](arpes.analysis.kfermi)
                   - [arpes.analysis.mask module](arpes.analysis.mask)
+                  - [arpes.analysis.moire module](arpes.analysis.moire)
                   - [arpes.analysis.path module](arpes.analysis.path)
                   - [arpes.analysis.pocket
                     module](arpes.analysis.pocket)
@@ -302,7 +303,7 @@
 
 ## Module contents
 
-**arpes.check()**
+**arpes.check() -\> None**
 
 > Verifies certain aspects of the installation and provides guidance for
 > semi-broken installations. :return:

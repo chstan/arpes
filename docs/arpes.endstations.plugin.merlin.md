@@ -11,7 +11,7 @@
 > 
 > `ALIASES = ['BL403', 'BL4', 'BL4.0.3', 'ALS-BL403', 'ALS-BL4']`
 > 
-> `ATTR_TRANSFORMS = {'acquisition_mode': ... ESEndstation.<lambda>>}`
+> `ATTR_TRANSFORMS = {'acquisition_mode': ... zation': <class 'int'>}`
 > 
 > `MERGE_ATTRS = {'analyzer': 'R8000' ... y_polarized_undulator'}`
 > 

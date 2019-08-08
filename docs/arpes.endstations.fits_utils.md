@@ -1,13 +1,17 @@
 # arpes.endstations.fits\_utils module
 
-**arpes.endstations.fits\_utils.extract\_coords(attrs,
-dimension\_renamings=None)**
+**arpes.endstations.fits\_utils.extract\_coords(attrs: Dict\[str, Any\],
+dimension\_renamings: Dict\[str, str\] = None) -\> Tuple\[Dict\[str,
+numpy.ndarray\], List\[str\], List\[int\]\]**
 
 > Does the hard work of extracting coordinates from the scan
 > description. :param attrs: :param dimension\_renamings: :return:
 
-**arpes.endstations.fits\_utils.find\_clean\_coords(hdu, attrs,
-spectra=None, mode='ToF', dimension\_renamings=None)**
+**arpes.endstations.fits\_utils.find\_clean\_coords(hdu:
+astropy.io.fits.hdu.table.BinTableHDU, attrs: Dict\[str, Any\], spectra:
+Optional\[Any\] = None, mode: str = 'ToF', dimension\_renamings:
+Optional\[Any\] = None) -\> Tuple\[Dict\[str, numpy.ndarray\],
+Dict\[str, List\[str\]\], Dict\[str, Any\]\]**
 
 > Determines the scan degrees of freedom, the shape of the actual
 > “spectrum” and reads and parses the coordinates from the header

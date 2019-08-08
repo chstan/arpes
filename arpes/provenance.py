@@ -29,7 +29,6 @@ from typing import Any
 
 import xarray as xr
 
-import arpes.config
 from arpes import VERSION
 from arpes.typing import xr_types, DataType
 
@@ -128,6 +127,8 @@ def save_plot_provenance(plot_fn):
     """
     @functools.wraps(plot_fn)
     def func_wrapper(*args, **kwargs):
+        import arpes.config
+
         path = plot_fn(*args, **kwargs)
         if isinstance(path, str) and os.path.exists(path):
             workspace = arpes.config.CONFIG['WORKSPACE']

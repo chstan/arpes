@@ -8,6 +8,24 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 2.1.4 (2019-08-07)
+
+### New
+
+### Changed
+
+1. Prevent PyPI builds unless conda build succeeds, so that we can have a
+   single package-time test harness (run_tests.py).
+
+### Fixed
+
+1. Fix documentation to better explain conda installation. In particular,
+   current instructions avoid a possible error arising from installing BLAS
+   through conda-forge.
+
+2. colorama now listed as a dependency in conda appropriately.
+
+
 ## 2.1.3 (2019-08-07)
 
 ### New
@@ -58,8 +76,8 @@ features and documentation.
 
 ### Changed:
 
-1. Metadata reworked to a common format accross all endstations. 
-   This is now documented appropriately with the data model. 
+1. Metadata reworked to a common format accross all endstations.
+   This is now documented appropriately with the data model.
 
 ### Fixed:
 

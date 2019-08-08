@@ -1,24 +1,26 @@
 # Loading and Normalizing Data
 
-## (Optional) Normalizing Data
+## Loading data directly
 
-ARPES data like spectrometers comes in many forms. Unfortunately this makes it less convenient to work with. 
-As a first step in analysis, we simply normalize all our data to the NetCDF format.
+In the previous section, we discussed how you can access data directly if you know the path to the file with
+`arpes.io.load_without_dataset`. This is the most barebones way to read data into PyARPES.
 
-If you opt to normalize your data, a new copy will be generated in a global cache indexed by UUIDs. 
-
-![Normalizing files](static/prepare-files.png)
-
-This step only needs to be performed once per project.
+```python
+from arpes.io import load_without_dataset
+load_without_dataset('/path/to/my/data.h5', location='ALS-BL7')
+```  
 
 ## Loading a single file
 
-Data can be loaded using its index or canonical (normalized) UUID. This programmatic interface 
+If you use [workspaces](/workspaces), data can be loaded using its index in a spreadsheet or canonical (normalized) UUID. This programmatic interface 
 allows for expressive analysis scripts that can perform a particular data analysis across all of your cuts, 
 or across an experimental degree of freedom like the sample temperature.
 
-Optionally, you can pass `ld` or its siblings a `workspace=` argument to load data
+Optionally, you can pass `fld` or its siblings a `workspace=` argument to load data
 from a different workspace.
+
+Unless you normalize your data, you should prefer the function `fld` which will work 
+transparently even from the original data files.  
 
 ![Loading a file](static/ld.png)
 
