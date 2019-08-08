@@ -33,6 +33,12 @@
       - [Contributing](/contributing)
       - [Customization and Notes on Juypyter](/customization)
 
+  - [ARPES](/th-arpes)
+    
+      - [Details: Momentum Conversion](/momentum-conversion)
+      - [Single Particle Spectral Function](/single-particle-spectral)
+      - [Electron Diffraction](/electron-diffraction)
+
   - [Topics](/how-to)
     
       - [Igor Pro](/igor-pro)

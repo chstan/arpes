@@ -16,6 +16,15 @@ unitful volumetric data.
 You can learn about how PyARPES uses this library to provide a robust data model for ARPES
 in the documentation on [PyARPES spectra](/spectra).
 
+## Installing the patched `igorpy`
+
+You'll need to install a patched copy of `igorpy` to get Igor support in PyARPES. You can do this 
+with
+
+```pip
+pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
+```
+
 ## Importing Data from Igor
 
 In addition to offering a viable alternative for the Igor wave data model, PyARPES offers limited
