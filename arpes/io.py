@@ -30,7 +30,7 @@ __all__ = (
     'simple_load', 'direct_load', 'fallback_load', 'load_dataset', 'save_dataset', 'delete_dataset',
     'load_without_dataset', 'load_example_data',
     'save_dataset_for_export',
-    'dataset_exists', 'is_a_dataset', 'load_dataset_attrs', 'easy_pickle',
+    'dataset_exists', 'is_a_dataset', 'load_dataset_attrs', 'easy_pickle', 'list_pickles',
     'sld', 'dld', 'stitch', 'fld',
 )
 
@@ -127,6 +127,10 @@ def easy_pickle(data_or_str, name=None):
 
     assert isinstance(name, str)
     save_pickle(data_or_str, name)
+
+
+def list_pickles():
+    return [str(s.stem) for s in Path(file_for_pickle('just-a-pickle')).parent.glob('*.pickle')]
 
 
 def _id_for(data):
