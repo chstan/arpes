@@ -20,7 +20,7 @@ def sort_axis(data: xr.DataArray, axis_name):
     copied = data.copy(deep=True)
     coord = data.coords[axis_name].values
     order = np.argsort(coord)
-    print(order)
+
     copied.values = np.take(copied.values, order, axis=list(data.dims).index(axis_name))
     copied.coords[axis_name] = np.sort(copied.coords[axis_name])
     return copied
