@@ -6,6 +6,7 @@ This module also includes tools for masking regions of data against
 Brillouin zones.
 """
 
+import itertools
 import re
 from collections import Counter, namedtuple
 
@@ -31,6 +32,24 @@ _POINT_NAMES_FOR_SYMMETRY = {
 }
 
 SpecialPoint = namedtuple('SpecialPoint', ('name', 'negate', 'bz_coord'))
+
+
+def as_3d(points):
+    """
+    Takes a 2D points list and zero pads to convert to a 3D representation
+    :param points:
+    :return:
+    """
+    return np.concatenate([points, points[:,0][:,None] * 0], axis=1)
+
+
+def as_2d(points):
+    """
+    Takes a 3D points and converts to a 2D representation by dropping the z coordinates.
+    :param points:
+    :return:
+    """
+    return points[:,:2]
 
 
 def parse_single_path(path):
@@ -126,6 +145,80 @@ def hex_cell_2d(a=1):
     return [[a, 0], [-0.5 * a, 3 ** 0.5 / 2 * a]]
 
 
+def flat_bz_indices_list(bz_indices_list=None):
+    """
+    Calculate a flat representation of a repeated Brillouin zone specification,
+    useful for plotting extra Brillouin zones or generating high symmetry points,
+    lines, and planes.
+
+    If None is provided, the first BZ is assumed.
+
+    ```
+    None -> [(0,0)]
+    ```
+
+    If an explicit zone is provided or a list of zones is provided, these are
+    returned
+
+    ```
+    [(0,1,0), (-1, -1, 2)] -> [(0,1,0), (-1, -1, 2)]
+    ```
+
+    Additionally, tuples are unpacked into ranges
+
+    ```
+    [((-2, 1), 1)] -> [(-2, 1), (-1, 1), (0, 1)]
+    ```
+
+    :param bz_indices_list:
+    :return:
+    """
+
+    if bz_indices_list is None:
+        bz_indices_list = [(0,0)]
+
+    try:
+        l = len(bz_indices_list[0])
+        if l not in {2,3}:
+            raise ValueError()
+    except (ValueError, TypeError):
+        bz_indices_list = [bz_indices_list]
+
+    indices = []
+    if len(bz_indices_list[0]) == 2:
+        for bz_x, bz_y in bz_indices_list:
+            rx = range(bz_x, bz_x + 1) if isinstance(bz_x, int) else range(*bz_x)
+            ry = range(bz_y, bz_y + 1) if isinstance(bz_y, int) else range(*bz_y)
+            for x, y in itertools.product(rx, ry):
+                indices.append((x, y,))
+    else:
+        for bz_x, bz_y, bz_z in bz_indices_list:
+            rx = range(bz_x, bz_x + 1) if isinstance(bz_x, int) else range(*bz_x)
+            ry = range(bz_y, bz_y + 1) if isinstance(bz_y, int) else range(*bz_y)
+            rz = range(bz_z, bz_z + 1) if isinstance(bz_z, int) else range(*bz_z)
+            for x, y, z in itertools.product(rx, ry, rz):
+                indices.append((x, y, z))
+
+    return indices
+
+
+def generate_2d_equivalent_points(points, icell, bz_indices_list=None):
+    """
+    Generates the equivalent points in higher order Brillouin zones.
+
+    :param points:
+    :param icell:
+    :param bz_indices_list:
+    :return:
+    """
+    points_list = []
+    for x, y in flat_bz_indices_list(bz_indices_list):
+        points_list.append(
+            points[:,:2] + x * icell[0][None, :2,] + y * icell[1][None, :2,])
+
+    return np.unique(np.concatenate(points_list), axis=0)
+
+
 def build_2dbz_poly(vertices=None, icell=None, cell=None):
     """
     Converts brillouin zone or equivalent information to a polygon mask
@@ -168,6 +261,7 @@ def bz_symmetry(flat_symmetry_points):
                 largest_identified = len(points)
 
     return symmetry
+
 
 def reduced_bz_axis_to(data, S, include_E=False):
     symmetry = bz_symmetry(data.S.iter_own_symmetry_points)

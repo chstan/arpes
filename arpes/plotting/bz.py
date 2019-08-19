@@ -6,9 +6,13 @@ import warnings
 import matplotlib.cm
 import matplotlib.pyplot as plt
 import numpy as np
+
+from typing import Union, List
+
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from scipy.spatial.transform import Rotation
 
 from arpes.analysis.mask import apply_mask_to_coords
 from arpes.plotting.utils import path_for_plot
@@ -19,6 +23,78 @@ from arpes.utilities.geometry import polyhedron_intersect_plane
 
 __all__ = ('annotate_special_paths', 'bz2d_plot', 'bz3d_plot', 'bz_plot',
            'plot_data_to_bz', 'plot_data_to_bz2d', 'plot_data_to_bz3d', 'plot_plane_to_bz',)
+
+
+class Translation:
+    """
+    Base translation class, meant to provide some extension over the Rotation that is
+    available from `scipy.spatial.transform.Rotation`.
+    """
+
+    translation_vector = None
+
+    def __init__(self, translation_vector):
+        print(translation_vector)
+        self.translation_vector = np.asarray(translation_vector)
+
+    def apply(self, vectors, inverse=False):
+        """
+        Applies the translation to a set of vectors.
+
+        If this transform is D-dimensional (for D=2,3) and is applied to a different
+        dimensional set of vectors, a ValueError will be thrown due to the dimension
+        mismatch.
+
+        An inverse flag is available in order to apply the inverse coordinate transform.
+        Up to numerical accuracy,
+
+        ```
+        self.apply(self.apply(vectors), inverse=True) == vectors
+        ```
+
+        :param vectors: array_like with shape (2 or 3,) or (N, 2 or 3)
+        :param inverse:
+        :return:
+        """
+        vectors = np.asarray(vectors)
+
+        if vectors.ndim > 2 or vectors.shape[-1] not in {2,3}:
+            raise ValueError('Expected a 2D or 3D vector (2 or 3,) of list of vectors (N, 2 or 3,), instead '
+                             'recevied: {}'.format(vectors.shape))
+
+        single_vector = False
+        if vectors.ndim == 1:
+            single_vector = True
+            vectors = vectors[None, :] # expand dims
+
+
+        if inverse:
+            result = vectors - self.translation_vector
+        else:
+            result = vectors + self.translation_vector
+
+        return result if not single_vector else result[0]
+
+
+Transformation = Union[Translation, Rotation]
+
+
+def apply_transformations(points: np.ndarray, transformations: List[Transformation] = None, inverse=False) -> np.ndarray:
+    """
+    Applies a series of transformations to a sequence of vectors or a single vector.
+
+    :param points:
+    :param translations:
+    :param inverse:
+    :return:
+    """
+    if transformations is None:
+        transformations = []
+
+    for transformation in transformations:
+        points = transformation.apply(points, inverse=inverse)
+
+    return points
 
 
 def plot_plane_to_bz(cell, plane, ax, special_points=None, facecolor='red'):
@@ -72,7 +148,6 @@ def plot_data_to_bz2d(data: DataType, cell, rotate=None, shift=None, scale=None,
         c, s = np.cos(rotate), np.sin(rotate)
         rotation = np.array([(c, -s), (s, c)])
 
-
         raveled = raveled.T.transform_coords(dims, rotation)
 
     if scale is not None:
@@ -118,7 +193,7 @@ def bz_plot(cell, *args, **kwargs):
 
 
 def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
-              elev=None, scale=1, repeat=None, offset=None,
+              elev=None, scale=1, repeat=None, transformations=None,
               hide_ax=True, **kwargs):
     """
     For now this is lifted from ase.dft.bz.bz3d_plot with some modifications. All copyright and
@@ -280,7 +355,8 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     ax.view_init(azim=azim / np.pi * 180, elev=elev / np.pi * 180)
 
 
-def annotate_special_paths(ax, paths, cell=None, offset=None, special_points=None, labels=None, **kwargs):
+def annotate_special_paths(ax, paths, cell=None, transformations=None, offset=None,
+                           special_points=None, labels=None, **kwargs):
     if paths == '':
         raise ValueError('Must provide a proper path.')
 
@@ -297,8 +373,8 @@ def annotate_special_paths(ax, paths, cell=None, offset=None, special_points=Non
             labels = [list(l) for l in labels]
             paths = list(zip(labels, paths))
 
-
     fontsize = kwargs.pop('fontsize', 14)
+
     if offset is None:
         offset = dict()
 
@@ -345,7 +421,8 @@ def annotate_special_paths(ax, paths, cell=None, offset=None, special_points=Non
 
 
 def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None,
-              offset=None, hide_ax=True, **kwargs):
+              transformations=None, offset=None, hide_ax=True, set_equal_aspect=True,
+              **kwargs):
     """
     This piece of code modified from ase.ase.dft.bz.py:bz2d_plot and follows copyright and license for ASE.
 
@@ -370,7 +447,10 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
     if ax is None:
         ax = plt.axes()
 
-    bz1 = bz_vertices(icell)
+    try:
+        bz1 = bz_vertices(icell[:3, :3], dim=2)
+    except TypeError:
+        bz1 = bz_vertices(icell[:3, :3])
 
     if isinstance(paths, str):
         from ase.dft.kpoints import (get_special_points, special_paths, parse_path_string,
@@ -389,10 +469,13 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
     maxp = 0.0
     c = kwargs.pop('c', 'k')
     c = kwargs.pop('color', c)
+    ls = kwargs.pop('ls', kwargs.pop('linestyle', '-'))
 
     for points, normal in bz1:
+        points = apply_transformations(points, transformations)
         x, y, z = np.concatenate([points, points[:1]]).T
-        ax.plot(x, y, c=c, ls='-', **kwargs)
+
+        ax.plot(x, y, c=c, ls=ls, **kwargs)
         maxp = max(maxp, points.max())
 
     if repeat is not None:
@@ -405,16 +488,16 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
             rep_y = (0, rep_y)
 
         for ix, iy in itertools.product(range(*rep_x), range(*rep_y)):
-            print(ix, iy)
             delta = dx * ix + dy * iy
 
             for points, normal in bz1:
                 x, y, z = np.concatenate([points, points[:1]]).T
                 x, y = x + delta[0], y + delta[1]
+                x, y, z = apply_transformations(np.asarray([x, y, z]).T, transformations).T
 
                 c = kwargs.pop('c', 'k')
                 c = kwargs.pop('color', c)
-                ax.plot(x, y, c=c, ls='-', **kwargs)
+                ax.plot(x, y, c=c, ls=ls, **kwargs)
                 maxp = max(maxp, points.max())
 
     if vectors:
@@ -426,10 +509,9 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
                  lw=1, color='k',
                  length_includes_head=True,
                  head_width=0.03, head_length=0.05)
-        maxp = max(maxp, icell.max())
 
     if paths is not None:
-        annotate_special_paths(ax, paths, offset=offset)
+        annotate_special_paths(ax, paths, offset=offset, transformations=transformations)
 
     if kpoints is not None:
         for p in kpoints:
@@ -439,6 +521,5 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
         ax.set_axis_off()
         ax.autoscale_view(tight=True)
 
-    s = maxp * 1.05
-
-    ax.set_aspect('equal')
+    if set_equal_aspect:
+        ax.set_aspect('equal')
