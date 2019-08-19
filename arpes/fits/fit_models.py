@@ -15,8 +15,7 @@ from arpes.constants import HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ
 __all__ = ('XModelMixin', 'FermiLorentzianModel', 'GStepBModel', 'QuadraticModel',
            'ExponentialDecayCModel', 'LorentzianModel', 'GaussianModel', 'VoigtModel',
            'ConstantModel', 'LinearModel', 'GStepBStandardModel', 'AffineBackgroundModel',
-           'AffineBroadenedFD',
-           'FermiDiracModel', 'BandEdgeBModel',
+           'AffineBroadenedFD', 'FermiDiracModel', 'BandEdgeBModel','EffectiveMassModel', 'LogisticModel',
            'gaussian_convolve', 'TwoGaussianModel', 'TwoLorModel', 'TwoLorEdgeModel', 'SplitLorentzianModel')
 
 
