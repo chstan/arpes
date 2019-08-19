@@ -1,4 +1,5 @@
 import functools
+import warnings
 from ast import literal_eval
 from collections import Iterable
 
@@ -65,37 +66,55 @@ def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = 
                 scan_shape.append(n)
                 scan_coords[name] = np.linspace(start, end, n, endpoint=True)
         else:  # tabulated scan, this is more complicated
-            name, n = (
-                attrs['NM_%g_0' % loop],
-                attrs['NMPOS_%g' % loop],
-            )
+            if n_scan_dimensions > 1:
+                for i in range(n_scan_dimensions):
+                    name, start, end, n = (
+                        attrs['NM_%g_%g' % (loop, i,)],
+                        # attrs['UN_0_%g' % i],
+                        float(attrs['ST_%g_%g' % (loop, i,)]),
+                        float(attrs['EN_%g_%g' % (loop, i,)]),
+                        int(attrs['N_%g_%g' % (loop, i,)]),
+                    )
 
-            try:
-                n_regions_key = {'Delay': 'DS_NR'}.get(name, 'DS_NR')
-                n_regions = attrs[n_regions_key]
+                    name = dimension_renamings.get(name, name)
 
-                name = dimension_renamings.get(name, name)
-            except KeyError:
-                if 'ST_{}_1'.format(loop) in attrs:
-                    assert(False and "More than one region detected but unhandled.")
+                    scan_dimension.append(name)
+                    scan_shape.append(n)
+                    scan_coords[name] = np.linspace(start, end, n, endpoint=True)
 
-                n_regions = 1
-                name = dimension_renamings.get(name, name)
-
-            coord = np.array(())
-            for region in range(n_regions):
-                start, end, n = (
-                    attrs['ST_%g_%g' % (loop, region,)],
-                    attrs['EN_%g_%g' % (loop, region,)],
-                    attrs['N_%g_%g' % (loop, region,)],
+            else:
+                # region based tabulated scan
+                name, n = (
+                    attrs['NM_%g_0' % loop],
+                    attrs['NMPOS_%g' % loop],
                 )
 
-                coord = np.concatenate((coord, np.linspace(
-                    start, end, n, endpoint=True),))
+                try:
+                    n_regions_key = {'Delay': 'DS_NR'}.get(name, 'DS_NR')
+                    n_regions = attrs[n_regions_key]
 
-            scan_dimension.append(name)
-            scan_shape.append(len(coord))
-            scan_coords[name] = coord
+                    name = dimension_renamings.get(name, name)
+                except KeyError:
+                    if 'ST_{}_1'.format(loop) in attrs:
+                        warnings.warn('More than one region detected but unhandled.')
+
+                    n_regions = 1
+                    name = dimension_renamings.get(name, name)
+
+                coord = np.array(())
+                for region in range(n_regions):
+                    start, end, n = (
+                        attrs['ST_%g_%g' % (loop, region,)],
+                        attrs['EN_%g_%g' % (loop, region,)],
+                        attrs['N_%g_%g' % (loop, region,)],
+                    )
+
+                    coord = np.concatenate((coord, np.linspace(
+                        start, end, n, endpoint=True),))
+
+                scan_dimension.append(name)
+                scan_shape.append(len(coord))
+                scan_coords[name] = coord
     return scan_coords, scan_dimension, scan_shape
 
 
