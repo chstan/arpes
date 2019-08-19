@@ -1,7 +1,6 @@
 # pylint: disable=import-error
 
 import sys
-import traceback
 
 from PyQt5 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
@@ -13,6 +12,7 @@ from arpes.typing import DataType
 import arpes.config
 
 from .utils import PRETTY_KEYS, pretty_key_event, KeyBinding, hlayout, vlayout, layout, tabs
+from .excepthook import patched_excepthook
 from .HelpDialog import HelpDialog
 from .AxisInfoWidget import AxisInfoWidget
 from .DataArrayImageView import DataArrayImageView
@@ -23,14 +23,6 @@ __all__ = ('QtTool', 'qt_tool',)
 ReactivePlotRecord = namedtuple('ReactivePlotRecord', ('dims', 'view', 'orientation',))
 
 pg.setConfigOptions(antialias=True, foreground=(0, 0, 0), background=(255, 255, 255))
-
-
-def clamp(x, low, high):
-    if x <= low:
-        return low
-    if x >= high:
-        return high
-    return x
 
 
 class CursorRegion(pg.LinearRegionItem):
@@ -112,21 +104,6 @@ def patchedLinkedViewChanged(self, view, axis):
 
 
 pg.ViewBox.linkedViewChanged = patchedLinkedViewChanged
-
-
-def patched_excepthook(exc_type, exc_value, exc_tb):
-    enriched_tb = _add_missing_frames(exc_tb) if exc_tb else exc_tb
-    traceback.print_exception(exc_type, exc_value, enriched_tb)
-
-def _add_missing_frames(tb):
-    result = fake_tb(tb.tb_frame, tb.tb_lasti, tb.tb_lineno, tb.tb_next)
-    frame = tb.tb_frame.f_back
-    while frame:
-        result = fake_tb(frame, frame.f_lasti, frame.f_lineno, result)
-        frame = frame.f_back
-    return result
-
-fake_tb = namedtuple('fake_tb', ('tb_frame', 'tb_lasti', 'tb_lineno', 'tb_next'))
 
 
 class QtToolWindow(QtGui.QMainWindow, QtCore.QObject):
@@ -346,12 +323,12 @@ class QtTool:
         def safe_slice(vlow, vhigh, axis=0):
             vlow, vhigh = int(min(vlow, vhigh)), int(max(vlow, vhigh))
             rng = len(self.data.coords[self.data.dims[axis]])
-            vlow, vhigh = clamp(vlow, 0, rng), clamp(vhigh, 0, rng)
+            vlow, vhigh = np.clip(vlow, 0, rng), np.clip(vhigh, 0, rng)
             
             if vlow == vhigh:
                 vhigh = vlow + 1
 
-            vlow, vhigh = clamp(vlow, 0, rng), clamp(vhigh, 0, rng)
+            vlow, vhigh = np.clip(vlow, 0, rng), np.clip(vhigh, 0, rng)
 
             if vlow == vhigh:
                 vlow = vhigh - 1
@@ -488,7 +465,7 @@ class QtTool:
             'cursor': [self.data.coords[d].mean().item() for d in self.data.dims],
         })
 
-        ## Display the data
+        # Display the data
         self.update_cursor_position(self.context['cursor'], force=True)
 
         QtGui.QApplication.instance().exec()
