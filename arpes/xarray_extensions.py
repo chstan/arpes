@@ -15,7 +15,7 @@ import copy
 import itertools
 import warnings
 from collections import OrderedDict
-from typing import Optional, Union
+from typing import Callable, List, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,9 +35,11 @@ from arpes.plotting import BandTool, CurvatureTool, FitCheckTool, ImageTool
 from arpes.plotting.utils import fancy_labels, remove_colorbars
 from arpes.typing import DataType
 from arpes.utilities import apply_dataarray
+from arpes.utilities.collections import MappableDict
 from arpes.utilities.conversion import slice_along_path
 from arpes.utilities.math import shift_by
 from arpes.utilities.region import DesignatedRegions, normalize_region
+from arpes.utilities.xarray import unwrap_xarray_item, unwrap_xarray_dict
 
 
 __all__ = ['ARPESDataArrayAccessor', 'ARPESDatasetAccessor', 'ARPESFitToolsAccessor']
@@ -55,17 +57,6 @@ def _iter_groups(grouped):
                 yield k, list_item
         except TypeError:
             yield k, value_or_list
-
-
-def unwrap_xarray_item(item):
-    try:
-        return item.item()
-    except (AttributeError, ValueError):
-        return item
-
-
-def unwrap_xarray_dict(d):
-    return {k: unwrap_xarray_item(v) for k, v in d.items()}
 
 
 class ARPESAccessorBase:
@@ -169,8 +160,71 @@ class ARPESAccessorBase:
 
         return endstation in synchrotron_endstations
 
+    def with_values(self, new_values: np.ndarray) -> xr.DataArray:
+        """
+        Easy way of creating a DataArray that has the same shape as the calling object but data populated
+        from the array `new_values`
+
+        :param new_values:
+        :return:
+        """
+
+        return xr.DataArray(
+            new_values.reshape(self._obj.values.shape),
+            coords=self._obj.coords, dims=self._obj.dims, attrs=self._obj.attrs
+        )
+
+    def with_standard_coords(self):
+        obj = self._obj
+
+        collected_renamings = {}
+        coord_names = {'pixel', 'eV', 'phi',}
+        for coord_name in coord_names:
+            clarified = [name for name in obj.coords.keys() if (coord_name + '-') in name]
+            assert len(clarified) < 2
+
+            if clarified:
+                collected_renamings[clarified[0]] = coord_name
+
+        return obj.rename(collected_renamings)
+
+    def with_physical_motors(self):
+        """
+        For systems with hierarchical motors, resets the coordinate motor values
+        back to physical instead of logical
+        :return:
+        """
+        raise NotImplementedError('TODO Implement me, for now you can just get'
+                                  'the motor offsets')
+
+    def with_logical_motors(self):
+        """
+        For systems with hierarchical motors, resets the coordinate motor values
+        back to logical (this is the default setting)
+        :return:
+        """
+        raise NotImplementedError('TODO Implement me, for now you can just get'
+                                  'the motor offsets')
+
+    @property
+    def logical_offsets(self):
+        if 'long_x' not in self._obj.coords:
+            raise ValueError('Logical offsets can currently only be '
+                             'accessed for hierarchical motor systems like nanoARPES.')
+
+        return MappableDict(unwrap_xarray_dict({
+            'x': self._obj.coords['long_x'] - self._obj.coords['physical_long_x'],
+            'y': self._obj.coords['long_y'] - self._obj.coords['physical_long_y'],
+            'z': self._obj.coords['long_z'] - self._obj.coords['physical_long_z'],
+        }))
+
     @property
     def hv(self):
+        if 'hv' in self._obj.coords:
+            value = float(self._obj.coords['hv'])
+            if not np.isnan(value):
+                return value
+
         if 'hv' in self._obj.attrs:
             value = float(self._obj.attrs['hv'])
             if not np.isnan(value):
@@ -197,7 +251,7 @@ class ARPESAccessorBase:
 
     @property
     def scan_type(self):
-        return None
+        return self._obj.attrs.get('daq_type')
 
     @property
     def spectrum_type(self):
@@ -677,21 +731,14 @@ class ARPESAccessorBase:
             self._obj.attrs['{}_offset'.format(k)] = v
 
     def lookup_offset_coord(self, name):
-        offset = self.lookup_coord(name) - self.lookup_offset(name)
-        try:
-            return offset.item()
-        except (AttributeError, ValueError):
-            try:
-                return offset.values
-            except AttributeError:
-                return offset
+        return self.lookup_coord(name) - self.lookup_offset(name)
 
     def lookup_coord(self, name):
         if name in self._obj.coords:
-            return self._obj.coords[name]
+            return unwrap_xarray_item(self._obj.coords[name])
 
         if name in self._obj.attrs:
-            return self._obj.attrs[name]
+            return unwrap_xarray_item(self._obj.attrs[name])
 
         raise ValueError('Could not find coordinate {}.'.format(name))
 
@@ -700,13 +747,13 @@ class ARPESAccessorBase:
         if 'G' in symmetry_points:
             gamma_point = symmetry_points['G']
             if attr_name in gamma_point:
-                return gamma_point[attr_name]
+                return unwrap_xarray_item(gamma_point[attr_name])
 
         offset_name = attr_name + '_offset'
         if offset_name in self._obj.attrs:
-            return self._obj.attrs[offset_name]
+            return unwrap_xarray_item(self._obj.attrs[offset_name])
 
-        return self._obj.attrs.get('data_preparation', {}).get(offset_name, 0)
+        return unwrap_xarray_item(self._obj.attrs.get('data_preparation', {}).get(offset_name, 0))
 
     @property
     def beta_offset(self):
@@ -876,11 +923,17 @@ class ARPESAccessorBase:
 
         return copied
 
-    def sum_other(self, dim_or_dims):
+    def sum_other(self, dim_or_dims, keep_attrs=False):
         if isinstance(dim_or_dims, str):
             dim_or_dims = [dim_or_dims]
 
-        return self._obj.sum([d for d in self._obj.dims if d not in dim_or_dims])
+        return self._obj.sum([d for d in self._obj.dims if d not in dim_or_dims], keep_attrs=keep_attrs)
+
+    def mean_other(self, dim_or_dims, keep_attrs=False):
+        if isinstance(dim_or_dims, str):
+            dim_or_dims = [dim_or_dims]
+
+        return self._obj.mean([d for d in self._obj.dims if d not in dim_or_dims], keep_attrs=keep_attrs)
 
     def find_spectrum_angular_edges(self, indices=False):
         angular_dim = 'pixel' if 'pixel' in self._obj.dims else 'phi'
@@ -1881,6 +1934,71 @@ class GenericAccessorTools:
                 obj.loc[coord] = new_value
 
         return obj
+
+    def transform(self, axes: Union[str, List[str]],
+                  transform_fn: Callable, dtype=None, *args, **kwargs):
+        """
+        Transform has similar semantics to matrix multiplication, the dimensions of the
+        output can grow or shrink depending on whether the transformation is size preserving,
+        grows the data, shinks the data, or leaves in place.
+
+        As an example, let us suppose we have a function which takes the mean and
+        variance of the data:
+
+        f: [dimension], coordinate_value -> [{'mean', 'variance'}]
+
+        And a dataset with dimensions [X, Y]
+
+        Then calling
+
+        data.T.transform('X', f)
+
+        maps to a dataset with the same dimension X but where Y has been replaced by
+        the length 2 label {'mean', 'variance'}. The full dimensions in this case are
+        ['X', {'mean', 'variance'}].
+
+        Please note that the transformed axes always remain in the data because they
+        are iterated over and cannot therefore be modified.
+
+        The transform function `transform_fn` must accept the coordinate of the
+        marginal at the currently iterated point.
+
+        :param axes: Dimension/axis or set of dimensions to iterate over
+        :param transform_fn: Transformation function that takes a DataArray into a new DataArray
+        :param dtype: optionally, a type hint for the transformed data.
+        :param args: args to pass into transform_fn
+        :param kwargs: kwargs to pass into transform_fn
+        :return:
+        """
+        if isinstance(self._obj, xr.Dataset):
+            raise TypeError('transform can only work on xr.DataArrays for now because of '
+                            'how the type inference works')
+
+        dest = None
+        for coord, value in self.iterate_axis(axes):
+            new_value = transform_fn(value, coord, *args, **kwargs)
+
+            if dest is None:
+                new_value = transform_fn(value, coord, *args, **kwargs)
+
+                original_dims = [d for d in self._obj.dims if d not in value.dims]
+                original_shape = [self._obj.shape[self._obj.dims.index(d)]
+                                  for d in original_dims]
+                original_coords = {k: v for k, v in self._obj.coords.items()
+                                   if k not in value.dims}
+
+                full_shape = original_shape + list(new_value.shape)
+
+                new_coords = original_coords
+                new_coords.update({k: v for k, v in new_value.coords.items()
+                                   if k not in original_coords})
+                new_dims = original_dims + list(new_value.dims)
+                dest = xr.DataArray(np.zeros(full_shape, dtype=dtype or new_value.data.dtype),
+                                    coords=new_coords, dims=new_dims)
+
+            dest.loc[coord] = new_value
+
+        return dest
 
     def map(self, fn, **kwargs):
         return apply_dataarray(self._obj, np.vectorize(fn, **kwargs))
