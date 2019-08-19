@@ -2,13 +2,70 @@ import numpy as np
 import xarray as xr
 
 from arpes.provenance import update_provenance
-from arpes.utilities.conversion.bounds_calculations import euler_to_kx, euler_to_ky, euler_to_kz
+from arpes.utilities.conversion.bounds_calculations import (euler_to_kx, euler_to_ky, euler_to_kz,
+                                                            full_angles_to_k)
+from arpes.typing import DataType
 
-__all__ = ('convert_coordinates_to_kspace_forward',)
+__all__ = ('convert_coordinates_to_kspace_forward', 'convert_coordinates',)
+
+
+@update_provenance('Forward convert coordinates')
+def convert_coordinates(arr: DataType, collapse_parallel=False, **kwargs):
+    def unwrap_coord(c):
+        try:
+            return c.values
+        except (TypeError, AttributeError):
+            try:
+                return c.item()
+            except (TypeError, AttributeError):
+                return c
+
+    coord_names = ['phi', 'psi', 'alpha', 'theta', 'beta', 'chi', 'hv']
+    raw_coords = {k: unwrap_coord(arr.S.lookup_offset_coord(k)) for k in (coord_names + ['eV'])}
+    raw_angles = {k: v for k, v in raw_coords.items() if k not in {'eV', 'hv'}}
+
+    parallel_collapsible = len([k for k in raw_angles.keys() if isinstance(raw_angles[k], np.ndarray)]) > 1
+
+    sort_by = ['eV', 'hv', 'phi', 'psi', 'alpha', 'theta', 'beta', 'chi']
+    old_dims = sorted([k for k in arr.dims if k in (coord_names + ['eV'])], key=lambda item: sort_by.index(item))
+
+    will_collapse = parallel_collapsible and collapse_parallel
+
+    def expand_to(cname, c):
+        if not isinstance(c, np.ndarray):
+            return c
+
+        index_list = [np.newaxis] * len(old_dims)
+        index_list[old_dims.index(cname)] = slice(None, None)
+        return c[tuple(index_list)]
+
+    # build the full kinetic energy array over relevant dimensions
+    kinetic_energy = (expand_to('eV', raw_coords['eV']) +
+                      expand_to('hv', raw_coords['hv']) -
+                      arr.S.work_function)
+
+    kx, ky, kz = full_angles_to_k(kinetic_energy, inner_potential=arr.S.inner_potential,
+                                  **{k: expand_to(k, v) for k, v in raw_angles.items()})
+
+    if will_collapse:
+        if np.sum(kx ** 2) > np.sum(ky ** 2):
+            sign = kx / np.sqrt(kx ** 2 + 1e-8)
+        else:
+            sign = ky / np.sqrt(ky ** 2 + 1e-8)
+
+        kp = sign * np.sqrt(kx ** 2 + ky ** 2)
+        data_vars = {'kp': (old_dims, np.squeeze(kp)),
+                     'kz': (old_dims, np.squeeze(kz))}
+    else:
+        data_vars = {'kx': (old_dims, np.squeeze(kx)),
+                     'ky': (old_dims, np.squeeze(ky)),
+                     'kz': (old_dims, np.squeeze(kx)),}
+
+    return xr.Dataset(data_vars, coords=arr.indexes)
 
 
 @update_provenance('Forward convert coordinates to momentum')
-def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
+def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
     """
     Forward converts all the individual coordinates of the data array
     :param arr:
@@ -35,13 +92,13 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
         ('theta',): ['kp', 'kz'],
         ('beta',): ['kp', 'kz'],
         ('phi', 'theta',): ['kx', 'ky', 'kz'],
-        ('phi', 'beta',): ['kx', 'ky', 'kz'],
+        ('beta', 'phi',): ['kx', 'ky', 'kz'],
         ('hv', 'phi',): ['kx', 'ky', 'kz'],
         ('hv',): ['kp', 'kz'],
-        ('hv', 'phi', 'beta'): ['kx', 'ky', 'kz'],
+        ('beta', 'hv', 'phi',): ['kx', 'ky', 'kz'],
         ('hv', 'phi', 'theta'): ['kx', 'ky', 'kz'],
         ('hv', 'phi', 'psi'): ['kx', 'ky', 'kz'],
-        ('hv', 'phi', 'chi'): ['kx', 'ky', 'kz'],
+        ('chi', 'hv', 'phi',): ['kx', 'ky', 'kz'],
     }.get(tuple(old_dims))
 
     full_old_dims = old_dims + list(kept.keys())
@@ -78,7 +135,6 @@ def convert_coordinates_to_kspace_forward(arr: xr.DataArray, **kwargs):
                                                projection_vectors.shape, full_old_dims.index('eV') if 'eV' in full_old_dims else None)
     photon_energy = broadcast_by_dim_location(arr.coords['hv'], projection_vectors.shape, full_old_dims.index('hv') if 'hv' in full_old_dims else None)
     kinetic_energy = binding_energy + photon_energy
-
 
     inner_potential = arr.S.inner_potential
 

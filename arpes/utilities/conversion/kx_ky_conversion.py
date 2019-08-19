@@ -2,24 +2,30 @@ import numpy as np
 
 import arpes.constants
 import xarray as xr
-from typing import Any, Callable, List
+from typing import Any, Callable, Dict, List
 
 from .base import CoordinateConverter, K_SPACE_BORDER, MOMENTUM_BREAKPOINTS
 from .bounds_calculations import calculate_kp_bounds, calculate_kx_ky_bounds
 
 __all__ = ['ConvertKp', 'ConvertKxKy']
 
+
 class ConvertKp(CoordinateConverter):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.k_tot = None
 
-    def get_coordinates(self, resolution: dict=None):
+    def get_coordinates(self, resolution: dict = None, bounds: dict = None) -> Dict[str, np.ndarray]:
         if resolution is None:
             resolution = {}
+        if bounds is None:
+            bounds = {}
 
-        coordinates = super().get_coordinates(resolution)
+        coordinates = super().get_coordinates(resolution, bounds=bounds)
         (kp_low, kp_high) = calculate_kp_bounds(self.arr)
+
+        if 'kp' in bounds:
+            kp_low, kp_high = bounds['kp']
 
         inferred_kp_res = (kp_high - kp_low + 2 * K_SPACE_BORDER) / len(self.arr.coords['phi'])
         inferred_kp_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kp_res][-1]
@@ -49,7 +55,6 @@ class ConvertKp(CoordinateConverter):
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
-        # TODO verify this
         return np.arcsin(kp / self.k_tot / np.cos(polar_angle)) + self.arr.S.phi_offset + parallel_angle
 
     def conversion_for(self, dim: str) -> Callable:
@@ -89,18 +94,28 @@ class ConvertKxKy(CoordinateConverter):
             assert (self.direct_angles[1] in {'theta'}) != (not self.is_slit_vertical)
 
         # determine which other angles constitute equivalent sets
+        opposite_direct_angle = 'theta' if 'psi' in self.direct_angles else 'psi'
         if self.is_slit_vertical:
-            self.parallel_angles = ('beta', 'theta')
-        else:
-            self.parallel_angles = ('theta', 'beta')
 
-    def get_coordinates(self, resolution: dict = None):
+            self.parallel_angles = ('beta', opposite_direct_angle,)
+        else:
+            self.parallel_angles = ('theta', opposite_direct_angle,)
+
+
+    def get_coordinates(self, resolution: dict = None, bounds: dict = None) -> Dict[str, np.ndarray]:
         if resolution is None:
             resolution = {}
+        if bounds is None:
+            bounds = {}
 
-        coordinates = super().get_coordinates(resolution)
+        coordinates = super().get_coordinates(resolution, bounds=bounds)
 
         ((kx_low, kx_high), (ky_low, ky_high)) = calculate_kx_ky_bounds(self.arr)
+
+        if 'kx' in bounds:
+            kx_low, kx_high = bounds['kx']
+        if 'ky' in bounds:
+            ky_low, ky_high = bounds['ky']
 
         kx_angle, ky_angle = self.direct_angles
         if self.is_slit_vertical:
@@ -224,11 +239,11 @@ class ConvertKxKy(CoordinateConverter):
                 self.perp_angle = np.arcsin(ky / self.k_tot) + self.arr.S.psi_offset + \
                                   self.arr.S.lookup_offset_coord(self.parallel_angles[1])
         elif scan_angle == 'beta':
-            self.perp_angle = -np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2)) + self.arr.S.beta_offset
-            pass
+            self.perp_angle = -np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2)) + self.arr.S.beta_offset + \
+                              self.arr.S.lookup_offset_coord(self.parallel_angles[1])
         elif scan_angle == 'theta':
-            self.perp_angle = -np.arcsin(kx / np.sqrt(self.k_tot ** 2 - ky ** 2)) + self.arr.S.theta_offset
-            pass
+            self.perp_angle = -np.arcsin(kx / np.sqrt(self.k_tot ** 2 - ky ** 2)) + self.arr.S.theta_offset - \
+                              self.arr.S.lookup_offset_coord(self.parallel_angles[1])
         else:
             raise ValueError('No recognized scan angle found for {}'.format(self.parallel_angles[1]))
 
