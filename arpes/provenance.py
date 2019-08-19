@@ -31,6 +31,7 @@ import xarray as xr
 
 from arpes import VERSION
 from arpes.typing import xr_types, DataType
+from arpes.utilities.jupyter import get_recent_history
 
 
 def attach_id(data: xr.DataArray) -> None:
@@ -61,6 +62,7 @@ def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file
     child_arr.attrs['provenance'] = {
         'record': record,
         'file': file,
+        'jupyter_context': get_recent_history(5),
         'parents_provenance': 'filesystem',
         'time': datetime.datetime.now().isoformat(),
         'version': VERSION,
@@ -145,6 +147,7 @@ def save_plot_provenance(plot_fn):
             provenance_context = {
                 'VERSION': VERSION,
                 'time': datetime.datetime.now().isoformat(),
+                'jupyter_context': get_recent_history(5),
                 'name': plot_fn.__name__,
                 'args': [arg.attrs.get('provenance', {}) for arg in args
                          if isinstance(arg, xr.DataArray)],
@@ -187,6 +190,7 @@ def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typin
 
     child_arr.attrs['provenance'] = {
         'record': record,
+        'jupyter_context': get_recent_history(5),
         'parent_id': parent_id,
         'parents_provanence': parent_arr.attrs.get('provenance'),
         'time': datetime.datetime.now().isoformat(),
@@ -217,6 +221,7 @@ def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_paren
 
     child_arr.attrs['provenance'] = {
         'record': record,
+        'jupyter_context': get_recent_history(5),
         'parent_id': [p.attrs['id'] for p in parents],
         'parents_provenance': [p.attrs['provenance'] for p in parents],
         'time': datetime.datetime.now().isoformat(),
