@@ -33,6 +33,7 @@ SETTINGS = {
 }
 
 # these are all set by ``update_configuration``
+HAS_LOADED = False
 FIGURE_PATH = None
 DATASET_PATH = None
 
@@ -57,6 +58,7 @@ def generate_cache_files() -> None:
 
 
 def update_configuration(user_path: Optional[str] = None) -> None:
+    global HAS_LOADED
     global FIGURE_PATH
     global DATASET_PATH
     global DATASET_CACHE_PATH
@@ -64,6 +66,11 @@ def update_configuration(user_path: Optional[str] = None) -> None:
     global CLEAVE_RECORD
     global PIPELINE_SHELF
     global PIPELINE_JSON_SHELF
+
+    if HAS_LOADED and user_path is None:
+        return
+
+    HAS_LOADED = True
 
     try:
         FIGURE_PATH = os.path.join(user_path, 'figures')
@@ -85,6 +92,9 @@ def update_configuration(user_path: Optional[str] = None) -> None:
 CONFIG = {
     'WORKSPACE': {},
     'CURRENT_CONTEXT': None,
+    'ENABLE_LOGGING': True,
+    'LOGGING_STARTED': False,
+    'LOGGING_FILE': None,
 }
 
 
@@ -227,5 +237,37 @@ def use_tex(rc_text_should_use=False):
     matplotlib.rcParams['text.usetex'] = rc_text_should_use
 
 
+def setup_logging():
+    global CONFIG
+    global HAS_LOADED
+    if HAS_LOADED:
+        return
+
+    try:
+        import IPython
+        ipython = IPython.get_ipython()
+    except ImportError:
+        return
+
+    if ipython.logfile:
+        CONFIG['LOGGING_STARTED'] = True
+        CONFIG['LOGGING_FILE'] = ipython.logfile
+
+    try:
+        if CONFIG['ENABLE_LOGGING'] and not CONFIG['LOGGING_STARTED']:
+
+            CONFIG['LOGGING_STARTED'] = True
+
+            from arpes.utilities.jupyter import generate_logfile_path
+            log_path = generate_logfile_path()
+            log_path.parent.mkdir(exist_ok=True)
+
+            ipython.magic('logstart {}'.format(log_path))
+            CONFIG['LOGGING_FILE'] = log_path
+    except Exception as e:
+        print(e)
+
+
+setup_logging()
 update_configuration()
 load_plugins()
