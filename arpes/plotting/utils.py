@@ -1,14 +1,16 @@
 import collections
+import contextlib
 import datetime
 import errno
 import itertools
 import json
 import os.path
 import warnings
+import pathlib
 from collections import Counter
 
 import matplotlib
-import matplotlib.cm
+import matplotlib.cm as cm
 import matplotlib.offsetbox
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,14 +19,18 @@ from matplotlib.lines import Line2D
 
 import xarray as xr
 from arpes import VERSION
-from arpes.config import CONFIG, FIGURE_PATH
+from arpes.config import CONFIG
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
+from arpes.utilities.jupyter import get_recent_history, get_notebook_name
 
 __all__ = (
     # General + IO
     'path_for_plot', 'path_for_holoviews', 'name_for_dim', 'unit_for_dim',
     'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio',
+
+    # context managers
+    'dark_background',
 
     # color related
     'temperature_colormap',
@@ -58,12 +64,19 @@ __all__ = (
     'swap_yaxis_side',
     'swap_axis_sides',
 
+    # units related
+    'data_to_axis_units',
+    'axis_to_data_units',
+    'daxis_ddata_units',
+    'ddata_daxis_units',
+
     # TeX related
     'quick_tex',
 
     # Decorating + labeling
     'label_for_colorbar', 'label_for_dim', 'label_for_symmetry_point',
     'sum_annotation',
+    'mean_annotation',
     'fancy_labels',
 
     # Data summaries
@@ -71,6 +84,50 @@ __all__ = (
 
     'transform_labels',
 )
+
+@contextlib.contextmanager
+def dark_background(overrides):
+    defaults = {
+        'axes.edgecolor': 'white', 'xtick.color': 'white',
+        'ytick.color': 'white', 'axes.labelcolor': 'white',
+        'text.color': 'white'
+    }
+    defaults.update(overrides)
+
+    with plt.rc_context(defaults):
+        yield
+
+
+def data_to_axis_units(points, ax=None):
+    if ax is None:
+        ax = plt.gca()
+
+    return ax.transAxes.inverted().transform(ax.transData.transform(points))
+
+
+def axis_to_data_units(points, ax=None):
+    if ax is None:
+        ax = plt.gca()
+
+    return ax.transData.inverted().transform(ax.transAxes.transform(points))
+
+
+def ddata_daxis_units(ax=None):
+    if ax is None:
+        ax = plt.gca()
+
+    dp1 = axis_to_data_units((1., 1.), ax)
+    dp0 = axis_to_data_units((0., 0.), ax)
+    return dp1 - dp0
+
+
+def daxis_ddata_units(ax=None):
+    if ax is None:
+        ax = plt.gca()
+
+    dp1 = data_to_axis_units((1., 1.), ax)
+    dp0 = data_to_axis_units((0., 0.), ax)
+    return dp1 - dp0
 
 
 def swap_xaxis_side(ax):
@@ -144,6 +201,23 @@ def sum_annotation(eV=None, phi=None):
         eV_annotation = '$\\text{E}_{' + to_str(eV.start) + '}^{' + to_str(eV.stop) + '}$'
     if phi is not None:
         phi_annotation = '$\\phi_{' + to_str(phi.start) + '}^{' + to_str(phi.stop) + '}$'
+
+    return eV_annotation + phi_annotation
+
+
+def mean_annotation(eV=None, phi=None):
+    eV_annotation, phi_annotation = '', ''
+
+    def to_str(bound):
+        if bound is None:
+            return ''
+
+        return '{:.2f}'.format(bound)
+
+    if eV is not None:
+        eV_annotation = '$\\bar{\\text{E}}_{' + to_str(eV.start) + '}^{' + to_str(eV.stop) + '}$'
+    if phi is not None:
+        phi_annotation = '$\\bar{\\phi}_{' + to_str(phi.start) + '}^{' + to_str(phi.stop) + '}$'
 
     return eV_annotation + phi_annotation
 
@@ -228,7 +302,7 @@ def imshow_mask(mask, ax=None, over=None, cmap=None, **kwargs):
         cmap = 'Reds'
 
     if isinstance(cmap, str):
-        cmap = matplotlib.cm.get_cmap(name=cmap)
+        cmap = cm.get_cmap(name=cmap)
 
     cmap.set_bad('k', alpha=0)
 
@@ -370,28 +444,28 @@ def generic_colormap(low, high):
     high = high + delta / 6
 
     def get_color(value):
-        return matplotlib.cm.Blues(float((value - low) / (high - low)))
+        return cm.Blues(float((value - low) / (high - low)))
 
     return get_color
 
 
 def phase_angle_colormap(low=0, high=np.pi * 2):
     def get_color(value):
-        return matplotlib.cm.twilight_shifted(float((value - low) / (high - low)))
+        return cm.twilight_shifted(float((value - low) / (high - low)))
 
     return get_color
 
 
 def delay_colormap(low=-1, high=1):
     def get_color(value):
-        return matplotlib.cm.coolwarm(float((value - low) / (high - low)))
+        return cm.coolwarm(float((value - low) / (high - low)))
 
     return get_color
 
 
 def temperature_colormap(high=300, low=0, cmap=None):
     if cmap is None:
-        cmap = matplotlib.cm.Blues_r
+        cmap = cm.Blues_r
 
     def get_color(value):
         return cmap(float((value - low) / (high - low)))
@@ -401,12 +475,12 @@ def temperature_colormap(high=300, low=0, cmap=None):
 
 def temperature_colormap_around(central, range=50):
     def get_color(value):
-        return matplotlib.cm.RdBu_r(float((value - central) / range))
+        return cm.RdBu_r(float((value - central) / range))
 
     return get_color
 
 
-def generic_colorbar(low, high, label='', ax=None, ticks=None, **kwargs):
+def generic_colorbar(low, high, label='', cmap=None, ax=None, ticks=None, **kwargs):
     extra_kwargs = {
         'orientation': 'horizontal',
         'label': label,
@@ -419,7 +493,7 @@ def generic_colorbar(low, high, label='', ax=None, ticks=None, **kwargs):
 
     extra_kwargs.update(kwargs)
     cb = colorbar.ColorbarBase(
-        ax, cmap='Blues', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
+        ax, cmap=cm.get_cmap(cmap or 'Blues'), norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
 
     return cb
 
@@ -431,7 +505,9 @@ def phase_angle_colorbar(high=np.pi * 2, low=0, ax=None, **kwargs):
         'ticks': ['0', r'$\pi$', r'$2\pi$']
     }
     extra_kwargs.update(kwargs)
-    cb = colorbar.ColorbarBase(ax, cmap='twilight_shifted', norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
+    cb = colorbar.ColorbarBase(
+        ax, cmap=cm.get_cmap('twilight_shifted'),
+        norm=colors.Normalize(vmin=low, vmax=high), **extra_kwargs)
     return cb
 
 
@@ -579,26 +655,34 @@ class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
 
 def savefig(desired_path, dpi=400, data=None, **kwargs):
     full_path = path_for_plot(desired_path)
+    provenance_path = full_path + '.provenance.json'
+    provenance_context = {
+        'VERSION': VERSION,
+        'time': datetime.datetime.now().isoformat(),
+        'jupyter_notebook_name': get_notebook_name(),
+        'name': 'savefig',
+    }
+
+    def extract(for_data):
+        try:
+            return for_data.attrs.get('provenance', {})
+        except Exception:
+            return {}
 
     if data is not None:
         assert isinstance(data, (list, tuple, set,))
-
-        def extract(for_data):
-            try:
-                return for_data.attrs.get('provenance', {})
-            except Exception:
-                return {}
-
-        provenance_context = {
-            'VERSION': VERSION,
-            'time': datetime.datetime.now().isoformat(),
-            'name': 'savefig',
+        provenance_context.update({
+            'jupyter_context': get_recent_history(1),
             'data': [extract(d) for d in data],
-        }
-        provenance_path = full_path + '.provenance.json'
-        with open(provenance_path, 'w') as f:
-            json.dump(provenance_context, f, indent=2)
+        })
+    else:
+        # get more recent history because we don't have the data
+        provenance_context.update({
+            'jupyter_context': get_recent_history(5),
+        })
 
+    with open(provenance_path, 'w') as f:
+        json.dump(provenance_context, f, indent=2)
     plt.savefig(full_path, dpi=dpi, **kwargs)
 
 
@@ -612,16 +696,23 @@ def path_for_plot(desired_path):
     if isinstance(workspace, dict):
         workspace = workspace['name']
 
-    filename = os.path.join(FIGURE_PATH, workspace,
-                            datetime.date.today().isoformat(), desired_path)
-    if not os.path.exists(os.path.dirname(filename)):
-        try:
-            os.makedirs(os.path.dirname(filename))
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                raise
+    try:
+        import arpes.config
+        filename = os.path.join(arpes.config.FIGURE_PATH, workspace,
+                                datetime.date.today().isoformat(), desired_path)
+        filename = str(pathlib.Path(filename).absolute())
+        parent_directory = os.path.dirname(filename)
+        if not os.path.exists(parent_directory):
+            try:
+                os.makedirs(parent_directory)
+            except OSError as exc:
+                if exc.errno != errno.EEXIST:
+                    raise exc
 
-    return filename
+        return filename
+    except Exception as e:
+        warnings.warn('Misconfigured FIGURE_PATH saving locally: {}'.format(e))
+        return os.path.join(os.getcwd(), desired_path)
 
 
 def path_for_holoviews(desired_path):
@@ -681,7 +772,7 @@ def unit_for_dim(dim_name, escaped=True):
 
 def label_for_colorbar(data):
     if not data.S.is_differentiated:
-        return r'Spectrum Intensity (arb).'
+        return r'Spectrum Intensity (arb.)'
 
     # determine which axis was differentiated
     hist = data.S.history
@@ -714,13 +805,19 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
         'alpha': r'$\alpha$',
         'psi': r'$\psi$',
         'phi': r'$\varphi$',
-        'eV': r'\textbf{eV}',
+        'eV': r'Binding Energy (\textbf{eV})',
         'angle': r'Interp. \textbf{Angle}',
         'kinetic': r'Kinetic Energy (\textbf{eV})',
         'temp': r'\textbf{Temperature}',
         'kp': r'$\textbf{k}_\parallel$',
+        'kx': r'$\textbf{k}_\text{x}$',
+        'ky': r'$\textbf{k}_\text{y}$',
         'kz': r'$\textbf{k}_\perp$',
-        'hv': 'Photon Energy'
+        'hv': 'Photon Energy',
+        'x': 'X (mm)',
+        'y': 'Y (mm)',
+        'z': 'Z (mm)',
+        'spectrum': 'Intensity (arb.)',
     }
 
     if data is not None:
