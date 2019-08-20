@@ -1247,3 +1247,10 @@ class LinearModel(XModelMixin, lf.models.LinearModel):
             sval, oval = np.polyfit(x, data, 1)
         pars = self.make_params(intercept=oval, slope=sval)
         return update_param_vals(pars, self.prefix, **kwargs)
+
+
+class LogisticModel(XModelMixin, lf.models.StepModel):
+    def __init__(self, independent_vars=['x',], prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars, 'form': 'logistic'})
+        super().__init__(**kwargs)
+
