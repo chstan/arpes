@@ -20,6 +20,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
     ALIASES = ['BL403', 'BL4', 'BL4.0.3', 'ALS-BL403', 'ALS-BL4', ]
 
     RENAME_KEYS = {
+        'Polar': 'theta',
         'Polar Compens': 'theta',  # these are caps-ed because they are dimensions in some cases!
         'BL Energy': 'hv',
         'tilt': 'beta', 'polar': 'theta', 'azimuth': 'chi',
