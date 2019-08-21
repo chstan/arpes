@@ -249,9 +249,12 @@ def setup_logging():
     except ImportError:
         return
 
-    if ipython.logfile:
-        CONFIG['LOGGING_STARTED'] = True
-        CONFIG['LOGGING_FILE'] = ipython.logfile
+    try:
+        if ipython.logfile:
+            CONFIG['LOGGING_STARTED'] = True
+            CONFIG['LOGGING_FILE'] = ipython.logfile
+    except AttributeError:
+        return
 
     try:
         if CONFIG['ENABLE_LOGGING'] and not CONFIG['LOGGING_STARTED']:

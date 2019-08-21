@@ -66,7 +66,7 @@ def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = 
                 scan_shape.append(n)
                 scan_coords[name] = np.linspace(start, end, n, endpoint=True)
         else:  # tabulated scan, this is more complicated
-            if n_scan_dimensions > 1:
+            if 'NMPOS_%g' % loop not in attrs and n_scan_dimensions > 1:
                 for i in range(n_scan_dimensions):
                     name, start, end, n = (
                         attrs['NM_%g_%g' % (loop, i,)],

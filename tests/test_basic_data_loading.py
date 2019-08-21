@@ -210,7 +210,7 @@ class TestMetadata(object):
                 'scan_info': {
                     'time': '7:08:42 pm',
                     'date': '10/11/2018',
-                    'type': None,
+                    'type': 'XY Scan',
                     'spectrum_type': 'spem',
                     'experimenter': None,
                     'sample': None,
@@ -265,7 +265,7 @@ class TestMetadata(object):
                     }
                 },
                 'daq_info': {
-                    'daq_type': None,
+                    'daq_type': 'XY Scan',
                     'region': None,
                     'region_name': None,
                     'prebinning': {'eV': 2,},
@@ -445,7 +445,17 @@ class TestBasicDataLoading(object):
             'expected': {'dims': ['eV'],
                          'coords': {'eV': [-1.5, 0.50644, 0.0228],
                                     'alpha': 0},
-                         'offset_coords': {'phi': 0, 'theta': 10.062 * np.pi / 180, 'chi': 0,}},
+                         'offset_coords': {'phi': 0, 'theta': 10.062 * np.pi / 180, 'chi': 0, }},
+        }),
+        ('maestro_load_nano_arpes_hierarchical_manipulator', {
+            'dataset': 'basic',
+            'id': 17,
+            'expected': {'dims': ['optics_insertion', 'y', 'eV'],
+                         'coords': {'eV': [-35.16, -28.796, 0.01095],
+                                    'optics_insertion': [-100, 100, 10],
+                                    'y': [935.67, 935.77, -0.005],
+                                    'alpha': np.pi / 2},
+                         'offset_coords': {'phi': -0.4, 'theta': 1.4935e-6, 'chi': 0, }},
         }),
     ]
 
@@ -500,5 +510,5 @@ class TestBasicDataLoading(object):
             offset = safefirst(data.S.spectra[0].S.lookup_offset_coord(k))
             assert k and (pytest.approx(offset, 1e-3) == expected['offset_coords'][k])
 
-        kspace_data = convert_to_kspace(data)
+        kspace_data = convert_to_kspace(data.S.spectra[0])
         assert(isinstance(kspace_data, xr.DataArray))

@@ -28,6 +28,10 @@ class MAESTROARPESEndstationBase(SynchrotronEndstation, HemisphericalEndstation,
             if coord_name in self.RENAME_KEYS:
                 will_rename[coord_name] = self.RENAME_KEYS.get(coord_name)
 
+        for k, v in will_rename.items():
+            if v in scan.coords:
+                del scan.coords[v]
+
         renamed = scan.rename(will_rename)
 
         if 'scan_x' in renamed.coords:
@@ -332,13 +336,15 @@ class MAESTRONanoARPESEndstation(MAESTROARPESEndstationBase):
         if data.attrs['daq_type'] == 'MotorSerpentine':
             data = MAESTRONanoARPESEndstation.unwind_serptentine(data)
 
+        # we return new data from update_hierarchical, so we need to refresh
+        # the definition of ls
+        ls = [data] + data.S.spectra
         for l in ls:
             l.coords['alpha'] = np.pi / 2
             l.attrs['alpha'] = np.pi / 2
 
             l.attrs['phi_offset'] = 0.4
 
-            # not sure this is correct, have to check with the nARPES folks
             l.coords['phi'] = l.coords['phi'] / 2
 
         for deg_to_rad_coord in {'theta', 'psi', 'beta', }:

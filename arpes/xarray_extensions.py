@@ -760,6 +760,10 @@ class ARPESAccessorBase:
         return self.lookup_offset('beta')
 
     @property
+    def psi_offset(self):
+        return self.lookup_offset('psi')
+
+    @property
     def theta_offset(self):
         return self.lookup_offset('theta')
 

@@ -91,8 +91,8 @@ def get_recent_history(n_items=10) -> List[str]:
         ipython = IPython.get_ipython()
 
         return [l[-1] for l in list(ipython.history_manager.get_tail(n=n_items, include_latest=True))]
-    except ImportError:
-        return ['No accessible history']
+    except (ImportError, AttributeError):
+        return ['No accessible history.']
 
 
 def get_recent_logs(n_bytes=1000) -> List[str]:
@@ -116,7 +116,7 @@ def get_recent_logs(n_bytes=1000) -> List[str]:
             final_cell = ipython.history_manager.get_tail(n=1, include_latest=True)[0][-1]
             return [l.decode() for l in lines] + [final_cell]
 
-    except ImportError:
+    except (ImportError, AttributeError):
         pass
 
     return ['No logging available. Logging is only available inside Jupyter.']
