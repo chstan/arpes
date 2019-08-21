@@ -1,4 +1,6 @@
-# arpes.experiment module
+# arpes.experiment package
+
+## Module contents
 
 This module is a work-in-progress. Ideally, we would one day like to
 offer a simple graphical utility that can communicate with various ARPES

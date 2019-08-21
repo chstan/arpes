@@ -112,6 +112,9 @@ retry=True,**kwargs) -\> xarray.core.dataset.Dataset\*\*
 > `CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta',
 > 'theta']`
 > 
+> `ENSURE_COORDS_EXIST = ['x', 'y', 'z', 'theta', 'beta', 'chi', 'hv',
+> 'alpha', 'psi']`
+> 
 > `MERGE_ATTRS = {}`
 > 
 > `PRINCIPAL_NAME = None`

@@ -6,5 +6,6 @@
   - [arpes.fits.lmfit\_html\_repr module](arpes.fits.lmfit_html_repr)
   - [arpes.fits.lmfit\_plot module](arpes.fits.lmfit_plot)
   - [arpes.fits.utilities module](arpes.fits.utilities)
+  - [arpes.fits.zones module](arpes.fits.zones)
 
 ## Module contents

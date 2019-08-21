@@ -55,7 +55,7 @@ with $\alpha = 0$
 $$
 \begin{aligned}
 \left(\phi - \theta\right) &\approx \arcsin\left(\frac{
-\left(\text{R}\left(\chi,\hat{\textbf{z}}\right)\right)\cdot\hat{\textbf{x}}}
+\left(\text{R}\left(\chi,\hat{\textbf{z}}\right)\hat{\textbf{k}}\right)\cdot\hat{\textbf{x}}}
 {\sqrt{1 - \left(\left(\text{R}\left(\chi, \hat{\textbf{z}}\right)\hat{\textbf{k}}\right)\cdot\hat{\textbf{y}}\right)^2}}\right) \\
 
 \left(\psi - \beta\right) &\approx \arcsin\left(\left(\text{R}\left(\chi, \hat{\textbf{z}}\right)\hat{\textbf{k}}\right)

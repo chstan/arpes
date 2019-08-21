@@ -10,7 +10,8 @@ arpes.utilities.conversion.kx\_ky\_conversion.ConvertKp(\*args,**kwargs)\*\*
 > 
 > **conversion\_for(dim: str) -\> Callable**
 > 
-> **get\_coordinates(resolution: dict = None)**
+> **get\_coordinates(resolution: dict = None, bounds: dict = None) -\>
+> Dict\[str, numpy.ndarray\]**
 > 
 > **kspace\_to\_phi(binding\_energy: numpy.ndarray, kp: numpy.ndarray,
 > \*args,**kwargs) -\> numpy.ndarray\*\*
@@ -28,7 +29,8 @@ xarray.core.dataarray.DataArray, \*args,**kwargs)\*\*
 > 
 > **conversion\_for(dim: str) -\> Callable**
 > 
-> **get\_coordinates(resolution: dict = None)**
+> **get\_coordinates(resolution: dict = None, bounds: dict = None) -\>
+> Dict\[str, numpy.ndarray\]**
 > 
 > **kspace\_to\_perp\_angle(binding\_energy: numpy.ndarray, kx:
 > numpy.ndarray, ky: numpy.ndarray, \*args,**kwargs) -\>

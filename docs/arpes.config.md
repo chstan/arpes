@@ -24,6 +24,8 @@ permissive=False, lazy=False, current\_path=None)**
 
 **arpes.config.override\_settings(new\_settings)**
 
+**arpes.config.setup\_logging()**
+
 **arpes.config.update\_configuration(user\_path: Optional\[str\] = None)
 -\> None**
 

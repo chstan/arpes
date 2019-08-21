@@ -27,6 +27,8 @@ prop=None, label\_color=None, frameon=True,**kwargs)\*\*
 **arpes.plotting.utils.calculate\_aspect\_ratio(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\])**
 
+**arpes.plotting.utils.dark\_background(overrides)**
+
 **arpes.plotting.utils.temperature\_colormap(high=300, low=0,
 cmap=None)**
 
@@ -74,7 +76,8 @@ with\_cbar=True)**
 **arpes.plotting.utils.frame\_with(ax, color='red', linewidth=2)**
 
 **arpes.plotting.utils.imshow\_arr(arr, ax=None, over=None,
-origin='lower', aspect='auto',**kwargs)\*\*
+origin='lower', aspect='auto', alpha=None, vmin=None, vmax=None,
+cmap=None,**kwargs)\*\*
 
 > Similar to plt.imshow but users different default origin, and sets
 > appropriate extent on the plotted data. :param arr: :param ax:
@@ -101,6 +104,14 @@ ax=None, location=None, color=None,**kwargs)\*\*
 
 **arpes.plotting.utils.swap\_axis\_sides(ax)**
 
+**arpes.plotting.utils.data\_to\_axis\_units(points, ax=None)**
+
+**arpes.plotting.utils.axis\_to\_data\_units(points, ax=None)**
+
+**arpes.plotting.utils.daxis\_ddata\_units(ax=None)**
+
+**arpes.plotting.utils.ddata\_daxis\_units(ax=None)**
+
 **arpes.plotting.utils.quick\_tex(latex\_fragment, ax=None,
 fontsize=30)**
 
@@ -116,6 +127,8 @@ escaped=True)**
 **arpes.plotting.utils.label\_for\_symmetry\_point(point\_name)**
 
 **arpes.plotting.utils.sum\_annotation(eV=None, phi=None)**
+
+**arpes.plotting.utils.mean\_annotation(eV=None, phi=None)**
 
 **arpes.plotting.utils.fancy\_labels(ax\_or\_ax\_set, data=None)**
 

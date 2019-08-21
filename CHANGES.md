@@ -8,7 +8,7 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
-## 2.2.0 (2019-08-19)
+## 2.2.0 (2019-08-21)
 
 ### New
 
@@ -17,7 +17,8 @@ features and documentation.
 2. Subpixel alignment in 1D and 2D based on image convolution and quadratic fitting
    this is useful for tracking and correcting shifts in valence data due to work
    function changes, charging, etc.
-3. Fully fledge k-independent self energy analysis module (arpes.analysis.self_energy)
+3. More or less fully fledged k-independent self energy 
+   analysis module (arpes.analysis.self_energy)
 4. BZ exploration tool
 5. Large refactor to data provenance
    1. Now guaranteed produced for every plot using `savefig`
