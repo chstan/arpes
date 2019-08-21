@@ -278,6 +278,41 @@ prefix='', missing='raise', name=None,**kwargs)\*\*
 > > 
 > > NotImplementedError
 
+**class
+arpes.fits.fit\_models.EffectiveMassModel(independent\_vars=('eV',
+'kp'), prefix='', missing='raise', name=None,**kwargs)\*\*
+
+> Bases:
+> 
+> A two dimensional model for a quadratic distribution of Lorentzians.
+> This can be used for “global” fitting of the effective mass of a band,
+> providing higher quality results than iterative fitting for the
+> lineshapes and then performing a quadratic fit to the centers.
+> 
+> This model also provides a representative example of how to implement
+> (2+)D “global” lmfit.Model classes which are xarray coordinate aware.
+> 
+> `dimension_order = ['eV', ['kp', 'phi']]`
+> 
+> **guess(data, eV=None, kp=None, phi=None,**kwargs)\*\*
+> 
+> > Guess starting values for the parameters of a model.
+> > 
+> >   - data : array\_like  
+> >     Array of data to use to guess parameter values.
+> > 
+> >   - \>\>\*\*\<\<kws : optional  
+> >     Additional keyword arguments, passed to model function.
+> > 
+> > params : Parameters
+> 
+> `n_dims = 2`
+
+**class arpes.fits.fit\_models.LogisticModel(independent\_vars=\['x'\],
+prefix='', missing='raise', name=None,**kwargs)\*\*
+
+> Bases: , `lmfit.models.StepModel`
+
 **arpes.fits.fit\_models.gaussian\_convolve(model\_instance)**
 
 > Produces a model that consists of convolution with a Gaussian kernel

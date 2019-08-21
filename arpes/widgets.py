@@ -26,8 +26,11 @@ we start to run into the limits of these ones. But between this and `qt_tool`
 we are doing fine for now.
 """
 
+import pathlib
 import itertools
+import warnings
 from functools import wraps
+from typing import Callable, Optional
 
 import matplotlib
 import matplotlib.gridspec as gridspec
@@ -42,6 +45,7 @@ from arpes.fits import LorentzianModel, broadcast_model
 from arpes.plotting.utils import fancy_labels, imshow_arr, invisible_axes
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.conversion import convert_to_kspace
+from arpes.utilities.image import imread_to_xarray
 
 __all__ = ('pick_rectangles', 'pick_points', 'pca_explorer', 'kspace_tool', 'fit_initializer',)
 
@@ -72,7 +76,7 @@ class SelectFromCollection:
 
         # Ensure that we have separate colors for each object
         self.facecolors = collection.get_facecolors()
-        if not self.facecolors:
+        if not len(self.facecolors):
             raise ValueError('Collection must have a facecolor')
 
         if len(self.facecolors) == 1:
@@ -272,8 +276,7 @@ class DataArrayView:
 
             x = self.data.coords[self.data.dims[0]].values
             low, high = self.ax.get_ylim()
-            calc_cmap = self.mask_cmap
-            self._mask_image = self.ax.fill_between(x, low, for_mask * high, color=calc_cmap(1.), **self.mask_kwargs)
+            self._mask_image = self.ax.fill_between(x, low, for_mask * high, color=self.mask_cmap(1.), **self.mask_kwargs)
 
     def autoscale(self):
         if self.n_dims == 2:
@@ -409,14 +412,14 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
 
     def update_from_selection(ind):
         # Calculate the new data
-        if ind is None or not ind:
+        if ind is None or not len(ind):
             context['selected_indices'] = []
             context['sum_data'] = data.stack(pca_dims=pca_dims).sum('pca_dims')
         else:
             context['selected_indices'] = ind
             context['sum_data'] = data.stack(pca_dims=pca_dims).isel(pca_dims=ind).sum('pca_dims')
 
-        if context['integration_region']:
+        if context['integration_region'] is not None:
             data_sel = data.sel(**context['integration_region']).sum(other_dims)
         else:
             data_sel = data.sum(other_dims)
@@ -479,7 +482,8 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
 
 
 @popout
-def kspace_tool(data, **kwargs):
+def kspace_tool(data, overplot_bz: Optional[Callable] = None,
+                bounds=None, resolution=None, coords=None, **kwargs):
     original_data = data
     data = normalize_to_spectrum(data)
     if len(data.dims) > 2:
@@ -500,6 +504,9 @@ def kspace_tool(data, **kwargs):
     gs = gridspec.GridSpec(4, 3)
     ax_initial = plt.subplot(gs[0:2, 0:2])
     ax_converted = plt.subplot(gs[2:, 0:2])
+
+    if overplot_bz is not None:
+        overplot_bz(ax_converted)
 
     n_widget_axes = 8
     gs_widget = gridspec.GridSpecFromSubplotSpec(n_widget_axes, 1, subplot_spec=gs[:, 2])
@@ -530,7 +537,9 @@ def kspace_tool(data, **kwargs):
         for name, slider in sliders.items():
             data.attrs['{}_offset'.format(name)] = slider.val
 
-        converted_view.data = convert_to_kspace(data)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            converted_view.data = convert_to_kspace(data, bounds=bounds, resolution=resolution, coords=coords, **kwargs)
 
     axes = iter(widget_axes)
     for convert_dim in convert_dims:
@@ -645,13 +654,25 @@ def pick_gamma(data, **kwargs):
 
 
 @popout
-def pick_points(data, **kwargs):
+def pick_points(data_or_str, **kwargs):
+    using_image_data = isinstance(data_or_str, (str, pathlib.Path))
+
     ctx = {'points': []}
     arpes.config.CONFIG['CURRENT_CONTEXT'] = ctx
 
     fig = plt.figure()
-    data.S.plot(**kwargs)
+
+    if using_image_data:
+        data = imread_to_xarray(data_or_str)
+        plt.imshow(data.values)
+    else:
+        data = data_or_str
+        data.S.plot(**kwargs)
+
     ax = fig.gca()
+
+    if using_image_data:
+        ax.grid(False)
 
     x0, y0 = ax.transAxes.transform((0, 0))  # lower left in pixels
     x1, y1 = ax.transAxes.transform((1, 1))  # upper right in pixes

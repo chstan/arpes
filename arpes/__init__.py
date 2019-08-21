@@ -5,7 +5,7 @@ import contextlib
 
 from typing import Union
 
-VERSION = '2.1.4'
+VERSION = '2.2.0'
 
 
 def check() -> None:
@@ -124,6 +124,8 @@ def setup(outer_globals, arpes_root=None):
 
     import arpes.config
     arpes.config.update_configuration(user_path=os.environ['ARPES_ROOT'])
+    arpes.config.attempt_determine_workspace(permissive=True)
+    arpes.config.load_plugins()
 
     from importlib import import_module
 
@@ -212,9 +214,6 @@ def setup(outer_globals, arpes_root=None):
         matplotlib.rcParams['animation.html'] = 'html5'
     except Exception: # pylint: disable=broad-except
         pass
-
-    arpes.config.attempt_determine_workspace(permissive=True)
-    arpes.config.load_plugins()
 
     outer_globals['ld'] = outer_globals['simple_load']
 

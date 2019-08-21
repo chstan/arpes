@@ -2,6 +2,16 @@
 
 ## Subpackages
 
+  -   - [arpes.plotting.bz\_tool package](arpes.plotting.bz_tool)
+        
+          -   - [Submodules](arpes.plotting.bz_tool#submodules)
+                
+                  - [arpes.plotting.bz\_tool.CoordinateOffsetWidget
+                    module](arpes.plotting.bz_tool.CoordinateOffsetWidget)
+        
+          - [Module
+            contents](arpes.plotting.bz_tool#module-arpes.plotting.bz_tool)
+
   -   - [arpes.plotting.qt\_tool package](arpes.plotting.qt_tool)
         
           -   - [Submodules](arpes.plotting.qt_tool#submodules)
@@ -14,6 +24,8 @@
                     module](arpes.plotting.qt_tool.DataArrayImageView)
                   - [arpes.plotting.qt\_tool.HelpDialog
                     module](arpes.plotting.qt_tool.HelpDialog)
+                  - [arpes.plotting.qt\_tool.excepthook
+                    module](arpes.plotting.qt_tool.excepthook)
                   - [arpes.plotting.qt\_tool.utils
                     module](arpes.plotting.qt_tool.utils)
         

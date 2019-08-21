@@ -61,6 +61,7 @@ class EndstationBase:
     MERGE_ATTRS = {}
 
     # adjust as needed
+    ENSURE_COORDS_EXIST = ['x', 'y', 'z', 'theta', 'beta', 'chi', 'hv', 'alpha', 'psi']
     CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta', 'theta']
 
     # phi because this happens sometimes at BL4 with core level scans
@@ -169,7 +170,7 @@ class EndstationBase:
                     l.attrs[k] = v
 
         for l in ls:
-            for c in ['x', 'y', 'z', 'theta', 'beta', 'chi', 'hv', 'alpha', 'psi']:
+            for c in self.ENSURE_COORDS_EXIST:
                 if c not in l.coords:
                     l.coords[c] = l.attrs[c]
 
@@ -582,7 +583,8 @@ class FITSEndstation(EndstationBase):
                         for k, c in built_coords.items()}
 
         return xr.Dataset(
-            data_vars,
+            {'safe-{}'.format(name) if name in data_var.coords else name: data_var
+             for name, data_var in data_vars.items()},
             attrs={**scan_desc, 'name': primary_dataset_name},
         )
 

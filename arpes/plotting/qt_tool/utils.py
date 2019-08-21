@@ -37,6 +37,21 @@ def tabs(*children):
     return widget
 
 
+def combobox(name=None, items=None):
+    if items is None:
+        items = []
+
+    widget = QtWidgets.QComboBox()
+
+    if name is not None:
+        widget.setObjectName(name)
+
+    for item in items:
+        widget.addItem(item)
+
+    return widget
+
+
 def layout(*children, layout_cls=None, widget=None):
     if layout_cls is None:
         layout_cls = QtWidgets.QGridLayout

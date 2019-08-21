@@ -10,6 +10,8 @@
     module](arpes.plotting.qt_tool.DataArrayImageView)
   - [arpes.plotting.qt\_tool.HelpDialog
     module](arpes.plotting.qt_tool.HelpDialog)
+  - [arpes.plotting.qt\_tool.excepthook
+    module](arpes.plotting.qt_tool.excepthook)
   - [arpes.plotting.qt\_tool.utils module](arpes.plotting.qt_tool.utils)
 
 ## Module contents

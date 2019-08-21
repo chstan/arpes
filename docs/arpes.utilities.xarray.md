@@ -22,3 +22,16 @@ xarray.core.dataarray.DataArray, f, \*args,**kwargs)\*\*
 > Lifts a function that operates on an np.ndarray’s values to one that
 > acts on the values of an xr.DataArray :param f: :return: g: Function
 > operating on an xr.DataArray
+
+**arpes.utilities.xarray.unwrap\_xarray\_item(item)**
+
+> Unwraps something that might or might not be an xarray like with
+> .item() attribute.
+> 
+> This is especially helpful for dealing with unwrapping coordinates
+> which might be floating point-like or might be array-like.
+> 
+>   - Parameters  
+>     **item** –
+> 
+>   - Returns

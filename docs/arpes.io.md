@@ -68,6 +68,8 @@ index,**kwargs)\*\*
 
 **arpes.io.easy\_pickle(data\_or\_str, name=None)**
 
+**arpes.io.list\_pickles()**
+
 **arpes.io.sld(fragment, df: pandas.core.frame.DataFrame = None,
 workspace=None, basic\_prep=True)**
 

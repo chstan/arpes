@@ -16,7 +16,7 @@ from arpes.typing import DataType
 from arpes.utilities import enumerate_dataarray, normalize_to_spectrum
 from arpes.utilities.conversion.forward import \
     convert_coordinates_to_kspace_forward
-from arpes.utilities.jupyter_utils import wrap_tqdm
+from arpes.utilities.jupyter import wrap_tqdm
 
 __all__ = ('fit_bands', 'fit_for_effective_mass',)
 

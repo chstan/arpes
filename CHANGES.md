@@ -8,6 +8,48 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 2.2.0 (2019-08-21)
+
+### New
+
+1. Moiré analysis module with some code to generate primitive moiré 
+   unit cells and plot them
+2. Subpixel alignment in 1D and 2D based on image convolution and quadratic fitting
+   this is useful for tracking and correcting shifts in valence data due to work
+   function changes, charging, etc.
+3. More or less fully fledged k-independent self energy 
+   analysis module (arpes.analysis.self_energy)
+4. BZ exploration tool
+5. Large refactor to data provenance
+   1. Now guaranteed produced for every plot using `savefig`
+   2. By default we configure IPython to log all code execution
+   3. Most recent cell/notebook evaluations are included in provenance information
+6. `convert_coordinates` is now nearly an inverse transform to `convert_to_kspace` on the coordinates
+   as is appropriate. In particular, this conversion is exact as opposed to small 
+   angle approximated 
+
+#### Minor
+
+1. Some wrappers around getting Jupyter/IPython state
+2. `imread` wrapper that chooses backend between `imageio` and `cv2`
+3. Plotting utilities
+   1. `dark_background` context manager changes text and spines to white
+   2. Data unit/axis unit conversions (`data_to_axis_units` and friends)
+   3. `mean_annotation` as supplement to `sum_annotation`
+4. `xarray_extensions`:
+   1. `with_values` -> generates a copy with replaced data
+   2. `with_stanard_coords` -> renames deduped (`eV-spectrum0` for instance)
+       coords back to standard on a xr.DataArray
+   3. `.logical_offsets` calculates logical offsets for the 'x,y,z' motor set
+   4. Correctly prefers `hv` from coords now
+   5. `mean_other` as complement to `sum_other`
+   6. `transform`: One `map` to rule them all
+   
+
+### Changed
+
+### Fixed
+
 ## 2.1.4 (2019-08-07)
 
 ### New

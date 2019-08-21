@@ -46,8 +46,9 @@ LATTICE_CONSTANTS = {
 # eV, A reasonablish value if you aren't sure for the particular sample
 WORK_FUNCTION = 4.38
 
+METERS_PER_SECOND_PER_EV_ANGSTROM = 151927 # converts from eV * angstrom to meters/second velocity units
 HBAR = 1.05 * 10**(-34)
-HBAR_EV = 6.52 * 10**(-16)
+HBAR_PER_EV = 6.582 * 10**(-16) # gives the energy lifetime relationship via tau = -hbar / np.imag(self_energy)
 BARE_ELECTRON_MASS = 9.109e-31 # kg
 HBAR_SQ_EV_PER_ELECTRON_MASS = 0.475600805657 # hbar^2 / m0 in eV^2 s^2 / kg
 HBAR_SQ_EV_PER_ELECTRON_MASS_ANGSTROM_SQ = 7.619964 # (hbar^2) / (m0 * angstrom ^2) in eV

@@ -47,7 +47,7 @@ class CoordinateConverter:
     def identity_transform(self, axis_name, *args, **kwargs):
         return args[self.dim_order.index(axis_name)]
 
-    def get_coordinates(self, resolution: dict=None):
+    def get_coordinates(self, resolution: dict=None, bounds: dict=None):
         coordinates = {}
         coordinates['eV'] = self.arr.coords['eV']
         return coordinates

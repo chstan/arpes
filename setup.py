@@ -50,6 +50,7 @@ DEPENDENCY_GROUPS = {
         # Misc deps
         'xlrd',
         'colorama',
+        'imageio',
         'titlecase',
         'openpyxl',
         'tqdm',

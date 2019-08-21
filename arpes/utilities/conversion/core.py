@@ -308,7 +308,8 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
 
 
 @update_provenance('Automatically k-space converted')
-def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwargs):
+def convert_to_kspace(arr: xr.DataArray, forward=False, bounds=None, resolution=None,
+                      coords=None, **kwargs):
     """
     "Forward" or "backward" converts the data to momentum space.
 
@@ -317,9 +318,9 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
     interpolating back into the original data.
 
     "Forward"
-    By converting the coordinates, rather than by
-    interpolating the data. As a result, the data will be totally unchanged by the conversion (if we do not
-    apply a Jacobian correction), but the coordinates will no longer have equal spacing.
+    By converting the coordinates, rather than by interpolating the data. As a result, the data will be totally
+    unchanged by the conversion (if we do not apply a Jacobian correction), but the coordinates will no
+    longer have equal spacing.
 
     This is only really useful for zero and one dimensional data because for two dimensional data, the coordinates
     must become two dimensional in order to fully specify every data point (this is true in generality, in 3D the
@@ -328,9 +329,41 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
     The only exception to this is if the extra axes do not need to be k-space converted. As is the case where one
     of the dimensions is `cycle` or `delay`, for instance.
 
+    You can request a particular resolution for the new data with the `resolution=` parameter,
+    or a specific set of bounds with the `bounds=`
+
+    ```
+    from arpes.io import load_example_data
+    f = load_example_data()
+
+    # most standard method
+    convert_to_kspace(f)
+
+    # get a higher resolution (up-sampled) momentum image
+    convert_to_kspace(f, resolution={'kp': 0.001})
+
+    # get an image only for the positive momentum region
+    convert_to_kspace(f, bounds={'kp': [0, 1]})
+
+    # get an image manually specifying the `kp` coordinate
+    convert_to_kspace(f, kp=np.linspace(0, 1, 1001))
+
+    # or
+    convert_to_kspace(f, coords={'kp': np.linspace(0, 1, 1001)})
+    ```
+
+
     :param arr:
+    :param forward:
+    :param bounds:
+    :param resolution:
     :return:
     """
+
+    if coords is None:
+        coords = {}
+
+    coords.update(kwargs)
 
     if isinstance(arr, xr.Dataset):
         warnings.warn('Remember to use a DataArray not a Dataset, attempting to extract spectrum')
@@ -346,7 +379,8 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
 
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
-    remove_dims = ['eV', 'delay', 'cycle', 'temp', 'x', 'y']
+    remove_dims = ['eV', 'delay', 'cycle', 'temp', 'x', 'y',
+                   'optics_insertion']
 
     def unconvertible(dimension: str) -> bool:
         if dimension in remove_dims:
@@ -404,7 +438,14 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, resolution=None, **kwarg
     if n_kspace_coordinates > 1 and forward:
         raise AnalysisError('You cannot forward convert more than one momentum to k-space.')
 
-    converted_coordinates = converter.get_coordinates(resolution)
+    converted_coordinates = converter.get_coordinates(
+        resolution=resolution, bounds=bounds)
+
+    if not set(coords.keys()).issubset(converted_coordinates.keys()):
+        extra = set(coords.keys()).difference(converted_coordinates.keys())
+        raise ValueError('Unexpected passed coordinates: {}'.format(extra))
+
+    converted_coordinates.update(coords)
 
     return convert_coordinates(
         arr, converted_coordinates, {

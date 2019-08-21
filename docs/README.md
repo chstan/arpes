@@ -127,6 +127,18 @@ git clone https://github.com/chstan/arpes
     `jupyter.md`
 3.  Explore the documentation and example notebooks at [the
     documentation site](https://arpes.netlify.com/).
+    
+    
+### Barebones kernel installation
+
+If you already have Jupyter and just need to register your environment. You can do
+```bash
+pip install ipykernel
+python -m ipykernel install --user 
+```
+
+You can also give the kernel a different display name in Juptyer with 
+`python -m ipykernel install --user --display-name "My Name Here"`.
 
 # Contributing and Documentation
 

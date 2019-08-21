@@ -3,7 +3,94 @@ import numpy as np
 import arpes.constants
 import xarray as xr
 
-__all__ = ('calculate_kp_kz_bounds', 'calculate_kx_ky_bounds', 'calculate_kp_bounds')
+__all__ = ('calculate_kp_kz_bounds', 'calculate_kx_ky_bounds', 'calculate_kp_bounds',
+           'full_angles_to_k', 'full_angles_to_k_approx',)
+
+
+def full_angles_to_k_approx(kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_potential):
+    """
+    Small angle approximation of the momentum conversion functions. Depending on the value of alpha,
+    which we do not small angle approximate, this takes a few different forms.
+
+    :param kinetic_energy:
+    :param phi:
+    :param psi:
+    :param alpha:
+    :param beta:
+    :param theta:
+    :param chi:
+    :param inner_potential:
+    :return:
+    """
+    raise NotImplementedError()
+
+
+def full_angles_to_k(kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_potential, approximate=False):
+    """
+    Converts from the full set of standard PyARPES angles to momentum. More details on angle to momentum conversion
+    can be found at `the momentum conversion notes <https://arpes.netlify.com/#/momentum-conversion>`_.
+
+    Because the inverse coordinate transforms in PyARPES use the small angle approximation, we also allow
+    the small angle approximation in the forward direction, using the `approximate=` keyword argument.
+    :param kinetic_energy:
+    :param phi:
+    :param psi:
+    :param alpha:
+    :param beta:
+    :param theta:
+    :param chi:
+    :param inner_potential:
+    :param approximate:
+    :return:
+    """
+    if approximate:
+        return full_angles_to_k_approx(kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_potential)
+
+    theta, beta, chi, psi = theta, beta, -chi, psi
+
+    # use the full direct momentum conversion
+    sin_alpha, cos_alpha = np.sin(alpha), np.cos(alpha)
+    sin_beta, cos_beta = np.sin(beta), np.cos(beta)
+    sin_theta, cos_theta = np.sin(theta), np.cos(theta)
+    sin_chi, cos_chi = np.sin(chi), np.cos(chi)
+    sin_phi, cos_phi = np.sin(phi), np.cos(phi)
+    sin_psi, cos_psi = np.sin(psi), np.cos(psi)
+
+    vx = cos_alpha * cos_psi * sin_phi - sin_alpha * sin_psi
+    vy = sin_alpha * cos_psi * sin_phi + cos_alpha * sin_psi
+    vz = cos_phi * cos_psi
+
+    # perform theta rotation
+    vrtheta_x = cos_theta * vx - sin_theta * vz
+    vrtheta_y = vy
+    vrtheta_z = sin_theta * vx + cos_theta * vz
+
+    # perform beta rotation
+    vrbeta_x = vrtheta_x
+    vrbeta_y = cos_beta * vrtheta_y - sin_beta * vrtheta_z
+    vrbeta_z = sin_beta * vrtheta_y + cos_beta * vrtheta_z
+
+    # Perform chi rotation
+    vrchi_x = cos_chi * vrbeta_x - sin_chi * vrbeta_y
+    vrchi_y = sin_chi * vrbeta_x + cos_chi * vrbeta_y
+    vrchi_z = vrbeta_z
+
+    v_par_sq = vrchi_x ** 2 + vrchi_y ** 2
+
+    """
+    velocity -> momentum in each of parallel and perpendicular directions
+    in the perpendicular case, we need the value of the cos^2(zeta) for the polar declination
+    angle zeta in the sample (emission) frame. The total in plane velocity v_parallel is proportional
+    to sin(zeta), so by the trig identity:
+    
+    1 = cos^2(zeta) + sin^2(zeta)
+    
+    we may substitute cos^2(zeta) for 1 - sin^2(zeta) which is 1 - (vrchi_x **2 + vrchi_y ** 2) above.  
+    """
+    k_par = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy)
+    k_perp = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy * (1 - v_par_sq) + inner_potential)
+
+    return k_par * vrchi_x, k_par * vrchi_y, k_perp * vrchi_z
 
 
 def euler_to_kx(kinetic_energy, phi, beta, theta=0, slit_is_vertical=False):

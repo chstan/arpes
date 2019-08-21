@@ -206,6 +206,7 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
         reduced_data = reduced_data.mean(i + 1)
 
     reduced_coords = {d: coord[::reduction.get(d, 1)] for d, coord in trimmed_coords.items()}
+    reduced_coords.update({c: data.coords[c] for c in data.coords.keys() if c not in trimmed_coords})
 
     return xr.DataArray(
         reduced_data,

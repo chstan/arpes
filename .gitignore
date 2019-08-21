@@ -7,6 +7,7 @@ SCRATCH.md
 
 experiment/
 Experiments/
+!arpes/experiment
 
 # Generated Files
 conda-dist/

@@ -20,8 +20,8 @@ Better facilities should be added for ToFs to do simultaneous (timing,
 angle) to (binding energy, k-space).
 
 **arpes.utilities.conversion.core.convert\_to\_kspace(arr:
-xarray.core.dataarray.DataArray, forward=False,
-resolution=None,**kwargs)\*\*
+xarray.core.dataarray.DataArray, forward=False, bounds=None,
+resolution=None, coords=None,**kwargs)\*\*
 
 > “Forward” or “backward” converts the data to momentum space.
 > 
@@ -43,8 +43,25 @@ resolution=None,**kwargs)\*\*
 > k-space converted. As is the case where one of the dimensions is
 > *cycle* or *delay*, for instance.
 > 
->   - Parameters  
->     **arr** –
+> You can request a particular resolution for the new data with the
+> *resolution=* parameter, or a specific set of bounds with the
+> *bounds=*
+> 
+> \>\>``<<` from arpes.io import load_example_data f =
+> load_example_data() # most standard method convert_to_kspace(f) # get
+> a higher resolution (up-sampled) momentum image convert_to_kspace(f,
+> resolution={‘kp’: 0.001}) # get an image only for the positive
+> momentum region convert_to_kspace(f, bounds={‘kp’: [0, 1]}) # get an
+> image manually specifying the *kp* coordinate convert_to_kspace(f,
+> kp=np.linspace(0, 1, 1001)) # or convert_to_kspace(f, coords={‘kp’:
+> np.linspace(0, 1, 1001)}) >>``\<\<\>\>\`\<\<
+> 
+>   - Parameters
+>     
+>       - **arr** –
+>       - **forward** –
+>       - **bounds** –
+>       - **resolution** –
 > 
 >   - Returns
 

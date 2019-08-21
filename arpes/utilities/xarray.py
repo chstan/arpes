@@ -1,7 +1,41 @@
+from typing import Dict, Any
+
 import xarray as xr
+
 from arpes.typing import DataType
 
-__all__ = ('apply_dataarray', 'lift_datavar_attrs', 'lift_dataarray_attrs', 'lift_dataarray',)
+__all__ = ('apply_dataarray', 'lift_datavar_attrs', 'lift_dataarray_attrs', 'lift_dataarray',
+           'unwrap_xarray_item',)
+
+
+def unwrap_xarray_item(item):
+    """
+    Unwraps something that might or might not be an xarray like with .item()
+    attribute.
+
+    This is especially helpful for dealing with unwrapping coordinates which might
+    be floating point-like or might be array-like.
+
+    :param item:
+    :return:
+    """
+    try:
+        return item.item()
+    except (AttributeError, ValueError):
+        return item
+
+
+def unwrap_xarray_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Useful for unwrapping coordinate dicts where the values might be a bare type:
+    like a float or an int, but might also be a wrapped array-like for instance
+    xr.DataArray. Even worse, we might have wrapped bare values!
+
+    :param d:
+    :return:
+    """
+    return {k: unwrap_xarray_item(v) for k, v in d.items()}
+
 
 def apply_dataarray(arr: xr.DataArray, f, *args, **kwargs):
     return xr.DataArray(

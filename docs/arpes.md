@@ -6,6 +6,7 @@
         
           -   - [Submodules](arpes.analysis#submodules)
                 
+                  - [arpes.analysis.align module](arpes.analysis.align)
                   - [arpes.analysis.band\_analysis
                     module](arpes.analysis.band_analysis)
                   - [arpes.analysis.band\_analysis\_utils
@@ -36,6 +37,8 @@
                     module](arpes.analysis.sarpes)
                   - [arpes.analysis.savitzky\_golay
                     module](arpes.analysis.savitzky_golay)
+                  - [arpes.analysis.self\_energy
+                    module](arpes.analysis.self_energy)
                   - [arpes.analysis.shirley
                     module](arpes.analysis.shirley)
                   - [arpes.analysis.statistics
@@ -44,7 +47,7 @@
                     module](arpes.analysis.tarpes)
                   - [arpes.analysis.xps module](arpes.analysis.xps)
         
-          - [Module contents](arpes.analysis#module-arpes.analysis)
+          - [Module contents](arpes.analysis#module-contents)
 
   -   - [arpes.corrections package](arpes.corrections)
         
@@ -105,6 +108,10 @@
           - [Module
             contents](arpes.endstations#module-arpes.endstations)
 
+  -   - [arpes.experiment package](arpes.experiment)
+        
+          - [Module contents](arpes.experiment#module-arpes.experiment)
+
   -   - [arpes.fits package](arpes.fits)
         
           -   - [Submodules](arpes.fits#submodules)
@@ -116,6 +123,7 @@
                   - [arpes.fits.lmfit\_plot
                     module](arpes.fits.lmfit_plot)
                   - [arpes.fits.utilities module](arpes.fits.utilities)
+                  - [arpes.fits.zones module](arpes.fits.zones)
         
           - [Module contents](arpes.fits#module-arpes.fits)
 
@@ -135,6 +143,17 @@
         
           -   - [Subpackages](arpes.plotting#subpackages)
                 
+                  -   - [arpes.plotting.bz\_tool
+                        package](arpes.plotting.bz_tool)
+                        
+                          -   - [Submodules](arpes.plotting.bz_tool#submodules)
+                                
+                                  - [arpes.plotting.bz\_tool.CoordinateOffsetWidget
+                                    module](arpes.plotting.bz_tool.CoordinateOffsetWidget)
+                        
+                          - [Module
+                            contents](arpes.plotting.bz_tool#module-arpes.plotting.bz_tool)
+                
                   -   - [arpes.plotting.qt\_tool
                         package](arpes.plotting.qt_tool)
                         
@@ -148,6 +167,8 @@
                                     module](arpes.plotting.qt_tool.DataArrayImageView)
                                   - [arpes.plotting.qt\_tool.HelpDialog
                                     module](arpes.plotting.qt_tool.HelpDialog)
+                                  - [arpes.plotting.qt\_tool.excepthook
+                                    module](arpes.plotting.qt_tool.excepthook)
                                   - [arpes.plotting.qt\_tool.utils
                                     module](arpes.plotting.qt_tool.utils)
                         
@@ -257,6 +278,8 @@
                   - [arpes.utilities.autoprep
                     module](arpes.utilities.autoprep)
                   - [arpes.utilities.bz module](arpes.utilities.bz)
+                  - [arpes.utilities.bz\_spec
+                    module](arpes.utilities.bz_spec)
                   - [arpes.utilities.collections
                     module](arpes.utilities.collections)
                   - [arpes.utilities.dataset
@@ -266,8 +289,10 @@
                     module](arpes.utilities.funcutils)
                   - [arpes.utilities.geometry
                     module](arpes.utilities.geometry)
-                  - [arpes.utilities.jupyter\_utils
-                    module](arpes.utilities.jupyter_utils)
+                  - [arpes.utilities.image
+                    module](arpes.utilities.image)
+                  - [arpes.utilities.jupyter
+                    module](arpes.utilities.jupyter)
                   - [arpes.utilities.math module](arpes.utilities.math)
                   - [arpes.utilities.normalize
                     module](arpes.utilities.normalize)
@@ -286,7 +311,6 @@
   - [arpes.config module](arpes.config)
   - [arpes.constants module](arpes.constants)
   - [arpes.exceptions module](arpes.exceptions)
-  - [arpes.experiment module](arpes.experiment)
   - [arpes.io module](arpes.io)
   - [arpes.laser module](arpes.laser)
   - [arpes.load\_pxt module](arpes.load_pxt)

@@ -4,7 +4,58 @@ import numpy as np
 
 from typing import Any, Dict
 
-__all__ = ('deep_equals', 'deep_update',)
+__all__ = ('deep_equals', 'deep_update', 'MappableDict',)
+
+
+class MappableDict(dict):
+    """
+    Like dict except that +, -, *, / are cascaded to values.
+    """
+
+    def __add__(self, other):
+        if set(self.keys()) != set(other.keys()):
+            raise ValueError('You can only add two MappableDicts with the same keys.')
+
+        return MappableDict({
+            k: self.get(k) + other.get(k) for k in self.keys()
+        })
+
+    def __sub__(self, other):
+        if set(self.keys()) != set(other.keys()):
+            raise ValueError('You can only subtract two MappableDicts with the same keys.')
+
+        return MappableDict({
+            k: self.get(k) - other.get(k) for k in self.keys()
+        })
+
+    def __mul__(self, other):
+        if set(self.keys()) != set(other.keys()):
+            raise ValueError('You can only multiply two MappableDicts with the same keys.')
+
+        return MappableDict({
+            k: self.get(k) * other.get(k) for k in self.keys()
+        })
+
+    def __truediv__(self, other):
+        if set(self.keys()) != set(other.keys()):
+            raise ValueError('You can only divide two MappableDicts with the same keys.')
+
+        return MappableDict({
+            k: self.get(k) / other.get(k) for k in self.keys()
+        })
+
+    def __floordiv__(self, other):
+        if set(self.keys()) != set(other.keys()):
+            raise ValueError('You can only divide (//) two MappableDicts with the same keys.')
+
+        return MappableDict({
+            k: self.get(k) // other.get(k) for k in self.keys()
+        })
+
+    def __neg__(self):
+        return MappableDict({
+            k: -self.get(k) for k in self.keys()
+        })
 
 
 def deep_update(destination: Any, source: Any) -> Dict[str, Any]:
