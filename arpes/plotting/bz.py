@@ -18,11 +18,40 @@ from arpes.analysis.mask import apply_mask_to_coords
 from arpes.plotting.utils import path_for_plot
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
-from arpes.utilities.bz import build_2dbz_poly, process_kpath
+from arpes.utilities.bz import build_2dbz_poly, process_kpath, hex_cell_2d
+from arpes.utilities.bz_spec import A_GRAPHENE, A_WS2, A_WSe2
 from arpes.utilities.geometry import polyhedron_intersect_plane
 
 __all__ = ('annotate_special_paths', 'bz2d_plot', 'bz3d_plot', 'bz_plot',
-           'plot_data_to_bz', 'plot_data_to_bz2d', 'plot_data_to_bz3d', 'plot_plane_to_bz',)
+           'plot_data_to_bz', 'plot_data_to_bz2d', 'plot_data_to_bz3d', 'plot_plane_to_bz',
+           'overplot_standard',)
+
+
+def overplot_standard(name='graphene', repeat=None, rotate=0):
+    overplot_library = {
+        'graphene': lambda: {
+            'cell': hex_cell_2d(A_GRAPHENE)
+        },
+        'WS2': lambda: {
+            'cell': hex_cell_2d(A_WS2)
+        },
+        'WSe2': lambda: {
+            'cell': hex_cell_2d(A_WSe2)
+        },
+    }
+
+    specification = overplot_library[name]()
+    transformations = []
+
+    if rotate:
+        transformations = [Rotation.from_rotvec([0, 0, rotate])]
+
+    def overplot_the_bz(ax):
+        bz_plot(cell=specification['cell'], linewidth=2, ax=ax, paths=[], repeat=repeat,
+                set_equal_aspect=False, hide_ax=False, transformations=transformations,
+                zorder=5, linestyle='-')
+
+    return overplot_the_bz
 
 
 class Translation:

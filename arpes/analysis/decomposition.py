@@ -5,7 +5,8 @@ from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from typing import List
 
-__all__ = ('decomposition_along', 'pca_along', 'ica_along', 'factor_analysis_along',)
+__all__ = ('decomposition_along',
+           'nmf_along', 'pca_along', 'ica_along', 'factor_analysis_along',)
 
 
 def decomposition_along(data: DataType, axes: List[str], decomposition_cls, correlation=False, **kwargs):
@@ -103,3 +104,9 @@ def factor_analysis_along(*args, **kwargs):
 def ica_along(*args, **kwargs):
     from sklearn.decomposition import FastICA
     return decomposition_along(*args, **kwargs, decomposition_cls=FastICA)
+
+
+@wraps(decomposition_along)
+def nmf_along(*args, **kwargs):
+    from sklearn.decomposition import NMF
+    return decomposition_along(*args, **kwargs, decomposition_cls=NMF)

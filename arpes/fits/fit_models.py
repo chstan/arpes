@@ -18,6 +18,8 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel', 'GStepBModel', 'QuadraticModel
            'AffineBroadenedFD', 'FermiDiracModel', 'BandEdgeBModel','EffectiveMassModel', 'LogisticModel',
            'gaussian_convolve', 'TwoGaussianModel', 'TwoLorModel', 'TwoLorEdgeModel', 'SplitLorentzianModel')
 
+any_dim_sentinel = None
+
 
 class XModelMixin(lf.Model):
     """
@@ -79,7 +81,11 @@ class XModelMixin(lf.Model):
                         return list(intersect)[0]
 
                 # resolve multidimensional parameters
-                new_dim_order = [find_appropriate_dimension(dim_options) for dim_options in self.dimension_order]
+                if self.dimension_order is None or all(d is None for d in self.dimension_order):
+                    new_dim_order = data.dims
+                else:
+                    new_dim_order = [find_appropriate_dimension(dim_options) for dim_options in self.dimension_order]
+
                 if list(new_dim_order) != list(data.dims):
                     warnings.warn('Transposing data for multidimensional fit.')
                     data = data.transpose(*new_dim_order)
@@ -143,11 +149,21 @@ class XModelMixin(lf.Model):
 
     def __add__(self, other):
         """+"""
-        return XAdditiveCompositeModel(self, other, operator.add)
+        comp = XAdditiveCompositeModel(self, other, operator.add)
+
+        assert self.n_dims == other.n_dims
+        comp.n_dims = other.n_dims
+
+        return comp
 
     def __mul__(self, other):
         """*"""
-        return XMultiplicativeCompositeModel(self, other, operator.mul)
+        comp = XMultiplicativeCompositeModel(self, other, operator.mul)
+
+        assert self.n_dims == other.n_dims
+        comp.n_dims = other.n_dims
+
+        return comp
 
 
 class XAdditiveCompositeModel(lf.CompositeModel, XModelMixin):
@@ -231,6 +247,19 @@ def gaussian_convolve(model_instance):
     """
     return XConvolutionCompositeModel(
         model_instance, GaussianModel(prefix='conv_'), convolve)
+
+
+def gaussian_2d_bkg(x, y, amplitude=1, xc=0, yc=0, sigma_x=0.1, sigma_y=0.1,
+                    const_bkg=0, x_bkg=0, y_bkg=0):
+
+    bkg = np.outer(x * 0 + 1, y_bkg * y) + np.outer(x * x_bkg, y * 0 + 1) + const_bkg
+    # make the 2D Gaussian matrix
+    gauss = amplitude * np.exp(-((x[:,None] - xc) ** 2 / (2 * sigma_x ** 2) +
+                                 (y[None,:] - yc) ** 2 / (2 * sigma_y ** 2))) / \
+            (2 * np.pi * sigma_x * sigma_y)
+
+    # flatten the 2D Gaussian down to 1D
+    return np.ravel(gauss + bkg)
 
 
 def effective_mass_bkg(eV, kp, m_star=0,
@@ -543,6 +572,23 @@ def gstepb_stdev(x, center=0, sigma=1, erf_amp=1, lin_bkg=0, const_bkg=0):
     """
     dx = x - center
     return const_bkg + lin_bkg * np.min(dx, 0) + gstep_stdev(x, center, sigma, erf_amp)
+
+
+class Gaussian2DModel(XModelMixin):
+    """
+    2D Gaussian fitting
+    """
+
+    n_dims = 2
+    dimension_order = [any_dim_sentinel, any_dim_sentinel]
+
+    def __init__(self, independent_vars=('x', 'y',), prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(gaussian_2d_bkg, **kwargs)
+
+        self.set_param_hint('sigma_x', min=0.)
+        self.set_param_hint('sigma_y', min=0.)
+        self.set_param_hint('amplitude', min=0.)
 
 
 class EffectiveMassModel(XModelMixin):
