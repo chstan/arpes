@@ -31,13 +31,14 @@
   - [arpes.utilities.attrs module](arpes.utilities.attrs)
   - [arpes.utilities.autoprep module](arpes.utilities.autoprep)
   - [arpes.utilities.bz module](arpes.utilities.bz)
+  - [arpes.utilities.bz\_spec module](arpes.utilities.bz_spec)
   - [arpes.utilities.collections module](arpes.utilities.collections)
   - [arpes.utilities.dataset module](arpes.utilities.dataset)
   - [arpes.utilities.dict module](arpes.utilities.dict)
   - [arpes.utilities.funcutils module](arpes.utilities.funcutils)
   - [arpes.utilities.geometry module](arpes.utilities.geometry)
-  - [arpes.utilities.jupyter\_utils
-    module](arpes.utilities.jupyter_utils)
+  - [arpes.utilities.image module](arpes.utilities.image)
+  - [arpes.utilities.jupyter module](arpes.utilities.jupyter)
   - [arpes.utilities.math module](arpes.utilities.math)
   - [arpes.utilities.normalize module](arpes.utilities.normalize)
   - [arpes.utilities.region module](arpes.utilities.region)
@@ -105,18 +106,10 @@ theta, beta, alpha, phis, rhat)**
 > 
 > Ex: unarrange\_by\_indices(\[‘b’, ‘c’, ‘a’\], \[1, 2, 0\])
 
-**arpes.utilities.unwrap\_attrs\_dict(attrs: \<module
-'arpes.utilities.dict' from
-'/Users/chstansbury/PycharmProjects/python-arpes/arpes/utilities/dict.py'\>)
--\> \<module 'arpes.utilities.dict' from
-'/Users/chstansbury/PycharmProjects/python-arpes/arpes/utilities/dict.py'\>**
+**arpes.utilities.unwrap\_attrs\_dict(attrs: dict) -\> dict**
 
 **arpes.utilities.walk\_scans(path, only\_id=False)**
 
-**arpes.utilities.wrap\_attrs\_dict(attrs: \<module
-'arpes.utilities.dict' from
-'/Users/chstansbury/PycharmProjects/python-arpes/arpes/utilities/dict.py'\>,
-original\_data: Union\[xarray.core.dataarray.DataArray,
-xarray.core.dataset.Dataset\] = None) -\> \<module
-'arpes.utilities.dict' from
-'/Users/chstansbury/PycharmProjects/python-arpes/arpes/utilities/dict.py'\>**
+**arpes.utilities.wrap\_attrs\_dict(attrs: dict, original\_data:
+Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\] =
+None) -\> dict**

@@ -8,7 +8,7 @@
                         
                           - [Submodules](arpes.analysis#submodules)
                           - [Module
-                            contents](arpes.analysis#module-arpes.analysis)
+                            contents](arpes.analysis#module-contents)
                 
                   -   - [arpes.corrections package](arpes.corrections)
                         
@@ -22,6 +22,11 @@
                           - [Submodules](arpes.endstations#submodules)
                           - [Module
                             contents](arpes.endstations#module-arpes.endstations)
+                
+                  -   - [arpes.experiment package](arpes.experiment)
+                        
+                          - [Module
+                            contents](arpes.experiment#module-arpes.experiment)
                 
                   -   - [arpes.fits package](arpes.fits)
                         
@@ -66,7 +71,6 @@
                   - [arpes.config module](arpes.config)
                   - [arpes.constants module](arpes.constants)
                   - [arpes.exceptions module](arpes.exceptions)
-                  - [arpes.experiment module](arpes.experiment)
                   - [arpes.io module](arpes.io)
                   - [arpes.laser module](arpes.laser)
                   - [arpes.load\_pxt module](arpes.load_pxt)

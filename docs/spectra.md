@@ -4,21 +4,38 @@
 
 The PyARPES coordinate representation is summarized in the figure below. 
 Three spatial coordinates specify the manipulator translation relative 
-to a fixed origin. Two manipulator angles ("theta" and "beta") specify the
+to a fixed origin. Two manipulator angles ($\theta$ and $\beta$) specify the
 orientation of the sample normal relative to the analyzer axis. A final azimuthal 
-angle "chi" specifies the rotation of the sample face.
+angle $\chi$ specifies the rotation of the sample face.
 
 These six angles are not enough to fully specify the photocurrent though,
 because the analyzer observes an angular cut which can be sometimes independently
-manipulated. The angle along the analyzer slit is always labelled as "phi",
-while the angle perpendicular to this one is labelled as "psi". This psi angle 
+manipulated. The angle along the analyzer slit is always labelled as $\phi$,
+while the angle perpendicular to this one is labelled as $\psi$. This $\psi$ angle 
 will be familiar to those using a deflector that allows recording Fermi surfaces
 without sample motion. Finally, some analyzers allow rotation
-along the analyzer axis. This is the "alpha" angle. As a convention
-we will take alpha=0 when the the slit of the analyzer is in the x-z plane.
+along the analyzer axis. This is the $\alpha$ angle. As a convention
+we will take $\alpha=0$ when the the slit of the analyzer is in the x-z plane.
 
 
 ![Hemispherical Analyzer Angular Conventions](static/angle-conventions.png)
+
+### Hierarchal Spatial Coordinates
+
+Nano-ARPES endstations often have two sets of spatial coordinates, a long-range piezo inertia
+or stepper stage, sometimes outside vacuum, and a fast, high resolution piezo scan stage that may or may not
+be based on piezo inertia ("slip-stick") type actuators.
+
+Additionally, any spatially imaging experiments like PEEM or the transmission operating mode 
+of hemispherical analyzers have two spatial coordinates, the one on the manipulator and the 
+imaged axis. In these cases, this imaged axis will always be treated in the same role as the high-resolution
+motion axis of a nano-ARPES system.  
+
+Working in two coordinate systems is frustrating, and it makes comparing data cumbersome. In PyARPES 
+x,y,z is always the total inferrable coordinate value, i.e. (+/- long range +/- high resolution)
+as appropriate. You can still access the underlying coordinates in this case as 
+`long_{dim}` and `short_{dim}`.
+
 
 ## ARPES Metadata
 

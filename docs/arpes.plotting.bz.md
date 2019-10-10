@@ -1,11 +1,12 @@
 # arpes.plotting.bz module
 
 **arpes.plotting.bz.annotate\_special\_paths(ax, paths, cell=None,
-offset=None, special\_points=None, labels=None,**kwargs)\*\*
+transformations=None, offset=None, special\_points=None,
+labels=None,**kwargs)\*\*
 
 **arpes.plotting.bz.bz2d\_plot(cell, vectors=False, paths=None,
-points=None, repeat=None, ax=None, offset=None,
-hide\_ax=True,**kwargs)\*\*
+points=None, repeat=None, ax=None, transformations=None, offset=None,
+hide\_ax=True, set\_equal\_aspect=True,**kwargs)\*\*
 
 > This piece of code modified from ase.ase.dft.bz.py:bz2d\_plot and
 > follows copyright and license for ASE.
@@ -14,8 +15,8 @@ hide\_ax=True,**kwargs)\*\*
 > :param vectors: :param paths: :param points: :return:
 
 **arpes.plotting.bz.bz3d\_plot(cell, vectors=False, paths=None,
-points=None, ax=None, elev=None, scale=1, repeat=None, offset=None,
-hide\_ax=True,**kwargs)\*\*
+points=None, ax=None, elev=None, scale=1, repeat=None,
+transformations=None, hide\_ax=True,**kwargs)\*\*
 
 > For now this is lifted from ase.dft.bz.bz3d\_plot with some
 > modifications. All copyright and licensing terms for this and

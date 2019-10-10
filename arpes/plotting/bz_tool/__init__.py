@@ -193,6 +193,7 @@ class BZTool:
         )
         self.material_choice_widget = material_choice
         self.material_choice_widget.currentTextChanged.connect(self.on_change_material)
+        #self.photon_energy_widget =
         inner_items = [material_choice]
         return hlayout(*inner_items)
 

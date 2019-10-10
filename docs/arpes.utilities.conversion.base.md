@@ -7,7 +7,7 @@ xarray.core.dataarray.DataArray, dim\_order=None, \*args,**kwargs)\*\*
 > 
 > **conversion\_for(dim)**
 > 
-> **get\_coordinates(resolution: dict = None)**
+> **get\_coordinates(resolution: dict = None, bounds: dict = None)**
 > 
 > **identity\_transform(axis\_name, \*args,**kwargs)\*\*
 > 

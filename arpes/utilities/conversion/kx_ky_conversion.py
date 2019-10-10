@@ -28,7 +28,12 @@ class ConvertKp(CoordinateConverter):
             kp_low, kp_high = bounds['kp']
 
         inferred_kp_res = (kp_high - kp_low + 2 * K_SPACE_BORDER) / len(self.arr.coords['phi'])
-        inferred_kp_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kp_res][-1]
+
+        try:
+            inferred_kp_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kp_res][
+                -2 if (len(self.arr.coords['phi']) < 80) else -1]
+        except IndexError:
+            inferred_kp_res = MOMENTUM_BREAKPOINTS[-2]
 
         coordinates['kp'] = np.arange(kp_low - K_SPACE_BORDER, kp_high + K_SPACE_BORDER,
                                       resolution.get('kp', inferred_kp_res))
@@ -130,11 +135,13 @@ class ConvertKxKy(CoordinateConverter):
 
         # upsample a bit if there aren't that many points along a certain axis
         try:
-            inferred_kx_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kx_res][-2 if (len_kx_angle < 80) else -1]
+            inferred_kx_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_kx_res][
+                -2 if (len_kx_angle < 80) else -1]
         except IndexError:
             inferred_kx_res = MOMENTUM_BREAKPOINTS[-2]
         try:
-            inferred_ky_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_ky_res][-2 if (len_ky_angle < 80) else -1]
+            inferred_ky_res = [b for b in MOMENTUM_BREAKPOINTS if b < inferred_ky_res][
+                -2 if (len_ky_angle < 80) else -1]
         except IndexError:
             inferred_ky_res = MOMENTUM_BREAKPOINTS[-2]
 

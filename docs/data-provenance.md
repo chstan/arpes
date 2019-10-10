@@ -18,9 +18,17 @@ PyARPES attempts to address these problems by maintaining a record
 of actions performed on data including functions, software version,
 and parameters, when you use the builtin analysis routines.
 
+PyARPES also configures Jupyter and IPython to log all of your Jupyter 
+sessions to `logs/{notebook-name}_{date}_{time}.log`. You can opt
+out of this by using the `LOGGING_ENABLED` feature switch in 
+`arpes.config.CONFIG`. 
+
 This record is used to produce a lineage for the data involved in any figure
 created using the PyARPES standard figures, or using the PyARPES `savefig`
-wrapper.
+wrapper. Additionally, each element in this data provenance record stores the 
+most recent cells run inside an IPython or Jupyter session, if available,
+in order to make available the outside-of-library context for this item in the 
+provenance.  
 
 PyARPES also provides tools that make it simple to record and maintain
 data provenance for your analysis code.
@@ -94,7 +102,12 @@ This records a provenance more or less identical to the previous example.
 PyARPES makes it very straightforward to opt into recording provenance. If you write an 
 analysis function, the simplest option is to use the `update_provenance` decorator,
 which introspects data passed to and returned from your function at runtime
-and updates provenance appropriately.   
+and updates provenance appropriately.
+
+Additionally, because PyARPES includes recent Juypyter cell evaluations in the 
+record, you shouldn't find the need to be very defensive in your use of manual
+provenance tracking, although you should wrap code that forms part of your more
+permanent analysis repetoire.
 
 ![Example data provenance in PyARPES](static/decorator-provenance.png)
 

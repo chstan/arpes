@@ -30,7 +30,7 @@ import pathlib
 import itertools
 import warnings
 from functools import wraps
-from typing import Callable, Optional
+from typing import Callable, List, Optional, Union
 
 import matplotlib
 import matplotlib.gridspec as gridspec
@@ -482,7 +482,7 @@ def pca_explorer(pca, data, component_dim='components', initial_values=None, tra
 
 
 @popout
-def kspace_tool(data, overplot_bz: Optional[Callable] = None,
+def kspace_tool(data, overplot_bz: Optional[Union[Callable, List[Callable]]] = None,
                 bounds=None, resolution=None, coords=None, **kwargs):
     original_data = data
     data = normalize_to_spectrum(data)
@@ -506,7 +506,13 @@ def kspace_tool(data, overplot_bz: Optional[Callable] = None,
     ax_converted = plt.subplot(gs[2:, 0:2])
 
     if overplot_bz is not None:
-        overplot_bz(ax_converted)
+        try:
+            len(overplot_bz)
+        except TypeError:
+            overplot_bz = [overplot_bz]
+
+        for fn in overplot_bz:
+            fn(ax_converted)
 
     n_widget_axes = 8
     gs_widget = gridspec.GridSpecFromSubplotSpec(n_widget_axes, 1, subplot_spec=gs[:, 2])

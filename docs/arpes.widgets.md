@@ -38,12 +38,13 @@ as we start to run into the limits of these ones. But between this and
 
 **arpes.widgets.pick\_rectangles(data,**kwargs)\*\*
 
-**arpes.widgets.pick\_points(data,**kwargs)\*\*
+**arpes.widgets.pick\_points(data\_or\_str,**kwargs)\*\*
 
 **arpes.widgets.pca\_explorer(pca, data, component\_dim='components',
 initial\_values=None, transpose\_mask=False,**kwargs)\*\*
 
-**arpes.widgets.kspace\_tool(data,**kwargs)\*\*
+**arpes.widgets.kspace\_tool(data, overplot\_bz: Optional\[Callable\] =
+None, bounds=None, resolution=None, coords=None,**kwargs)\*\*
 
 **arpes.widgets.fit\_initializer(data, peak\_type=\<class
 'arpes.fits.fit\_models.LorentzianModel'\>,**kwargs)\*\*

@@ -4,7 +4,7 @@ from collections import namedtuple
 
 from PyQt5 import QtCore, QtWidgets
 
-__all__ = ('PRETTY_KEYS', 'pretty_key_event', 'KeyBinding', 'layout', 'hlayout', 'vlayout', 'tabs', 'label')
+__all__ = ('PRETTY_KEYS', 'pretty_key_event', 'KeyBinding', 'layout', 'hlayout', 'vlayout', 'tabs', 'label',)
 
 KeyBinding = namedtuple('KeyBinding', ('label', 'chord', 'handler'))
 
