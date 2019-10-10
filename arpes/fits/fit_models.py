@@ -478,6 +478,43 @@ def log_renormalization(x, kF=1.6, kD=1.6, kC=1.7, alpha=0.4, vF=1e6):
     dkD = x - kD
     return -vF * np.abs(dkD) + (alpha / 4) * vF * dk * np.log(np.abs(kC / dkD))
 
+def fermi_velocity_renormalization_mfl(x,n0,v0,alpha,eps):
+    #     y = v0 * (rs/np.pi)*(5/3 + np.log(rs))+(rs/4)*np.log(kc/np.abs(kF))
+    fx = v0*(1 + (alpha/(1+eps))*np.log(n0/np.abs(x)))
+    fx2 = v0*(1 + (alpha/(1+eps*np.abs(x)))*np.log(n0/np.abs(x)))
+    fx3 = v0*(1 + (alpha/(1+eps*x**2))*np.log(n0/np.abs(x)))
+    # return v0 + v0*(alpha/(8*eps))*np.log(n0/x)
+    return fx3
+    
+class FermiVelocity_Renormalization_Model(XModelMixin):
+    """
+    A model for Logarithmic Renormalization to Fermi Velocity in Dirac Materials
+    :param x: value to evaluate fit at (carrier density)
+    :param n0: Value of carrier density at cutoff energy for validity of Dirac Fermions
+    :param alpha: Fine structure constant
+    :param eps: Graphene Dielectric constant
+    """
+
+    def __init__(self, independent_vars=('x',), prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(fermi_velocity_renormalization_mfl, **kwargs)
+
+        self.set_param_hint('alpha', min=0.)
+        self.set_param_hint('n0', min=0.)
+        self.set_param_hint('eps', min=0.)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        # pars['%sn0' % self.prefix].set(value=10)
+        # pars['%seps' % self.prefix].set(value=8)
+        # pars['%svF' % self.prefix].set(value=(data.max()-data.min())/(kC-kD))
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
 
 def dirac_dispersion(x, kd=1.6, amplitude_1=1, amplitude_2=1, center=0, sigma_1=1, sigma_2=1):
     """

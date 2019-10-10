@@ -766,6 +766,10 @@ class ARPESAccessorBase:
     @property
     def phi_offset(self):
         return self.lookup_offset('phi')
+    
+    @property
+    def psi_offset(self):
+        return self.lookup_offset('psi')
 
     @property
     def work_function(self):

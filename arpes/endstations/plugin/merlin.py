@@ -215,6 +215,15 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
             s.attrs['alpha'] = np.pi / 2
             s.attrs['psi'] = 0
 
+        # TODO Conrad think more about why sometimes individual attrs don't make it onto
+        # .spectrum.attrs, for now just paste them over
+        necessary_coord_names = {'theta', 'beta', 'chi', 'phi'}
+        ls = data.S.spectra
+        for l in ls:
+            for cname in necessary_coord_names:
+                if cname not in l.attrs and cname not in l.coords and cname in data.attrs:
+                    l.attrs[cname] = data.attrs[cname]
+
         data = super().postprocess_final(data, scan_desc)
 
         return data
