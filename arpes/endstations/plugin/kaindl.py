@@ -136,6 +136,12 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
             if angle_attr in data.attrs:
                 data.attrs[angle_attr] = float(data.attrs[angle_attr]) * np.pi / 180
 
+        ls = [data] + data.S.spectra
+        for l in ls:
+            l.coords['x'] = np.nan
+            l.coords['y'] = np.nan
+            l.coords['z'] = np.nan
+
         data = super().postprocess_final(data, scan_desc)
 
         return data

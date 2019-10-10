@@ -172,7 +172,11 @@ class EndstationBase:
         for l in ls:
             for c in self.ENSURE_COORDS_EXIST:
                 if c not in l.coords:
-                    l.coords[c] = l.attrs[c]
+                    if c in l.attrs:
+                        l.coords[c] = l.attrs[c]
+                    else:
+                        warnings.warn(f'Could not assign coordinate {c} from attributes, assigning np.nan instead.')
+                        l.coords[c] = np.nan
 
         for l in ls:
             if 'chi' in l.coords and 'chi_offset' not in l.attrs:
@@ -426,8 +430,10 @@ class FITSEndstation(EndstationBase):
                 del hdulist[i].header['TUNIT2']
                 hdulist[i].header['TUNIT2'] = 'ps'
 
-            hdulist[i].verify('fix+warn')
-            hdulist[i].header.update()
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                hdulist[i].verify('fix+warn')
+                hdulist[i].header.update()
             # This actually requires substantially more work because it is lossy to information
             # on the unit that was encoded
 
