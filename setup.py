@@ -22,14 +22,15 @@ VERSION = about['VERSION']
 
 DEPENDENCY_GROUPS = {
     'core': [
-        'tornado==4.5.3', # this version required due to Bokeh weirdness
         'astropy',
 
         # this version required as 0.10.1 introduces a change that forced all assignment
         # through Variable.get_compatible_data, which coerces to an array
         'xarray==0.9.6',
 
-        'h5py==2.7.0',
+        'h5py',
+        'pyqtgraph',
+        'PyQt5',
         'netCDF4',
         'colorcet',
 
