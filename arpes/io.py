@@ -39,7 +39,7 @@ __all__ = (
 
 def load_without_dataset(file: typing.Union[str, Path, int], location=None, **kwargs):
     try:
-        file = int(file)
+        file = int(str(file))
     except ValueError:
         file = str(Path(file).absolute())
 

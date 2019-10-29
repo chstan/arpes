@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 
 import arpes.config
-from arpes.endstations import resolve_endstation
 from arpes.exceptions import ConfigurationError
 from arpes.utilities.string import snake_case
 from typing import Any, List, Optional, Union
@@ -60,7 +59,7 @@ def rename_files(dry=True, path=None, extensions=None, starting_index=1):
 
 def is_blank(item: Union[float, str]) -> bool:
     if isinstance(item, str):
-        return item == ''
+        return item == '' or item == 'NaN'
 
     if isinstance(item, float):
         return np.isnan(item)
@@ -78,6 +77,7 @@ def infer_data_path(file: int, scan_desc: pd.Series, allow_soft_match: bool = Fa
     if 'path' in scan_desc and not is_blank(scan_desc['path']):
         return scan_desc['path']
 
+    from arpes.endstations import resolve_endstation
     endstation_cls = resolve_endstation(retry=True, **scan_desc)
     return endstation_cls.find_first_file(file, scan_desc)
 
@@ -295,16 +295,21 @@ def modern_clean_xlsx_dataset(path, allow_soft_match=False, with_inferred_cols=T
         row = row.copy()
 
         for key, value in row.iteritems():
+            if key == 'path':
+                continue
+
             if key == 'id' and is_blank(row.id):
                 joined.loc[index, ('id',)] = str(uuid.uuid1())
-
-            elif key == 'path' and is_blank(value):
-                joined.loc[index, ('path',)] = infer_data_path(index, row, allow_soft_match)
 
             elif last_index is not None and is_blank(value) and not is_blank(joined.loc[last_index, (key,)]):
                 joined.loc[index, (key,)] = joined.loc[last_index, (key,)]
 
         last_index = index
+
+    for index, row in joined.iterrows():
+        joined.loc[index, ('path',)] = infer_data_path(index, row, allow_soft_match)
+
+
 
     if write:
         excel_writer = pd.ExcelWriter(cleaned_path_str)
@@ -376,13 +381,17 @@ def clean_xlsx_dataset(path: str, allow_soft_match: bool = False, write: bool = 
             if key == 'id' and is_blank(row.id):
                 ds.loc[index, ('id',)] = str(uuid.uuid1())
 
-            elif key == 'path' and is_blank(value):
-                ds.loc[index, ('path',)] = infer_data_path(row['file'], row, allow_soft_match)
+            if key == 'path':
+                continue
 
             elif last_index is not None and is_blank(value) and not is_blank(ds.loc[last_index, (key,)]):
                 ds.loc[index, (key,)] = ds.loc[last_index, (key,)]
 
         last_index = index
+
+    for index, row in ds.sort_index().iterrows():
+        if is_blank(row['path']):
+            ds.loc[index, ('path',)] = infer_data_path(row['file'], row, allow_soft_match)
 
     ds = ds.loc[:, ~ds.columns.str.contains('^unnamed:_')]
 

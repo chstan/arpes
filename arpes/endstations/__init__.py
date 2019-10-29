@@ -779,12 +779,15 @@ def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Datase
     full_note.update(note)
 
     endstation_cls = resolve_endstation(retry=retry, **full_note)
-    file = scan_desc['file']
+
+    key = 'file' if 'file' in scan_desc else 'path'
+
+    file = scan_desc[key]
 
     try:
         file = int(file)
         file = endstation_cls.find_first_file(file, scan_desc)
-        scan_desc['file'] = file
+        scan_desc[key] = file
     except ValueError:
         pass
 

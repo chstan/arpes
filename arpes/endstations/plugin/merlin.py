@@ -25,6 +25,11 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         r'[\-a-zA-Z0-9_\w+]+_{}_R[0-9][0-9][0-9]$',
         r'[\-a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$',
         r'[\-a-zA-Z0-9_\w+]+_[0]+{}_R[0-9][0-9][0-9]$',
+        # more generic
+        r'[\-a-zA-Z0-9_\w]+_[0]+{}$',
+        r'[\-a-zA-Z0-9_\w]+_{}$',
+        r'[\-a-zA-Z0-9_\w]+{}$',
+        r'[\-a-zA-Z0-9_\w]+[0]{}$',
     )
 
     RENAME_KEYS = {
