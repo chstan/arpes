@@ -4,11 +4,87 @@ arpes.moire includes some tools for analyzing moirés and data on moiré heteros
 All of the moirés discussed here are on hexagonal crystal systems.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
 
 from arpes.utilities.bz import hex_cell_2d
 from arpes.plotting.bz import bz_plot, Translation, Rotation
+
+import numpy as np
+from scipy.spatial.distance import pdist
+
+
+def higher_order_commensurability(lattice_constant_ratio, order=2, angle_range=None):
+    """
+    Unfinished
+
+    :param lattice_constant_ratio:
+    :param order:
+    :param angle_range:
+    :return:
+    """
+    if angle_range is None:
+        angle_range = (0, 5)
+
+    bz_corner_a, bz_corner_b = np.asarray([1, 0]), np.asarray([0.5, np.sqrt(3) / 2])
+
+    return bz_corner_a, bz_corner_b
+
+
+def mod_points_to_lattice(pts, a, b):
+    rmat = np.asarray([[0, -1], [1, 0]])
+    ra, rb = rmat @ a, rmat @ b
+    ra, rb = ra / (np.sqrt(3) / 2), rb / (np.sqrt(3) / 2)
+
+    return (pts +
+            np.outer(np.ceil(pts @ rb), a) +
+            np.outer(np.ceil(pts @ -ra), b))
+
+
+def generate_other_lattice_points(a, b, ratio, order=1, angle=0):
+    ratio = max(np.abs(ratio), 1 / np.abs(ratio))
+    cosa, sina = np.cos(angle), np.sin(angle)
+    rmat = np.asarray([[cosa, -sina], [sina, cosa]])
+    a, b = rmat @ (ratio * a), rmat @ (ratio * b)
+
+    ias = np.arange(-order, order + 1)
+    pts = (a[None, None, :] * ias[None, :, None]) + (b[None, None, :] * ias[:, None, None])
+    pts = pts.reshape(len(ias) ** 2, 2)
+
+    # not quite correct, since we need the manhattan distance
+    # mask = np.linalg.norm(pts, axis=1) <= order * ratio
+
+    ds = np.stack([(np.outer(ias[None, :], (ias[None, :] * 0 + 1))),
+                   (np.outer(ias[None, :] * 0 + 1, (ias[None, :])))], axis=-1).reshape(len(ias) ** 2, 2)
+
+    dabs = np.abs(np.sum(ds, axis=1))
+    dist = np.max(np.abs(ds), axis=1)
+    sign = np.sign(ds)
+    sign = sign[:, 0] == sign[:, 1]
+    dist[sign] = dabs[sign]
+
+    return pts[dist <= order]
+
+
+def unique_points(pts):
+    return np.vstack([np.array(u) for u in set([tuple(p) for p in pts])])
+
+
+def generate_segments(grouped_points, a, b):
+    moded = mod_points_to_lattice(grouped_points, a, b)
+    g1d = np.diff(np.sum(grouped_points, axis=1))
+    m1d = np.diff(np.sum(moded, axis=1))
+
+    low_index = 0
+    for split_index in np.nonzero(np.abs((m1d - g1d)) > 1e-11)[0]:
+        yield moded[low_index:split_index + 1]
+        low_index = split_index + 1
+
+    yield moded[low_index:]
+
+
+def minimum_distance(pts, a, b):
+    moded = np.stack([mod_points_to_lattice(x, a, b) for x in pts], axis=1)
+    return np.min(np.stack([pdist(x) for x in moded], axis=-1), axis=0)
 
 
 def calculate_bz_vertices_from_direct_cell(cell):
