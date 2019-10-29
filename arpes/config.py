@@ -54,7 +54,7 @@ def generate_cache_files() -> None:
 
     for record_file in [DATASET_CACHE_RECORD, CLEAVE_RECORD]:
         if not Path(record_file).exists():
-            with open(record_file, 'w') as f:
+            with open(record_file, 'w+') as f:
                 json.dump({}, f)
 
 
