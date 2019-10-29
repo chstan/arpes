@@ -8,6 +8,25 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 2.3.0 (2019-10-28)
+
+### New
+
+1. More moiré analysis tools including commensurability measures.
+2. `FallbackEndstation`, see the changed section below.
+
+## Changed
+
+Serious refactor to data loading. On the surface not much is different, except that
+most things are more permissive by default now. In particular, you can often
+get away with not passing the `location=` keyword but it is recommended still.
+
+There is now a `FallbackEndstation` that tries to determine which endstation
+to use in the case of missing `location` key. This is to reduce the barrier
+to entry for new users.
+
+## Fixed
+
 ## 2.2.0 (2019-08-21)
 
 ### New
