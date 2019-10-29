@@ -19,6 +19,14 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
     PRINCIPAL_NAME = 'ALS-BL403'
     ALIASES = ['BL403', 'BL4', 'BL4.0.3', 'ALS-BL403', 'ALS-BL4', ]
 
+    _TOLERATED_EXTENSIONS = {'.pxt',}
+    _SEARCH_PATTERNS = (
+        r'[\-a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$',
+        r'[\-a-zA-Z0-9_\w+]+_{}_R[0-9][0-9][0-9]$',
+        r'[\-a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$',
+        r'[\-a-zA-Z0-9_\w+]+_[0]+{}_R[0-9][0-9][0-9]$',
+    )
+
     RENAME_KEYS = {
         'Polar': 'theta',
         'Polar Compens': 'theta',  # these are caps-ed because they are dimensions in some cases!

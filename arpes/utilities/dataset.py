@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 import arpes.config
+from arpes.endstations import resolve_endstation
 from arpes.exceptions import ConfigurationError
 from arpes.utilities.string import snake_case
 from typing import Any, List, Optional, Union
@@ -21,9 +22,6 @@ __all__ = ['clean_xlsx_dataset', 'default_dataset', 'infer_data_path',
            'list_files_for_rename', 'rename_files']
 
 _DATASET_EXTENSIONS = {'.xlsx', '.xlx',}
-_SEARCH_DIRECTORIES = ('', 'hdf5', 'fits', '../Data', '../Data/hdf5', '../Data/fits',)
-_TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits', '.pxt', '.nxs', '.txt',}
-
 
 def shorten_left(s, max_length=20):
     if len(s) > max_length:
@@ -80,61 +78,8 @@ def infer_data_path(file: int, scan_desc: pd.Series, allow_soft_match: bool = Fa
     if 'path' in scan_desc and not is_blank(scan_desc['path']):
         return scan_desc['path']
 
-    workspace = arpes.config.CONFIG['WORKSPACE']
-    workspace_path = os.path.join(workspace['path'], 'data')
-    workspace = workspace['name']
-
-    base_dir = workspace_path or os.path.join(arpes.config.DATA_PATH, workspace)
-    dir_options = [os.path.join(base_dir, option) for option in _SEARCH_DIRECTORIES]
-
-    # another plugin related option here is we can restrict the number of regexes by allowing plugins
-    # to install regexes for particular endstations, if this is needed in the future it might be a good way
-    # of preventing clashes where there is ambiguity in file naming scheme across endstations
-    patterns = [
-        r'[\-a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
-        r'[\-a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file),
-        r'[\-a-zA-Z0-9_\w+]+_[0]+{}_R[0-9][0-9][0-9]$'.format(file),
-        r'[\-a-zA-Z0-9_\w+]+_{}_R[0-9][0-9][0-9]$'.format(file),
-        r'[\-a-zA-Z0-9_\w+]+scan_[0]*{}_[0-9][0-9][0-9]'.format(file),
-        r'[\-a-zA-Z0-9_\w+]+scan_[0]*{}'.format(file),
-        r'[\-a-zA-Z0-9_\w]+_[0]+{}$'.format(file),
-        r'[\-a-zA-Z0-9_\w]+_{}$'.format(file),
-        r'[\-a-zA-Z0-9_\w]+{}$'.format(file),
-        r'[\-a-zA-Z0-9_\w]+[0]{}$'.format(file),
-        r'[\-a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$'.format(file),
-        r'[\-a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$'.format(file)
-    ]
-
-    patterns = [re.compile(m) for m in patterns]
-
-    for dir in dir_options:
-        try:
-            files = list(filter(lambda f: os.path.splitext(f)[1] in _TOLERATED_EXTENSIONS, os.listdir(dir)))
-            if use_regex:
-                for p in patterns:
-                    for f in files:
-                        m = p.match(os.path.splitext(f)[0])
-                        if m is not None:
-                            if m.string == os.path.splitext(f)[0]:
-                                return os.path.join(dir, f)
-            else:
-                for f in files:
-                    if os.path.splitext(file)[0] == os.path.splitext(f)[0]:
-                        return os.path.join(dir, f)
-                    if allow_soft_match:
-                        matcher = os.path.splitext(f)[0].split('_')[-1]
-                        try:
-                            if int(matcher) == int(file):
-                                return os.path.join(dir, f) # soft match
-                        except ValueError:
-                            pass
-        except FileNotFoundError:
-            pass
-
-    if file and file[0] == 'f':  # try trimming the f off
-        return infer_data_path(file[1:], scan_desc, allow_soft_match=allow_soft_match, use_regex=use_regex)
-
-    raise ConfigurationError('Could not find file associated to {}'.format(file))
+    endstation_cls = resolve_endstation(retry=True, **scan_desc)
+    return endstation_cls.find_first_file(file, scan_desc)
 
 
 def swap_reference_map(df: pd.DataFrame, old_reference, new_reference):

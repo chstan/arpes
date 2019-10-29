@@ -63,6 +63,8 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
     PRINCIPAL_NAME = 'ANTARES'
     ALIASES = []
 
+    _TOLERATED_EXTENSIONS = {'.nxs'}
+
     RENAME_KEYS = {
         'DeflX': 'psi',
         'deflx': 'psi',

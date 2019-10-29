@@ -36,6 +36,12 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
     PRINCIPAL_NAME = 'Kaindl'
     ALIASES = []
 
+    _TOLERATED_EXTENSIONS = {'.pxt',}
+    _SEARCH_PATTERNS = (
+        r'[\-a-zA-Z0-9_\w+]+scan_[0]*{}_[0-9][0-9][0-9]',
+        r'[\-a-zA-Z0-9_\w+]+scan_[0]*{}',
+    )
+
     RENAME_KEYS = {
         'Delay Stage': 'delay',
     }
