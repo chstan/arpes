@@ -10,10 +10,41 @@ import numpy as np
 import xarray as xr
 
 from arpes.typing import DataType
-from utilities import normalize_to_spectrum
-from utilities.xarray import unwrap_xarray_dict
+from arpes.utilities import normalize_to_spectrum
+from arpes.utilities.xarray import unwrap_xarray_dict
 
-__all__ = ('select_disk', 'select_annulus', 'select_disk_mask',)
+__all__ = ('select_disk', 'select_disk_mask', 'unravel_from_mask', 'ravel_from_mask')
+
+
+def ravel_from_mask(data, mask):
+    """
+    Selects out the data from a ND array whose points are marked true in `mask`. See also `unravel_from_mask`
+    below which allows you to write back into data after you have transformed the 1D output in some way.
+
+    These two functions are especially useful for hierarchical curve fitting where you want to rerun a fit over a subset
+    of the data with a different model, such as when you know some of the data is best described by two bands rather than
+    one.
+    :param data:
+    :param mask:
+    :return:
+    """
+    return data.stack(stacked=mask.dims).where(mask.stack(stacked=mask.dims), drop=True)
+
+
+def unravel_from_mask(template, mask, values, default=np.nan):
+    """
+    Creates an array
+    :param template:
+    :param mask:
+    :param values:
+    :param default:
+    :return:
+    """
+    dest = template * 0 + 1
+    dest_mask = np.logical_not(np.isnan(template.stack(stacked=template.dims).where(mask.stack(stacked=template.dims)).values))
+    dest = (dest * default).stack(stacked=template.dims)
+    dest.values[dest_mask] = values
+    return dest.unstack('stacked')
 
 
 def _normalize_point(data, around, **kwargs):
