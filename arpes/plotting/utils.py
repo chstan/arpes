@@ -84,8 +84,93 @@ __all__ = (
     'summarize',
 
     'transform_labels',
+
+    'v_gradient_fill',
+    'h_gradient_fill',
 )
 
+def h_gradient_fill(x1, x2, x_solid, fill_color=None, ax=None, zorder=None, alpha=None, **kwargs):
+    """
+    Fills a gradient between x1 and x2. If x_solid is not None, the gradient will be extended
+    at the maximum opacity from the closer limit towards x_solid.
+
+    :param x1:
+    :param x2:
+    :param x_solid:
+    :param fill_color:
+    :param ax:
+    :param zorder:
+    :param alpha:
+    :param kwargs:
+    :return:
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    assert fill_color
+
+    alpha = 1.0 if alpha is None else alpha
+
+    z = np.empty((1, 100, 4), dtype=float)
+
+    rgb = matplotlib.colors.colorConverter.to_rgb(fill_color)
+    z[:, :, :3] = rgb
+    z[:, :, -1] = np.linspace(0, alpha, 100)[None, :]
+
+    xmin, xmax, (ymin, ymax) = x1, x2, ylim
+    im = ax.imshow(z, aspect='auto', extent=[xmin, xmax, ymin, ymax],
+                   origin='lower', zorder=zorder)
+
+    if x_solid is not None:
+        xlow, xhigh = (x2, x_solid) if x_solid > x2 else (x_solid, x1)
+        ax.fill_betweenx(ylim, xlow, xhigh, color=fill_color, alpha=alpha)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return im
+
+
+def v_gradient_fill(y1, y2, y_solid, fill_color=None, ax=None, zorder=None, alpha=None, **kwargs):
+    """
+    Fills a gradient vertically between y1 and y2. If y_solid is not None, the gradient will be extended
+    at the maximum opacity from the closer limit towards y_solid.
+
+    :param y1:
+    :param y2:
+    :param y_solid:
+    :param fill_color:
+    :param ax:
+    :param zorder:
+    :param alpha:
+    :param kwargs:
+    :return:
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    assert fill_color
+
+    alpha = 1.0 if alpha is None else alpha
+
+    z = np.empty((100, 1, 4), dtype=float)
+
+    rgb = matplotlib.colors.colorConverter.to_rgb(fill_color)
+    z[:, :, :3] = rgb
+    z[:, :, -1] = np.linspace(0, alpha, 100)[:, None]
+
+    (xmin, xmax), ymin, ymax = xlim, y1, y2
+    im = ax.imshow(z, aspect='auto', extent=[xmin, xmax, ymin, ymax],
+                   origin='lower', zorder=zorder)
+
+    if y_solid is not None:
+        ylow, yhigh = (y2, y_solid) if y_solid > y2 else (y_solid, y1)
+        ax.fill_between(xlim, ylow, yhigh, color=fill_color, alpha=alpha)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return im
 
 def simple_ax_grid(n_axes, figsize=None, **kwargs):
     """
