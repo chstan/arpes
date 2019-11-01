@@ -19,6 +19,7 @@ class MBSEndstation(HemisphericalEndstation):
 
     PRINCIPAL_NAME = 'MBS'
     ALIASES = ['MB Scientific',]
+    _TOLERATED_EXTENSIONS = {'.txt', }
 
     RENAME_KEYS = {
         'deflx': 'psi',

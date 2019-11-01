@@ -1,5 +1,9 @@
 ## Workspaces
 
+Note: you can safely opt out of most of this. However, PyARPES can keep projects neatly separated for you (including 
+generated files like figures and analysis records) if you opt into the workspaces model. If you don't want to use it,
+you can use `load_without_dataset` according to the previous section. 
+
 PyARPES makes a few assumptions about the organization of your data and analysis so that it can organize figures and 
 cross-reference data from the same sample or experiment. In the desired location (for instance your Documents folder
 or wherever you would like to keep your analysis notebooks), copy or clone the folder structure from the

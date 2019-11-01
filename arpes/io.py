@@ -7,6 +7,8 @@ pickling utilities, data stitching, and dataset manipulation functions.
 import json
 import os.path
 import pickle
+import warnings
+
 import typing
 import uuid
 
@@ -35,14 +37,25 @@ __all__ = (
 )
 
 
-def load_without_dataset(file: typing.Union[str, Path], location=None, **kwargs):
-    file = str(Path(file).absolute())
+def load_without_dataset(file: typing.Union[str, Path, int], location=None, **kwargs):
+    try:
+        file = int(str(file))
+    except ValueError:
+        file = str(Path(file).absolute())
+
+    desc = {
+        'file': file,
+        'location': location,
+    }
 
     if location is None:
-        raise ValueError('You must provide a location indicating the endstation or instrument used directly when '
-                         'loading data without a dataset.')
+        desc.pop('location')
+        warnings.warn((
+            'You should provide a location indicating the endstation or instrument used directly when '
+            'loading data without a dataset. We are going to do our best but no guarantees.'
+        ))
 
-    return load_scan(dict(file=file, location=location), **kwargs)
+    return load_scan(desc, **kwargs)
 
 
 def load_example_data() -> xr.Dataset:
@@ -389,7 +402,10 @@ def fallback_load(*args, **kwargs):
     try:
         return sld(*args, **kwargs)
     except: # pylint: disable=bare-except
-        return dld(*args, **kwargs)
+        try:
+            return dld(*args, **kwargs)
+        except: # pylint: disable=bare-except
+            return load_without_dataset(*args, **kwargs)
 
 
 fld = fallback_load

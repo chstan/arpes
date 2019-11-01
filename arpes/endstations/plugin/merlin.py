@@ -19,6 +19,19 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
     PRINCIPAL_NAME = 'ALS-BL403'
     ALIASES = ['BL403', 'BL4', 'BL4.0.3', 'ALS-BL403', 'ALS-BL4', ]
 
+    _TOLERATED_EXTENSIONS = {'.pxt',}
+    _SEARCH_PATTERNS = (
+        r'[\-a-zA-Z0-9_\w+]+_{}_S[0-9][0-9][0-9]$',
+        r'[\-a-zA-Z0-9_\w+]+_{}_R[0-9][0-9][0-9]$',
+        r'[\-a-zA-Z0-9_\w+]+_[0]+{}_S[0-9][0-9][0-9]$',
+        r'[\-a-zA-Z0-9_\w+]+_[0]+{}_R[0-9][0-9][0-9]$',
+        # more generic
+        r'[\-a-zA-Z0-9_\w]+_[0]+{}$',
+        r'[\-a-zA-Z0-9_\w]+_{}$',
+        r'[\-a-zA-Z0-9_\w]+{}$',
+        r'[\-a-zA-Z0-9_\w]+[0]{}$',
+    )
+
     RENAME_KEYS = {
         'Polar': 'theta',
         'Polar Compens': 'theta',  # these are caps-ed because they are dimensions in some cases!
@@ -214,6 +227,15 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         for s in data.S.spectra:
             s.attrs['alpha'] = np.pi / 2
             s.attrs['psi'] = 0
+
+        # TODO Conrad think more about why sometimes individual attrs don't make it onto
+        # .spectrum.attrs, for now just paste them over
+        necessary_coord_names = {'theta', 'beta', 'chi', 'phi'}
+        ls = data.S.spectra
+        for l in ls:
+            for cname in necessary_coord_names:
+                if cname not in l.attrs and cname not in l.coords and cname in data.attrs:
+                    l.attrs[cname] = data.attrs[cname]
 
         data = super().postprocess_final(data, scan_desc)
 

@@ -19,7 +19,7 @@ from matplotlib.lines import Line2D
 
 import xarray as xr
 from arpes import VERSION
-from arpes.config import CONFIG
+from arpes.config import CONFIG, SETTINGS
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.jupyter import get_recent_history, get_notebook_name
@@ -45,6 +45,7 @@ __all__ = (
 
     # Axis generation
     'dos_axes',
+    'simple_ax_grid',
 
     # matplotlib 'macros'
     'invisible_axes',
@@ -83,7 +84,124 @@ __all__ = (
     'summarize',
 
     'transform_labels',
+
+    'v_gradient_fill',
+    'h_gradient_fill',
 )
+
+def h_gradient_fill(x1, x2, x_solid, fill_color=None, ax=None, zorder=None, alpha=None, **kwargs):
+    """
+    Fills a gradient between x1 and x2. If x_solid is not None, the gradient will be extended
+    at the maximum opacity from the closer limit towards x_solid.
+
+    :param x1:
+    :param x2:
+    :param x_solid:
+    :param fill_color:
+    :param ax:
+    :param zorder:
+    :param alpha:
+    :param kwargs:
+    :return:
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    assert fill_color
+
+    alpha = 1.0 if alpha is None else alpha
+
+    z = np.empty((1, 100, 4), dtype=float)
+
+    rgb = matplotlib.colors.colorConverter.to_rgb(fill_color)
+    z[:, :, :3] = rgb
+    z[:, :, -1] = np.linspace(0, alpha, 100)[None, :]
+
+    xmin, xmax, (ymin, ymax) = x1, x2, ylim
+    im = ax.imshow(z, aspect='auto', extent=[xmin, xmax, ymin, ymax],
+                   origin='lower', zorder=zorder)
+
+    if x_solid is not None:
+        xlow, xhigh = (x2, x_solid) if x_solid > x2 else (x_solid, x1)
+        ax.fill_betweenx(ylim, xlow, xhigh, color=fill_color, alpha=alpha)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return im
+
+
+def v_gradient_fill(y1, y2, y_solid, fill_color=None, ax=None, zorder=None, alpha=None, **kwargs):
+    """
+    Fills a gradient vertically between y1 and y2. If y_solid is not None, the gradient will be extended
+    at the maximum opacity from the closer limit towards y_solid.
+
+    :param y1:
+    :param y2:
+    :param y_solid:
+    :param fill_color:
+    :param ax:
+    :param zorder:
+    :param alpha:
+    :param kwargs:
+    :return:
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    assert fill_color
+
+    alpha = 1.0 if alpha is None else alpha
+
+    z = np.empty((100, 1, 4), dtype=float)
+
+    rgb = matplotlib.colors.colorConverter.to_rgb(fill_color)
+    z[:, :, :3] = rgb
+    z[:, :, -1] = np.linspace(0, alpha, 100)[:, None]
+
+    (xmin, xmax), ymin, ymax = xlim, y1, y2
+    im = ax.imshow(z, aspect='auto', extent=[xmin, xmax, ymin, ymax],
+                   origin='lower', zorder=zorder)
+
+    if y_solid is not None:
+        ylow, yhigh = (y2, y_solid) if y_solid > y2 else (y_solid, y1)
+        ax.fill_between(xlim, ylow, yhigh, color=fill_color, alpha=alpha)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return im
+
+def simple_ax_grid(n_axes, figsize=None, **kwargs):
+    """
+    Generates a square-ish set of axes and hides the extra ones
+
+    It would be nice to accept an "aspect ratio" item that will attempt to fix the
+    grid dimensions to get an aspect ratio close to the desired one.
+
+    :param n_axes:
+    :param figsize:
+    :param kwargs:
+    :return:
+    """
+    width = int(np.ceil(np.sqrt(n_axes)))
+    height = width - 1
+    if width * height < n_axes:
+        height += 1
+
+    if figsize is None:
+        figsize = (3 * max(width, 5), 3 * max(height, 5),)
+
+    fig, ax = plt.subplots(height, width, figsize=figsize, **kwargs)
+    if n_axes == 1:
+        ax = np.array([ax])
+
+    ax, ax_rest = ax.ravel()[:n_axes], ax.ravel()[n_axes:]
+    for axi in ax_rest:
+        invisible_axes(axi)
+
+    return fig, ax, ax_rest
+
 
 @contextlib.contextmanager
 def dark_background(overrides):
@@ -198,9 +316,15 @@ def sum_annotation(eV=None, phi=None):
         return '{:.2f}'.format(bound)
 
     if eV is not None:
-        eV_annotation = '$\\text{E}_{' + to_str(eV.start) + '}^{' + to_str(eV.stop) + '}$'
+        if SETTINGS['use_tex']:
+            eV_annotation = '$\\text{E}_{' + to_str(eV.start) + '}^{' + to_str(eV.stop) + '}$'
+        else:
+            eV_annotation = to_str(eV.start) + ' < E < ' + to_str(eV.stop)
     if phi is not None:
-        phi_annotation = '$\\phi_{' + to_str(phi.start) + '}^{' + to_str(phi.stop) + '}$'
+        if SETTINGS['use_tex']:
+            phi_annotation = '$\\phi_{' + to_str(phi.start) + '}^{' + to_str(phi.stop) + '}$'
+        else:
+            phi_annotation = to_str(phi.start) + ' < φ < ' + to_str(phi.stop)
 
     return eV_annotation + phi_annotation
 
@@ -215,9 +339,15 @@ def mean_annotation(eV=None, phi=None):
         return '{:.2f}'.format(bound)
 
     if eV is not None:
-        eV_annotation = '$\\bar{\\text{E}}_{' + to_str(eV.start) + '}^{' + to_str(eV.stop) + '}$'
+        if SETTINGS['use_tex']:
+            eV_annotation = '$\\bar{\\text{E}}_{' + to_str(eV.start) + '}^{' + to_str(eV.stop) + '}$'
+        else:
+            eV_annotation = 'Mean<' + to_str(eV.start) + ' < E < ' + to_str(eV.stop) + '>'
     if phi is not None:
-        phi_annotation = '$\\bar{\\phi}_{' + to_str(phi.start) + '}^{' + to_str(phi.stop) + '}$'
+        if SETTINGS['use_tex']:
+            phi_annotation = '$\\bar{\\phi}_{' + to_str(phi.start) + '}^{' + to_str(phi.stop) + '}$'
+        else:
+            phi_annotation = 'Mean<' + to_str(phi.start) + ' < φ < ' + to_str(phi.stop) + '>'
 
     return eV_annotation + phi_annotation
 
@@ -310,7 +440,8 @@ def imshow_mask(mask, ax=None, over=None, cmap=None, **kwargs):
               origin='lower', extent=over.get_extent(), aspect=ax.get_aspect(), **kwargs)
 
 
-def imshow_arr(arr, ax=None, over=None, origin='lower', aspect='auto', **kwargs):
+def imshow_arr(arr, ax=None, over=None, origin='lower', aspect='auto', alpha=None,
+               vmin=None, vmax=None, cmap=None, **kwargs):
     """
     Similar to plt.imshow but users different default origin, and sets appropriate
     extent on the plotted data.
@@ -326,7 +457,22 @@ def imshow_arr(arr, ax=None, over=None, origin='lower', aspect='auto', **kwargs)
     extent = [y[0], y[-1], x[0], x[-1]]
 
     if over is None:
-        quad = ax.imshow(arr.values, origin=origin, extent=extent, aspect=aspect, **kwargs)
+        if alpha is not None:
+            if vmin is None:
+                vmin = arr.min().item()
+            if vmax is None:
+                vmax = arr.max().item()
+            if cmap is None:
+                cmap = 'viridis'
+            if isinstance(cmap, str):
+                cmap = cm.get_cmap(cmap)
+            norm = colors.Normalize(vmin=vmin, vmax=vmax)
+            mappable = cm.ScalarMappable(cmap=cmap, norm=norm)
+            mapped_colors = mappable.to_rgba(arr.values)
+            mapped_colors[:,:,3] = alpha
+            quad = ax.imshow(mapped_colors, origin=origin, extent=extent, aspect=aspect, **kwargs)
+        else:
+            quad = ax.imshow(arr.values, origin=origin, extent=extent, aspect=aspect, cmap=cmap, **kwargs)
         ax.grid(False)
         ax.set_xlabel(arr.dims[1])
         ax.set_ylabel(arr.dims[0])
@@ -504,6 +650,10 @@ def phase_angle_colorbar(high=np.pi * 2, low=0, ax=None, **kwargs):
         'label': 'Angle',
         'ticks': ['0', r'$\pi$', r'$2\pi$']
     }
+
+    if not SETTINGS['use_tex']:
+        extra_kwargs['ticks'] = ['0', 'π', '2π']
+
     extra_kwargs.update(kwargs)
     cb = colorbar.ColorbarBase(
         ax, cmap=cm.get_cmap('twilight_shifted'),
@@ -727,20 +877,36 @@ def path_for_holoviews(desired_path):
 
 
 def name_for_dim(dim_name, escaped=True):
-    name = {
-        'beta': r'$\beta$',
-        'theta': r'$\theta$',
-        'chi': r'$\chi$',
-        'alpha': r'$\alpha$',
-        'psi': r'$\psi$',
-        'phi': r'$\varphi$',
-        'eV': r'$\textnormal{E}$',
-        'kx': r'$\textnormal{k}_\textnormal{x}$',
-        'ky': r'$\textnormal{k}_\textnormal{y}$',
-        'kz': r'$\textnormal{k}_\textnormal{z}$',
-        'kp': r'$\textnormal{k}_\textnormal{\parallel}$',
-        'hv': r'$h\nu$'
-    }.get(dim_name)
+    if SETTINGS['use_tex']:
+        name = {
+            'beta': r'$\beta$',
+            'theta': r'$\theta$',
+            'chi': r'$\chi$',
+            'alpha': r'$\alpha$',
+            'psi': r'$\psi$',
+            'phi': r'$\phi',
+            'eV': r'$\textnormal{E}$',
+            'kx': r'$\textnormal{k}_\textnormal{x}$',
+            'ky': r'$\textnormal{k}_\textnormal{y}$',
+            'kz': r'$\textnormal{k}_\textnormal{z}$',
+            'kp': r'$\textnormal{k}_\textnormal{\parallel}$',
+            'hv': r'$h\nu$'
+        }.get(dim_name)
+    else:
+        name = {
+            'beta': 'β',
+            'theta': 'θ',
+            'chi': 'χ',
+            'alpha': 'α',
+            'psi': 'ψ',
+            'phi': 'φ',
+            'eV': 'E',
+            'kx': 'Kx',
+            'ky': 'Ky',
+            'kz': 'Kz',
+            'kp': 'Kp',
+            'hv': 'Photon Energy',
+        }.get(dim_name)
 
     if not escaped:
         name = name.replace('$', '')
@@ -749,20 +915,36 @@ def name_for_dim(dim_name, escaped=True):
 
 
 def unit_for_dim(dim_name, escaped=True):
-    unit = {
-        'theta': r'rad',
-        'beta': r'rad',
-        'psi': r'rad',
-        'chi': r'rad',
-        'alpha': r'rad',
-        'phi': r'rad',
-        'eV': r'eV',
-        'kx': r'$\AA^{-1}$',
-        'ky': r'$\AA^{-1}$',
-        'kz': r'$\AA^{-1}$',
-        'kp': r'$\AA^{-1}$',
-        'hv': r'eV'
-    }.get(dim_name)
+    if SETTINGS['use_tex']:
+        unit = {
+            'theta': r'rad',
+            'beta': r'rad',
+            'psi': r'rad',
+            'chi': r'rad',
+            'alpha': r'rad',
+            'phi': r'rad',
+            'eV': r'eV',
+            'kx': r'$\AA^{-1}$',
+            'ky': r'$\AA^{-1}$',
+            'kz': r'$\AA^{-1}$',
+            'kp': r'$\AA^{-1}$',
+            'hv': r'eV',
+        }.get(dim_name)
+    else:
+        unit = {
+            'theta': r'rad',
+            'beta': r'rad',
+            'psi': r'rad',
+            'chi': r'rad',
+            'alpha': r'rad',
+            'phi': r'rad',
+            'eV': r'eV',
+            'kx': '1/Å',
+            'ky': '1/Å',
+            'kz': '1/Å',
+            'kp': '1/Å',
+            'hv': 'eV',
+        }.get(dim_name)
 
     if not escaped:
         unit = unit.replace('$', '')
@@ -798,36 +980,55 @@ def label_for_colorbar(data):
 
 
 def label_for_dim(data=None, dim_name=None, escaped=True):
-    raw_dim_names = {
-        'theta': r'$\theta$',
-        'beta': r'$\beta$',
-        'chi': r'$\chi$',
-        'alpha': r'$\alpha$',
-        'psi': r'$\psi$',
-        'phi': r'$\varphi$',
-        'eV': r'Binding Energy (\textbf{eV})',
-        'angle': r'Interp. \textbf{Angle}',
-        'kinetic': r'Kinetic Energy (\textbf{eV})',
-        'temp': r'\textbf{Temperature}',
-        'kp': r'$\textbf{k}_\parallel$',
-        'kx': r'$\textbf{k}_\text{x}$',
-        'ky': r'$\textbf{k}_\text{y}$',
-        'kz': r'$\textbf{k}_\perp$',
-        'hv': 'Photon Energy',
-        'x': 'X (mm)',
-        'y': 'Y (mm)',
-        'z': 'Z (mm)',
-        'spectrum': 'Intensity (arb.)',
-    }
+    if SETTINGS['use_tex']:
+        raw_dim_names = {
+            'theta': r'$\theta$',
+            'beta': r'$\beta$',
+            'chi': r'$\chi$',
+            'alpha': r'$\alpha$',
+            'psi': r'$\psi$',
+            'phi': r'$\varphi$',
+            'eV': r'Binding Energy (\textbf{eV})',
+            'angle': r'Interp. \textbf{Angle}',
+            'kinetic': r'Kinetic Energy (\textbf{eV})',
+            'temp': r'\textbf{Temperature}',
+            'kp': r'$\textbf{k}_\parallel$',
+            'kx': r'$\textbf{k}_\text{x}$',
+            'ky': r'$\textbf{k}_\text{y}$',
+            'kz': r'$\textbf{k}_\perp$',
+            'hv': 'Photon Energy',
+            'x': 'X (mm)',
+            'y': 'Y (mm)',
+            'z': 'Z (mm)',
+            'spectrum': 'Intensity (arb.)',
+        }
+    else:
+        raw_dim_names = {
+            'beta': 'β',
+            'theta': 'θ',
+            'chi': 'χ',
+            'alpha': 'α',
+            'psi': 'ψ',
+            'phi': 'φ',
 
-    if data is not None:
-        if data.S.spectrometer.get('type') == 'hemisphere':
-            raw_dim_names['phi'] = r'$\varphi$ (Hemisphere Acceptance)'
+            'eV': 'Binding Energy (eV)',
+            'angle': 'Interp. Angle',
+            'kinetic': 'Kinetic Energy (eV)',
+            'temp': 'Temperature (K)',
+            'kp': 'Kp',
+            'kx': 'Kx',
+            'ky': 'Ky',
+            'kz': 'Kz',
+            'hv': 'Photon Energy (eV)',
+            'x': 'X (mm)',
+            'y': 'Y (mm)',
+            'z': 'Z (mm)',
+            'spectrum': 'Intensity (arb.)',
+        }
 
     if dim_name in raw_dim_names:
         return raw_dim_names.get(dim_name)
 
-    # Next we will look at the listed symmetry_points to try to infer the appropriate way to display the axis
     try:
         from titlecase import titlecase
     except ImportError:
@@ -871,11 +1072,19 @@ def fancy_labels(ax_or_ax_set, data=None):
 
 
 def label_for_symmetry_point(point_name):
-    proper_names = {
-        'G': r'$\Gamma$',
-        'X': r'X',
-        'Y': r'Y',
-    }
+    if SETTINGS['use_tex']:
+        proper_names = {
+            'G': r'$\Gamma$',
+            'X': r'X',
+            'Y': r'Y',
+        }
+    else:
+        proper_names = {
+            'G': r'Γ',
+            'X': r'X',
+            'Y': r'Y',
+        }
+
     return proper_names.get(point_name, point_name)
 
 

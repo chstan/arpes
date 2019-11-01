@@ -21,16 +21,26 @@ from tqdm import tqdm_notebook
 
 import arpes.fits.fit_models
 import typing
+from typing import Any, Dict, List
+
 import xarray as xr
 from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('broadcast_model',)
+__all__ = ('broadcast_model', 'result_to_hints',)
 
 
 TypeIterable = typing.Union[typing.List[type], typing.Tuple[type]]
 
+
+def result_to_hints(m: lmfit.model.ModelResult) -> Dict[str, Dict[str, Any]]:
+    """
+    Turns an lmfit.model.ModelResult into a dictionary with initial guesses.
+    :param m:
+    :return:
+    """
+    return {k: {'value': m.params[k].value} for k in m.params}
 
 
 def parse_model(model):

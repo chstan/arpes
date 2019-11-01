@@ -36,6 +36,12 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
     PRINCIPAL_NAME = 'Kaindl'
     ALIASES = []
 
+    _TOLERATED_EXTENSIONS = {'.pxt',}
+    _SEARCH_PATTERNS = (
+        r'[\-a-zA-Z0-9_\w+]+scan_[0]*{}_[0-9][0-9][0-9]',
+        r'[\-a-zA-Z0-9_\w+]+scan_[0]*{}',
+    )
+
     RENAME_KEYS = {
         'Delay Stage': 'delay',
     }
@@ -135,6 +141,12 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
         for angle_attr in deg_to_rad_attrs:
             if angle_attr in data.attrs:
                 data.attrs[angle_attr] = float(data.attrs[angle_attr]) * np.pi / 180
+
+        ls = [data] + data.S.spectra
+        for l in ls:
+            l.coords['x'] = np.nan
+            l.coords['y'] = np.nan
+            l.coords['z'] = np.nan
 
         data = super().postprocess_final(data, scan_desc)
 

@@ -169,7 +169,7 @@ def calculate_kp_kz_bounds(arr: xr.DataArray):
 
 def calculate_kp_bounds(arr: xr.DataArray):
     phi_coords = arr.coords['phi'].values - arr.S.phi_offset
-    beta = float(arr.attrs.get('beta')) - arr.S.beta_offset
+    beta = float(arr.coords['beta']) - arr.S.beta_offset
 
     phi_low, phi_high = np.min(phi_coords), np.max(phi_coords)
     phi_mid = (phi_high + phi_low) / 2

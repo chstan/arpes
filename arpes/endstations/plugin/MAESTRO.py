@@ -91,6 +91,7 @@ class MAESTROMicroARPESEndstation(MAESTROARPESEndstationBase):
         'SF_HV': 'hv',
         'SS_HV': 'hv',
         'Slit Defl': 'psi',
+        'S_Volts': 'volts',
 
         # probably need something like an attribute list for extraction
         'SFRGN0': 'fixed_region_name',
@@ -198,6 +199,7 @@ class MAESTRONanoARPESEndstation(MAESTROARPESEndstationBase):
 
         'SF_HV': 'hv',
         'SS_HV': 'hv',
+        'Slit Defl.': 'psi',
 
         # probably need something like an attribute list for extraction
         'SFRGN0': 'fixed_region_name',
@@ -224,6 +226,8 @@ class MAESTRONanoARPESEndstation(MAESTROARPESEndstationBase):
         'Sample Z': 'long_z',
         'Optics Stage': 'optics_insertion',
         'Pitch': 'pitch',
+        'S_Volts': 'volts',
+        'Slit Defl.': 'psi',
     }
 
     ATTR_TRANSFORMS = {

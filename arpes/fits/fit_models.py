@@ -18,6 +18,8 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel', 'GStepBModel', 'QuadraticModel
            'AffineBroadenedFD', 'FermiDiracModel', 'BandEdgeBModel','EffectiveMassModel', 'LogisticModel',
            'gaussian_convolve', 'TwoGaussianModel', 'TwoLorModel', 'TwoLorEdgeModel', 'SplitLorentzianModel')
 
+any_dim_sentinel = None
+
 
 class XModelMixin(lf.Model):
     """
@@ -79,7 +81,11 @@ class XModelMixin(lf.Model):
                         return list(intersect)[0]
 
                 # resolve multidimensional parameters
-                new_dim_order = [find_appropriate_dimension(dim_options) for dim_options in self.dimension_order]
+                if self.dimension_order is None or all(d is None for d in self.dimension_order):
+                    new_dim_order = data.dims
+                else:
+                    new_dim_order = [find_appropriate_dimension(dim_options) for dim_options in self.dimension_order]
+
                 if list(new_dim_order) != list(data.dims):
                     warnings.warn('Transposing data for multidimensional fit.')
                     data = data.transpose(*new_dim_order)
@@ -143,11 +149,21 @@ class XModelMixin(lf.Model):
 
     def __add__(self, other):
         """+"""
-        return XAdditiveCompositeModel(self, other, operator.add)
+        comp = XAdditiveCompositeModel(self, other, operator.add)
+
+        assert self.n_dims == other.n_dims
+        comp.n_dims = other.n_dims
+
+        return comp
 
     def __mul__(self, other):
         """*"""
-        return XMultiplicativeCompositeModel(self, other, operator.mul)
+        comp = XMultiplicativeCompositeModel(self, other, operator.mul)
+
+        assert self.n_dims == other.n_dims
+        comp.n_dims = other.n_dims
+
+        return comp
 
 
 class XAdditiveCompositeModel(lf.CompositeModel, XModelMixin):
@@ -231,6 +247,19 @@ def gaussian_convolve(model_instance):
     """
     return XConvolutionCompositeModel(
         model_instance, GaussianModel(prefix='conv_'), convolve)
+
+
+def gaussian_2d_bkg(x, y, amplitude=1, xc=0, yc=0, sigma_x=0.1, sigma_y=0.1,
+                    const_bkg=0, x_bkg=0, y_bkg=0):
+
+    bkg = np.outer(x * 0 + 1, y_bkg * y) + np.outer(x * x_bkg, y * 0 + 1) + const_bkg
+    # make the 2D Gaussian matrix
+    gauss = amplitude * np.exp(-((x[:,None] - xc) ** 2 / (2 * sigma_x ** 2) +
+                                 (y[None,:] - yc) ** 2 / (2 * sigma_y ** 2))) / \
+            (2 * np.pi * sigma_x * sigma_y)
+
+    # flatten the 2D Gaussian down to 1D
+    return np.ravel(gauss + bkg)
 
 
 def effective_mass_bkg(eV, kp, m_star=0,
@@ -478,6 +507,43 @@ def log_renormalization(x, kF=1.6, kD=1.6, kC=1.7, alpha=0.4, vF=1e6):
     dkD = x - kD
     return -vF * np.abs(dkD) + (alpha / 4) * vF * dk * np.log(np.abs(kC / dkD))
 
+def fermi_velocity_renormalization_mfl(x,n0,v0,alpha,eps):
+    #     y = v0 * (rs/np.pi)*(5/3 + np.log(rs))+(rs/4)*np.log(kc/np.abs(kF))
+    fx = v0*(1 + (alpha/(1+eps))*np.log(n0/np.abs(x)))
+    fx2 = v0*(1 + (alpha/(1+eps*np.abs(x)))*np.log(n0/np.abs(x)))
+    fx3 = v0*(1 + (alpha/(1+eps*x**2))*np.log(n0/np.abs(x)))
+    # return v0 + v0*(alpha/(8*eps))*np.log(n0/x)
+    return fx3
+    
+class FermiVelocity_Renormalization_Model(XModelMixin):
+    """
+    A model for Logarithmic Renormalization to Fermi Velocity in Dirac Materials
+    :param x: value to evaluate fit at (carrier density)
+    :param n0: Value of carrier density at cutoff energy for validity of Dirac Fermions
+    :param alpha: Fine structure constant
+    :param eps: Graphene Dielectric constant
+    """
+
+    def __init__(self, independent_vars=('x',), prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(fermi_velocity_renormalization_mfl, **kwargs)
+
+        self.set_param_hint('alpha', min=0.)
+        self.set_param_hint('n0', min=0.)
+        self.set_param_hint('eps', min=0.)
+
+    def guess(self, data, x=None, **kwargs):
+        pars = self.make_params()
+
+        # pars['%sn0' % self.prefix].set(value=10)
+        # pars['%seps' % self.prefix].set(value=8)
+        # pars['%svF' % self.prefix].set(value=(data.max()-data.min())/(kC-kD))
+
+        return update_param_vals(pars, self.prefix, **kwargs)
+
+    __init__.doc = lf.models.COMMON_INIT_DOC
+    guess.__doc__ = lf.models.COMMON_GUESS_DOC
+
 
 def dirac_dispersion(x, kd=1.6, amplitude_1=1, amplitude_2=1, center=0, sigma_1=1, sigma_2=1):
     """
@@ -543,6 +609,23 @@ def gstepb_stdev(x, center=0, sigma=1, erf_amp=1, lin_bkg=0, const_bkg=0):
     """
     dx = x - center
     return const_bkg + lin_bkg * np.min(dx, 0) + gstep_stdev(x, center, sigma, erf_amp)
+
+
+class Gaussian2DModel(XModelMixin):
+    """
+    2D Gaussian fitting
+    """
+
+    n_dims = 2
+    dimension_order = [any_dim_sentinel, any_dim_sentinel]
+
+    def __init__(self, independent_vars=('x', 'y',), prefix='', missing='raise', name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars})
+        super().__init__(gaussian_2d_bkg, **kwargs)
+
+        self.set_param_hint('sigma_x', min=0.)
+        self.set_param_hint('sigma_y', min=0.)
+        self.set_param_hint('amplitude', min=0.)
 
 
 class EffectiveMassModel(XModelMixin):

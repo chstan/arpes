@@ -2,6 +2,7 @@
 Plugin facility to read+normalize information from different sources to a common format
 """
 import warnings
+import re
 
 import numpy as np
 import h5py
@@ -23,11 +24,11 @@ from arpes.provenance import provenance_from_file
 from arpes.endstations.fits_utils import find_clean_coords
 from arpes.endstations.igor_utils import shim_wave_note
 from arpes.repair import negate_energy
-from xarray.core.dataset import Dataset
+
 
 __all__ = ('endstation_name_from_alias', 'endstation_from_alias', 'add_endstation', 'load_scan',
            'EndstationBase', 'FITSEndstation', 'HemisphericalEndstation', 'SynchrotronEndstation',
-           'SingleFileEndstation', 'load_scan_for_endstation',)
+           'SingleFileEndstation', 'load_scan_for_endstation', 'resolve_endstation')
 
 _ENDSTATION_ALIASES = {}
 
@@ -60,6 +61,16 @@ class EndstationBase:
     ATTR_TRANSFORMS = {}
     MERGE_ATTRS = {}
 
+    _SEARCH_DIRECTORIES = ('', 'hdf5', 'fits', '../Data', '../Data/hdf5', '../Data/fits',)
+    _SEARCH_PATTERNS = (
+        r'[\-a-zA-Z0-9_\w]+_[0]+{}$',
+        r'[\-a-zA-Z0-9_\w]+_{}$',
+        r'[\-a-zA-Z0-9_\w]+{}$',
+        r'[\-a-zA-Z0-9_\w]+[0]{}$',
+    )
+    _TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits', '.pxt', '.nxs', '.txt', }
+    _USE_REGEX = True
+
     # adjust as needed
     ENSURE_COORDS_EXIST = ['x', 'y', 'z', 'theta', 'beta', 'chi', 'hv', 'alpha', 'psi']
     CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta', 'theta']
@@ -68,6 +79,73 @@ class EndstationBase:
     SUMMABLE_NULL_DIMS = ['phi', 'cycle']
 
     RENAME_KEYS = {}
+
+    @classmethod
+    def is_file_accepted(cls, file, scan_desc) -> bool:
+        if os.path.exists(str(file)) and len(str(file).split(os.path.sep)) > 1:
+            # looks like an actual file, we are going to just check that the extension is kosher
+            # and that the filename matches something reasonable.
+            p = Path(str(file))
+
+            if p.suffix not in cls._TOLERATED_EXTENSIONS:
+                return False
+
+            for pattern in cls._SEARCH_PATTERNS:
+                regex = re.compile(pattern.format(r'[0-9]+'))
+                if regex.match(p.stem):
+                    return True
+
+            return False
+        try:
+            _ = cls.find_first_file(file, scan_desc)
+            return True
+        except ValueError:
+            return False
+
+    @classmethod
+    def find_first_file(cls, file, scan_desc, allow_soft_match=False):
+
+        workspace = arpes.config.CONFIG['WORKSPACE']
+        workspace_path = os.path.join(workspace['path'], 'data')
+        workspace = workspace['name']
+
+        base_dir = workspace_path or os.path.join(arpes.config.DATA_PATH, workspace)
+        dir_options = [os.path.join(base_dir, option) for option in cls._SEARCH_DIRECTORIES]
+
+        # another plugin related option here is we can restrict the number of regexes by allowing plugins
+        # to install regexes for particular endstations, if this is needed in the future it might be a good way
+        # of preventing clashes where there is ambiguity in file naming scheme across endstations
+
+        patterns = [re.compile(m.format(file)) for m in cls._SEARCH_PATTERNS]
+
+        for dir in dir_options:
+            try:
+                files = list(filter(lambda f: os.path.splitext(f)[1] in cls._TOLERATED_EXTENSIONS, os.listdir(dir)))
+                if cls._USE_REGEX:
+                    for p in patterns:
+                        for f in files:
+                            m = p.match(os.path.splitext(f)[0])
+                            if m is not None:
+                                if m.string == os.path.splitext(f)[0]:
+                                    return os.path.join(dir, f)
+                else:
+                    for f in files:
+                        if os.path.splitext(file)[0] == os.path.splitext(f)[0]:
+                            return os.path.join(dir, f)
+                        if allow_soft_match:
+                            matcher = os.path.splitext(f)[0].split('_')[-1]
+                            try:
+                                if int(matcher) == int(file):
+                                    return os.path.join(dir, f)  # soft match
+                            except ValueError:
+                                pass
+            except FileNotFoundError:
+                pass
+
+        if str(file) and str(file)[0] == 'f':  # try trimming the f off
+            return cls.find_first_file(str(file)[1:], scan_desc, allow_soft_match=allow_soft_match)
+
+        raise ValueError('Could not find file associated to {}'.format(file))
 
     def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
         if not frames:
@@ -172,7 +250,11 @@ class EndstationBase:
         for l in ls:
             for c in self.ENSURE_COORDS_EXIST:
                 if c not in l.coords:
-                    l.coords[c] = l.attrs[c]
+                    if c in l.attrs:
+                        l.coords[c] = l.attrs[c]
+                    else:
+                        warnings.warn(f'Could not assign coordinate {c} from attributes, assigning np.nan instead.')
+                        l.coords[c] = np.nan
 
         for l in ls:
             if 'chi' in l.coords and 'chi_offset' not in l.attrs:
@@ -426,8 +508,10 @@ class FITSEndstation(EndstationBase):
                 del hdulist[i].header['TUNIT2']
                 hdulist[i].header['TUNIT2'] = 'ps'
 
-            hdulist[i].verify('fix+warn')
-            hdulist[i].header.update()
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                hdulist[i].verify('fix+warn')
+                hdulist[i].header.update()
             # This actually requires substantially more work because it is lossy to information
             # on the unit that was encoded
 
@@ -661,7 +745,26 @@ def load_scan_for_endstation(scan_desc, endstation_cls, **kwargs):
     return endstation_cls().load(scan_desc, **kwargs)
 
 
-def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> Dataset:
+def resolve_endstation(retry=True, **kwargs):
+    endstation_name = case_insensitive_get(kwargs, 'location', case_insensitive_get(kwargs, 'endstation'))
+    if endstation_name is None:
+        warnings.warn('Endstation not provided. Using `fallback` plugin.')
+        endstation_name = 'fallback'
+
+    try:
+        return endstation_from_alias(endstation_name)
+    except KeyError:
+        if retry:
+            import arpes.config  # pylint: disable=redefined-outer-name
+            arpes.config.load_plugins()
+            return resolve_endstation(retry=False, **kwargs)
+        else:
+            raise ValueError('Could not identify endstation. '
+                             'Did you set the endstation or location? Find a description of the available options '
+                             'in the endstations module.')
+
+
+def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Dataset:
     """
     Determines which data loading class is appropriate for the data,
     shuffles a bit of metadata, and calls the .load function on the
@@ -675,16 +778,17 @@ def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> Dataset:
     full_note = copy.deepcopy(scan_desc)
     full_note.update(note)
 
-    endstation_name = case_insensitive_get(full_note, 'location', case_insensitive_get(full_note, 'endstation'))
+    endstation_cls = resolve_endstation(retry=retry, **full_note)
+
+    key = 'file' if 'file' in scan_desc else 'path'
+
+    file = scan_desc[key]
+
     try:
-        endstation_cls = endstation_from_alias(endstation_name)
-        return endstation_cls().load(scan_desc, **kwargs)
-    except KeyError:
-        if retry:
-            import arpes.config  # pylint: disable=redefined-outer-name
-            arpes.config.load_plugins()
-            return load_scan(full_note, retry=False, **kwargs)
-        else:
-            raise ValueError('Could not identify endstation. '
-                             'Did you set the endstation or location? Find a description of the available options '
-                             'in the endstations module.')
+        file = int(file)
+        file = endstation_cls.find_first_file(file, scan_desc)
+        scan_desc[key] = file
+    except ValueError:
+        pass
+
+    return endstation_cls().load(scan_desc, **kwargs)

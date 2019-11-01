@@ -30,6 +30,7 @@ SETTINGS = {
         'palette': 'magma',
     },
     'xarray_repr_mod': False,
+    'use_tex': False,
 }
 
 # these are all set by ``update_configuration``
@@ -53,7 +54,7 @@ def generate_cache_files() -> None:
 
     for record_file in [DATASET_CACHE_RECORD, CLEAVE_RECORD]:
         if not Path(record_file).exists():
-            with open(record_file, 'w') as f:
+            with open(record_file, 'w+') as f:
                 json.dump({}, f)
 
 
@@ -235,6 +236,7 @@ def load_plugins() -> None:
 def use_tex(rc_text_should_use=False):
     import matplotlib
     matplotlib.rcParams['text.usetex'] = rc_text_should_use
+    SETTINGS['use_tex'] = rc_text_should_use
 
 
 def setup_logging():

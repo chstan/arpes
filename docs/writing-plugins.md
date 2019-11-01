@@ -71,6 +71,11 @@ The core steps are:
 5. Perform some final work on the constructed dataset with `postprocess_final`
 6. Add an `id`
 
+Additionally, during the step of reading the experiment spreadsheet, file shortnames (i.e. `1`) are translated
+to full paths by using `EndstationClass.find_first_file`. If you can get away with default behavior
+you just need to adjust the class attributes `_TOLERATED_EXTENSIONS` and `_SEARCH_PATTERNS`. Otherwise, you
+can look at the definition for this function and do something appropriate in your use case.
+
 The reason for the "frames" concept is that some beamlines split datasets up over many files 
 (MERLIN at the ALS, as an example), while others produce just one. In the case that only one file is 
 present, `concatenate_frames` will return just this data.
@@ -88,7 +93,18 @@ class MySamplePlugin(SynchrotronEndstation, EndstationBase, HemisphericalEndstat
     # "Best lab", or "AAL" 
     PRINCIPAL_NAME = 'AMAZING-ARPES-LAB'
     ALIASES = ['Best lab', 'AAL',]
-    
+
+    _TOLERATED_EXTENSIONS = {'.pxt'} # only allow .pxt files
+    _SEARCH_PATTERNS = [
+        # regex matching names like
+        # "data_Conrad_4.pxt" and "data_Oct19_1.pxt"
+        # 
+        # the file number is injected into the `{}` pattern.
+        r'data_[a-zA-Z0-9]+_{}', 
+
+        # You can provide as many as you need.
+    ]
+
     RENAME_KEYS = {
         # Our LabView software weirdly calls the temperature "ThermalEnergy", and 
         # "SFE_0" is the spectrometer center binding energy 
@@ -111,6 +127,11 @@ Finally, ensure your plugin is exported in your module's `__all__` attribute
 ```python
 __all__ = ('MySamplePlugin',)
 ```
+
+You can register a plugin after import-time with
+`arpes.endstations.add_endstation(MySamplePlugin)`, in which case the code can be anywhere. By 
+contrast if you install from source and place the plugin in the `arpes/endstations/plugins` folder
+they will be loaded automatically.
 
 ### Renaming attributes
 
