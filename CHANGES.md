@@ -8,6 +8,17 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 2.4.0 (2019-11-14)
+
+### New 
+
+1. Data loading code for the Spectromicroscopy beamline at Elettra.
+
+## Changed
+
+Improved the documentation and FAQ.
+
+
 ## 2.3.0 (2019-10-28)
 
 ### New

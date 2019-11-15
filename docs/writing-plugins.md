@@ -111,7 +111,7 @@ class MySamplePlugin(SynchrotronEndstation, EndstationBase, HemisphericalEndstat
         'ThermalEnergy': 'temp',
         'SFE_0': 'binding_offset',
     }
-    
+
     def load_single_frame(self, frame_path: str=None, scan_desc: dict=None, **kwargs):
         # data loading logic here...
         pass

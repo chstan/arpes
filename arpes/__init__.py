@@ -5,7 +5,7 @@ import contextlib
 
 from typing import Union
 
-VERSION = '2.3.0'
+VERSION = '2.3.1'
 
 
 def check() -> None:
