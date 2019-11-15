@@ -172,7 +172,8 @@ class EndstationBase:
         frames.sort(key=lambda x: x.coords[scan_coord])
         return xr.concat(frames, scan_coord)
 
-    def resolve_frame_locations(self, scan_desc: dict = None):
+    def resolve_frame_locations(self, scan_desc: dict = None) -> typing.List[str]:
+        raise NotImplementedError('You need to define resolve_frame_locations or subclass SingleFileEndstation.')
         return []
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
