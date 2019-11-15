@@ -148,3 +148,4 @@ for information on adding to PyARPES and rebuilding documentation from
 source.
 
 Copyright © 2018-2019 by Conrad Stansbury, all rights reserved.
+Logo design, Michael Khachatrian
