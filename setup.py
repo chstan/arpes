@@ -88,7 +88,7 @@ with open('README.rst', 'r') as f_readme:
     long_description = f_readme.read()
 
 
-DOCUMENTATION_URL = "https://stupefied-bhabha-ce8a9f.netlify.com/#/"
+DOCUMENTATION_URL = "https://arpes.netlify.com/#/"
 
 POST_INSTALL_MESSAGE = """
 Documentation available at: {}
@@ -144,7 +144,7 @@ setup(
 
     include_package_data=True,
 
-    license='MIT',
+    license='GPLv3',
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
