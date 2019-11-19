@@ -2,10 +2,12 @@
 
 from PyQt5 import QtCore, QtWidgets
 
-from .utils import PRETTY_KEYS, label, vlayout
+from arpes.utilities.ui import PRETTY_KEYS, label, vertical
+
+__all__ = ('BasicHelpDialog',)
 
 
-class HelpDialog(QtWidgets.QDialog):
+class BasicHelpDialog(QtWidgets.QDialog):
     def __init__(self, shortcuts=None):
         super().__init__()
 
@@ -14,17 +16,17 @@ class HelpDialog(QtWidgets.QDialog):
 
         self.layout = QtWidgets.QVBoxLayout()
 
-        keyboardShortcutsInfo = QtWidgets.QGroupBox(title='Keyboard Shortcuts')
-        keyboardShortcutsLayout = QtWidgets.QGridLayout()
+        keyboard_shortcuts_info = QtWidgets.QGroupBox(title='Keyboard Shortcuts')
+        keyboard_shortcuts_layout = QtWidgets.QGridLayout()
         for i, shortcut in enumerate(shortcuts):
-            keyboardShortcutsLayout.addWidget(label(
+            keyboard_shortcuts_layout.addWidget(label(
                 ', '.join(PRETTY_KEYS[k] for k in shortcut.chord), wordWrap=True), i, 0)
-            keyboardShortcutsLayout.addWidget(label(shortcut.label), i, 1)
+            keyboard_shortcuts_layout.addWidget(label(shortcut.label), i, 1)
 
-        keyboardShortcutsInfo.setLayout(keyboardShortcutsLayout)
+        keyboard_shortcuts_info.setLayout(keyboard_shortcuts_layout)
 
         aboutInfo = QtWidgets.QGroupBox(title='About')
-        aboutLayout = vlayout(
+        aboutLayout = vertical(
             label(
                 'QtTool is the work of Conrad Stansbury, with much inspiration '
                 'and thanks to the authors of ImageTool. QtTool is distributed '
@@ -36,15 +38,16 @@ class HelpDialog(QtWidgets.QDialog):
                 wordWrap=True
             ),
         )
-        aboutInfo.setLayout(aboutLayout)
-        aboutInfo.setFixedHeight(150)
 
-        self.layout.addWidget(keyboardShortcutsInfo)
+        from arpes.utilities.qt import qt_info # circular dependency
+        aboutInfo.setFixedHeight(qt_info.inches_to_px(1))
+
+        self.layout.addWidget(keyboard_shortcuts_info)
         self.layout.addWidget(aboutInfo)
         self.setLayout(self.layout)
 
-        self.setWindowTitle('QtTool - Help')
-        self.setFixedSize(300, 500)
+        self.setWindowTitle(f'Interactive Utility Help')
+        self.setFixedSize(*qt_info.inches_to_px([2, 4]))
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_H or event.key() == QtCore.Qt.Key_Escape:

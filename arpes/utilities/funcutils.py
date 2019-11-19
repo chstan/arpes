@@ -8,7 +8,38 @@ import xarray as xr
 from arpes.typing import DataType
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple
 
-__all__ = ['Debounce', 'lift_dataarray_to_generic', 'iter_leaves']
+__all__ = [
+    'Debounce', 'lift_dataarray_to_generic', 'iter_leaves', 'group_by',
+    'cycle',
+]
+
+
+def cycle(sequence):
+    while True:
+        for s in sequence:
+            yield s
+
+
+def group_by(grouping, sequence):
+    if isinstance(grouping, int):
+        base_seq = [False] * grouping
+        base_seq[-1] = True
+
+        grouping = cycle(base_seq)
+
+    groups = []
+    current_group = []
+    for elem in sequence:
+        current_group.append(elem)
+
+        if (callable(grouping) and grouping(elem)) or next(grouping):
+            groups.append(current_group)
+            current_group = []
+
+    if len(current_group):
+        groups.append(current_group)
+
+    return groups
 
 
 def collect_leaves(tree: Dict[str, Any], is_leaf: Optional[Any] = None) -> Dict:

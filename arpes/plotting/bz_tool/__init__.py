@@ -6,66 +6,25 @@ import arpes.config
 import numpy as np
 import xarray as xr
 
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5 import QtGui
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
 from arpes.utilities.conversion import convert_coordinates
 from arpes.utilities.bz_spec import SURFACE_ZONE_DEFINITIONS
 from arpes.utilities.image import imread_to_xarray
-from arpes.plotting.qt_tool.utils import (
-    pretty_key_event, PRETTY_KEYS, KeyBinding, hlayout, vlayout, layout, tabs, combobox
+from arpes.utilities.qt import SimpleWindow, BasicHelpDialog
+from arpes.utilities.ui import (
+    KeyBinding, horizontal, tabs, combo_box
 )
 from arpes.plotting.utils import imshow_arr
-from arpes.plotting.qt_tool.excepthook import patched_excepthook
+import arpes.xarray_extensions
 
 from .CoordinateOffsetWidget import CoordinateOffsetWidget
 
 
-class BZToolWindow(QtGui.QMainWindow, QtCore.QObject):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-        self.tool = None
-        self._old_excepthook = sys.excepthook
-        sys.excepthook = patched_excepthook
-
-        self._keyBindings = [
-            KeyBinding('Close', [QtCore.Qt.Key_Escape], self.do_close),
-        ]
-
-        QtGui.QGuiApplication.installEventFilter(self, self)
-
-    def close(self):
-        sys.excepthook = self._old_excepthook
-        super().close()
-
-    def do_close(self, event):
-        self.close()
-
-    def window_print(self, *args, **kwargs):
-        print(*args, **kwargs)
-
-    def eventFilter(self, source, event):
-        special_keys = [QtCore.Qt.Key_Down, QtCore.Qt.Key_Up, QtCore.Qt.Key_Left, QtCore.Qt.Key_Right]
-
-        if event.type() in [QtCore.QEvent.KeyPress, QtCore.QEvent.ShortcutOverride]:
-            if event.type() != QtCore.QEvent.ShortcutOverride or event.key() in special_keys:
-                self.handleKeyPressEvent(event)
-
-        return super().eventFilter(source, event)
-
-    def handleKeyPressEvent(self, event):
-        handled = False
-        for binding in self._keyBindings:
-            for combination in binding.chord:
-                # only detect single keypresses for now
-                if combination == event.key():
-                    handled = True
-                    binding.handler(event)
-
-        if not handled:
-            if arpes.config.SETTINGS.get('DEBUG', False):
-                print(event.key())
+class BZToolWindow(SimpleWindow):
+    HELP_DIALOG_CLS = BasicHelpDialog
 
 
 class BZTool:
@@ -184,26 +143,26 @@ class BZTool:
 
         for widget in inner_items:
             pass
-        return hlayout(*inner_items)
+        return horizontal(*inner_items)
 
     def construct_sample_info_tab(self):
-        material_choice = combobox(
+        material_choice = combo_box(
+            sorted(SURFACE_ZONE_DEFINITIONS.keys()),
             name='Material Specification',
-            items=sorted(SURFACE_ZONE_DEFINITIONS.keys())
         )
         self.material_choice_widget = material_choice
         self.material_choice_widget.currentTextChanged.connect(self.on_change_material)
         #self.photon_energy_widget =
         inner_items = [material_choice]
-        return hlayout(*inner_items)
+        return horizontal(*inner_items)
 
     def construct_detector_info_tab(self):
         inner_items = []
-        return hlayout(*inner_items)
+        return horizontal(*inner_items)
 
     def construct_general_settings_tab(self):
         inner_items = []
-        return hlayout(*inner_items)
+        return horizontal(*inner_items)
 
     def add_coordinate_control_widgets(self):
         self.coordinate_info_tab = self.construct_coordinate_info_tab()
