@@ -8,15 +8,20 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
-## 2.4.0 (2019-11-14)
+## 2.4.0 (2019-11-24)
 
 ### New 
 
 1. Data loading code for the Spectromicroscopy beamline at Elettra.
+2. Added a number of interactive utilities
+3. Documentation/tutorial on adding interactive utilities
+4. `qt_ktool`
+5. Borrow code from DAQuiri for UI generation
 
 ## Changed
 
-Improved the documentation and FAQ.
+1. Improved the documentation and FAQ.
+2. Refactor file finding to support subfolders and endstation specific behavior
 
 
 ## 2.3.0 (2019-10-28)
