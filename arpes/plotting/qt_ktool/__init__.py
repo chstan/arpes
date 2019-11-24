@@ -4,7 +4,7 @@ import numpy as np
 from arpes.utilities import normalize_to_spectrum, group_by
 from arpes.typing import DataType
 from arpes.utilities.conversion import convert_to_kspace
-from arpes.utilities.qt import qt_info, SimpleApp
+from arpes.utilities.qt import qt_info, SimpleApp, SimpleWindow
 from arpes.utilities.ui import tabs, horizontal, vertical, label, numeric_input, CollectUI
 
 __all__ = ('KTool', 'ktool',)
@@ -21,6 +21,7 @@ class KTool(SimpleApp):
     """
     TITLE = 'KSpace-Tool'
     WINDOW_SIZE = (5,6,)
+    WINDOW_CLS = SimpleWindow
 
     def __init__(self):
         super().__init__()
@@ -95,7 +96,6 @@ class KTool(SimpleApp):
     def set_data(self, data: DataType, **kwargs):
         original_data = normalize_to_spectrum(data)
         self.original_data = original_data
-        self.ninety_eight_percentile = np.percentile(original_data.values, (98,))[0]
 
         if len(data.dims) > 2:
             assert 'eV' in original_data.dims

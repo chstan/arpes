@@ -24,7 +24,11 @@ class SimpleApp:
     WINDOW_SIZE = (4,4,)
     TITLE = 'Untitled Tool'
 
+    DEFAULT_COLORMAP = 'viridis'
+
     def __init__(self):
+        self._ninety_eight_percentile = None
+        self.data = None
         self.window = None
         self.settings = None
         self._layout = None
@@ -37,6 +41,14 @@ class SimpleApp:
 
         self.settings = arpes.config.SETTINGS.copy()
 
+    @property
+    def ninety_eight_percentile(self):
+        if self._ninety_eight_percentile is not None:
+            return self._ninety_eight_percentile
+
+        self._ninety_eight_percentile = np.percentile(self.data.values, (98,))[0]
+        return self._ninety_eight_percentile
+
     def print(self, *args, **kwargs):
         self.window.window_print(*args, **kwargs)
 
@@ -46,6 +58,11 @@ class SimpleApp:
         return pg.ColorMap(pos=np.linspace(0, 1, len(sampled_colormap)), color=sampled_colormap)
 
     def set_colormap(self, colormap):
+        import matplotlib.cm
+
+        if isinstance(colormap, str):
+            colormap = matplotlib.cm.get_cmap(colormap)
+
         cmap = self.build_pg_cmap(colormap)
         for view_name, view in self.views.items():
             if isinstance(view, DataArrayImageView):
@@ -118,6 +135,9 @@ class SimpleApp:
 
         self._layout = self.layout()
         self.before_show()
+        if self.DEFAULT_COLORMAP is not None:
+            self.set_colormap(self.DEFAULT_COLORMAP)
+
         cw.setLayout(self._layout)
         self.window.show()
         self.after_show()

@@ -97,7 +97,6 @@ class QtTool(SimpleApp):
     def __init__(self):
         super().__init__()
         self.data = None
-        self.ninety_eight_percentile = None
 
         self.content_layout = None
         self.main_layout = None
@@ -325,7 +324,6 @@ class QtTool(SimpleApp):
 
     def set_data(self, data: DataType):
         data = normalize_to_spectrum(data)
-        self.ninety_eight_percentile = np.percentile(data.values, (98,))[0]
         self.data = data
         self._binning = [1 for _ in self.data.dims]
 

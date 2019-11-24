@@ -44,6 +44,7 @@
     * [Condensed Matter Physics Software Stack](/cmp-stack)
     * [Analysis Spreadsheets](/spreadsheets)
     * [Spectra + Data Representation](/spectra)
+    * [Adding Interactive Tools](/writing-interactive-tools)
     * [Plugins](/writing-plugins)
     * [Data Provenance](/data-provenance)
     * [Phenomenological and Detector Models](/modeling)
