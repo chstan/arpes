@@ -2,9 +2,10 @@
 
 from PyQt5 import QtWidgets
 
-from .utils import layout
+from arpes.utilities.ui import layout
 
 __all__ = ('BinningInfoWidget',)
+
 
 class BinningInfoWidget(QtWidgets.QGroupBox):
     def __init__(self, parent=None, root=None, axis_index=None):

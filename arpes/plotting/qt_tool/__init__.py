@@ -1,151 +1,70 @@
 # pylint: disable=import-error
 
-import sys
-
 from PyQt5 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import numpy as np
-from collections import namedtuple, defaultdict
+from collections import namedtuple
 
 from arpes.utilities import normalize_to_spectrum
 from arpes.typing import DataType
 import arpes.config
 
-from .utils import PRETTY_KEYS, pretty_key_event, KeyBinding, hlayout, vlayout, layout, tabs
-from .excepthook import patched_excepthook
-from .HelpDialog import HelpDialog
+from arpes.utilities.ui import KeyBinding, horizontal, tabs, CursorRegion
+from arpes.utilities.qt import qt_info, DataArrayImageView, BasicHelpDialog, SimpleWindow, SimpleApp
+
 from .AxisInfoWidget import AxisInfoWidget
-from .DataArrayImageView import DataArrayImageView
 from .BinningInfoWidget import BinningInfoWidget
 
 __all__ = ('QtTool', 'qt_tool',)
 
 ReactivePlotRecord = namedtuple('ReactivePlotRecord', ('dims', 'view', 'orientation',))
 
-pg.setConfigOptions(antialias=True, foreground=(0, 0, 0), background=(255, 255, 255))
+qt_info.setup_pyqtgraph()
 
 
-class CursorRegion(pg.LinearRegionItem):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._region_width = 1
-        self.lines[1].setMovable(False)
-
-    def set_width(self, value):
-        self._region_width = value
-        self.lineMoved(0)
-
-    def lineMoved(self, i):
-        if self.blockLineSignal:
-            return
-
-        self.lines[1].setValue(self.lines[0].value() + self._region_width)
-        self.prepareGeometryChange()
-        self.sigRegionChanged.emit(self)
-
-
-def patchedLinkedViewChanged(self, view, axis):
+class QtToolWindow(SimpleWindow):
     """
-    This still isn't quite right but it is much better than before. For some reason
-    the screen coordinates of the PlotWidget are not being computed correctly, so
-    we will just lock them as though they were perfectly aligned.
-
-    This will clearly not work well for plots that have to be coordinated across
-    different parts of the layout, but this will work for now.
-
-    We also don't handle inverted axes for now.
-    :param self:
-    :param view:
-    :param axis:
-    :return:
+    QtToolWindow was the first Qt-Based Tool that I built for PyARPES. Much of its structure was ported
+    to SimpleWindow and borrowed ideas from when I wrote DAQuiri. As a result, the structure is essentially
+    now to define just the handlers and any lifecycle hooks (close, etc.)
     """
-    if self.linksBlocked or view is None:
-        return
 
-    vr = view.viewRect()
-    vg = view.screenGeometry()
-    sg = self.screenGeometry()
-    if vg is None or sg is None:
-        return
+    HELP_DIALOG_CLS = BasicHelpDialog
 
-    view.blockLink(True)
-
-    try:
-        if axis == pg.ViewBox.XAxis:
-            upp = float(vr.width()) / vg.width()
-            overlap = min(sg.right(), vg.right()) - max(sg.left(), vg.left())
-
-            if overlap < min(vg.width() / 3, sg.width() / 3):
-                x1 = vr.left()
-                x2 = vr.right()
-            else: # attempt to align
-                x1 = vr.left()
-                x2 = vr.right() + (sg.width() - vg.width()) * upp
-
-            self.enableAutoRange(pg.ViewBox.XAxis, False)
-            self.setXRange(x1, x2, padding=0)
-        else:
-            upp = float(vr.height()) / vg.height()
-            overlap = min(sg.bottom(), vg.bottom()) - max(sg.top(), vg.top())
-
-            if overlap < min(vg.height() / 3, sg.height() / 3):
-                y1 = vr.top()
-                y2 = vr.bottom()
-            else: # again, attempt to align
-                y1 = vr.top() # snap them at one side to the same coordinate
-
-                # and scale the other side
-                y2 = vr.bottom() + (sg.height() - vg.height()) * upp
-
-            self.enableAutoRange(pg.ViewBox.YAxis, False)
-            self.setYRange(y1, y2, padding=0)
-    finally:
-        view.blockLink(False)
-
-
-pg.ViewBox.linkedViewChanged = patchedLinkedViewChanged
-
-
-class QtToolWindow(QtGui.QMainWindow, QtCore.QObject):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-        self.tool = None
-        self._help_dialog = None
-        self._old_excepthook = sys.excepthook
-        sys.excepthook = patched_excepthook
-
-        self._keyBindings = [
-            KeyBinding('Close', [QtCore.Qt.Key_Escape], self.do_close),
-            KeyBinding('Toggle Help', [QtCore.Qt.Key_H], self.toggle_help),
+    def compile_key_bindings(self):
+        return super().compile_key_bindings() + [ # already includes Help and Close
             KeyBinding(
                 'Scroll Cursor',
                 [QtCore.Qt.Key_Left, QtCore.Qt.Key_Right, QtCore.Qt.Key_Up, QtCore.Qt.Key_Down],
                 self.scroll
             ),
+            KeyBinding(
+                'Center Cursor',
+                [QtCore.Qt.Key_C],
+                self.center_cursor,
+            ),
+            KeyBinding(
+                'Transpose - Roll Axis',
+                [QtCore.Qt.Key_T],
+                self.transpose_roll,
+            ),
+            KeyBinding(
+                'Transpose - Swap Front Axes',
+                [QtCore.Qt.Key_Y],
+                self.transpose_swap,
+            )
         ]
 
-        QtGui.QGuiApplication.installEventFilter(self, self)
+    def center_cursor(self, event):
+        self.app.center_cursor()
 
-    def close(self):
-        sys.excepthook = self._old_excepthook
-        super(QtToolWindow, self).close()
+    def transpose_roll(self, event):
+        self.app.transpose_to_front(-1)
 
-    def do_close(self, event):
-        self.close()
+    def transpose_swap(self, event):
+        self.app.transpose_to_front(1)
 
-    def toggle_help(self, event):
-        if self._help_dialog is None:
-            self._help_dialog = HelpDialog(shortcuts=self._keyBindings)
-            self._help_dialog.show()
-            self._help_dialog._main_window = self # pylint: disable=protected-access
-        else:
-            self._help_dialog.close()
-            self._help_dialog = None
-
-    def window_print(self, *args, **kwargs):
-        print(*args, **kwargs)
-
-    def scroll(self, event):
+    def scroll(self, event: QtGui.QKeyEvent):
         key_map = {
             QtCore.Qt.Key_Left: (0, -1),
             QtCore.Qt.Key_Right: (0, 1),
@@ -154,62 +73,57 @@ class QtToolWindow(QtGui.QMainWindow, QtCore.QObject):
         }
 
         delta = key_map.get(event.key())
-        if delta is not None and self.tool is not None:
-            cursor = list(self.tool.context['cursor'])
-            cursor[delta[0]] += delta[1]
 
-            self.tool.update_cursor_position(cursor)
+        if event.nativeModifiers() & 1:  # shift key
+            delta = (delta[0], delta[1] * 5)
 
-    def eventFilter(self, source, event):
-        special_keys = [QtCore.Qt.Key_Down, QtCore.Qt.Key_Up, QtCore.Qt.Key_Left, QtCore.Qt.Key_Right]
+        if event.nativeModifiers() & 2:  # shift key
+            delta = (delta[0], delta[1] * 20)
 
-        if event.type() in [QtCore.QEvent.KeyPress, QtCore.QEvent.ShortcutOverride]:
-            if event.type() != QtCore.QEvent.ShortcutOverride or event.key() in special_keys:
-                self.handleKeyPressEvent(event)
+        if delta is not None and self.app is not None:
+            self.app.scroll(delta)
 
-        return super().eventFilter(source, event)
-
-    def handleKeyPressEvent(self, event):
-        handled = False
-        for binding in self._keyBindings:
-            for combination in binding.chord:
-                # only detect single keypresses for now
-                if combination == event.key():
-                    handled = True
-                    binding.handler(event)
-
-        if not handled:
-            if arpes.config.SETTINGS.get('DEBUG', False):
-                print(event.key())
-
-
-class QtTool:
+class QtTool(SimpleApp):
     """
     QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5 for now we retain a number of the
     metaphors from BokehTool, including a "context" that stores the state, and can be used to programmatically interface
     with the tool
     """
+
+    TITLE = 'Qt Tool'
+    WINDOW_CLS = QtToolWindow
+    WINDOW_SIZE = (5,5,)
+
     def __init__(self):
-        self.settings = None
-        self.context = {}
+        super().__init__()
         self.data = None
-        self.ninety_eight_percentile = None
+
         self.content_layout = None
         self.main_layout = None
-        self.views = {}
-        self.reactive_views = []
-        self.registered_cursors = defaultdict(list)
 
         self.axis_info_widgets = []
         self.binning_info_widgets = []
         self.kspace_info_widgets = []
 
-        self.axes_tab = None
-        self.binning_tab = None
-        self.kspace_tab = None
         self._binning = None
 
-        self.settings = arpes.config.SETTINGS.copy()
+    def center_cursor(self):
+        new_cursor = [len(self.data.coords[d]) / 2 for d in self.data.dims]
+        self.update_cursor_position(new_cursor)
+
+        for i, cursors in self.registered_cursors.items():
+            for cursor in cursors:
+                cursor.set_location(new_cursor[i])
+
+    def scroll(self, delta):
+        cursor = list(self.context['cursor'])
+        cursor[delta[0]] += delta[1]
+
+        self.update_cursor_position(cursor)
+
+        for i, cursors in self.registered_cursors.items():
+            for c in cursors:
+                c.set_location(cursor[i])
 
     @property
     def binning(self):
@@ -230,9 +144,6 @@ class QtTool:
 
         self.update_cursor_position(self.context['cursor'], force=True)
 
-    def print(self, *args, **kwargs):
-        self.window.window_print(*args, **kwargs)
-
     def transpose(self, transpose_order):
         reindex_order = [self.data.dims.index(t) for t in transpose_order]
         self.data = self.data.transpose(*transpose_order)
@@ -240,7 +151,12 @@ class QtTool:
         for widget in self.axis_info_widgets + self.binning_info_widgets:
             widget.recompute()
 
-        self.update_cursor_position([self.context['cursor'][i] for i in reindex_order], force=True)
+        new_cursor = [self.context['cursor'][i] for i in reindex_order]
+        self.update_cursor_position(new_cursor, force=True)
+
+        for i, cursors in self.registered_cursors.items():
+            for cursor in cursors:
+                cursor.set_location(new_cursor[i])
 
     def transpose_to_front(self, dim):
         if not isinstance(dim, str):
@@ -251,24 +167,22 @@ class QtTool:
         order = [dim] + order
         self.transpose(order)
 
-        # TODO update cursor, marginals, data
-
     def configure_image_widgets(self):
         if len(self.data.dims) == 2:
-            self.generate_marginal_for((), 1, 0, 'xy', cursors=True)
-            self.generate_marginal_for((1,), 0, 0, 'x', orientation='horiz')
-            self.generate_marginal_for((0,), 1, 1, 'y', orientation='vert')
+            self.generate_marginal_for((), 1, 0, 'xy', cursors=True, layout=self.content_layout)
+            self.generate_marginal_for((1,), 0, 0, 'x', orientation='horiz', layout=self.content_layout)
+            self.generate_marginal_for((0,), 1, 1, 'y', orientation='vert', layout=self.content_layout)
 
             self.views['xy'].view.setYLink(self.views['y'])
             self.views['xy'].view.setXLink(self.views['x'])
 
         if len(self.data.dims) == 3:
-            self.generate_marginal_for((1, 2), 0, 0, 'x', orientation='horiz')
-            self.generate_marginal_for((1,), 1, 0, 'xz')
-            self.generate_marginal_for((2,), 2, 0, 'xy', cursors=True)
-            self.generate_marginal_for((0, 1,), 0, 1, 'z', orientation='horiz', cursors=True)
-            self.generate_marginal_for((0, 2,), 2, 2, 'y', orientation='vert')
-            self.generate_marginal_for((0,), 2, 1, 'yz')
+            self.generate_marginal_for((1, 2), 0, 0, 'x', orientation='horiz', layout=self.content_layout)
+            self.generate_marginal_for((1,), 1, 0, 'xz', layout=self.content_layout)
+            self.generate_marginal_for((2,), 2, 0, 'xy', cursors=True, layout=self.content_layout)
+            self.generate_marginal_for((0, 1,), 0, 1, 'z', orientation='horiz', cursors=True, layout=self.content_layout)
+            self.generate_marginal_for((0, 2,), 2, 2, 'y', orientation='vert', layout=self.content_layout)
+            self.generate_marginal_for((0,), 2, 1, 'yz', layout=self.content_layout)
 
             self.views['xy'].view.setYLink(self.views['y'])
             self.views['xy'].view.setXLink(self.views['x'])
@@ -276,17 +190,10 @@ class QtTool:
             self.views['xz'].view.setXLink(self.views['xy'].view)
 
         if len(self.data.dims) == 4:
-            self.generate_marginal_for((1, 3), 0, 0, 'xz')
-            self.generate_marginal_for((2, 3), 1, 0, 'xy', cursors=True)
-            self.generate_marginal_for((0, 2,), 1, 1, 'yz')
-            self.generate_marginal_for((0, 1,), 0, 1, 'zw', cursors=True)
-
-    def set_colormap(self, colormap):
-        sampled_colormap = colormap.colors[::51]
-        cmap = pg.ColorMap(pos=np.linspace(0, 1, len(sampled_colormap)), color=sampled_colormap)
-        for view_name, view in self.views.items():
-            if isinstance(view, DataArrayImageView):
-                view.setColorMap(cmap)
+            self.generate_marginal_for((1, 3), 0, 0, 'xz', layout=self.content_layout)
+            self.generate_marginal_for((2, 3), 1, 0, 'xy', cursors=True, layout=self.content_layout)
+            self.generate_marginal_for((0, 2,), 1, 1, 'yz', layout=self.content_layout)
+            self.generate_marginal_for((0, 1,), 0, 1, 'zw', cursors=True, layout=self.content_layout)
 
     def connect_cursor(self, dimension, the_line):
         self.registered_cursors[dimension].append(the_line)
@@ -324,7 +231,7 @@ class QtTool:
             vlow, vhigh = int(min(vlow, vhigh)), int(max(vlow, vhigh))
             rng = len(self.data.coords[self.data.dims[axis]])
             vlow, vhigh = np.clip(vlow, 0, rng), np.clip(vhigh, 0, rng)
-            
+
             if vlow == vhigh:
                 vhigh = vlow + 1
 
@@ -365,101 +272,48 @@ class QtTool:
                 except IndexError:
                     pass
 
-    def generate_marginal_for(self, dimensions, column, row, name=None, orientation='horiz', cursors=False):
-        remaining_dims = [l for l in list(range(len(self.data.dims))) if l not in dimensions]
-        if len(remaining_dims) == 1:
-            widget = pg.PlotWidget(name=name)
-            self.views[name] = widget
-            if orientation == 'horiz':
-                widget.setMaximumHeight(200)
-            else:
-                widget.setMaximumWidth(200)
-
-            if cursors:
-                cursor = CursorRegion(
-                    orientation=CursorRegion.Vertical if orientation == 'vert' else CursorRegion.Horizontal,
-                    movable=True)
-                widget.addItem(cursor, ignoreBounds=False)
-                self.connect_cursor(remaining_dims[0], cursor)
-        else:
-            assert len(remaining_dims) == 2
-            widget = DataArrayImageView(name=name, root=self)
-            widget.view.setAspectLocked(False)
-            self.views[name] = widget
-
-            widget.setHistogramRange(0, self.ninety_eight_percentile)
-            widget.setLevels(0.05, 0.95)
-
-            if cursors:
-                cursor_vert = CursorRegion(orientation=CursorRegion.Vertical, movable=True)
-                cursor_horiz = CursorRegion(orientation=CursorRegion.Horizontal, movable=True)
-                widget.addItem(cursor_vert, ignoreBounds=True)
-                widget.addItem(cursor_horiz, ignoreBounds=True)
-                self.connect_cursor(remaining_dims[0], cursor_vert)
-                self.connect_cursor(remaining_dims[1], cursor_horiz)
-
-        self.reactive_views.append(
-            ReactivePlotRecord(dims=dimensions, view=widget, orientation=orientation))
-        self.content_layout.addWidget(widget, column, row)
-        return widget
-
-    @property
-    def info_tab(self):
-        return hlayout()
-
     def construct_axes_tab(self):
         inner_items = [AxisInfoWidget(axis_index=i, root=self) for i in range(len(self.data.dims))]
-        return hlayout(*inner_items), inner_items
+        return horizontal(*inner_items), inner_items
 
     def construct_binning_tab(self):
         binning_options = QtWidgets.QLabel('Options')
         inner_items = [BinningInfoWidget(axis_index=i, root=self) for i in range(len(self.data.dims))]
 
-        return hlayout(binning_options, *inner_items), inner_items
+        return horizontal(binning_options, *inner_items), inner_items
 
     def construct_kspace_tab(self):
         inner_items = []
-        return hlayout(*inner_items), inner_items
+        return horizontal(*inner_items), inner_items
 
     def add_contextual_widgets(self):
-        self.axes_tab, self.axis_info_widgets = self.construct_axes_tab()
-        self.binning_tab, self.binning_info_widgets = self.construct_binning_tab()
-        self.kspace_tab, self.kspace_info_widgets = self.construct_kspace_tab()
+        axes_tab, self.axis_info_widgets = self.construct_axes_tab()
+        binning_tab, self.binning_info_widgets = self.construct_binning_tab()
+        kspace_tab, self.kspace_info_widgets = self.construct_kspace_tab()
 
         self.tabs = tabs(
-            ['Info', self.info_tab,],
-            ['Axes', self.axes_tab,],
-            ['Binning', self.binning_tab,],
-            ['K-Space', self.kspace_tab,],
+            ['Info', horizontal(), ],
+            ['Axes', axes_tab, ],
+            ['Binning', binning_tab, ],
+            ['K-Space', kspace_tab, ],
         )
-        self.tabs.setFixedHeight(150)
+        self.tabs.setFixedHeight(qt_info.inches_to_px(1))
 
         self.main_layout.addLayout(self.content_layout, 0, 0)
         self.main_layout.addWidget(self.tabs, 1, 0)
 
-    def start(self):
-        app = QtGui.QApplication([])
+    def layout(self):
+        self.main_layout = QtWidgets.QGridLayout()
+        self.content_layout = QtWidgets.QGridLayout()
+        return self.main_layout
 
-        win = QtToolWindow()
-        win.resize(1100, 1100)
-        win.setWindowTitle('QT Tool')
-        cw = QtGui.QWidget()
-        win.setCentralWidget(cw)
-        self.window = win
-        self.window.tool = self
-
-        self.content_layout = QtGui.QGridLayout()
-        self.main_layout = QtGui.QGridLayout()
-
-        cw.setLayout(self.main_layout)
-
-        # add main image widgets
+    def before_show(self):
         self.configure_image_widgets()
         self.add_contextual_widgets()
         import matplotlib.cm
         self.set_colormap(matplotlib.cm.viridis)
-        win.show()
 
+    def after_show(self):
         # basic state initialization
         self.context.update({
             'cursor': [self.data.coords[d].mean().item() for d in self.data.dims],
@@ -468,11 +322,8 @@ class QtTool:
         # Display the data
         self.update_cursor_position(self.context['cursor'], force=True)
 
-        QtGui.QApplication.instance().exec()
-
     def set_data(self, data: DataType):
         data = normalize_to_spectrum(data)
-        self.ninety_eight_percentile = np.percentile(data.values, (98,))[0]
         self.data = data
         self._binning = [1 for _ in self.data.dims]
 

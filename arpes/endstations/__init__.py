@@ -103,8 +103,11 @@ class EndstationBase:
             return False
 
     @classmethod
-    def find_first_file(cls, file, scan_desc, allow_soft_match=False):
+    def files_for_search(cls, directory):
+        return list(filter(lambda f: os.path.splitext(f)[1] in cls._TOLERATED_EXTENSIONS, os.listdir(directory)))
 
+    @classmethod
+    def find_first_file(cls, file, scan_desc, allow_soft_match=False):
         workspace = arpes.config.CONFIG['WORKSPACE']
         workspace_path = os.path.join(workspace['path'], 'data')
         workspace = workspace['name']
@@ -120,7 +123,8 @@ class EndstationBase:
 
         for dir in dir_options:
             try:
-                files = list(filter(lambda f: os.path.splitext(f)[1] in cls._TOLERATED_EXTENSIONS, os.listdir(dir)))
+                files = cls.files_for_search(dir)
+
                 if cls._USE_REGEX:
                     for p in patterns:
                         for f in files:
@@ -172,7 +176,8 @@ class EndstationBase:
         frames.sort(key=lambda x: x.coords[scan_coord])
         return xr.concat(frames, scan_coord)
 
-    def resolve_frame_locations(self, scan_desc: dict = None):
+    def resolve_frame_locations(self, scan_desc: dict = None) -> typing.List[str]:
+        raise NotImplementedError('You need to define resolve_frame_locations or subclass SingleFileEndstation.')
         return []
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
