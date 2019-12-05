@@ -4,7 +4,8 @@ from PyQt5 import QtGui, QtCore
 
 import arpes.config
 from arpes.utilities.excepthook import patched_excepthook
-from arpes.utilities.ui import PRETTY_KEYS, pretty_key_event, KeyBinding, horizontal, vertical, tabs, CursorRegion
+from arpes.utilities.ui import PRETTY_KEYS, pretty_key_event, KeyBinding, horizontal, vertical, tabs, CursorRegion, \
+    CursorMode
 
 __all__ = ('SimpleWindow',)
 
@@ -29,13 +30,20 @@ class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
         self._old_excepthook = sys.excepthook
         sys.excepthook = patched_excepthook
 
+        self._cursorModes = self.compile_cursor_modes()
         self._keyBindings = self.compile_key_bindings()
+
         QtGui.QGuiApplication.installEventFilter(self, self)
 
     def compile_key_bindings(self):
         return [
             KeyBinding('Close Window', [QtCore.Qt.Key_Escape], self.do_close),
             KeyBinding('Toggle Help', [QtCore.Qt.Key_H], self.toggle_help),
+        ]
+
+    def compile_cursor_modes(self):
+        return [
+            #CursorMode('Cursor', [QtCore.Qt.Key_C], [self.on_click_cursor, self.on_drag_cursor])
         ]
 
     def do_close(self, event):
@@ -81,8 +89,6 @@ class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
 
     def window_print(self, *args, **kwargs):
         print(*args, **kwargs)
-
-
 
 
 class SimpleApp:
