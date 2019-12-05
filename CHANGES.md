@@ -8,6 +8,20 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 2.5.0 (2019-12-5)
+
+### New
+
+1. Added a Qt-based waypoint data browser similar to what's available at
+   the Spectromicroscopy beamline, `path_tool`.
+2. Added a Qt-based masking tool `mask_tool`
+3. Added a Qt-based background subtraction tool `bkg_tool`.
+4. Generic Qt tools that interact with "paths" or "regions" are now simple to add with `CoreTool`
+ 
+### Changed
+
+1. Unitful axes on all Qt-based utilities
+
 ## 2.4.0 (2019-11-24)
 
 ### New 
