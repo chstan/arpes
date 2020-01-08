@@ -8,6 +8,7 @@ from collections import namedtuple
 from arpes.utilities import normalize_to_spectrum
 from arpes.typing import DataType
 import arpes.config
+from arpes.utilities.qt.data_array_image_view import DataArrayPlot
 
 from arpes.utilities.ui import KeyBinding, horizontal, tabs, CursorRegion
 from arpes.utilities.qt import qt_info, DataArrayImageView, BasicHelpDialog, SimpleWindow, SimpleApp
@@ -205,7 +206,7 @@ class QtTool(SimpleApp):
 
         the_line.sigRegionChanged.connect(connected_cursor)
 
-    def update_cursor_position(self, new_cursor, force=False):
+    def update_cursor_position(self, new_cursor, force=False, keep_levels=True):
         old_cursor = list(self.context['cursor'])
         self.context['cursor'] = new_cursor
 
@@ -252,23 +253,26 @@ class QtTool(SimpleApp):
                         image_data = self.data.isel(**select_coord)
                         if select_coord:
                             image_data = image_data.mean(list(select_coord.keys()))
-                        reactive.view.setImage(image_data)
+                        reactive.view.setImage(image_data, keep_levels=keep_levels)
 
                     elif isinstance(reactive.view, pg.PlotWidget):
                         for_plot = self.data.isel(**select_coord)
                         if select_coord:
                             for_plot = for_plot.mean(list(select_coord.keys()))
-                        for_plot = for_plot.values
 
                         cursors = [l for l in reactive.view.getPlotItem().items if isinstance(l, CursorRegion)]
                         reactive.view.clear()
                         for c in cursors:
                             reactive.view.addItem(c)
 
-                        if reactive.orientation == 'horiz':
+                        if isinstance(reactive.view, DataArrayPlot):
                             reactive.view.plot(for_plot)
+                            continue
+
+                        if reactive.orientation == 'horiz':
+                            reactive.view.plot(for_plot.values)
                         else:
-                            reactive.view.plot(for_plot, range(len(for_plot)))
+                            reactive.view.plot(for_plot.values, range(len(for_plot.values)))
                 except IndexError:
                     pass
 
@@ -320,7 +324,8 @@ class QtTool(SimpleApp):
         })
 
         # Display the data
-        self.update_cursor_position(self.context['cursor'], force=True)
+        self.update_cursor_position(self.context['cursor'], force=True, keep_levels=False)
+        self.center_cursor()
 
     def set_data(self, data: DataType):
         data = normalize_to_spectrum(data)

@@ -90,6 +90,7 @@ __all__ = (
 
 
 KeyBinding = namedtuple('KeyBinding', ('label', 'chord', 'handler'))
+CursorMode = namedtuple('CursorMode', ('label', 'chord', 'handler', 'supported_dimensions'))
 
 PRETTY_KEYS = {}
 for key, value in vars(QtCore.Qt).items():

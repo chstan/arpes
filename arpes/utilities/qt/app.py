@@ -6,7 +6,7 @@ import typing
 from collections import defaultdict, namedtuple
 
 from arpes.utilities.ui import CursorRegion
-from .data_array_image_view import DataArrayImageView
+from .data_array_image_view import DataArrayImageView, DataArrayPlot
 
 import arpes.config
 
@@ -75,8 +75,10 @@ class SimpleApp:
         remaining_dims = [l for l in list(range(len(self.data.dims))) if l not in dimensions]
 
         if len(remaining_dims) == 1:
-            widget = pg.PlotWidget(name=name)
+            widget = DataArrayPlot(root=self, name=name, orientation=orientation)
+            #widget = pg.PlotWidget(name=name)
             self.views[name] = widget
+
             if orientation == 'horiz':
                 widget.setMaximumHeight(200)
             else:

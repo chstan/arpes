@@ -4,6 +4,8 @@
 
 * [Installation](/)
 
+# [FAQ](/faq)
+
 # [Usage](/how-to)
 
 * [How To](/how-to)
@@ -45,7 +47,8 @@
     * [Analysis Spreadsheets](/spreadsheets)
     * [Spectra + Data Representation](/spectra)
     * [Adding Interactive Tools](/writing-interactive-tools)
-    * [Plugins](/writing-plugins)
+    * [Data Sources I: Basic Plugins](/writing-plugins-basic)
+    * [Data Sources II: Plugins in Depth](/writing-plugins)
     * [Data Provenance](/data-provenance)
     * [Phenomenological and Detector Models](/modeling)
     * [Developer's Guide](/dev-guide)

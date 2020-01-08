@@ -465,7 +465,10 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
     meshed_coordinates = [meshed_coord.ravel() for meshed_coord in meshed_coordinates]
 
     if 'eV' not in arr.dims:
-        meshed_coordinates = [arr.S.lookup_offset_coord('eV')] + meshed_coordinates
+        try:
+            meshed_coordinates = [arr.S.lookup_offset_coord('eV')] + meshed_coordinates
+        except ValueError:
+            pass
 
     old_coord_names = [dim for dim in arr.dims if dim not in target_coordinates]
     old_coordinate_transforms = [coordinate_transform['transforms'][dim] for dim in arr.dims if dim not in target_coordinates]

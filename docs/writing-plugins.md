@@ -1,11 +1,13 @@
 # Adding Support for Beamlines or Lab Facilities
 
 **Note:** This is an advanced section, you can skip this unless you need or want to extend PyARPES to cover
-more data formats. 
+more data formats. Before continuing here, read our [intro tutorial on adding data sources](/writing-plugins-basic).
 
 One of the overarching design goals of PyARPES is to provide a completely uniform, pragmatic, 
 and understandable approach to loading and performing common analyses of ARPES data. Practically,
 this consists of at least
+
+## Motivation for PyARPES Plugins
 
 1. Programmatic or automated data loading + saving, including from networked locations
 2. Data assuming the same ultimate format and structure, where this is reasonable (excluding SARPES)

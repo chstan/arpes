@@ -9,7 +9,7 @@ import arpes.config
 
 from typing import Tuple
 
-from arpes.endstations import (HemisphericalEndstation, SynchrotronEndstation, SingleFileEndstation)
+from arpes.endstations import (HemisphericalEndstation, SynchrotronEndstation)
 from arpes.utilities import unwrap_xarray_item
 
 __all__ = ('SpectromicroscopyElettraEndstation',)
@@ -27,6 +27,8 @@ def collect_coord(index: int, dset: h5py.Dataset) -> Tuple[str, np.ndarray]:
     start, delta = dset.attrs[f'Dim{index} Values']
     num = shape[index]
     coords = np.linspace(start, start + delta * (num - 1), num)
+    if name == 'P':
+        name = 'phi'
     return name, coords
 
 
@@ -60,7 +62,7 @@ def h5_dataset_to_dataarray(dset: h5py.Dataset) -> xr.DataArray:
     attrs['T'] = attrs['Angular Coord'][0]
     attrs['P'] = attrs['Angular Coord'][1]
 
-    coords['T'] = attrs['T']
+    coords['P'] = attrs['P']
 
     del attrs['Angular Coord']  # temp
     del attrs['Date Time Start Stop']  # temp
@@ -83,9 +85,8 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
     """
     Data loading for the nano-ARPES beamline "Spectromicroscopy Elettra".
 
-    Information available on the beamline can be accessed at
-
-    https://www.elettra.trieste.it/elettra-beamlines/spectromicroscopy.html.
+    Information available on the beamline can be accessed
+    `here <https://www.elettra.trieste.it/elettra-beamlines/spectromicroscopy>`_.
     """
 
     PRINCIPAL_NAME = 'Spectromicroscopy Elettra'
@@ -93,11 +94,11 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
 
     _TOLERATED_EXTENSIONS = {'.hdf5',}
     _SEARCH_PATTERNS = (
-        r'{}' + (r'\\' if os.path.sep == '\\' else '/') + r'[\-a-zA-Z0-9_\w]+_001$',
         r'[\-a-zA-Z0-9_\w]+_[0]+{}$',
         r'[\-a-zA-Z0-9_\w]+_{}$',
         r'[\-a-zA-Z0-9_\w]+{}$',
         r'[\-a-zA-Z0-9_\w]+[0]{}$',
+        r'{}' + (r'\\' if os.path.sep == '\\' else '/') + r'[\-a-zA-Z0-9_\w]+_001$',
     )
 
     @classmethod
