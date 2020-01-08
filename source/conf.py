@@ -54,7 +54,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
-    'sphinx.ext.imgmath',
+    #'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
     'sphinxcontrib.restbuilder',
     'sphinxcontrib.katex',
@@ -72,6 +72,7 @@ katex_js_path = 'https://cdn.jsdelivr.net/npm/katex@' + \
 katex_inline = [r'\(', r'\)']
 katex_display = [r'\[', r'\]']
 katex_options = ''
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -96,6 +97,7 @@ language = None
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
+html_static_path = []
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None

@@ -9,7 +9,7 @@ import arpes.config
 
 from typing import Tuple
 
-from arpes.endstations import (HemisphericalEndstation, SynchrotronEndstation, SingleFileEndstation)
+from arpes.endstations import (HemisphericalEndstation, SynchrotronEndstation)
 from arpes.utilities import unwrap_xarray_item
 
 __all__ = ('SpectromicroscopyElettraEndstation',)
@@ -85,9 +85,8 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
     """
     Data loading for the nano-ARPES beamline "Spectromicroscopy Elettra".
 
-    Information available on the beamline can be accessed at
-
-    https://www.elettra.trieste.it/elettra-beamlines/spectromicroscopy.html.
+    Information available on the beamline can be accessed
+    `here <https://www.elettra.trieste.it/elettra-beamlines/spectromicroscopy>`_.
     """
 
     PRINCIPAL_NAME = 'Spectromicroscopy Elettra'

@@ -1,5 +1,5 @@
 """
-Plugin facility to read+normalize information from different sources to a common format
+Plugin facility to read and normalize information from different sources to a common format
 """
 import warnings
 import re
@@ -267,6 +267,13 @@ class EndstationBase:
 
         return data
 
+    def load_from_path(self, path: typing.Union[str, Path]):
+        path = str(path)
+        return self.load({
+            'file': path,
+            'location': self.PRINCIPAL_NAME,
+        })
+
     def load(self, scan_desc: dict = None, **kwargs):
         """
         Loads a scan from a single file or a sequence of files.
@@ -356,6 +363,7 @@ class SESEndstation(EndstationBase):
 
         :param scan_desc: Dictionary with extra information to attach to the xr.Dataset, must contain the location
         of the file
+        :param robust_dimension_labels: safety control, used to load despite possibly malformed dimension names
         :return:
         """
 
@@ -437,9 +445,9 @@ class FITSEndstation(EndstationBase):
     This ends up being somewhat complicated, because the FITS export is written in LabView and
     does not conform to the standard specification for the FITS archive format.
 
-    Many of the intricaces here are in fact those shared between MAESTRO's format
-    and the Lanzara Lab's format. Conrad does not forsee this as an issue, because it is
-    unlikely that mnay other ARPES labs will adopt this data format moving forward, in
+    Many of the intricacies here are in fact those shared between MAESTRO's format
+    and the Lanzara Lab's format. Conrad does not foresee this as an issue, because it is
+    unlikely that many other ARPES labs will adopt this data format moving forward, in
     light of better options derivative of HDF like the NeXuS format.
     """
     PREPPED_COLUMN_NAMES = {
