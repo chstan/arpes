@@ -730,6 +730,11 @@ class ARPESAccessorBase:
         for k, v in offsets.items():
             self._obj.attrs['{}_offset'.format(k)] = v
 
+    @property
+    def offsets(self):
+        return {c: self.lookup_offset(c) for c in self._obj.coords
+                if f'{c}_offset' in self._obj.attrs}
+
     def lookup_offset_coord(self, name):
         return self.lookup_coord(name) - self.lookup_offset(name)
 

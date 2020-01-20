@@ -13,6 +13,8 @@ from typing import Any
 import numpy as np
 import xarray as xr
 
+from arpes.utilities.string import safe_decode
+
 __all__ = ('read_single_pxt', 'read_separated_pxt', 'read_experiment',
            'find_ses_files_associated',)
 
@@ -81,7 +83,8 @@ def read_igor_binary_wave(raw_bytes):
     n_dims = len(dim_sizes)
 
     # please pylint forgive me
-    dims = [(names_from_units.get(dim_units[i].decode('ascii'), dim_units[i].decode('ascii')),
+    dims = [(names_from_units.get(safe_decode(dim_units[i], prefer='ascii'),
+                                  safe_decode(dim_units[i], prefer='ascii')),
              np.linspace(dim_offsets[i], dim_offsets[i] + (dim_sizes[i] - 1) * dim_scales[i],
                          dim_sizes[i])) for i in range(n_dims)]
     coords = dict(dims)
@@ -94,7 +97,8 @@ def read_igor_binary_wave(raw_bytes):
 
 
 def read_header(header_bytes: bytes):
-    header_as_string = header_bytes.decode('utf-8')
+    header_as_string = safe_decode(header_bytes)
+
     lines = [x for x in header_as_string.replace('\r', '\n').split('\n') if x]
     lines = [x for x in lines if '=' in x]
 

@@ -25,6 +25,18 @@
 PyARPES
 =======
 
+.. raw:: html
+
+    <figure>
+      <video width="640" controls="true"
+             poster="docs/static/video/intro-video-poster.png">
+        <source src="docs/static/video/intro-video.webm.fast.mp4" type="video/mp4">
+        <source src="docs/static/video/intro-video.webm" type="video/webm">
+      </video>
+    </figure>
+
+========
+
 PyARPES simplifies the analysis and collection of angle-resolved photoemission spectroscopy (ARPES) and emphasizes
 
 * modern, best practices for data science
