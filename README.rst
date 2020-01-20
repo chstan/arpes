@@ -29,8 +29,9 @@ PyARPES
 
     <figure>
       <video width="640" controls="true"
-             poster="docs/static/intro-video-poster.png">
-        <source src="docs/static/intro-video.webm" type="video/webm">
+             poster="docs/static/video/intro-video-poster.png">
+        <source src="docs/static/video/intro-video.webm.fast.mp4" type="video/mp4">
+        <source src="docs/static/video/intro-video.webm" type="video/webm">
       </video>
     </figure>
 
