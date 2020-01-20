@@ -24,6 +24,7 @@ class FallbackEndstation(EndstationBase):
         'MBS',
         'ALS-BL7',
         'ALS-BL403',
+        'Igor',
         'Kaindl',
         'ALG-Main',
         'ALG-SToF',
