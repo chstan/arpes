@@ -67,7 +67,9 @@ can read more about this in the last section of the [workspaces documentation](/
 ## What's next?
 
 With the example data in hand, you can jump into the rest of the examples on the site. 
-A good place to start is on the section for [exploration](/basic-data-exploration) of 
+If you're a visual learner or are new to Jupyter and are running into issues, have a look at 
+the [tutorial videos](/example-videos).
+Another good place to start is on the section for [exploration](/basic-data-exploration) of 
 ARPES data. 
 
 
