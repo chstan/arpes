@@ -11,6 +11,7 @@
 * [How To](/how-to)
 
     * [Getting Started](/getting-started)
+    * [Video Tutorials](/example-videos)
     * [Workspaces](/workspaces)
     * [Loading Data](/loading-data)
     * [Basic Data Exploration](/basic-data-exploration)

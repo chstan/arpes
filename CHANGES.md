@@ -8,6 +8,22 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 2.6.0 (2020-1-20)
+
+### New
+
+1. Igor loader, aliased to 'pxt', 'wave', etc.
+
+### Changed
+
+1. Improved documentation and intro videos
+
+### Fixed
+
+1. Made loading pxt files more stable by adding a utility to safely
+   decode strings when the encoding used is not known 
+   but is a common format  
+
 ## 2.5.0 (2019-12-5)
 
 ### New

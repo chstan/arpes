@@ -25,15 +25,7 @@
 PyARPES
 =======
 
-.. raw:: html
-
-    <figure>
-      <video width="640" controls="true"
-             poster="docs/static/video/intro-video-poster.png">
-        <source src="docs/static/video/intro-video.webm.fast.mp4" type="video/mp4">
-        <source src="docs/static/video/intro-video.webm" type="video/webm">
-      </video>
-    </figure>
+.. image:: docs/static/video/intro-video.gif
 
 ========
 
@@ -75,6 +67,7 @@ Please make sure not to put conda-forge above the main channel priority, as this
 A minimal install looks like
 
 ::
+
    conda config --apend channels conda-forge
    conda install -c arpes -c conda-forge arpes
 
