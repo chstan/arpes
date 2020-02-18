@@ -1,7 +1,6 @@
 import warnings
 
 import matplotlib
-import matplotlib.animation as manimation
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,6 +11,8 @@ __all__ = ('plot_subtraction_reference',)
 
 @save_plot_provenance
 def plot_subtraction_reference(data, title=None, out=None, norm=None, **kwargs):
+    import matplotlib.animation as manimation
+
     # first we need to sum over dimensions that we do not need
 
     warnings.warn('Unfinished plot_subtraction_reference')
