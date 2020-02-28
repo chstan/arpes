@@ -24,22 +24,26 @@ from arpes.utilities.geometry import polyhedron_intersect_plane
 
 __all__ = ('annotate_special_paths', 'bz2d_plot', 'bz3d_plot', 'bz_plot',
            'plot_data_to_bz', 'plot_data_to_bz2d', 'plot_data_to_bz3d', 'plot_plane_to_bz',
+           'bz2d_segments',
            'overplot_standard',)
+
+overplot_library = {
+    'graphene': lambda: { 'cell': hex_cell_2d(A_GRAPHENE) },
+    'WS2': lambda: { 'cell': hex_cell_2d(A_WS2) },
+    'WSe2': lambda: { 'cell': hex_cell_2d(A_WSe2) },
+}
+
+
+def segments_standard(name='graphene', rotate=0):
+    specification = overplot_library[name]()
+    transformations = []
+    if rotate:
+        transformations = [Rotation.from_rotvec([0, 0, rotate])]
+
+    return bz2d_segments(specification['cell'], transformations)
 
 
 def overplot_standard(name='graphene', repeat=None, rotate=0):
-    overplot_library = {
-        'graphene': lambda: {
-            'cell': hex_cell_2d(A_GRAPHENE)
-        },
-        'WS2': lambda: {
-            'cell': hex_cell_2d(A_WS2)
-        },
-        'WSe2': lambda: {
-            'cell': hex_cell_2d(A_WSe2)
-        },
-    }
-
     specification = overplot_library[name]()
     transformations = []
 
@@ -449,6 +453,35 @@ def annotate_special_paths(ax, paths, cell=None, transformations=None, offset=No
                 ax.text(x, y, z, '$' + display_name + '$', ha='center', va='bottom', color='r', fontsize=fontsize)
 
 
+def bz2d_segments(cell, transformations=None):
+    segments_x = []
+    segments_y = []
+
+    for points, normal in twocell_to_bz1(cell)[0]:
+        points = apply_transformations(points, transformations)
+        x, y, z = np.concatenate([points, points[:1]]).T
+        segments_x.append(x)
+        segments_y.append(y)
+
+    return segments_x, segments_y
+
+
+def twocell_to_bz1(cell):
+    from ase.dft.bz import bz_vertices
+
+    # 2d in x-y plane
+    if len(cell) > 2:
+        assert all(abs(cell[2][0:2]) < 1e-6) and all(abs(cell.T[2][0:2]) < 1e-6)
+    else:
+        cell = [list(c) + [0] for c in cell] + [[0, 0, 1]]
+    icell = np.linalg.inv(cell).T
+    try:
+        bz1 = bz_vertices(icell[:3, :3], dim=2)
+    except TypeError:
+        bz1 = bz_vertices(icell[:3, :3])
+    return bz1, icell, cell
+
+
 def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None,
               transformations=None, offset=None, hide_ax=True, set_equal_aspect=True,
               **kwargs):
@@ -462,24 +495,10 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
     :param points:
     :return:
     """
-    from ase.dft.bz import bz_vertices
-
-    # 2d in x-y plane
-    if len(cell) > 2:
-        assert all(abs(cell[2][0:2]) < 1e-6) and all(abs(cell.T[2][0:2]) < 1e-6)
-    else:
-        cell = [list(c) + [0] for c in cell] + [[0, 0, 1]]
-
-    icell = np.linalg.inv(cell).T
     kpoints = points
-
+    bz1, icell, cell = twocell_to_bz1(cell)
     if ax is None:
         ax = plt.axes()
-
-    try:
-        bz1 = bz_vertices(icell[:3, :3], dim=2)
-    except TypeError:
-        bz1 = bz_vertices(icell[:3, :3])
 
     if isinstance(paths, str):
         from ase.dft.kpoints import (get_special_points, special_paths, parse_path_string,
