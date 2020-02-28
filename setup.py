@@ -85,7 +85,7 @@ DEV_DEPENDENCIES = {
 }
 
 
-with open('README.rst', 'r') as f_readme:
+with open('pypi-readme.rst', 'r') as f_readme:
     long_description = f_readme.read()
 
 

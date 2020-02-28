@@ -23,13 +23,14 @@ class KTool(SimpleApp):
     WINDOW_SIZE = (5,6,)
     WINDOW_CLS = SimpleWindow
 
-    def __init__(self):
+    def __init__(self, apply_offsets=True, **kwargs):
         super().__init__()
 
         self.conversion_kwargs = {}
         self.data = None
         self.content_layout = None
         self.main_layout = None
+        self.apply_offsets = apply_offsets
 
     def configure_image_widgets(self):
         self.generate_marginal_for((), 0, 0, 'xy', cursors=False, layout=self.content_layout)
@@ -68,6 +69,8 @@ class KTool(SimpleApp):
 
     def update_offsets(self, offsets):
         self.data.S.apply_offsets(offsets)
+        if self.apply_offsets:
+            self.original_data.S.apply_offsets(offsets)
         self.update_data()
 
     def layout(self):
@@ -125,6 +128,7 @@ class KTool(SimpleApp):
 
 
 def ktool(data: DataType, **kwargs):
-    tool = KTool()
+    tool = KTool(**kwargs)
     tool.set_data(data, **kwargs)
     tool.start()
+    return tool

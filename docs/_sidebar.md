@@ -4,11 +4,14 @@
 
   - [Installation](/)
 
+# [FAQ](/faq)
+
 # [Usage](/how-to)
 
   - [How To](/how-to)
     
       - [Getting Started](/getting-started)
+      - [Video Tutorials](/example-videos)
       - [Workspaces](/workspaces)
       - [Loading Data](/loading-data)
       - [Basic Data Exploration](/basic-data-exploration)
@@ -45,7 +48,9 @@
       - [Condensed Matter Physics Software Stack](/cmp-stack)
       - [Analysis Spreadsheets](/spreadsheets)
       - [Spectra + Data Representation](/spectra)
-      - [Plugins](/writing-plugins)
+      - [Adding Interactive Tools](/writing-interactive-tools)
+      - [Data Sources I: Basic Plugins](/writing-plugins-basic)
+      - [Data Sources II: Plugins in Depth](/writing-plugins)
       - [Data Provenance](/data-provenance)
       - [Phenomenological and Detector Models](/modeling)
       - [Developer’s Guide](/dev-guide)

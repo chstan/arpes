@@ -12,6 +12,7 @@ from arpes.provenance import provenance_from_file
 
 __all__ = ('SToFDLDEndstation',)
 
+
 class SToFDLDEndstation(EndstationBase):
     PRINCIPAL_NAME = 'ALG-SToF-DLD'
 

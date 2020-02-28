@@ -25,6 +25,10 @@
 PyARPES
 =======
 
+.. image:: docs/static/video/intro-video.gif
+
+========
+
 PyARPES simplifies the analysis and collection of angle-resolved photoemission spectroscopy (ARPES) and emphasizes
 
 * modern, best practices for data science
@@ -63,6 +67,7 @@ Please make sure not to put conda-forge above the main channel priority, as this
 A minimal install looks like
 
 ::
+
    conda config --apend channels conda-forge
    conda install -c arpes -c conda-forge arpes
 
