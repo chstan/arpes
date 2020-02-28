@@ -18,10 +18,10 @@ from string import ascii_lowercase
 import lmfit
 import numpy as np
 from tqdm import tqdm_notebook
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 import arpes.fits.fit_models
-import typing
-from typing import Any, Dict, List
+from typing import Union, Tuple, Any, Dict, List
 
 import xarray as xr
 from arpes.provenance import update_provenance
@@ -31,7 +31,7 @@ from arpes.utilities import normalize_to_spectrum
 __all__ = ('broadcast_model', 'result_to_hints',)
 
 
-TypeIterable = typing.Union[typing.List[type], typing.Tuple[type]]
+TypeIterable = Union[List[type], Tuple[type]]
 
 
 def result_to_hints(m: lmfit.model.ModelResult) -> Dict[str, Dict[str, Any]]:
@@ -179,10 +179,22 @@ def unwrap_params(params, iter_coordinate):
     return {k: transform_or_walk(v) for k, v in params.items()}
 
 
+def _apply_window(data: xr.DataArray, cut_coords: Dict[str, Union[float, slice]], window):
+    cut_data = data.sel(**cut_coords)
+    original_cut_data = cut_data
+
+    if isinstance(window, xr.DataArray):
+        window_item = window.sel(**cut_coords).item()
+        if isinstance(window_item, slice):
+            cut_data = cut_data.sel(**dict([[cut_data.dims[0], window_item]]))
+
+    return cut_data, original_cut_data
+
+
 @update_provenance('Broadcast a curve fit along several dimensions')
-def broadcast_model(model_cls: typing.Union[type, TypeIterable],
+def broadcast_model(model_cls: Union[type, TypeIterable],
                     data: DataType, broadcast_dims, params=None, progress=True, dataset=True,
-                    weights=None, safe=False, prefixes=None):
+                    weights=None, safe=False, prefixes=None, window=None, multithread=False):
     """
     Perform a fit across a number of dimensions. Allows composite models as well as models
     defined and compiled through strings.
@@ -194,6 +206,7 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     :param dataset:
     :param weights:
     :param safe:
+    :param window:
     :return:
     """
     if params is None:
@@ -221,33 +234,24 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
     new_params = model.make_params()
 
     n_fits = np.prod(np.array(list(template.S.dshape.values())))
-    wrap_progress = lambda x, *args, **kwargs: x
+
+    identity = lambda x, *args, **kwargs: x
+    wrap_progress = identity
     if progress:
         wrap_progress = tqdm_notebook
 
-    for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting', total=n_fits):
-        current_params = unwrap_params(params, cut_coords)
+    _fit_func = functools.partial(_perform_fit, data=data, model=model, params=params, safe=safe, weights=weights, window=window)
 
-        cut_data = data.sel(**cut_coords)
-        if safe:
-            cut_data = cut_data.T.drop_nan()
-
-        weights_for = None
-        if weights is not None:
-            weights_for = weights.sel(**cut_coords)
-
-        try:
-            fit_result = model.guess_fit(cut_data, params=current_params, weights=weights_for)
-        except ValueError:
-            fit_result = None
-
-        template.loc[cut_coords] = fit_result
-
-        try:
-            residual.loc[cut_coords] = fit_result.residual if fit_result is not None else None
-        except ValueError as e:
-            if not safe:
-                raise e
+    if multithread:
+        with ProcessPoolExecutor() as executor:
+            for fit_result, fit_residual, coords in executor.map(_fit_func, template.T.iter_coords()):
+                template.loc[coords] = fit_result
+                residual.loc[coords] = fit_residual
+    else:
+        for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting', total=n_fits):
+            fit_result, fit_residual, _ = _fit_func(cut_coords)
+            template.loc[cut_coords] = fit_result
+            residual.loc[cut_coords] = fit_residual
 
     if dataset:
         return xr.Dataset({
@@ -259,3 +263,29 @@ def broadcast_model(model_cls: typing.Union[type, TypeIterable],
 
     template.attrs['original_data'] = data
     return template
+
+
+def _perform_fit(cut_coords, data, model, params, safe, weights, window):
+    current_params = unwrap_params(params, cut_coords)
+    cut_data, original_cut_data = _apply_window(data, cut_coords, window)
+
+    if safe:
+        cut_data = cut_data.T.drop_nan()
+
+    weights_for = None
+    if weights is not None:
+        weights_for = weights.sel(**cut_coords)
+
+    try:
+        fit_result = model.guess_fit(cut_data, params=current_params, weights=weights_for)
+    except ValueError:
+        fit_result = None
+
+    if fit_result is None:
+        true_residual = None
+    elif window is None:
+        true_residual = fit_result.residual
+    else:
+        true_residual = original_cut_data - fit_result.eval(x=original_cut_data.coords[original_cut_data.dims[0]].values)
+
+    return fit_result, true_residual, cut_coords

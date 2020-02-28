@@ -2105,6 +2105,58 @@ class GenericAccessorTools:
         self._obj = xarray_obj
 
 
+@xr.register_dataarray_accessor('X')
+class SelectionToolAccessor:
+    _obj = None
+
+    def __init__(self, xarray_obj: DataType):
+        self._obj = xarray_obj
+
+    def max_in_window(self, around: xr.DataArray, window: Union[float, int], n_iters: int = 1):
+        # TODO: refactor into a transform and finish the transform refactor to allow
+        # simultaneous iteration
+        destination = around.copy(deep=True) * 0
+
+        # should only be one!
+        other_dim, = list(set(self._obj.dims).difference(around.dims))
+
+        for coord, value in around.T.iterate_axis(around.dims):
+            value = value.item()
+            marg = self._obj.sel(**coord)
+
+            if isinstance(value, float):
+                marg = marg.sel(**dict([[other_dim, slice(value-window, value+window)]]))
+            else:
+                marg = marg.isel(**dict([[other_dim, slice(value-window, value+window)]]))
+
+            destination.loc[coord] = marg.coords[other_dim][marg.argmax().item()]
+
+        if n_iters > 1:
+            return self.max_in_window(destination, window, n_iters - 1)
+
+        return destination
+
+    def first_exceeding(self, dim, value: float, relative=False, reverse=False) -> xr.DataArray:
+        data = self._obj
+
+        if relative:
+            data = data / data.max(dim)
+
+        cond = data > value
+        reindex = data.coords[dim]
+
+        if reverse:
+            reindex = np.flip(reindex)
+            cond = np.flip(cond, data.dims.index(dim)).values
+
+        new_values = reindex[cond.argmax(axis=data.dims.index(dim))].values
+
+        return data.isel(**dict([[dim, 0]])).S.with_values(new_values)
+
+    def last_exceeding(self, dim, value: float, relative=False) -> xr.DataArray:
+        return self.first_exceeding(dim, value, relative=relative, reverse=False)
+
+
 @xr.register_dataset_accessor('F')
 class ARPESDatasetFitToolAccessor:
     _obj = None

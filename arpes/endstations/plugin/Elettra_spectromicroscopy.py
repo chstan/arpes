@@ -59,7 +59,7 @@ def h5_dataset_to_dataarray(dset: h5py.Dataset) -> xr.DataArray:
     attrs = {k: unwrap_bytestring(v) for k, v in dset.attrs.items() if k not in DROP_KEYS}
 
     # attr normalization
-    attrs['T'] = attrs['Angular Coord'][0]
+    attrs['T'] = round(attrs['Angular Coord'][0], 1)
     attrs['P'] = attrs['Angular Coord'][1]
 
     coords['P'] = attrs['P']
@@ -69,9 +69,21 @@ def h5_dataset_to_dataarray(dset: h5py.Dataset) -> xr.DataArray:
     del attrs['Temperature (K)']  # temp
     del attrs['DET Limits']  # temp
     del attrs['Energy Window (eV)']  # temp
-    del attrs['Ring En (GeV) GAP (mm) Photon (eV)']  # temp
     del attrs['Ring Current (mA)']  # temp
     del attrs['Stage Coord (XYZR)']  # temp
+
+    ring_info = attrs.pop('Ring En (GeV) GAP (mm) Photon (eV)', None)
+    if ring_info and False: # <- not trustworthy info, try to autodetect the photon energy
+        if isinstance(ring_info, list):
+            en, gap, hv = ring_info
+        else:
+            ring_info = ''.join(c for c in ring_info if c not in {'[', ']'})
+            en, gap, hv = [float(item.strip()) for item in ring_info.split(',')]
+
+        attrs['hv'] = hv
+        coords['hv'] = hv
+        attrs['undulator_gap'] = gap
+        attrs['ring_energy'] = en
 
     return xr.DataArray(
         dset[:],
@@ -127,6 +139,8 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
         'X': 'x',
         'Y': 'y',
         'Z': 'z',
+        'P': 'psi',
+        'Angle': 'phi',
     }
 
     RENAME_KEYS = {
@@ -205,6 +219,22 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
         data = data.rename({k: v for k, v in self.RENAME_COORDS.items() if k in data.coords.keys()})
+
+        if 'eV' in data.coords:
+            approx_workfunction = 3.46
+            data.coords['hv'] = 27. if data.eV.mean().item() < 29 else 74.
+            data.eV.values += (approx_workfunction - data.coords['hv'].item())
+
+        for coord, default in {'psi': 90., 'phi': 0.}.items():
+            if coord not in data.coords:
+                data.coords[coord] = default
+
+        data.coords['psi'] = (data.coords['psi'] - 90) * np.pi / 180
+        data.coords['phi'] = (data.coords['phi'] + data.spectrum.attrs['T']) * np.pi / 180
+        data.coords['beta'] = 0.
+        data.coords['chi'] = 0.
+        data.coords['alpha'] = np.pi / 2
+        data.coords['theta'] = 0.
 
         for i, dim_name in enumerate(['x', 'y', 'z']):
             if dim_name in data.coords:

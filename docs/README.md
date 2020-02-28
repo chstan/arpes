@@ -4,7 +4,7 @@
   <iframe width="560" height="315" src="https://www.youtube.com/embed/Gd0qJuInzvE" frameborder="0" 
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
   </iframe>
-  <figcaption>You can find more usage and example videos <a href="/example-videos">here</a>.</figcaption>
+  <figcaption>You can find more usage and example videos <a href="/#/example-videos">here</a>.</figcaption>
 </figure>
 
 PyARPES is an open-source data analysis library for angle-resolved photoemission spectroscopic (ARPES) research 
