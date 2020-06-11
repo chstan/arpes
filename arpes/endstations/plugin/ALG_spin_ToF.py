@@ -97,7 +97,8 @@ class SpinToFEndstation(EndstationBase):
         scan_desc = dict(copy.deepcopy(scan_desc))
 
         data_loc = scan_desc.get('path', scan_desc.get('file'))
-        data_loc = data_loc if data_loc.startswith('/') else os.path.join(arpes.config.DATA_PATH, data_loc)
+        if not os.path.exists(data_loc):
+            data_loc = os.path.join(arpes.config.DATA_PATH, data_loc)
 
         hdulist = fits.open(data_loc)
 
