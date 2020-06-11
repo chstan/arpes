@@ -735,6 +735,7 @@ colorbarmaps_for_axis = {
     'temp': (temperature_colorbar, temperature_colormap,),
     'delay': (delay_colorbar, delay_colormap,),
     'theta': (phase_angle_colorbar, phase_angle_colormap,),
+    'volts': (generic_colorbar, generic_colormap,),
 }
 
 
