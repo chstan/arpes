@@ -1,5 +1,8 @@
 import collections
+import pickle
 import contextlib
+from typing import Union
+
 import datetime
 import errno
 import itertools
@@ -27,6 +30,7 @@ from arpes.utilities.jupyter import get_recent_history, get_notebook_name
 __all__ = (
     # General + IO
     'path_for_plot', 'path_for_holoviews', 'name_for_dim', 'unit_for_dim',
+    'load_data_for_figure',
     'savefig', 'AnchoredHScaleBar', 'calculate_aspect_ratio',
 
     # context managers
@@ -53,6 +57,7 @@ __all__ = (
     'get_colorbars',
     'remove_colorbars',
     'frame_with',
+    'unchanged_limits',
 
     'imshow_arr',
     'imshow_mask',
@@ -79,6 +84,7 @@ __all__ = (
     'sum_annotation',
     'mean_annotation',
     'fancy_labels',
+    'mod_plot_to_ax',
 
     # Data summaries
     'summarize',
@@ -88,6 +94,31 @@ __all__ = (
     'v_gradient_fill',
     'h_gradient_fill',
 )
+
+
+@contextlib.contextmanager
+def unchanged_limits(ax):
+    """
+    Context manager that retains axis limits
+    """
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+
+    yield
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+
+def mod_plot_to_ax(data, ax, mod, **kwargs):
+    """
+    Plots a model onto an axis using the data range from the passed data
+    """
+
+    with unchanged_limits(ax):
+        xs = data.coords[data.dims[0]].values
+        ys = mod.eval(x=xs)
+        ax.plot(xs, ys, **kwargs)
+
 
 def h_gradient_fill(x1, x2, x_solid, fill_color=None, ax=None, zorder=None, alpha=None, **kwargs):
     """
@@ -803,7 +834,50 @@ class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
                                                         frameon=frameon)
 
 
-def savefig(desired_path, dpi=400, data=None, **kwargs):
+def load_data_for_figure(p: Union[str, pathlib.Path]):
+    path = str(p)
+    stem = os.path.splitext(path)[0]
+    if stem.endswith('-PAPER'):
+        stem = stem[:-6]
+
+    pickle_file = stem + '.pickle'
+
+    if not os.path.exists(pickle_file):
+        raise ValueError('No saved data matching figure.')
+
+    with open(pickle_file, 'rb') as f:
+        data = pickle.load(f)
+
+    return data
+
+
+def savefig(desired_path, dpi=400, data=None, save_data=None, paper=False, **kwargs):
+    if not os.path.splitext(desired_path)[1]:
+        paper = True
+
+    if save_data is None:
+        if paper:
+            raise ValueError(
+                'You must supply save_data when outputting in paper mode. This '
+                'is for your own good so you can more easily regenerate '
+                'the figure later!')
+    else:
+        output_location = path_for_plot(os.path.splitext(desired_path)[0])
+        with open(output_location + '.pickle', 'wb') as f:
+            pickle.dump(save_data, f)
+
+    if paper:
+        # automatically generate useful file formats
+        high_dpi = max(dpi, 400)
+        formats_for_paper = ['pdf', 'png'] # not including SVG anymore because files too large
+
+        for format in formats_for_paper:
+            savefig(f'{desired_path}-PAPER.{format}', high_dpi, data=data, paper=False, **kwargs)
+
+        savefig(f'{desired_path}-low-PAPER.pdf', dpi=200, data=data, paper=False, **kwargs)
+
+        return
+
     full_path = path_for_plot(desired_path)
     provenance_path = full_path + '.provenance.json'
     provenance_context = {
