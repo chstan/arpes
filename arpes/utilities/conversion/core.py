@@ -103,7 +103,7 @@ def grid_interpolator_from_dataarray(arr: xr.DataArray, fill_value=0.0, method='
         bounds_error=bounds_error, fill_value=fill_value, method=method)
 
 
-def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=None, resolution=None,
+def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=None, resolution=None, n_points=None,
                      shift_gamma=True, extend_to_edge=False, **kwargs):
     """
     TODO: There might be a little bug here where the last coordinate has a value of 0, causing the interpolation to loop
@@ -137,12 +137,16 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
     such as when the interpolation dimensions are kx and ky: in this case the interpolated dimension will be labeled kp.
     In mixed or ambiguous situations the axis will be labeled by the default value 'inter'.
     :param resolution: Requested resolution along the interpolated axis.
+    :param n_points: Requested number of points in the new array. Only one of resolution and n_points should be set.
     :param shift_gamma: Controls whether the interpolated axis is shifted to a value of 0 at Gamma.
     :param extend_to_edge: Controls whether or not to scale the vector S - G for symmetry point S so that you interpolate
     to the edge of the available data
     :param kwargs:
     :return: xr.DataArray containing the interpolated data.
     """
+
+    if resolution is not None and n_points is not None:
+        raise ValueError("Only set one of resoltion and n_points!")
 
     if interpolation_points is None:
         raise ValueError('You must provide points specifying an interpolation path')
@@ -241,7 +245,10 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
         gamma_offset = sum(segment_lengths[0:interpolation_points.index('G')])
 
     if resolution is None:
-        resolution = np.min([required_sampling_density(*segment) for segment in path_segments])
+        if n_points is None:
+            resolution = np.min([required_sampling_density(*segment) for segment in path_segments])
+        else:
+            path_length / n_points
 
     def converter_for_coordinate_name(name):
         def raw_interpolator(*coordinates):
@@ -277,8 +284,11 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
 
     converted_coordinates = {d: arr.coords[d].values for d in free_coordinates}
 
+    if n_points is None:
+        n_points = int(path_length / resolution)
+
     # Adjust this coordinate under special circumstances
-    converted_coordinates[axis_name] = np.linspace(0, path_length, int(path_length / resolution)) - gamma_offset
+    converted_coordinates[axis_name] = np.linspace(0, path_length, n_points) - gamma_offset
 
     converted_ds = convert_coordinates(
         arr,
