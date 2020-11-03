@@ -1,4 +1,13 @@
 """
+- go_to_figures
+- go_to_workspace
+- go_to_cwd
+
+- publish_data
+- read_data
+- consume_data
+- summarize_data
+
 This module contains some extra utilities for managing scientific workflows, especially between
 notebooks and workspaces.
 
@@ -11,7 +20,9 @@ This isn't dataflow for Jupyter notebooks, but it is at least more convenient th
 all yourself.
 """
 import os
-import pickle
+import dill
+import sys
+import subprocess
 from collections import defaultdict
 from pprint import pprint
 
@@ -20,9 +31,11 @@ from typing import Optional, Any, List
 from pathlib import Path
 
 from arpes.config import WorkspaceManager
+from arpes.plotting.utils import path_for_plot
 from arpes.utilities.jupyter import get_notebook_name
 
-__all__ = ('publish_data', 'read_data', 'consume_data', 'summarize_data',)
+__all__ = ('go_to_figures', "go_to_workspace", "go_to_cwd",
+           'publish_data', 'read_data', 'consume_data', 'summarize_data',)
 
 
 def with_workspace(f):
@@ -37,6 +50,56 @@ def with_workspace(f):
     return wrapped_with_workspace
 
 
+def _open_path(p):
+    """
+    Attempts to open the path p in the filesystem explorer, or else prints the path
+    :param p:
+    :return:
+    """
+    if "win" in sys.platform:
+        subprocess.Popen(rf'explorer {p}')
+
+    print(p)
+
+
+@with_workspace
+def go_to_workspace(workspace=None):
+    """
+    Opens the workspace folder, otherwise opens the location of the running notebook.
+    :return:
+    """
+    path = os.getcwd()
+
+    from arpes.config import CONFIG
+    workspace = workspace or CONFIG["WORKSPACE"]
+
+    if workspace:
+        path = workspace["path"]
+
+    _open_path(path)
+
+
+def go_to_cwd():
+    """
+    Opens the current working directory.
+    :return:
+    """
+    _open_path(os.getcwd())
+
+
+def go_to_figures():
+    """
+    Opens the figures folder for the current workspace and the current day,
+    otherwise finds the most recent one and opens it.
+    :return:
+    """
+    path = path_for_plot('')
+    if not Path(path).exists():
+        path = sorted([str(p) for p in Path(path).parent.glob('*')])[-1]
+
+    _open_path(path)
+
+
 def get_running_context():
     return get_notebook_name(), os.getcwd()
 
@@ -48,13 +111,13 @@ class DataProvider:
     def _read_pickled(self, name, default=None):
         try:
             with open(str(self.path / f'{name}.pickle'), 'rb') as f:
-                return pickle.load(f)
+                return dill.load(f)
         except FileNotFoundError:
             return default
 
     def _write_pickled(self, name, value):
         with open(str(self.path / f'{name}.pickle'), 'wb') as f:
-            pickle.dump(value, f)
+            dill.dump(value, f)
 
     @property
     def publishers(self):
@@ -156,11 +219,11 @@ class DataProvider:
             return {k: self.read_data(key=k) for k in self.data_keys}
 
         with open(str(self.path / 'data' / f'{key}.pickle'), 'rb') as f:
-            return pickle.load(f)
+            return dill.load(f)
 
     def write_data(self, key: str, data: Any):
         with open(str(self.path / 'data' / f'{key}.pickle'), 'wb') as f:
-            return pickle.dump(data, f)
+            return dill.dump(data, f)
 
 
 @with_workspace
