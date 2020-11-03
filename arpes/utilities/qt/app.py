@@ -55,6 +55,11 @@ class SimpleApp:
     @staticmethod
     def build_pg_cmap(colormap):
         sampled_colormap = colormap.colors[::51]
+        sampled_colormap = np.array([s + [1.] for s in sampled_colormap])
+
+        if pg.__version__.split(".")[1] != "10":
+            sampled_colormap = sampled_colormap * 255  # super frustrating undocumented change
+
         return pg.ColorMap(pos=np.linspace(0, 1, len(sampled_colormap)), color=sampled_colormap)
 
     def set_colormap(self, colormap):
@@ -137,11 +142,13 @@ class SimpleApp:
 
         self._layout = self.layout()
         self.before_show()
+
         if self.DEFAULT_COLORMAP is not None:
             self.set_colormap(self.DEFAULT_COLORMAP)
 
         cw.setLayout(self._layout)
         self.window.show()
+
         self.after_show()
 
         QtGui.QApplication.instance().exec()
