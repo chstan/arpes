@@ -852,7 +852,8 @@ def load_data_for_figure(p: Union[str, pathlib.Path]):
     return data
 
 
-def savefig(desired_path, dpi=400, data=None, save_data=None, paper=False, **kwargs):
+def savefig(desired_path, dpi=400, data=None,
+            save_data=None, paper=False, **kwargs):
     if not os.path.splitext(desired_path)[1]:
         paper = True
 
@@ -873,7 +874,8 @@ def savefig(desired_path, dpi=400, data=None, save_data=None, paper=False, **kwa
         formats_for_paper = ['pdf', 'png'] # not including SVG anymore because files too large
 
         for format in formats_for_paper:
-            savefig(f'{desired_path}-PAPER.{format}', high_dpi, data=data, paper=False, **kwargs)
+            savefig(f'{desired_path}-PAPER.{format}',
+                    dpi=high_dpi, data=data, paper=False, **kwargs)
 
         savefig(f'{desired_path}-low-PAPER.pdf', dpi=200, data=data, paper=False, **kwargs)
 

@@ -56,7 +56,8 @@ class DataArrayImageView(pg.ImageView):
             'left': CoordAxis(dim_index=1, orientation='left'),
             'bottom': CoordAxis(dim_index=0, orientation='bottom'),
         }
-        super().__init__(view=pg.PlotItem(axisItems=self._coord_axes), *args, **kwargs)
+        self.plot_item = pg.PlotItem(axisItems=self._coord_axes)
+        super().__init__(view=self.plot_item, *args, **kwargs)
 
         self.view.invertY(False)
         self.root = root
