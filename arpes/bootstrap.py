@@ -12,9 +12,12 @@ must be considered.
 """
 
 import copy
+from dataclasses import dataclass
+
 import functools
 import random
 
+import scipy.stats
 from typing import Union
 import numpy as np
 from tqdm import tqdm_notebook
@@ -29,7 +32,10 @@ from arpes.utilities.region import normalize_region
 
 __all__ = ('bootstrap', 'estimate_prior_adjustment',
            'resample_true_counts', 'bootstrap_counts',
-           'bootstrap_intensity_polarization',)
+           'bootstrap_intensity_polarization',
+
+           'Normal',
+           'propagate_errors')
 
 
 @update_provenance('Estimate prior')
@@ -158,6 +164,51 @@ def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
     data_vars[name + '_std'] = std
 
     return xr.Dataset(data_vars=data_vars, coords=data.coords, attrs=data.attrs.copy())
+
+
+class Distribution:
+    DEFAULT_N_SAMPLES = 1000
+
+    def draw_samples(self, n_samples=DEFAULT_N_SAMPLES):
+        raise NotImplementedError()
+
+
+@dataclass
+class Normal(Distribution):
+    center: float
+    stderr: float
+
+    def draw_samples(self, n_samples=Distribution.DEFAULT_N_SAMPLES):
+        return scipy.stats.norm.rvs(self.center, scale=self.stderr, size=n_samples)
+
+    @classmethod
+    def from_param(cls, model_param):
+        return cls(center=model_param.value, stderr=model_param.stderr)
+
+
+def propagate_errors(f):
+    @functools.wraps(f)
+    def operates_on_distributions(*args, **kwargs):
+        exclude = set(
+            [i for i, arg in enumerate(args) if not isinstance(arg, Distribution)] + \
+            [k for k, arg in kwargs.items() if not isinstance(arg, Distribution)]
+        )
+
+        if len(exclude) == len(args) + len(kwargs):
+            # short circuit if no bootstrapping is required to be nice to the user
+            return f(*args, **kwargs)
+
+        vec_f = np.vectorize(f, excluded=exclude)
+        res = vec_f(*[a.draw_samples() if isinstance(a, Distribution) else a for a in args],
+                    **{k: v.draw_samples() if isinstance(v, Distribution) else v for k, v in kwargs.items()})
+
+        try:
+            print(scipy.stats.describe(res))
+        except:
+            pass
+
+        return res
+    return operates_on_distributions
 
 
 @update_provenance('Bootstrap spin detector polarization and intensity')
