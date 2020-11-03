@@ -1567,7 +1567,10 @@ class ARPESAccessorBase:
 
 @xr.register_dataarray_accessor('S')
 class ARPESDataArrayAccessor(ARPESAccessorBase):
-    def plot(self, *args, **kwargs):
+    def plot(self, *args, rasterized=True, **kwargs):
+        if len(self._obj.dims) == 2:
+            kwargs['rasterized'] = rasterized
+
         with plt.rc_context(rc={'text.usetex': False}):
             self._obj.plot(*args, **kwargs)
 
