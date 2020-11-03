@@ -26,7 +26,7 @@ class MBSEndstation(HemisphericalEndstation):
     }
 
     def resolve_frame_locations(self, scan_desc: dict=None):
-        return [scan_desc['path']]
+        return [scan_desc.get('path', scan_desc.get('file'))]
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict=None):
         warnings.warn('Loading from text format misses metadata. You will need to supply '
