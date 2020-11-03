@@ -1,5 +1,6 @@
 # Editors
 *.code-workspace
+.vscode/
 
 # Lanzara Group Internal Utilities
 arpes/tight_binding/**

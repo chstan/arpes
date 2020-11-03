@@ -1,7 +1,7 @@
+from arpes.analysis.derivative import curvature, d1_along_axis, d2_along_axis
+from arpes.analysis.filters import boxcar_filter, gaussian_filter
 import numpy as np
 
-from arpes.analysis import (boxcar_filter, curvature, d1_along_axis,
-                            d2_along_axis, gaussian_filter)
 from arpes.plotting.interactive_utils import BokehInteractiveTool
 from arpes.utilities.funcutils import Debounce
 

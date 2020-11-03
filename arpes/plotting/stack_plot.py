@@ -5,7 +5,7 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 import xarray as xr
-from arpes.analysis import rebin
+from arpes.analysis.general import rebin
 from arpes.plotting.tof import scatter_with_std
 from arpes.plotting.utils import (colorbarmaps_for_axis, generic_colorbarmap_for_data, fancy_labels,
                                   path_for_plot, label_for_dim)

@@ -5,8 +5,7 @@ from .help_dialogs import BasicHelpDialog
 from .windows import SimpleWindow
 from .app import SimpleApp
 
-__all__ = ('setup_pyqtgraph', 'DataArrayImageView',
-           'BasicHelpDialog', 'SimpleWindow', 'SimpleApp', 'qt_info',)
+__all__ = ('DataArrayImageView', 'BasicHelpDialog', 'SimpleWindow', 'SimpleApp', 'qt_info',)
 
 
 class QtInfo:

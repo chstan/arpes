@@ -1,7 +1,7 @@
+from arpes.analysis.mask import apply_mask
 from collections import OrderedDict
 import pandas as pd
 
-from arpes.analysis import apply_mask
 from arpes.corrections.background import remove_incoherent_background
 from arpes.corrections.fermi_edge_corrections import apply_quadratic_fermi_edge_correction
 from arpes.typing import DataType

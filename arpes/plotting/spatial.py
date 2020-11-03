@@ -11,7 +11,7 @@ import matplotlib.patheffects as path_effects
 import matplotlib.gridspec as gridspec
 
 from arpes.io import simple_load
-from arpes.plotting import annotate_point
+from arpes.plotting.annotations import annotate_point
 from arpes.plotting.utils import (path_for_plot, frame_with,
                                   remove_colorbars, fancy_labels,
                                   ddata_daxis_units)

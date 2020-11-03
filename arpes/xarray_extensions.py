@@ -26,12 +26,12 @@ from scipy import ndimage as ndi
 import arpes.constants
 import arpes.plotting as plotting
 
-from arpes.analysis import rebin
+from arpes.analysis.general import rebin
 from arpes.analysis.band_analysis_utils import (param_getter,
                                                 param_stderr_getter)
 from arpes.io import load_dataset_attrs
 from arpes.models.band import MultifitBand
-from arpes.plotting import BandTool, CurvatureTool, FitCheckTool, ImageTool
+from arpes.plotting.all import BandTool, CurvatureTool, FitCheckTool, ImageTool
 from arpes.plotting.utils import fancy_labels, remove_colorbars
 from arpes.typing import DataType
 from arpes.utilities import apply_dataarray
