@@ -1,16 +1,18 @@
 import pyqtgraph as pg
 import numpy as np
+import xarray as xr
 from scipy import interpolate
 
 from PyQt5 import QtWidgets, QtCore
 
 from arpes import analysis
 from arpes.utilities import normalize_to_spectrum
+from arpes.utilities.conversion import DetectorCalibration
 from arpes.utilities.qt import qt_info, SimpleApp, SimpleWindow, BasicHelpDialog
 from arpes.typing import DataType
 from arpes.utilities.ui import KeyBinding
 
-__all__ = ('path_tool', 'mask_tool', 'bkg_tool')
+__all__ = ('path_tool', 'mask_tool', 'bkg_tool', 'det_window_tool',)
 
 
 qt_info.setup_pyqtgraph()
@@ -78,15 +80,17 @@ class CoreTool(SimpleApp):
             else:
                 self.generate_marginal_for((), 1, 0, 'P', cursors=False, layout=self.content_layout)
 
+        self.attach_roi()
+        self.main_layout.addLayout(self.content_layout, 0, 0)
+
+    def attach_roi(self):
         self.roi = pg.PolyLineROI([[0, 0], [50, 50]], closed=self.ROI_CLOSED)
         self.views['xy'].view.addItem(self.roi)
         self.roi.sigRegionChanged.connect(self.roi_changed)
-        self.main_layout.addLayout(self.content_layout, 0, 0)
 
-    @property
-    def path(self):
-        offset = self.roi.pos()
-        points = self.roi.getState()['points']
+    def compute_path_from_roi(self, roi):
+        offset = roi.pos()
+        points = roi.getState()['points']
         x, y = [p.x() + offset.x() for p in points], [p.y() + offset.y() for p in points]
 
         nx, ny = self.data.dims[-2], self.data.dims[-1]
@@ -99,6 +103,10 @@ class CoreTool(SimpleApp):
             points.append(dict([[nx, xi], [ny, yi]]))
 
         return points
+
+    @property
+    def path(self):
+        return self.compute_path_from_roi(self.roi)
 
     def roi_changed(self, _):
         try:
@@ -139,6 +147,45 @@ class PathTool(CoreTool):
         else:
             self.views['P'].clear()
             self.views['P'].plot(selected_data.data)
+
+
+class DetectorWindowTool(CoreTool):
+    TITLE = 'Detector-Window'
+    ROI_CLOSED = False
+    alt_roi = None
+
+    def attach_roi(self):
+        spectrum = normalize_to_spectrum(self.data).S.sum_other(['eV', 'phi'])
+        spacing = int(len(spectrum.eV) / 10)
+        take_eVs = [i * spacing for i in range(10)]
+        if take_eVs[-1] != len(spectrum.eV) - 1:
+            take_eVs += [len(spectrum.eV) - 1]
+
+        left_ext = spectrum.X.first_exceeding('phi', 0.25, relative=True, reverse=True, as_index=True)
+        right_ext = spectrum.X.first_exceeding('phi', 0.25, relative=True, as_index=True)
+
+        xl, xr = take_eVs, take_eVs
+        yl, yr = left_ext[take_eVs], right_ext[take_eVs]
+
+        if spectrum.dims.index('eV') != 0:
+            xl, yl = yl, xl
+            xr, yr = yr, xr
+
+        self.roi = pg.PolyLineROI(list(zip(xl, yl)), closed=self.ROI_CLOSED)
+        self.alt_roi = pg.PolyLineROI(list(zip(xr, yr)), closed=self.ROI_CLOSED)
+        self.views['xy'].view.addItem(self.roi)
+        self.views['xy'].view.addItem(self.alt_roi)
+
+    @property
+    def alt_path(self):
+        return self.compute_path_from_roi(self.alt_roi)
+
+    def path_changed(self, path):
+        pass
+
+    @property
+    def calibration(self):
+        return DetectorCalibration(left=self.alt_path, right=self.path)
 
 
 class MaskTool(CoreTool):
@@ -195,6 +242,7 @@ class BackgroundTool(CoreTool):
     def add_controls(self):
         pass
 
+
 def wrap(cls):
     def tool_function(data):
         tool = cls()
@@ -208,3 +256,4 @@ def wrap(cls):
 path_tool = wrap(PathTool)
 mask_tool = wrap(MaskTool)
 bkg_tool = wrap(BackgroundTool)
+det_window_tool = wrap(DetectorWindowTool)

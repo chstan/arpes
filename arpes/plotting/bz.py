@@ -29,12 +29,13 @@ __all__ = ('annotate_special_paths', 'bz2d_plot', 'bz3d_plot', 'bz_plot',
 
 overplot_library = {
     'graphene': lambda: { 'cell': hex_cell_2d(A_GRAPHENE) },
-    'WS2': lambda: { 'cell': hex_cell_2d(A_WS2) },
-    'WSe2': lambda: { 'cell': hex_cell_2d(A_WSe2) },
+    'ws2': lambda: { 'cell': hex_cell_2d(A_WS2) },
+    'wwe2': lambda: { 'cell': hex_cell_2d(A_WSe2) },
 }
 
 
 def segments_standard(name='graphene', rotate=0):
+    name = name.lower()
     specification = overplot_library[name]()
     transformations = []
     if rotate:

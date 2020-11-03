@@ -1,11 +1,14 @@
 from PyQt5 import QtWidgets
 import numpy as np
+from pyqtgraph import PlotItem
 
 from arpes.utilities import normalize_to_spectrum, group_by
 from arpes.typing import DataType
 from arpes.utilities.conversion import convert_to_kspace
 from arpes.utilities.qt import qt_info, SimpleApp, SimpleWindow
 from arpes.utilities.ui import tabs, horizontal, vertical, label, numeric_input, CollectUI
+from arpes.plotting.bz import segments_standard
+
 
 __all__ = ('KTool', 'ktool',)
 
@@ -23,10 +26,19 @@ class KTool(SimpleApp):
     WINDOW_SIZE = (5,6,)
     WINDOW_CLS = SimpleWindow
 
-    def __init__(self, apply_offsets=True, **kwargs):
+    DEFAULT_COLORMAP = 'viridis'
+
+    def __init__(self, apply_offsets=True, zone=None, **kwargs):
         super().__init__()
 
-        self.conversion_kwargs = {}
+        if isinstance(zone, (tuple, list,)):
+            self.segments_x, self.segments_y = zone
+        elif zone:
+            self.segments_x, self.segments_y = segments_standard(zone)
+        else:
+            self.segments_x, self.segments_y = None, None
+
+        self.conversion_kwargs = kwargs
         self.data = None
         self.content_layout = None
         self.main_layout = None
@@ -82,21 +94,30 @@ class KTool(SimpleApp):
         self.views['xy'].setImage(self.data)
 
         kdata = convert_to_kspace(self.data, **self.conversion_kwargs)
-        if 'eV' in kdata:
+        if 'eV' in kdata.dims:
             kdata = kdata.S.transpose_to_back('eV')
 
         self.views['kxy'].setImage(kdata.S.nan_to_num())
+        if self.segments_x is not None:
+            print(self.segments_x)
+            print(self.segments_y)
+
+            bz_plot = self.views['kxy'].plot_item
+            kx, ky = self.conversion_kwargs['kx'], self.conversion_kwargs['ky']
+            for segx, segy in zip(self.segments_x, self.segments_y):
+                bz_plot.plot((segx - kx[0]) / (kx[1] - kx[0]), (segy - ky[0]) / (ky[1] - ky[0]))
+
 
     def before_show(self):
         self.configure_image_widgets()
         self.add_contextual_widgets()
-        import matplotlib.cm
-        self.set_colormap(matplotlib.cm.viridis)
+        if self.DEFAULT_COLORMAP is not None:
+            self.set_colormap(self.DEFAULT_COLORMAP)
 
     def after_show(self):
         self.update_data()
 
-    def set_data(self, data: DataType, **kwargs):
+    def set_data(self, data: DataType):
         original_data = normalize_to_spectrum(data)
         self.original_data = original_data
 
@@ -112,7 +133,7 @@ class KTool(SimpleApp):
 
         self.data = data.copy(deep=True)
 
-        if not kwargs:
+        if not self.conversion_kwargs:
             rng_mul = 1
             if data.coords['hv'] < 12:
                 rng_mul = 0.5
@@ -120,15 +141,14 @@ class KTool(SimpleApp):
                 rng_mul = 0.25
 
             if 'eV' in self.data.dims:
-                kwargs = {'kp': np.linspace(-2, 2, 400) * rng_mul,}
+                self.conversion_kwargs = {'kp': np.linspace(-2, 2, 400) * rng_mul,}
             else:
-                kwargs = {'kx': np.linspace(-3, 3, 300) * rng_mul, 'ky': np.linspace(-3, 3, 300) * rng_mul,}
+                self.conversion_kwargs = {'kx': np.linspace(-2, 2, 300) * rng_mul, 'ky': np.linspace(-2, 2, 300) * rng_mul,}
 
-        self.conversion_kwargs = kwargs
 
 
 def ktool(data: DataType, **kwargs):
     tool = KTool(**kwargs)
-    tool.set_data(data, **kwargs)
+    tool.set_data(data)
     tool.start()
     return tool
