@@ -4,9 +4,9 @@ import pandas as pd
 
 import xarray as xr
 from arpes.io import simple_load
-from arpes.pipelines import convert_scan_to_kspace
 from arpes.preparation import normalize_dim
 from arpes.utilities import default_dataset
+from arpes.utilities.conversion import convert_to_kspace
 
 __all__ = ['make_reference_plots']
 
@@ -37,7 +37,8 @@ def make_reference_plots(df: pd.DataFrame=None, with_kspace=False):
                     normed.S.reference_plot(out=True, use_id=False, pattern='{}_norm_phi.png')
 
                     if with_kspace:
-                        kspace_converted = convert_scan_to_kspace(scan)
+                        normalized = normalize_dim(scan, "hv")
+                        kspace_converted = convert_to_kspace(normalized)
                         kspace_converted.S.reference_plot(out=True, use_id=False, pattern='k_{}.png')
 
                         normed_k = normalize_dim(kspace_converted, 'kp')

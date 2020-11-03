@@ -20,8 +20,6 @@ import arpes
 from arpes.analysis import *
 from arpes.fits import *
 from arpes.io import *
-from arpes.pipeline import compose
-from arpes.pipelines import *
 from arpes.repair import *
 from arpes.plotting import *
 from arpes.preparation import *

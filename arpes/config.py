@@ -44,9 +44,6 @@ DATASET_CACHE_RECORD = None # .json file that holds normalized files
 # .json file that records which files are linked to the same physical sample, currently unused
 CLEAVE_RECORD = None
 
-PIPELINE_SHELF = None
-PIPELINE_JSON_SHELF = None
-
 
 def generate_cache_files() -> None:
     global DATASET_CACHE_RECORD
@@ -65,8 +62,6 @@ def update_configuration(user_path: Optional[str] = None) -> None:
     global DATASET_CACHE_PATH
     global DATASET_CACHE_RECORD
     global CLEAVE_RECORD
-    global PIPELINE_SHELF
-    global PIPELINE_JSON_SHELF
 
     if HAS_LOADED and user_path is None:
         return
@@ -81,9 +76,6 @@ def update_configuration(user_path: Optional[str] = None) -> None:
 
         DATASET_CACHE_RECORD = os.path.join(user_path, 'datasets', 'cache.json')
         CLEAVE_RECORD = os.path.join(user_path, 'datasets', 'cleaves.json')
-
-        PIPELINE_SHELF = os.path.join(user_path, 'datasets', 'pipeline.shelf')
-        PIPELINE_JSON_SHELF = os.path.join(user_path, 'datasets', 'pipeline.shelf.json')
 
         generate_cache_files()
     except TypeError:
