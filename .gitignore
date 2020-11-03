@@ -1,3 +1,7 @@
+# Editors
+*.code-workspace
+
+# Analysis
 figures/
 datasets/
 !tests/resources/datasets
