@@ -1728,6 +1728,33 @@ NORMALIZED_DIM_NAMES = ['x', 'y', 'z', 'w']
 class GenericAccessorTools:
     _obj = None
 
+    def apply_over(self, fn, copy=True, **selections):
+        data = self._obj
+
+        if copy:
+            data = data.copy(deep=True)
+
+        try:
+            transformed = fn(data.sel(**selections))
+        except:
+            transformed = fn(data.sel(**selections).values)
+
+        if isinstance(transformed, xr.DataArray):
+            transformed = transformed.values
+
+        data.loc[selections] = transformed
+        return data
+
+    def to_unit_range(self, percentile=None):
+        if percentile is None:
+            norm = self._obj - self._obj.min()
+            return norm / norm.max()
+
+        percentile = min(percentile, 100 - percentile)
+        low, high = np.percentile(self._obj, (percentile, 100 - percentile,))
+        norm = self._obj - low
+        return norm / (high - low)
+
     def extent(self, *args, dims=None):
         """
         Returns an "extent" array that can be used to draw with plt.imshow
@@ -1954,38 +1981,38 @@ class GenericAccessorTools:
     def transform(self, axes: Union[str, List[str]],
                   transform_fn: Callable, dtype=None, *args, **kwargs):
         """
-        Transform has similar semantics to matrix multiplication, the dimensions of the
-        output can grow or shrink depending on whether the transformation is size preserving,
-        grows the data, shinks the data, or leaves in place.
+                Transform has similar semantics to matrix multiplication, the dimensions of the
+                output can grow or shrink depending on whether the transformation is size preserving,
+                grows the data, shinks the data, or leaves in place.
 
-        As an example, let us suppose we have a function which takes the mean and
-        variance of the data:
+                As an example, let us suppose we have a function which takes the mean and
+                variance of the data:
 
-        f: [dimension], coordinate_value -> [{'mean', 'variance'}]
+                f: [dimension], coordinate_value -> [{'mean', 'variance'}]
 
-        And a dataset with dimensions [X, Y]
+                And a dataset with dimensions [X, Y]
 
-        Then calling
+                Then calling
 
-        data.T.transform('X', f)
+                data.T.transform('X', f)
 
-        maps to a dataset with the same dimension X but where Y has been replaced by
-        the length 2 label {'mean', 'variance'}. The full dimensions in this case are
-        ['X', {'mean', 'variance'}].
+                maps to a dataset with the same dimension X but where Y has been replaced by
+                the length 2 label {'mean', 'variance'}. The full dimensions in this case are
+                ['X', {'mean', 'variance'}].
 
-        Please note that the transformed axes always remain in the data because they
-        are iterated over and cannot therefore be modified.
+                Please note that the transformed axes always remain in the data because they
+                are iterated over and cannot therefore be modified.
 
-        The transform function `transform_fn` must accept the coordinate of the
-        marginal at the currently iterated point.
+                The transform function `transform_fn` must accept the coordinate of the
+                marginal at the currently iterated point.
 
-        :param axes: Dimension/axis or set of dimensions to iterate over
-        :param transform_fn: Transformation function that takes a DataArray into a new DataArray
-        :param dtype: optionally, a type hint for the transformed data.
-        :param args: args to pass into transform_fn
-        :param kwargs: kwargs to pass into transform_fn
-        :return:
-        """
+                :param axes: Dimension/axis or set of dimensions to iterate over
+                :param transform_fn: Transformation function that takes a DataArray into a new DataArray
+                :param dtype: optionally, a type hint for the transformed data.
+                :param args: args to pass into transform_fn
+                :param kwargs: kwargs to pass into transform_fn
+                :return:
+                """
         if isinstance(self._obj, xr.Dataset):
             raise TypeError('transform can only work on xr.DataArrays for now because of '
                             'how the type inference works')
@@ -2139,7 +2166,7 @@ class SelectionToolAccessor:
 
         return destination
 
-    def first_exceeding(self, dim, value: float, relative=False, reverse=False) -> xr.DataArray:
+    def first_exceeding(self, dim, value: float, relative=False, reverse=False, as_index=False) -> xr.DataArray:
         data = self._obj
 
         if relative:
@@ -2152,7 +2179,18 @@ class SelectionToolAccessor:
             reindex = np.flip(reindex)
             cond = np.flip(cond, data.dims.index(dim)).values
 
-        new_values = reindex[cond.argmax(axis=data.dims.index(dim))].values
+        indices = cond.argmax(axis=data.dims.index(dim))
+        if as_index:
+            new_values = indices
+            if reverse:
+                new_values = -new_values + len(reindex) - 1
+        else:
+            new_values = reindex[indices]
+
+        try:
+            new_values = new_values.values
+        except AttributeError:
+            pass
 
         return data.isel(**dict([[dim, 0]])).S.with_values(new_values)
 

@@ -56,6 +56,7 @@ DEPENDENCY_GROUPS = {
         'openpyxl',
         'tqdm',
         'rx',
+        'dill',
     ],
     'igor': ['igor==0.3.1'],
     'ml': [
