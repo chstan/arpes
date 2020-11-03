@@ -120,7 +120,13 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
 
 
 def file_for_pickle(name):
-    path = Path('picklejar', '{}.pickle'.format(name))
+    here = Path(".")
+
+    from arpes.config import CONFIG
+    if CONFIG["WORKSPACE"]:
+        here = Path(CONFIG["WORKSPACE"]["path"])
+
+    path = here / 'picklejar' / '{}.pickle'.format(name)
     path.parent.mkdir(exist_ok=True)
     return str(path)
 
