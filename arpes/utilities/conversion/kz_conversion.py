@@ -76,7 +76,14 @@ class ConvertKpKz(CoordinateConverter):
         def kp_to_polar(kinetic_energy_out: np.ndarray, kp: np.ndarray) -> np.ndarray:
             return np.arcsin(kp / (arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy_out)))
 
-        return kp_to_polar(self.hv + self.arr.S.work_function, kp) + self.arr.S.phi_offset
+        phi = kp_to_polar(self.hv + self.arr.S.work_function, kp) + self.arr.S.phi_offset
+
+        try:
+            phi = self.calibration.correct_detector_angle(eV=binding_energy, phi=phi)
+        except:
+            pass
+
+        return phi
 
     def conversion_for(self, dim: str) -> Callable:
         def with_identity(*args, **kwargs):

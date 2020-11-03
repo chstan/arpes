@@ -1,6 +1,9 @@
 # Editors
 *.code-workspace
 
+# Lanzara Group Internal Utilities
+arpes/tight_binding/**
+
 # Analysis
 figures/
 datasets/

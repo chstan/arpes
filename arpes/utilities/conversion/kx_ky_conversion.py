@@ -49,7 +49,6 @@ class ConvertKp(CoordinateConverter):
             self.arr.S.hv - self.arr.S.work_function + binding_energy)
 
     def kspace_to_phi(self, binding_energy: np.ndarray, kp: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
-        # check signs again here
         if self.is_slit_vertical:
             polar_angle = self.arr.S.lookup_offset_coord('theta') + self.arr.S.lookup_offset_coord('psi')
             parallel_angle = self.arr.S.lookup_offset_coord('beta')
@@ -60,7 +59,12 @@ class ConvertKp(CoordinateConverter):
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
-        return np.arcsin(kp / self.k_tot / np.cos(polar_angle)) + self.arr.S.phi_offset + parallel_angle
+        res = np.arcsin(kp / self.k_tot / np.cos(polar_angle)) + self.arr.S.phi_offset + parallel_angle
+        try:
+            res = self.calibration.correct_detector_angle(eV=binding_energy, phi=res)
+        except:
+            pass
+        return res
 
     def conversion_for(self, dim: str) -> Callable:
         def with_identity(*args, **kwargs):
@@ -224,6 +228,11 @@ class ConvertKxKy(CoordinateConverter):
                        self.arr.S.lookup_offset_coord(self.parallel_angles[0])
         else:
             raise ValueError('No recognized scan angle found for {}'.format(self.parallel_angles[1]))
+
+        try:
+            self.phi = self.calibration.correct_detector_angle(eV=binding_energy, phi=self.phi)
+        except:
+            pass
 
         return self.phi
 

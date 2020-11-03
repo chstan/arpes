@@ -309,6 +309,7 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
 
 @update_provenance('Automatically k-space converted')
 def convert_to_kspace(arr: xr.DataArray, forward=False, bounds=None, resolution=None,
+                      calibration=None,
                       coords=None, **kwargs):
     """
     "Forward" or "backward" converts the data to momentum space.
@@ -432,7 +433,7 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, bounds=None, resolution=
 
         ('hv', 'phi'): ConvertKpKz,
     }.get(tuple(old_dims))
-    converter = convert_cls(arr, converted_dims)
+    converter = convert_cls(arr, converted_dims, calibration=calibration)
 
     n_kspace_coordinates = len(set(converted_dims).intersection({'kp', 'kx', 'ky', 'kz'}))
     if n_kspace_coordinates > 1 and forward:
