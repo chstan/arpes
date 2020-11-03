@@ -16,7 +16,8 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel', 'GStepBModel', 'QuadraticModel
            'ExponentialDecayCModel', 'LorentzianModel', 'GaussianModel', 'VoigtModel',
            'ConstantModel', 'LinearModel', 'GStepBStandardModel', 'AffineBackgroundModel',
            'AffineBroadenedFD', 'FermiDiracModel', 'BandEdgeBModel','EffectiveMassModel', 'LogisticModel',
-           'gaussian_convolve', 'TwoGaussianModel', 'TwoLorModel', 'TwoLorEdgeModel', 'SplitLorentzianModel')
+           'gaussian_convolve', 'TwoGaussianModel', 'TwoLorModel', 'TwoLorEdgeModel', 'SplitLorentzianModel',
+           'SkewedGaussianModel', 'SkewedVoigtModel',)
 
 any_dim_sentinel = None
 
@@ -1284,6 +1285,14 @@ class LorentzianModel(XModelMixin, lf.models.LorentzianModel):
     pass
 
 
+class SkewedVoigtModel(XModelMixin, lf.models.SkewedVoigtModel):
+    pass
+
+
+class SkewedGaussianModel(XModelMixin, lf.models.SkewedGaussianModel):
+    pass
+
+
 class SplitLorentzianModel(XModelMixin, lf.models.SplitLorentzianModel):
     def _set_paramhints_prefix(self):
         """
@@ -1337,3 +1346,6 @@ class LogisticModel(XModelMixin, lf.models.StepModel):
         kwargs.update({'prefix': prefix, 'missing': missing, 'independent_vars': independent_vars, 'form': 'logistic'})
         super().__init__(**kwargs)
 
+
+class StepModel(XModelMixin, lf.models.StepModel):
+    pass
