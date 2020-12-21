@@ -9,6 +9,7 @@ between different projects.
 
 import json
 import logging
+from os import getcwd
 import os.path
 import pint
 
@@ -120,26 +121,16 @@ class WorkspaceManager:
         CONFIG['WORKSPACE'] = self._cached_workspace
 
 
-def workspace_name_is_valid(workspace_name):
-    return workspace_name in os.listdir(DATA_PATH)
-
-
 def workspace_matches(path):
-    files = os.listdir(path)
-    acceptable_suffixes = {'.xlx', '.xlsx', '.numbers'}
-
-    return 'data' in files and any(Path(f).suffix in acceptable_suffixes for f in files)
+    return 'data' in os.listdir(path)
 
 
-def attempt_determine_workspace(value=None, permissive=False, lazy=False, current_path=None):
-    # first search upwards from the current directory at most three folders:
-    if lazy and not CONFIG['WORKSPACE']:
-        return
+def attempt_determine_workspace(value=None, current_path=None):
+    pdataset = os.getcwd() if DATASET_PATH is None else DATASET_PATH
 
     try:
         current_path = os.getcwd()
         for _ in range(3):
-            print('Checking: {}'.format(current_path))
             if workspace_matches(current_path):
                 CONFIG['WORKSPACE'] = {
                     'path': current_path,
@@ -151,27 +142,10 @@ def attempt_determine_workspace(value=None, permissive=False, lazy=False, curren
     except Exception: # pylint: disable=broad-except
         pass
 
-    if not CONFIG['WORKSPACE']:
-        if current_path is None:
-            current_path = os.path.realpath(os.getcwd())
-
-        option = None
-        skip_dirs = {'experiments', 'experiment', 'exp', 'projects', 'project'}
-
-        if os.path.realpath(DATASET_PATH) in str(current_path):
-            path_fragment = current_path.split(os.path.realpath(DATASET_PATH))[1]
-            option = [x for x in path_fragment.split('/') if len(x) and x not in skip_dirs][0]
-            # we are in a dataset, we can use the folder name in order to configure
-
-        if value is not None:
-            option = value
-
-        if workspace_name_is_valid(option):
-            logging.warning('Automatically inferring that the workspace is "{}"'.format(option))
-            CONFIG['WORKSPACE'] = option
-
-    if not CONFIG['WORKSPACE'] and not permissive:
-        raise ConfigurationError('You must provide a workspace.')
+    CONFIG["WORKSPACE"] = {
+        "path": pdataset,
+        "name": Path(pdataset).stem,
+    }
 
 
 def load_json_configuration(filename):

@@ -22,7 +22,7 @@ from matplotlib.lines import Line2D
 
 import xarray as xr
 from arpes import VERSION
-from arpes.config import CONFIG, SETTINGS
+from arpes.config import CONFIG, SETTINGS, attempt_determine_workspace
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.jupyter import get_recent_history, get_notebook_name
@@ -914,18 +914,23 @@ def savefig(desired_path, dpi=400, data=None,
 
 
 def path_for_plot(desired_path):
+    if not CONFIG["WORKSPACE"]:
+        attempt_determine_workspace()
+
     workspace = CONFIG['WORKSPACE']
 
     if not workspace:
         warnings.warn('Saving locally, no workspace found.')
         return os.path.join(os.getcwd(), desired_path)
 
-    if isinstance(workspace, dict):
-        workspace = workspace['name']
-
     try:
         import arpes.config
-        filename = os.path.join(arpes.config.FIGURE_PATH, workspace,
+
+        figure_path = arpes.config.FIGURE_PATH
+        if figure_path is None:
+            figure_path = os.path.join(workspace["path"], "figures")
+
+        filename = os.path.join(figure_path, workspace["name"],
                                 datetime.date.today().isoformat(), desired_path)
         filename = str(pathlib.Path(filename).absolute())
         parent_directory = os.path.dirname(filename)

@@ -124,7 +124,7 @@ def setup(outer_globals, arpes_root=None):
 
     import arpes.config
     arpes.config.update_configuration(user_path=os.environ['ARPES_ROOT'])
-    arpes.config.attempt_determine_workspace(permissive=True)
+    arpes.config.attempt_determine_workspace()
     arpes.config.load_plugins()
 
     from importlib import import_module

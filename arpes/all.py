@@ -9,15 +9,16 @@ import importlib
 
 from pathlib import Path
 
-from arpes.config import CONFIG, FIGURE_PATH, use_tex
+from arpes.config import CONFIG, use_tex, WorkspaceManager
 
 from arpes.analysis.all import *
 from arpes.plotting.all import *
 from arpes.fits import *
 
 from arpes.endstations import load_scan
-from arpes.io import load_without_dataset, load_example_data
+from arpes.io import load_without_dataset, load_example_data, easy_pickle
 from arpes.utilities.conversion import *
+from arpes.workflow import *
 
 from arpes.laue import load_laue
 
