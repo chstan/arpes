@@ -24,9 +24,7 @@ DEPENDENCY_GROUPS = {
     'core': [
         'astropy',
 
-        # this version required as 0.10.1 introduces a change that forced all assignment
-        # through Variable.get_compatible_data, which coerces to an array
-        'xarray==0.9.6',
+        'xarray',
 
         'h5py',
         'pyqtgraph',
@@ -49,6 +47,7 @@ DEPENDENCY_GROUPS = {
         'ipywidgets==7.0.1',
 
         # Misc deps
+        'versioning',
         'xlrd',
         'colorama',
         'imageio',

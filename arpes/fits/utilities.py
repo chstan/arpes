@@ -10,6 +10,7 @@ but in the future we would like to provide:
    to some adaptive curve fitting routines that have been proposed in the literature.
 """
 
+from packaging import version
 import functools
 import operator
 import warnings
@@ -18,7 +19,7 @@ from string import ascii_lowercase
 import lmfit
 import numpy as np
 from tqdm import tqdm_notebook
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor 
 
 import arpes.fits.fit_models
 from typing import Union, Tuple, Any, Dict, List
@@ -28,18 +29,34 @@ from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('broadcast_model', 'result_to_hints',)
+__all__ = ('broadcast_model', 'result_to_hints', 'make_pickle_safe')
 
 
 TypeIterable = Union[List[type], Tuple[type]]
 
+XARRAY_REQUIRES_VALUES_WRAPPING = version.parse(xr.__version__) > version.parse("0.10.0")
 
-def result_to_hints(m: lmfit.model.ModelResult) -> Dict[str, Dict[str, Any]]:
+def wrap_for_xarray_values_unpacking(item):
+    """
+    This is a shim for https://github.com/pydata/xarray/issues/2097
+    """
+    if XARRAY_REQUIRES_VALUES_WRAPPING:
+        return np.array(item, dtype=object)
+    
+    return item
+
+def make_pickle_safe(result: lmfit.model.ModelResult):
+    return result
+
+
+def result_to_hints(m: lmfit.model.ModelResult, defaults: None) -> Dict[str, Dict[str, Any]]:
     """
     Turns an lmfit.model.ModelResult into a dictionary with initial guesses.
     :param m:
     :return:
     """
+    if m is None:
+        return defaults
     return {k: {'value': m.params[k].value} for k in m.params}
 
 
@@ -245,12 +262,13 @@ def broadcast_model(model_cls: Union[type, TypeIterable],
     if multithread:
         with ProcessPoolExecutor() as executor:
             for fit_result, fit_residual, coords in executor.map(_fit_func, template.T.iter_coords()):
-                template.loc[coords] = fit_result
+                template.loc[coords] = wrap_for_xarray_values_unpacking(fit_result)
                 residual.loc[coords] = fit_residual
     else:
         for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting', total=n_fits):
             fit_result, fit_residual, _ = _fit_func(cut_coords)
-            template.loc[cut_coords] = fit_result
+
+            template.loc[cut_coords] = wrap_for_xarray_values_unpacking(fit_result)
             residual.loc[cut_coords] = fit_residual
 
     if dataset:
@@ -278,7 +296,7 @@ def _perform_fit(cut_coords, data, model, params, safe, weights, window):
 
     try:
         fit_result = model.guess_fit(cut_data, params=current_params, weights=weights_for)
-    except ValueError:
+    except ValueError as e:
         fit_result = None
 
     if fit_result is None:
