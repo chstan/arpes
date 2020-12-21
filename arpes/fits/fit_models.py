@@ -21,6 +21,14 @@ __all__ = ('XModelMixin', 'FermiLorentzianModel', 'GStepBModel', 'QuadraticModel
 
 any_dim_sentinel = None
 
+def dict_to_parameters(dict_of_parameters) -> lf.Parameters:
+    params = lf.Parameters()
+
+    for param_name, param in dict_of_parameters.items():
+        params[param_name] = lf.Parameter(param_name, **param)
+
+    return params
+
 
 class XModelMixin(lf.Model):
     """
@@ -54,6 +62,9 @@ class XModelMixin(lf.Model):
         :param kwargs:
         :return:
         """
+        if params is not None and not isinstance(params, lf.Parameters):
+            params = dict_to_parameters(params)
+
         if transpose:
             assert len(data.dims) == 1 and "You cannot transpose (invert) a multidimensional array (scalar field)."
 
@@ -122,7 +133,8 @@ class XModelMixin(lf.Model):
                         guessed_params[self.prefix + k].set(**v)
                     else:
                         guessed_params[k].set(**v)
-            guessed_params.update({self.prefix + k: v for k, v in params.items() if isinstance(v, lf.model.Parameter)})
+            
+            guessed_params.update(params)
 
         result = None
         try:

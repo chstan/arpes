@@ -12,7 +12,7 @@ DESCRIPTION = 'Modular data analysis code for angle resolved photoemission spect
 URL = 'https://gitlab.com/lanzara-group/python-arpes'
 EMAIL = 'chstan@berkeley.edu'
 AUTHOR = 'Conrad Stansbury'
-REQUIRES_PYTHON = '>=3.5.0'
+REQUIRES_PYTHON = '>=3.8.0,<3.9' # we're being less permissive because of pyqtgraph
 
 about = {}
 with open('./arpes/__init__.py') as fp:
@@ -27,8 +27,8 @@ DEPENDENCY_GROUPS = {
         'xarray',
 
         'h5py',
-        'pyqtgraph',
-        'PyQt5',
+        'pyqtgraph>=0.11.0,<0.12.0',
+        'PyQt5>=5.15.1,<5.16.0',
         'netCDF4',
         'colorcet',
 
@@ -37,7 +37,7 @@ DEPENDENCY_GROUPS = {
         'dask',
         'numpy',
         'scipy',
-        'lmfit>=0.9.13',
+        'lmfit>=1.0.1,<1.1.0',
         'scikit-learn',
 
         # plotting
@@ -104,6 +104,9 @@ module from 'https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1'.
 
 Some functionality, including PCA/Factor Analysis decomposition tools, require 
 additional heavy dependencies such as `scikit-learn` and `scikit-image`. 
+
+For Jupyter integration, please have a look at the documentation (link above).
+For support issues, contact chstansbury@gmail.com or chstan@berkeley.edu.
 """.format(DOCUMENTATION_URL)
 
 packages = find_packages(exclude=('tests', 'source', 'info_session', 'docs', 'example_configuration',
@@ -152,8 +155,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
         'Natural Language :: English',
         'Intended Audience :: Science/Research',
