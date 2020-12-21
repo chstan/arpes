@@ -184,6 +184,11 @@ def delete_dataset(arr_or_uuid):
         os.remove(fname)
 
 
+def ensure_cache_exists():
+    if not Path(DATASET_CACHE_PATH).exists():
+        with open(DATASET_CACHE_PATH, "w+") as f:
+            json.dump({}, f)
+
 def save_dataset(arr: DataType, filename=None, force=False):
     """
     Persists a dataset to disk. In order to serialize some attributes, you may need to modify wrap and unwrap arrs above
@@ -198,6 +203,7 @@ def save_dataset(arr: DataType, filename=None, force=False):
     """
     import arpes.xarray_extensions # pylint: disable=unused-import, redefined-outer-name
 
+    ensure_cache_exists()
     with open(DATASET_CACHE_RECORD, 'r') as cache_record:
         records = json.load(cache_record)
 
@@ -237,7 +243,7 @@ def save_dataset(arr: DataType, filename=None, force=False):
 
     # this was a first write
     if first_write:
-        with open(DATASET_CACHE_RECORD, 'w') as cache_record:
+        with open(DATASET_CACHE_RECORD, 'w+') as cache_record:
             json.dump(records, cache_record, sort_keys=True, indent=2)
 
     if ref_attrs is not None:
@@ -463,6 +469,7 @@ def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame = None):
 
 
 def available_datasets(**filters):
+    ensure_cache_exists()
     with open(DATASET_CACHE_RECORD, 'r') as cache_record:
         records = json.load(cache_record)
 
@@ -473,6 +480,7 @@ def available_datasets(**filters):
 
 
 def flush_cache(ids, delete=True):
+    ensure_cache_exists()
     with open(DATASET_CACHE_RECORD, 'r') as cache_record:
         records = json.load(cache_record)
 
@@ -484,5 +492,5 @@ def flush_cache(ids, delete=True):
         if os.path.exists(filename) and delete:
             os.remove(filename)
 
-    with open(DATASET_CACHE_RECORD, 'w') as cache_record:
+    with open(DATASET_CACHE_RECORD, 'w+') as cache_record:
         json.dump(records, cache_record, sort_keys=True, indent=2)
