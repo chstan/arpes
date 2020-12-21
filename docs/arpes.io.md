@@ -70,22 +70,6 @@ index,**kwargs)\*\*
 
 **arpes.io.list\_pickles()**
 
-**arpes.io.sld(fragment, df: pandas.core.frame.DataFrame = None,
-workspace=None, basic\_prep=True)**
-
-**arpes.io.dld(fragment, df: pandas.core.frame.DataFrame = None,
-workspace=None, file=None, basic\_prep=True,**kwargs)\*\*
-
-> Loads a dataset directly, in the same manner that prepare\_raw\_files
-> does, from the denormalized source format. This is useful for testing
-> data loading procedures, and for quickly opening data at beamlines.
-> 
-> The structure of this is very similar to simple\_load, and could be
-> shared. The only differences are in selecting the DataFrame with all
-> the files at the beginning, and finally loading the data at the end.
-> :param fragment: :param df: :param workspace: :param file: :param
-> basic\_prep: :return:
-
 **arpes.io.stitch(df\_or\_list, attr\_or\_axis, built\_axis\_name=None,
 sort=True)**
 
@@ -102,4 +86,3 @@ sort=True)**
 > we will create a new axis corresponding to the temperature and
 > concatenate the data along this axis :return:
 
-**arpes.io.fld(\*args,**kwargs)\*\*

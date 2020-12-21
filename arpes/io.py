@@ -33,7 +33,7 @@ __all__ = (
     'load_without_dataset', 'load_example_data',
     'save_dataset_for_export',
     'dataset_exists', 'is_a_dataset', 'load_dataset_attrs', 'easy_pickle', 'list_pickles',
-    'sld', 'dld', 'stitch', 'fld',
+    'stitch', 
 )
 
 
@@ -400,21 +400,14 @@ def direct_load(fragment, df: pd.DataFrame = None, workspace=None, file=None, ba
         return data
 
 
-sld = simple_load
-dld = direct_load
-
-
 def fallback_load(*args, **kwargs):
     try:
-        return sld(*args, **kwargs)
+        return simple_load(*args, **kwargs)
     except: # pylint: disable=bare-except
         try:
-            return dld(*args, **kwargs)
+            return fallback_load(*args, **kwargs)
         except: # pylint: disable=bare-except
             return load_without_dataset(*args, **kwargs)
-
-
-fld = fallback_load
 
 
 def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame = None):

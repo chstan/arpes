@@ -21,8 +21,8 @@ load_without_dataset(1)
 or 
 
 ```python
-from arpes.io import fld
-fld(1)
+from arpes.io import fallback_load
+fallback_load(1)
 ```
 
 will load your data according to the most approriate supported `.fits` plugin: in this case the MAESTRO plugin.
@@ -33,10 +33,10 @@ If you use [workspaces](/workspaces), data can be loaded using its index in a sp
 allows for expressive analysis scripts that can perform a particular data analysis across all of your cuts, 
 or across an experimental degree of freedom like the sample temperature.
 
-Optionally, you can pass `fld` or its siblings a `workspace=` argument to load data
+Optionally, you can pass `fallback_load` or its siblings a `workspace=` argument to load data
 from a different workspace.
 
-Unless you normalize your data, you should prefer the function `fld` which will work 
+Unless you normalize your data, you should prefer the function `fallback_load` which will work 
 transparently even from the original data files.  
 
 ![Loading a file](static/ld.png)

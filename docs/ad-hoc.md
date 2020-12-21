@@ -2,7 +2,7 @@
 
 There are several ways to load data that circumvent workspaces.
 The most straightforward is to call `arpes.io.load_without_dataset` manually,
-or to call `arpes.io.fallback_load`/`arpes.io.fld` manually.
+or to call `arpes.io.fallback_load` manually.
 
 Some patterns for invocation are discussed below.
 
@@ -21,8 +21,8 @@ load_without_dataset(5)
 or 
 
 ```python
-from arpes.io import fld
-fld(5)
+from arpes.io import fallback_load
+fallback_load(5)
 ```
 
 ### My files are numbered, but the source is not disambiguated
@@ -39,7 +39,7 @@ from arpes.io import load_without_dataset
 load_without_dataset(5, location='My PXT Plugin') # <- fake plugin
 ```
 
-and similarly for `fld`.
+and similarly for `fallback_load`.
 
 ### My files aren't numbered
 
