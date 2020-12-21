@@ -207,7 +207,8 @@ class ImageTool(SaveableTool, CursorTool):
             # ('Log', 'log',), # not implemented
         ]
 
-        def on_change_color_mode(attr, old, new_color_mode):
+        def on_change_color_mode(event):
+            new_color_mode = event.item
             self.app_context['color_mode'] = new_color_mode
             if old is None or old != new_color_mode:
                 right_image_data = arr.sel(**dict([[arr.dims[0], self.cursor[0]]]), method='nearest')
@@ -222,7 +223,7 @@ class ImageTool(SaveableTool, CursorTool):
                 update_main_colormap(None, None, main_color_range_slider.value)
 
         color_mode_dropdown = widgets.Dropdown(label='Color Mode', button_type='primary', menu=COLOR_MODES)
-        color_mode_dropdown.on_change('value', on_change_color_mode)
+        color_mode_dropdown.on_click(on_change_color_mode)
 
         symmetry_point_name_input = widgets.TextInput(title='Symmetry Point Name', value="G")
         snap_checkbox = widgets.CheckboxButtonGroup(labels=['Snap Axes'], active=[])
@@ -616,7 +617,8 @@ class ImageTool(SaveableTool, CursorTool):
             # ('Log', 'log',), # not implemented
         ]
 
-        def on_change_color_mode(attr, old, new_color_mode):
+        def on_change_color_mode(event):
+            new_color_mode = event.item
             self.app_context['color_mode'] = new_color_mode
             if old is None or old != new_color_mode:
                 cursor = self.cursor
@@ -634,7 +636,7 @@ class ImageTool(SaveableTool, CursorTool):
                 update_main_colormap(None, None, main_color_range_slider.value)
 
         color_mode_dropdown = widgets.Dropdown(label='Color Mode', button_type='primary', menu=COLOR_MODES)
-        color_mode_dropdown.on_change('value', on_change_color_mode)
+        color_mode_dropdown.on_click(on_change_color_mode)
 
         symmetry_point_name_input = widgets.TextInput(title='Symmetry Point Name', value="G")
         snap_checkbox = widgets.CheckboxButtonGroup(labels=['Snap Axes'], active=[])

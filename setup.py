@@ -43,7 +43,7 @@ DEPENDENCY_GROUPS = {
         # plotting
         'matplotlib>=3.0.3',
         'seaborn',
-        'bokeh==0.12.10',
+        'bokeh>=2.0.0',
         'ipywidgets==7.0.1',
 
         # Misc deps

@@ -165,13 +165,15 @@ class PathTool(SaveableTool, CursorTool):
 
                 self.save_app()
 
-        def on_change_active_path(attr, old_path_id, path_id):
+        def on_change_active_path(event):
+            path_id = event.item
             self.debug_text = path_id
             self.app_context['active_path'] = path_id
             self.active_path = path_id
             self.save_app()
 
-        def on_change_pointer_mode(attr, old_pointer_mode, pointer_mode):
+        def on_change_pointer_mode(event):
+            pointer_mode = event.item
             self.app_context['pointer_mode'] = pointer_mode
             self.pointer_mode = pointer_mode
             self.save_app()
@@ -203,8 +205,8 @@ class PathTool(SaveableTool, CursorTool):
         main_color_range_slider.on_change('value', self.update_colormap_for('main'))
 
         self.figures['main'].on_event(events.Tap, click_main_image)
-        self.path_dropdown.on_change('value', on_change_active_path)
-        pointer_dropdown.on_change('value', on_change_pointer_mode)
+        self.path_dropdown.on_click(on_change_active_path)
+        pointer_dropdown.on_click(on_change_pointer_mode)
         add_path_button.on_click(lambda: add_path(path_name_input.value))
         clear_path_button.on_click(on_clear_path)
         remove_path_button.on_click(on_remove_path)

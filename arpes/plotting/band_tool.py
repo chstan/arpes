@@ -219,32 +219,35 @@ class BandTool(SaveableTool, CursorTool):
                 self.app_context['bands'][band_name]['center_float'] = self.app_context['center_float']
                 self.save_app()
 
-        def on_change_active_band(attr, old_band_id, band_id):
-            self.app_context['active_band'] = band_id
-            self.active_band = band_id
+        def on_change_active_band(event):
+            self.app_context['active_band'] = event.item
+            self.active_band = event.item
 
-        def on_change_pointer_mode(attr, old_pointer_mode, pointer_mode):
-            self.app_context['pointer_mode'] = pointer_mode
-            self.pointer_mode = pointer_mode
+        def on_change_pointer_mode(event):
+            self.app_context['pointer_mode'] = event.item
+            self.pointer_mode = event.item
 
-        def set_center_float_value(attr, old_value, new_value):
+        def set_center_float_value(event):
+            new_value = event.item
             self.app_context['center_float'] = new_value
             if self.active_band in self.app_context['bands']:
                 self.app_context['bands'][self.active_band]['center_float'] = new_value
 
             self.save_app()
 
-        def set_fit_direction(attr, old_direction, new_direction):
+        def set_fit_direction(event):
+            new_direction = event.item
             self.app_context['direction_normal'] = new_direction == 'forward'
             self.save_app()
 
-        def set_fit_mode(attr, old_mode, new_mode):
+        def set_fit_mode(event):
+            new_mode = event.item
             self.app_context['fit_mode'] = new_mode
             self.save_app()
 
-        def set_band_type(attr, old_type, new_type):
+        def set_band_type(event):
             if self.active_band in self.app_context['bands']:
-                self.app_context['bands'][self.active_band]['type'] = new_type
+                self.app_context['bands'][self.active_band]['type'] = event.item
 
             self.save_app()
 
@@ -276,16 +279,16 @@ class BandTool(SaveableTool, CursorTool):
         self.main_color_range_slider.on_change('value', update_main_colormap)
 
         figures['main'].on_event(events.Tap, click_main_image)
-        self.band_dropdown.on_change('value', on_change_active_band)
-        self.pointer_dropdown.on_change('value', on_change_pointer_mode)
+        self.band_dropdown.on_click(on_change_active_band)
+        self.pointer_dropdown.on_click(on_change_pointer_mode)
         self.add_band_button.on_click(lambda: add_band(self.band_name_input.value))
         self.clear_band_button.on_click(on_clear_band)
         self.remove_band_button.on_click(on_remove_band)
         self.center_float_copy.on_click(on_copy_center_float)
-        self.center_float_widget.on_change('value', set_center_float_value)
-        self.direction_dropdown.on_change('value', set_fit_direction)
-        self.fit_mode_dropdown.on_change('value', set_fit_mode)
-        self.band_type_dropdown.on_change('value', set_band_type)
+        self.center_float_widget.on_change(set_center_float_value)
+        self.direction_dropdown.on_click(set_fit_direction)
+        self.fit_mode_dropdown.on_click(set_fit_mode)
+        self.band_type_dropdown.on_click(set_band_type)
 
         layout = row(column(figures['main']),
                      column(

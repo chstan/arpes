@@ -164,12 +164,14 @@ class MaskTool(SaveableTool, CursorTool):
 
                 self.save_app()
 
-        def on_change_active_region(attr, old_region_id, region_id):
+        def on_change_active_region(event):
+            region_id = event.item
             self.app_context['active_region'] = region_id
             self.active_region = region_id
             self.save_app()
 
-        def on_change_pointer_mode(attr, old_pointer_mode, pointer_mode):
+        def on_change_pointer_mode(event):
+            pointer_mode = event.item
             self.app_context['pointer_mode'] = pointer_mode
             self.pointer_mode = pointer_mode
             self.save_app()
@@ -210,8 +212,8 @@ class MaskTool(SaveableTool, CursorTool):
         main_color_range_slider.on_change('value', self.update_colormap_for('main'))
 
         self.figures['main'].on_event(events.Tap, click_main_image)
-        self.region_dropdown.on_change('value', on_change_active_region)
-        pointer_dropdown.on_change('value', on_change_pointer_mode)
+        self.region_dropdown.on_click(on_change_active_region)
+        pointer_dropdown.on_click(on_change_pointer_mode)
         add_region_button.on_click(lambda: add_region(region_name_input.value))
         edge_mask_button.on_click(on_click_edge_mask)
         clear_region_button.on_click(on_clear_region)

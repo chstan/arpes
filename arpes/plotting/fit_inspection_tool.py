@@ -187,7 +187,8 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
             plots['right_init_fit'] = figures['right'].line(
                 x=[], y=[], line_color='green', line_width=marginal_line_width, line_dash='dotted')
 
-        def on_change_main_view(attr, old, data_source):
+        def on_change_main_view(event):
+            data_source = event.item
             self.selected_data = data_source
             data = None
             if data_source == 'data':
@@ -322,7 +323,7 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
         outlier_clip_slider.on_change('value', on_change_outlier_clip)
 
         main_content_select = widgets.Dropdown(label='Main Content', button_type='primary', menu=MAIN_CONTENT_OPTIONS)
-        main_content_select.on_change('value', on_change_main_view)
+        main_content_select.on_click(on_change_main_view)
 
         # Widgety things
         main_color_range_slider = widgets.RangeSlider(
