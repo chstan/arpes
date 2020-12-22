@@ -1,4 +1,5 @@
-# arpes.preparation.hemisphere\_preparation module
+arpes.preparation.hemisphere\_preparation module
+================================================
 
 **arpes.preparation.hemisphere\_preparation.infer\_center\_pixel(arr:
 xarray.core.dataarray.DataArray)**
@@ -9,7 +10,7 @@ dimension='beta')**
 
 > Stitches together two maps by appending and potentially dropping
 > frames in the first dataset.
-> 
+>
 > This is useful for beamline work when the beam is lost or in L-ARPES
 > if laser output is blocked for part of a scan and a subsequent scan
 > was taken to repair the problem. :param arr: Incomplete map :param

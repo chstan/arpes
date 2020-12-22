@@ -1,4 +1,5 @@
-# arpes.utilities.bz\_spec module
+arpes.utilities.bz\_spec module
+===============================
 
 Contains specifications and paths to BZs for some common materials.
 These are useful if you know them ahead of hand, either from a picture,
@@ -10,8 +11,8 @@ orienting yourself in momentum.
 
 Each zone definition corresponds to the following things:
 
-1.    - The geometry, this gives the physical Brillouin zone size and  
-        shape
+1.  The geometry, this gives the physical Brillouin zone size and  
+    shape
 
 2.  The material work function, if available
 

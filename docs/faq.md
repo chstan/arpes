@@ -41,6 +41,8 @@ dedicated environment. This also helps break dependencies between environments a
 experimenting with another Jupyter version simple: you just have to make a new trial environment
 before you switch.
 
+To get a compatible version of tornado, uninstall it and bokeh and then `conda install bokeh`.
+
 ### I tried to upgrade a package and now things aren't working... how do I get my old code working again?
 
 For large upgrades I recommend making a new environment until you are sure you don't encounter issues (500 MB disk is cheap!).

@@ -1,7 +1,10 @@
-# arpes.models package
+arpes.models package
+====================
 
-## Submodules
+Submodules
+----------
 
-  - [arpes.models.band module](arpes.models.band)
+-   [arpes.models.band module](arpes.models.band)
 
-## Module contents
+Module contents
+---------------

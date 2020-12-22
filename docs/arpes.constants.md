@@ -1,4 +1,5 @@
-# arpes.constants module
+arpes.constants module
+======================
 
 Useful constants for experiments and some useful science facts Much of
 this is collected from past students, especially Jeff’s ‘Cstes.ipf’

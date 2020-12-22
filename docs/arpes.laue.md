@@ -1,6 +1,8 @@
-# arpes.laue package
+arpes.laue package
+==================
 
-## Module contents
+Module contents
+---------------
 
 Primitive support for loading Laue data from the NorthStar x-ray
 backscattering DAQ program.

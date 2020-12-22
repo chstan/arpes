@@ -1,4 +1,5 @@
-# arpes.plotting.false\_color module
+arpes.plotting.false\_color module
+==================================
 
 **arpes.plotting.false\_color.false\_color\_plot(data\_r:
 xarray.core.dataset.Dataset, data\_g: xarray.core.dataset.Dataset,

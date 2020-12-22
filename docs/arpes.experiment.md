@@ -1,6 +1,8 @@
-# arpes.experiment package
+arpes.experiment package
+========================
 
-## Module contents
+Module contents
+---------------
 
 This module is a work-in-progress. Ideally, we would one day like to
 offer a simple graphical utility that can communicate with various ARPES
@@ -14,25 +16,25 @@ laser and drift skewing datasets) with more to come.
 **class arpes.experiment.JSONExperimentDriver(queue\_location=None)**
 
 > Bases: `arpes.experiment.ExperimentDriver`
-> 
+>
 > **dumps(o, desired\_total\_time=None)**
 
-`arpes.experiment.linspace`
+`arpes.experiment.collect`
 
-> alias of `arpes.experiment.Linspace`
-
-`arpes.experiment.shuffled`
-
-> alias of `arpes.experiment.Shuffled`
-
-`arpes.experiment.move`
-
-> alias of `arpes.experiment.Move`
+> alias of `arpes.experiment.Collect`
 
 `arpes.experiment.comment`
 
 > alias of `arpes.experiment.Comment`
 
-`arpes.experiment.collect`
+`arpes.experiment.linspace`
 
-> alias of `arpes.experiment.Collect`
+> alias of `arpes.experiment.Linspace`
+
+`arpes.experiment.move`
+
+> alias of `arpes.experiment.Move`
+
+`arpes.experiment.shuffled`
+
+> alias of `arpes.experiment.Shuffled`

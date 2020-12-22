@@ -1,5 +1,10 @@
 # PyARPES
 
+**December 2020, V3 Release**: 
+The current relase focuses on improving usage and workflow for less experienced Python users, lifting version incompatibilities with dependencies, and ironing out edges in the user experience. 
+
+For the most part, existing users of PyARPES should have no issues upgrading, but we now require Python 3.8 instead of 3.7. We now provide a conda environment specification which makes this process simpler, see the installation notes below. It is recommended that you make a new environment when you upgrade.
+
 <figure>
   <iframe width="560" height="315" src="https://www.youtube.com/embed/Gd0qJuInzvE" frameborder="0" 
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
@@ -51,47 +56,48 @@ machine learning. `cvxpy` can also be included for convex optimization tools.
 
 ## Installation
 
-Please check the package and platform requirements before installing PyARPES. For some technical reasons, PyARPES currently
-places restrictive version requirements on a few libraries. If you find these too restrictive, 
-[drop us a note](mailto:chstansbury+arpes@gmail.com) and we will see if we can help. Some common failure modes have 
-been written up in the [FAQ](/faq).
+Some common issues in installation have been written up in the [FAQ](/faq). 
 
-After you've installed, you can run a few self checks and feature gates with
+You can install PyARPES in an editable configuration so that you can edit it to your needs (recommended) or as a standalone package from a package manager. In the latter case, you should put any custom code in a separate module which you import together with PyARPES to serve your particular analysis needs.
 
-```python
-import arpes
-arpes.check()
+### Installation from Source
+
+Using an installation from source is the best option if you want to frequently change 
+the source of PyARPES as you work. You can use code available either from the main repository at 
+[GitLab](https://gitlab.com/lanzara-group/python-arpes.git) or the 
+[GitHub mirror](https://github.com/chstan/arpes).
+
+1. **Install Miniconda or Anaconda** according to the [directions](https://docs.conda.io/en/latest/miniconda.html)
+2. Clone or otherwise download the respository
+
+```bash
+git clone https://gitlab.com/lanzara-group/python-arpes
+```
+3. Make a conda environment according to our provided specification
+
+```bash
+cd path/to/python-arpes
+conda env create -f environment.yml
 ```
 
-### Requirements
+3. Activate the environment
 
-PyARPES is [tested and installable](https://dev.azure.com/lanzara-group/PyARPES) on Windows 10, Ubuntu + similar 
-linuxes, and Mac OS X. Currently Python 3.6 and 3.7 are verified compatible, but there should be no fundamental issues 
-preventing use with Python 3.4+.
-
-We currently require the following strict versions
-
-```pip
-tornado==4.5.3     # for Bokeh
-xarray==0.9.6      # due to Issue 2097 (https://github.com/pydata/xarray/issues/2097)
-h5py==2.7.0        # avoids an OS X bug, but should be safe to relax on other systems
-matplotlib>=3.0.3  # we require matplotlib 3
-bokeh==0.12.10     # Irrelevant if you don't use the Bokeh interactive tools
-netCDF4==1.3.0     # Avoids another platform specific data-loading bug
+```bash
+conda activate arpes
 ```
 
-You should have no problems if you install into a new Anaconda environment.
+4. Install PyARPES in an editable configuration
+
+```bash
+pip install -e .
+```
+
+5. _Recommended:_ Configure IPython kernel according to the **Barebones Kernel Installation** below
 
 ### From Package Managers
 
-You can install PyARPES from PyPI
-
-```bash
-pip install arpes
-```
-
-or from the Anaconda package repositories through the `arpes` channel. You will also need to specify 
-`conda-forge` in order to pick up a few dependencies. Make sure you don't add conda-forge with higher priority 
+It is highly recommended that you install PyARPES through `conda` rather than `pip`. You will also need to specify 
+`conda-forge` as a channel in order to pick up a few dependencies. Make sure you don't add conda-forge with higher priority 
 than the Anaconda channel, as this might cause issues with installing BLAS into your environment. We recommend
 
 ```bash
@@ -99,36 +105,9 @@ conda config --append channels conda-forge
 conda install -c arpes arpes
 ```
 
-### Installation from Source
-
-Using an installation from source is the best option if you want to frequently change 
-the source of PyARPES as you work, or you would like to contribute to the development 
-of PyARPES. You can use code available either from the main repository at 
-[GitLab](https://gitlab.com/lanzara-group/python-arpes.git) or the 
-[GitHub mirror](https://github.com/chstan/arpes).
-
-1. Make an Anaconda environment or `virtualenv` for your installation of PyARPES
-2. Clone the respository
-
-```bash
-git clone https://gitlab.com/lanzara-group/python-arpes
-```
-
-or 
-
-```bash
-git clone https://github.com/chstan/arpes
-```
-
-3. Install PyARPES into your conda environment `pip install -e .`
-
-
 ### Additional Suggested Steps
 
-1.  Clone or duplicate the folder structure in the repository
-    `arpes-analysis-scaffold`, skipping the example folder and data if
-    you like
-2.  Install and configure standard tools like
+1.  Install and configure standard tools like
     [Jupyter](https://jupyter.org/) or Jupyter Lab. Notes on installing
     and configuring Jupyter based installations can be found in
     `jupyter.md`
@@ -154,5 +133,5 @@ See the section on the docs site about
 for information on adding to PyARPES and rebuilding documentation from
 source.
 
-Copyright © 2018-2019 by Conrad Stansbury, all rights reserved.
+Copyright © 2018-2020 by Conrad Stansbury, all rights reserved.
 Logo design, Michael Khachatrian

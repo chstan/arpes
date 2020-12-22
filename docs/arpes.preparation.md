@@ -1,14 +1,17 @@
-# arpes.preparation package
+arpes.preparation package
+=========================
 
-## Submodules
+Submodules
+----------
 
-  - [arpes.preparation.axis\_preparation
+-   [arpes.preparation.axis\_preparation
     module](arpes.preparation.axis_preparation)
-  - [arpes.preparation.coord\_preparation
+-   [arpes.preparation.coord\_preparation
     module](arpes.preparation.coord_preparation)
-  - [arpes.preparation.hemisphere\_preparation
+-   [arpes.preparation.hemisphere\_preparation
     module](arpes.preparation.hemisphere_preparation)
-  - [arpes.preparation.tof\_preparation
+-   [arpes.preparation.tof\_preparation
     module](arpes.preparation.tof_preparation)
 
-## Module contents
+Module contents
+---------------

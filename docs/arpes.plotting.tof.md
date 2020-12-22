@@ -1,4 +1,5 @@
-# arpes.plotting.tof module
+arpes.plotting.tof module
+=========================
 
 This module is a bit of a misnomer, in that it also applies perfectly
 well to data collected by a delay line on a hemisphere, the important

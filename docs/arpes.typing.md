@@ -1,4 +1,5 @@
-# arpes.typing module
+arpes.typing module
+===================
 
 Specialized type annotations for use in PyARPES.
 

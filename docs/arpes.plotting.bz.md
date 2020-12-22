@@ -1,4 +1,5 @@
-# arpes.plotting.bz module
+arpes.plotting.bz module
+========================
 
 **arpes.plotting.bz.annotate\_special\_paths(ax, paths, cell=None,
 transformations=None, offset=None, special\_points=None,
@@ -10,9 +11,11 @@ hide\_ax=True, set\_equal\_aspect=True,**kwargs)\*\*
 
 > This piece of code modified from ase.ase.dft.bz.py:bz2d\_plot and
 > follows copyright and license for ASE.
-> 
+>
 > Plots a Brillouin zone corresponding to a given unit cell :param cell:
 > :param vectors: :param paths: :param points: :return:
+
+**arpes.plotting.bz.bz2d\_segments(cell, transformations=None)**
 
 **arpes.plotting.bz.bz3d\_plot(cell, vectors=False, paths=None,
 points=None, ax=None, elev=None, scale=1, repeat=None,
@@ -22,19 +25,21 @@ transformations=None, hide\_ax=True,**kwargs)\*\*
 > modifications. All copyright and licensing terms for this and
 > bz2d\_plot are those of the current release of ASE (Atomic Simulation
 > Environment).
-> 
->   - Parameters
->     
->       - **cell** –
->       - **vectors** –
->       - **paths** –
->       - **points** –
->       - **elev** –
->       - **scale** –
-> 
->   - Returns
+>
+> Parameters  
+> -   **cell** –
+> -   **vectors** –
+> -   **paths** –
+> -   **points** –
+> -   **elev** –
+> -   **scale** –
+>
+> Returns  
 
 **arpes.plotting.bz.bz\_plot(cell, \*args,**kwargs)\*\*
+
+**arpes.plotting.bz.overplot\_standard(name='graphene', repeat=None,
+rotate=0)**
 
 **arpes.plotting.bz.plot\_data\_to\_bz(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],

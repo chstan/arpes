@@ -1,4 +1,5 @@
-# arpes.plotting.visualize\_3d module
+arpes.plotting.visualize\_3d module
+===================================
 
 **arpes.plotting.visualize\_3d.plot\_isosurface(data, level=None,
 percentile=99.5, smoothing=None, out=None, ax=None)**

@@ -1,4 +1,5 @@
-# arpes.endstations.nexus\_utils module
+arpes.endstations.nexus\_utils module
+=====================================
 
 Provides a jumping off point for defining data loading plugins using the
 NeXuS file format. Currently we assume that the raw file format is

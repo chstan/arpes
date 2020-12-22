@@ -1,13 +1,14 @@
-# arpes.utilities.xarray module
+arpes.utilities.xarray module
+=============================
 
 **arpes.utilities.xarray.apply\_dataarray(arr:
 xarray.core.dataarray.DataArray, f, \*args,**kwargs)\*\*
 
-**arpes.utilities.xarray.lift\_datavar\_attrs(f)**
+**arpes.utilities.xarray.lift\_dataarray(f)**
 
-> Lifts a function that operates on a dictionary to a function that acts
-> on the attributes of all the datavars in a xr.Dataset, as well as the
-> Dataset attrs themselves. :param f: Function to apply :return:
+> Lifts a function that operates on an np.ndarray’s values to one that
+> acts on the values of an xr.DataArray :param f: :return: g: Function
+> operating on an xr.DataArray
 
 **arpes.utilities.xarray.lift\_dataarray\_attrs(f)**
 
@@ -17,21 +18,34 @@ xarray.core.dataarray.DataArray, f, \*args,**kwargs)\*\*
 > modify the attributes. :param f: :return: g: Function operating on the
 > attributes of an xr.DataArray
 
-**arpes.utilities.xarray.lift\_dataarray(f)**
+**arpes.utilities.xarray.lift\_datavar\_attrs(f)**
 
-> Lifts a function that operates on an np.ndarray’s values to one that
-> acts on the values of an xr.DataArray :param f: :return: g: Function
-> operating on an xr.DataArray
+> Lifts a function that operates on a dictionary to a function that acts
+> on the attributes of all the datavars in a xr.Dataset, as well as the
+> Dataset attrs themselves. :param f: Function to apply :return:
+
+**arpes.utilities.xarray.unwrap\_xarray\_dict(d: Dict\[str, Any\]) -&gt;
+Dict\[str, Any\]**
+
+> Useful for unwrapping coordinate dicts where the values might be a
+> bare type: like a float or an int, but might also be a wrapped
+> array-like for instance xr.DataArray. Even worse, we might have
+> wrapped bare values!
+>
+> Parameters  
+> **d** –
+>
+> Returns  
 
 **arpes.utilities.xarray.unwrap\_xarray\_item(item)**
 
 > Unwraps something that might or might not be an xarray like with
 > .item() attribute.
-> 
+>
 > This is especially helpful for dealing with unwrapping coordinates
 > which might be floating point-like or might be array-like.
-> 
->   - Parameters  
->     **item** –
-> 
->   - Returns
+>
+> Parameters  
+> **item** –
+>
+> Returns  

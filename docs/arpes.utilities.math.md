@@ -1,4 +1,5 @@
-# arpes.utilities.math module
+arpes.utilities.math module
+===========================
 
 **arpes.utilities.math.derivative(f, arg\_idx=0)**
 

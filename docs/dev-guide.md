@@ -77,7 +77,7 @@ and [pandoc](https://pandoc.org/) installed. Then from the directory that contai
 4. Run ``docsify`` to verify changes: ``docsify serve ./docs``
 5. As desired publish to docs site by pushing updated documentation
 
-**Note** Sometimes `sphinx-doc` has trouble converting modules to ReStructured Text.
+**Note** Sometimes `sphinx-doc` has trouble converting modules to ReStructured Text.versioning
 This typically manifests with a `KeyError` in `docutils`. This occurs when the docstrings
 do not conform to the standard for ReStructuredText. The most common problem encountered is due to 
 bare hyperlinks, which are incompatible with the *unique* hyperlink format in RST. 

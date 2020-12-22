@@ -1,4 +1,5 @@
-# arpes.analysis.deconvolution module
+arpes.analysis.deconvolution module
+===================================
 
 **arpes.analysis.deconvolution.deconvolve\_ice(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
@@ -18,26 +19,25 @@ progress=True)**
 
 > Deconvolves data by a given point spread function using the
 > Richardson-Lucy method.
-> 
->   - Parameters
->     
->       - **data** –
->     
->       - **-- for 1d,if not specified,must specify axis and sigma**
->         (*psf*) –
->     
->       -   - **-- the number of convolutions to use for the fit**\*\*  
->             (\***\*default 50)** (*n\_iterations*) –
->     
->       - **axis** –
->     
->       - **sigma** –
->     
->       - **mode** –
->     
->       - **progress** –
-> 
->   - Return DataArray or numpy.ndarray – based on input type
+>
+> Parameters  
+> -   **data** –
+>
+> -   **-- for 1d,if not specified,must specify axis and sigma** (*psf*)
+>     –
+>
+> -   **-- the number of convolutions to use for the fit**\*\*  
+>     (\***\*default 50)** (*n\_iterations*) –
+>
+> -   **axis** –
+>
+> -   **sigma** –
+>
+> -   **mode** –
+>
+> -   **progress** –
+>
+> Return DataArray or numpy.ndarray – based on input type  
 
 **arpes.analysis.deconvolution.make\_psf1d(data:
 Union\[xarray.core.dataarray.DataArray, xarray.core.dataset.Dataset\],
@@ -45,11 +45,10 @@ dim, sigma)**
 
 > Produces a 1-dimensional gaussian point spread function for use in
 > deconvolve\_rl.
-> 
->   - Parameters
->     
->       - **data** –
->       - **dim** –
->       - **sigma** –
-> 
->   - Return DataArray
+>
+> Parameters  
+> -   **data** –
+> -   **dim** –
+> -   **sigma** –
+>
+> Return DataArray  

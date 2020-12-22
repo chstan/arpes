@@ -1,4 +1,5 @@
-# arpes.laser module
+arpes.laser module
+==================
 
 Small utilities for estimating quantities of practical interest when
 using a laser for photoemission.

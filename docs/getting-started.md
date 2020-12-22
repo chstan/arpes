@@ -24,6 +24,15 @@ You should see something like this depending on the state of your optional depen
 [✔] Import almost everything in PyARPES
 ```
 
+## For the lazy, importing everything
+
+For convenience, we provide `.all` submodules that let you import what is typically used in analysis. You can import more restrictive subsets if you prefer.
+
+```python
+# Will take a few seconds on kernel startup, but very convenient
+from arpes.all import *
+```
+
 ## Loading example data
 
 At this point, you should be able to load the example data, an ARPES spectrum of 
@@ -44,25 +53,6 @@ with `arpes.io.load_without_dataset`:
 from arpes.io import load_without_dataset
 load_without_dataset('/path/to/my/data.h5', location='ALS-BL7')
 ```   
-
-**Note**: Although you can do all your analysis this way by loading data directly and 
-specifying  the originating experiment, PyARPES works better and can keep figures and 
-data organized if you opt into using [workspaces](/workspaces).  
-
-
-## A minimal and useful set of imports
-
-Although you can manage and directly import everything from PyARPES as you need it, 
-you can also import all the useful bits into your global scope up front, which makes 
-working in Jupyter and similar environments a bit more convenient.
-
-```python
-import arpes
-arpes.setup(globals(), '/path/to/your/datasets/')
-```
-
-The second argument is the location of your workspaces tree, if you use this approach, you 
-can read more about this in the last section of the [workspaces documentation](/workspaces).  
 
 ## What's next?
 
