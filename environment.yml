@@ -1,0 +1,47 @@
+name: arpes-verify-3
+channels:
+  - arpes
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.8
+
+  - astropy
+  - xarray>=0.16.1
+  - h5py>=3.0.0
+  - pyqtgraph>=0.11.0,<0.12.0
+
+  - pint
+  - pandas
+  - dask
+  - numpy
+  - scipy
+  - lmfit>=1.0.0,<1.1.0
+
+  # plotting
+  - colorcet
+  - matplotlib>=3.0.3
+  - seaborn
+  - bokeh>=2.0.0
+  - ipywidgets==7.0.1
+
+  # Misc deps
+  - xlrd
+  - openpyxl
+  - tqdm
+  - scikit-learn
+  - colorama
+  - pip
+
+  # pip
+  - pip:
+    - PyQt5>=5.15.1,<5.16.0
+    - packaging
+    - xlrd
+    - colorama
+    - imageio
+    - titlecase
+    - openpyxl
+    - tqdm
+    - rx
+    - dill

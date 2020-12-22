@@ -47,7 +47,7 @@ DEPENDENCY_GROUPS = {
         'ipywidgets==7.0.1',
 
         # Misc deps
-        'versioning',
+        'packaging',
         'xlrd',
         'colorama',
         'imageio',
