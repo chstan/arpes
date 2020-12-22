@@ -31,7 +31,6 @@ import xarray as xr
 
 from arpes import VERSION
 from arpes.typing import xr_types, DataType
-from arpes.utilities.jupyter import get_recent_history
 
 
 def attach_id(data: xr.DataArray) -> None:
@@ -55,6 +54,7 @@ def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file
     :param record:
     :return:
     """
+    from arpes.utilities.jupyter import get_recent_history
 
     if 'id' not in child_arr.attrs:
         attach_id(child_arr)

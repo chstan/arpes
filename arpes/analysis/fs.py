@@ -1,4 +1,4 @@
-from arpes.analysis import rebin
+from arpes.analysis.general import rebin
 from arpes.fits import GStepBModel, broadcast_model
 from arpes.provenance import update_provenance
 from arpes.typing import DataType
