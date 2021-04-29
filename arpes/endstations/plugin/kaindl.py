@@ -15,8 +15,8 @@ __all__ = ('KaindlEndstation',)
 
 
 def find_kaindl_files_associated(reference_path: Path):
-    name_match = re.match(r'([\w+]+_scan_[0-9][0-9][0-9]_)[0-9][0-9][0-9]\.pxt', reference_path.name)
-
+    name_match = re.match(r'([\w+]*_?scan_[0-9][0-9][0-9]_)[0-9][0-9][0-9]\.pxt', reference_path.name)
+    
     if name_match is None:
         return [reference_path]
 
@@ -27,6 +27,52 @@ def find_kaindl_files_associated(reference_path: Path):
 
     return components
 
+def read_ai_file(path: Path) -> pd.DataFrame:
+    """
+    Kayla and Conrad discovered that Scienta does not record these files in a standardized format,
+    but instead puts an arbitrarily long header at the top of the file and sometimes omits the
+    column names.
+    
+    By manual inspection, we determined that despite this, the columns appear consistent
+    across files recorded in these two formats. The columns are:
+    
+    ["Elapsed Time (s)", "Main Chamber", "Garage", "Integrated Photo AI", 
+     "Photo AI", "Photocurrent", "Heater Power", "Temperature A", 
+     "Temperature B"]
+     
+    depending on whether the header is there or not we need to skip a variable number of lines.
+    The way we are detecting this is to look for the presence of the header and if it is in the file
+    use it as the previous line before the start of the data. Ultimately we defer loading to pandas.
+    
+    Otherwise, if the header is absent we look for a tab as the first line of data.
+    """
+    with open(str(path), "r") as f:
+        lines = f.readlines()
+        
+    first_line_no = None
+    for (i, line) in enumerate(lines):
+        if "\t" in line:
+            first_line_no = i
+            break
+    
+    # update with above
+    column_names = [
+        "Elapsed Time (s)", 
+        "Main Chamber", 
+        "Garage", 
+        "Integrated Photo AI", 
+        "Photo AI", 
+        "Photocurrent", 
+        "Heater Power", 
+        "Temperature A", 
+        "Temperature B"
+    ]
+    
+    return pd.read_csv(str(path), sep='\t', skiprows=first_line_no, names=column_names)
+    
+    
+def read_auxillary_text_file(path: Path):
+    pass
 
 class KaindlEndstation(HemisphericalEndstation, SESEndstation):
     """
@@ -88,29 +134,30 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
         original_filename = scan_desc.get('path', scan_desc.get('file'))
         internal_match = re.match(r'([a-zA-Z0-9\w+_]+_[0-9][0-9][0-9])\.pxt', Path(original_filename).name)
         all_filenames = find_kaindl_files_associated(Path(original_filename))
-        all_filenames = ['{}\\{}_AI.txt'.format(f.parent, f.stem) for f in all_filenames]
-
-        def load_attr_for_frame(filename, attr_name):
-            df = pd.read_csv(filename, sep='\t', skiprows=6)
+        all_filenames = [os.path.join(f.parent, '{}_AI.txt'.format(f.stem)) 
+                         for f in all_filenames]
+        
+        def load_attr_for_frame(filename, attr_name): 
+            # this is rereading which is not ideal but can be adjusted later
+            df = read_ai_file(Path(filename))
             return np.mean(df[attr_name])
 
         def attach_attr(data, attr_name, as_name):
-            photocurrents = np.array([load_attr_for_frame(f, attr_name)
+            attributes = np.array([load_attr_for_frame(f, attr_name)
                                       for f in all_filenames])
 
-            if len(photocurrents) == 1:
-                data[as_name] = photocurrents[0]
+            if len(attributes) == 1:
+                data[as_name] = attributes[0]
             else:
-
                 non_spectrometer_dims = [d for d in data.spectrum.dims if d not in {'eV', 'phi'}]
                 non_spectrometer_coords = {c: v for c, v in data.spectrum.coords.items()
                                            if c in non_spectrometer_dims}
 
                 new_shape = [len(data.coords[d]) for d in non_spectrometer_dims]
-                photocurrent_arr = xr.DataArray(
-                    photocurrents.reshape(new_shape), coords=non_spectrometer_coords, dims=non_spectrometer_dims)
+                attributes_arr = xr.DataArray(
+                    attributes.reshape(new_shape), coords=non_spectrometer_coords, dims=non_spectrometer_dims)
 
-                data = xr.merge([data, xr.Dataset(dict([[as_name, photocurrent_arr]]))])
+                data = xr.merge([data, xr.Dataset(dict([[as_name, attributes_arr]]))])
 
             return data
 
