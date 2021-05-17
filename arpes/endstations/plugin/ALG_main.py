@@ -68,6 +68,6 @@ class ALGMainChamber(HemisphericalEndstation, FITSEndstation):
         data = super().postprocess_final(data, scan_desc)
 
         if 'beta' in data.coords:
-            data.coords['beta'].values = data.coords['beta'].values * np.pi / 180
+            data = data.assign_coords(beta=data.beta.values * np.pi / 180)
 
         return data

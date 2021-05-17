@@ -36,7 +36,6 @@ __all__ = (
     'stitch', 
 )
 
-
 def load_without_dataset(file: typing.Union[str, Path, int], location=None, **kwargs):
     try:
         file = int(str(file))
@@ -100,7 +99,7 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
         elif attr_or_axis in loaded_file.coords:
             value = loaded_file.coords[attr_or_axis]
 
-        loaded_file.coords[built_axis_name] = value
+        loaded_file = loaded_file.assign_coords(dict([[built_axis_name, value]]))
 
     if sort:
         loaded.sort(key=lambda x: x.coords[built_axis_name])

@@ -277,7 +277,7 @@ def bootstrap(fn, skip=None, resample_method=None):
 
         if data_is_arraylike:
             for i, run in enumerate(runs):
-                run.coords['bootstrap'] = i
+                run = run.assign_coords(bootstrap=i)
 
             return xr.concat(runs, dim='bootstrap')
 

@@ -127,6 +127,8 @@ def save_plot_provenance(plot_fn):
     :param plot_fn: A plotting function to decorate
     :return:
     """
+    from arpes.utilities.jupyter import get_recent_history
+
     @functools.wraps(plot_fn)
     def func_wrapper(*args, **kwargs):
         import arpes.config
@@ -174,6 +176,8 @@ def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typin
     :param keep_parent_ref:
     :return:
     """
+    from arpes.utilities.jupyter import get_recent_history
+
     if isinstance(parent_arr, list):
         assert len(parent_arr) == 1
         parent_arr = parent_arr[0]
@@ -213,6 +217,8 @@ def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_paren
     :param keep_parent_ref:
     :return:
     """
+    from arpes.utilities.jupyter import get_recent_history
+
     if 'id' not in child_arr.attrs:
         attach_id(child_arr)
 

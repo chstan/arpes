@@ -149,7 +149,7 @@ def attach_extra_dataset_columns(path, **kwargs):
         new_filename = base_filename + '.cleaned' + extension
     assert os.path.exists(new_filename)
 
-    ds = pd.read_excel(new_filename, **kwargs)
+    ds = pd.read_excel(new_filename, engine="openpyxl", **kwargs)
 
     ColumnDef = namedtuple('ColumnDef', ['default', 'source'])
     add_columns = {'spectrum_type': ColumnDef('', 'attr'), }
@@ -253,13 +253,13 @@ def safe_read(path: str, **kwargs: Any) -> pd.DataFrame:
                 return [x, x]
 
     if skiprows is not None:
-        read = pd.read_excel(path, skiprows=skiprows, **kwargs)
+        read = pd.read_excel(path, skiprows=skiprows, engine="openpyxl", **kwargs)
 
         return read.rename(columns=dict([read_snake(x) for x in list(read.columns)]))
 
     for skiprows in range(REATTEMPT_LIMIT):
         try:
-            read = pd.read_excel(path, skiprows=skiprows, **kwargs)
+            read = pd.read_excel(path, skiprows=skiprows, engine="openpyxl", **kwargs)
             read = read.rename(columns=dict([read_snake(x) for x in list(read.columns)]))
             if 'file' in read.columns:
                 return read
@@ -340,7 +340,7 @@ def clean_xlsx_dataset(path: str, allow_soft_match: bool = False, write: bool = 
         else:
             if warn_on_exists:
                 logging.warning('Cleaned dataset already exists! Reading existing...')
-            ds = pd.read_excel(new_filename).set_index('file')
+            ds = pd.read_excel(new_filename, engine="openpyxl").set_index('file')
             if with_inferred_cols:
                 return with_inferred_columns(ds)
             return ds

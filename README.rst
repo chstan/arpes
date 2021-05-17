@@ -68,7 +68,7 @@ A minimal install looks like
 
 ::
 
-   conda config --apend channels conda-forge
+   conda config --append channels conda-forge
    conda install -c arpes -c conda-forge arpes
 
 
