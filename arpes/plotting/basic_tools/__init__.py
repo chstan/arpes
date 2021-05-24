@@ -12,7 +12,12 @@ from arpes.utilities.qt import qt_info, SimpleApp, SimpleWindow, BasicHelpDialog
 from arpes.typing import DataType
 from arpes.utilities.ui import KeyBinding
 
-__all__ = ('path_tool', 'mask_tool', 'bkg_tool', 'det_window_tool',)
+__all__ = (
+    "path_tool",
+    "mask_tool",
+    "bkg_tool",
+    "det_window_tool",
+)
 
 
 qt_info.setup_pyqtgraph()
@@ -23,8 +28,8 @@ class CoreToolWindow(SimpleWindow):
 
     def compile_key_bindings(self):
         return super().compile_key_bindings() + [
-            KeyBinding('Transpose - Roll Axis', [QtCore.Qt.Key_T], self.transpose_roll),
-            KeyBinding('Transpose - Swap Front Axes', [QtCore.Qt.Key_Y], self.transpose_swap),
+            KeyBinding("Transpose - Roll Axis", [QtCore.Qt.Key_T], self.transpose_roll),
+            KeyBinding("Transpose - Swap Front Axes", [QtCore.Qt.Key_Y], self.transpose_swap),
         ]
 
     def transpose_roll(self, event):
@@ -35,9 +40,12 @@ class CoreToolWindow(SimpleWindow):
 
 
 class CoreTool(SimpleApp):
-    WINDOW_SIZE = (5, 6.5,)
+    WINDOW_SIZE = (
+        5,
+        6.5,
+    )
     WINDOW_CLS = CoreToolWindow
-    TITLE = ''
+    TITLE = ""
     ROI_CLOSED = False
     SUMMED = True
 
@@ -70,33 +78,35 @@ class CoreTool(SimpleApp):
 
     def configure_image_widgets(self):
         if len(self.data.dims) == 3:
-            self.generate_marginal_for((0,), 0, 0, 'xy', cursors=False, layout=self.content_layout)
-            self.generate_marginal_for((0,), 1, 0, 'P', cursors=False, layout=self.content_layout)
+            self.generate_marginal_for((0,), 0, 0, "xy", cursors=False, layout=self.content_layout)
+            self.generate_marginal_for((0,), 1, 0, "P", cursors=False, layout=self.content_layout)
         else:
-            self.generate_marginal_for((), 0, 0, 'xy', cursors=False, layout=self.content_layout)
+            self.generate_marginal_for((), 0, 0, "xy", cursors=False, layout=self.content_layout)
 
             if self.SUMMED:
-                self.generate_marginal_for((0,), 1, 0, 'P', cursors=False, layout=self.content_layout)
+                self.generate_marginal_for(
+                    (0,), 1, 0, "P", cursors=False, layout=self.content_layout
+                )
             else:
-                self.generate_marginal_for((), 1, 0, 'P', cursors=False, layout=self.content_layout)
+                self.generate_marginal_for((), 1, 0, "P", cursors=False, layout=self.content_layout)
 
         self.attach_roi()
         self.main_layout.addLayout(self.content_layout, 0, 0)
 
     def attach_roi(self):
         self.roi = pg.PolyLineROI([[0, 0], [50, 50]], closed=self.ROI_CLOSED)
-        self.views['xy'].view.addItem(self.roi)
+        self.views["xy"].view.addItem(self.roi)
         self.roi.sigRegionChanged.connect(self.roi_changed)
 
     def compute_path_from_roi(self, roi):
         offset = roi.pos()
-        points = roi.getState()['points']
+        points = roi.getState()["points"]
         x, y = [p.x() + offset.x() for p in points], [p.y() + offset.y() for p in points]
 
         nx, ny = self.data.dims[-2], self.data.dims[-1]
         cx, cy = self.data.coords[nx], self.data.coords[ny]
-        x = interpolate.interp1d(np.arange(len(cx)), cx.values, fill_value='extrapolate')(x)
-        y = interpolate.interp1d(np.arange(len(cy)), cy.values, fill_value='extrapolate')(y)
+        x = interpolate.interp1d(np.arange(len(cx)), cx.values, fill_value="extrapolate")(x)
+        y = interpolate.interp1d(np.arange(len(cy)), cy.values, fill_value="extrapolate")(y)
 
         points = []
         for xi, yi in zip(x, y):
@@ -122,14 +132,16 @@ class CoreTool(SimpleApp):
 
     def update_data(self):
         if len(self.data.dims) == 3:
-            self.views['xy'].setImage(self.data.S.nan_to_num(), xvals=self.data.coords[self.data.dims[0]].values)
-            self.views['P'].setImage(self.data.mean(self.data.dims[0]))
+            self.views["xy"].setImage(
+                self.data.S.nan_to_num(), xvals=self.data.coords[self.data.dims[0]].values
+            )
+            self.views["P"].setImage(self.data.mean(self.data.dims[0]))
         else:
-            self.views['xy'].setImage(self.data.S.nan_to_num())
+            self.views["xy"].setImage(self.data.S.nan_to_num())
             if self.SUMMED:
-                self.views['P'].plot(self.data.isel(**dict([[self.data.dims[0], 0]])) * 0)
+                self.views["P"].plot(self.data.isel(**dict([[self.data.dims[0], 0]])) * 0)
             else:
-                self.views['P'].setImage(self.data)
+                self.views["P"].setImage(self.data)
 
     def before_show(self):
         self.configure_image_widgets()
@@ -138,43 +150,45 @@ class CoreTool(SimpleApp):
 
 
 class PathTool(CoreTool):
-    TITLE = 'Path-Tool'
+    TITLE = "Path-Tool"
 
     def path_changed(self, path):
         selected_data = self.data.S.along(path)
         if len(selected_data.dims) == 2:
-            self.views['P'].setImage(selected_data.data.transpose())
+            self.views["P"].setImage(selected_data.data.transpose())
         else:
-            self.views['P'].clear()
-            self.views['P'].plot(selected_data.data)
+            self.views["P"].clear()
+            self.views["P"].plot(selected_data.data)
 
 
 class DetectorWindowTool(CoreTool):
-    TITLE = 'Detector-Window'
+    TITLE = "Detector-Window"
     ROI_CLOSED = False
     alt_roi = None
 
     def attach_roi(self):
-        spectrum = normalize_to_spectrum(self.data).S.sum_other(['eV', 'phi'])
+        spectrum = normalize_to_spectrum(self.data).S.sum_other(["eV", "phi"])
         spacing = int(len(spectrum.eV) / 10)
         take_eVs = [i * spacing for i in range(10)]
         if take_eVs[-1] != len(spectrum.eV) - 1:
             take_eVs += [len(spectrum.eV) - 1]
 
-        left_ext = spectrum.X.first_exceeding('phi', 0.25, relative=True, reverse=True, as_index=True)
-        right_ext = spectrum.X.first_exceeding('phi', 0.25, relative=True, as_index=True)
+        left_ext = spectrum.X.first_exceeding(
+            "phi", 0.25, relative=True, reverse=True, as_index=True
+        )
+        right_ext = spectrum.X.first_exceeding("phi", 0.25, relative=True, as_index=True)
 
         xl, xr = take_eVs, take_eVs
         yl, yr = left_ext[take_eVs], right_ext[take_eVs]
 
-        if spectrum.dims.index('eV') != 0:
+        if spectrum.dims.index("eV") != 0:
             xl, yl = yl, xl
             xr, yr = yr, xr
 
         self.roi = pg.PolyLineROI(list(zip(xl, yl)), closed=self.ROI_CLOSED)
         self.alt_roi = pg.PolyLineROI(list(zip(xr, yr)), closed=self.ROI_CLOSED)
-        self.views['xy'].view.addItem(self.roi)
-        self.views['xy'].view.addItem(self.alt_roi)
+        self.views["xy"].view.addItem(self.roi)
+        self.views["xy"].view.addItem(self.alt_roi)
 
     @property
     def alt_path(self):
@@ -189,7 +203,7 @@ class DetectorWindowTool(CoreTool):
 
 
 class MaskTool(CoreTool):
-    TITLE = 'Mask-Tool'
+    TITLE = "Mask-Tool"
     ROI_CLOSED = True
     SUMMED = False
 
@@ -198,8 +212,8 @@ class MaskTool(CoreTool):
         path = self.path
         dims = self.data.dims[-2:]
         return {
-            'dims': dims,
-            'polys': [[[p[d] for d in dims] for p in path]],
+            "dims": dims,
+            "polys": [[[p[d] for d in dims] for p in path]],
         }
 
     def path_changed(self, _):
@@ -207,20 +221,20 @@ class MaskTool(CoreTool):
 
         main_data = self.data
         if len(main_data.dims) > 2:
-            main_data = main_data.isel(**dict([[main_data.dims[0], self.views['xy'].currentIndex]]))
+            main_data = main_data.isel(**dict([[main_data.dims[0], self.views["xy"].currentIndex]]))
 
-        if len(mask['polys'][0]) > 2:
-            self.views['P'].setImage(analysis.apply_mask(main_data, mask, replace=0, invert=True))
+        if len(mask["polys"][0]) > 2:
+            self.views["P"].setImage(analysis.apply_mask(main_data, mask, replace=0, invert=True))
 
 
 class BackgroundTool(CoreTool):
-    TITLE = 'Background-Tool'
+    TITLE = "Background-Tool"
     ROI_CLOSED = False
     SUMMED = False
 
     @property
     def mode(self):
-        return 'slice'
+        return "slice"
 
     def path_changed(self, path):
         dims = self.data.dims[-2:]
@@ -231,13 +245,13 @@ class BackgroundTool(CoreTool):
 
         main_data = self.data
         if len(main_data.dims) > 2:
-            main_data = main_data.isel(**dict([[main_data.dims[0], self.views['xy'].currentIndex]]))
+            main_data = main_data.isel(**dict([[main_data.dims[0], self.views["xy"].currentIndex]]))
 
         bkg = 0
-        if self.mode == 'slice':
+        if self.mode == "slice":
             bkg = main_data.sel(**{k: v for k, v in slices.items() if k == dims[0]}).mean(dims[0])
 
-        self.views['P'].setImage(main_data - bkg)
+        self.views["P"].setImage(main_data - bkg)
 
     def add_controls(self):
         pass

@@ -14,9 +14,9 @@ original_plot = model.ModelResult.plot
 
 def transform_lmfit_titles(l, is_title=False):
     if is_title:
-        l = l.replace('_', '-')
+        l = l.replace("_", "-")
 
-    return l or ''
+    return l or ""
 
 
 def patched_plot(self, *args, **kwargs):
@@ -38,21 +38,23 @@ def patched_plot(self, *args, **kwargs):
         if self.model.n_dims != 1:
             from arpes.plotting.utils import fancy_labels
 
-            fig, ax = plt.subplots(2,2, figsize=(10,8))
+            fig, ax = plt.subplots(2, 2, figsize=(10, 8))
 
             def to_dr(flat_data):
                 shape = [len(self.independent[d]) for d in self.independent_order]
-                return xr.DataArray(flat_data.reshape(shape), coords=self.independent, dims=self.independent_order)
+                return xr.DataArray(
+                    flat_data.reshape(shape), coords=self.independent, dims=self.independent_order
+                )
 
             to_dr(self.init_fit).plot(ax=ax[1][0])
             to_dr(self.data).plot(ax=ax[0][1])
             to_dr(self.best_fit).plot(ax=ax[0][0])
             to_dr(self.residual).plot(ax=ax[1][1])
 
-            ax[0][0].set_title('Best fit')
-            ax[0][1].set_title('Data')
-            ax[1][0].set_title('Initial fit')
-            ax[1][1].set_title('Residual (Data - Best fit)')
+            ax[0][0].set_title("Best fit")
+            ax[0][1].set_title("Data")
+            ax[1][0].set_title("Initial fit")
+            ax[1][1].set_title("Residual (Data - Best fit)")
 
             for axi in ax.ravel():
                 fancy_labels(axi)

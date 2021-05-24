@@ -15,8 +15,7 @@ from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('normalize_by_fermi_dirac', 'determine_broadened_fermi_distribution',
-           'symmetrize')
+__all__ = ("normalize_by_fermi_dirac", "determine_broadened_fermi_distribution", "symmetrize")
 
 
 def determine_broadened_fermi_distribution(reference_data: DataType, fixed_temperature=True):
@@ -40,24 +39,29 @@ def determine_broadened_fermi_distribution(reference_data: DataType, fixed_tempe
     params = {}
 
     if fixed_temperature:
-        params['fd_width'] = {
-            'value': reference_data.S.temp * K_BOLTZMANN_EV_KELVIN,
-            'vary': False,
+        params["fd_width"] = {
+            "value": reference_data.S.temp * K_BOLTZMANN_EV_KELVIN,
+            "vary": False,
         }
 
     reference_data = normalize_to_spectrum(reference_data)
 
     sum_dims = list(reference_data.dims)
-    sum_dims.remove('eV')
+    sum_dims.remove("eV")
 
     return AffineBroadenedFD().guess_fit(reference_data.sum(sum_dims), params=params)
 
 
-@update_provenance('Normalize By Fermi Dirac')
-def normalize_by_fermi_dirac(data: DataType, reference_data: DataType = None, plot=False,
-                             broadening=None,
-                             temperature_axis=None,
-                             temp_offset=0, **kwargs):
+@update_provenance("Normalize By Fermi Dirac")
+def normalize_by_fermi_dirac(
+    data: DataType,
+    reference_data: DataType = None,
+    plot=False,
+    broadening=None,
+    temperature_axis=None,
+    temp_offset=0,
+    **kwargs
+):
     """
     Normalizes data according to a Fermi level reference on separate data or using the same source spectrum.
 
@@ -79,53 +83,72 @@ def normalize_by_fermi_dirac(data: DataType, reference_data: DataType = None, pl
     """
     reference_data = data if reference_data is None else reference_data
     broadening_fit = determine_broadened_fermi_distribution(reference_data, **kwargs)
-    broadening = broadening_fit.params['conv_width'].value if broadening is None else broadening
+    broadening = broadening_fit.params["conv_width"].value if broadening is None else broadening
 
     if plot:
-        print('Gaussian broadening is: {} meV (Gaussian sigma)'.format(
-            broadening_fit.params['conv_width'].value * 1000))
-        print('Fermi edge location is: {} meV (fit chemical potential)'.format(
-            broadening_fit.params['fd_center'].value * 1000))
-        print('Fermi width is: {} meV (fit fermi width)'.format(
-            broadening_fit.params['fd_width'].value * 1000))
+        print(
+            "Gaussian broadening is: {} meV (Gaussian sigma)".format(
+                broadening_fit.params["conv_width"].value * 1000
+            )
+        )
+        print(
+            "Fermi edge location is: {} meV (fit chemical potential)".format(
+                broadening_fit.params["fd_center"].value * 1000
+            )
+        )
+        print(
+            "Fermi width is: {} meV (fit fermi width)".format(
+                broadening_fit.params["fd_width"].value * 1000
+            )
+        )
 
         broadening_fit.plot()
 
-    offset = broadening_fit.params['offset'].value
+    offset = broadening_fit.params["offset"].value
     without_offset = broadening_fit.eval(offset=0)
 
     cut_index = -np.argmax(without_offset[::-1] > 0.1 * offset)
-    cut_energy = reference_data.coords['eV'].values[cut_index]
+    cut_energy = reference_data.coords["eV"].values[cut_index]
 
-    if temperature_axis is None and 'temp' in data.dims:
-        temperature_axis = 'temp'
+    if temperature_axis is None and "temp" in data.dims:
+        temperature_axis = "temp"
 
     transpose_order = list(data.dims)
-    transpose_order.remove('eV')
+    transpose_order.remove("eV")
 
     if temperature_axis:
         transpose_order.remove(temperature_axis)
         transpose_order = transpose_order + [temperature_axis]
 
-    transpose_order = transpose_order + ['eV']
+    transpose_order = transpose_order + ["eV"]
 
-    without_background = (data - data.sel(eV=slice(cut_energy, None)).mean('eV')).transpose(*transpose_order)
+    without_background = (data - data.sel(eV=slice(cut_energy, None)).mean("eV")).transpose(
+        *transpose_order
+    )
 
     if temperature_axis:
         without_background = normalize_to_spectrum(without_background)
         divided = without_background.G.map_axes(
-            temperature_axis, lambda x, coord: x / broadening_fit.eval(
-                x=x.coords['eV'].values, lin_bkg=0, const_bkg=1, offset=0,
+            temperature_axis,
+            lambda x, coord: x
+            / broadening_fit.eval(
+                x=x.coords["eV"].values,
+                lin_bkg=0,
+                const_bkg=1,
+                offset=0,
                 conv_width=broadening,
-                fd_width=(coord[temperature_axis] + temp_offset) * K_BOLTZMANN_EV_KELVIN))
+                fd_width=(coord[temperature_axis] + temp_offset) * K_BOLTZMANN_EV_KELVIN,
+            ),
+        )
     else:
         without_background = normalize_to_spectrum(without_background)
         divided = without_background / broadening_fit.eval(
-            x=data.coords['eV'].values,
-            conv_width=broadening,
-            lin_bkg=0, const_bkg=1, offset=0)
+            x=data.coords["eV"].values, conv_width=broadening, lin_bkg=0, const_bkg=1, offset=0
+        )
 
-    divided.coords['eV'].values = divided.coords['eV'].values - broadening_fit.params['fd_center'].value
+    divided.coords["eV"].values = (
+        divided.coords["eV"].values - broadening_fit.params["fd_center"].value
+    )
     return divided
 
 
@@ -134,17 +157,17 @@ def _shift_energy_interpolate(data: DataType, shift=None):
         pass
         # raise NotImplementedError("arbitrary shift not yet implemented")
 
-    data = normalize_to_spectrum(data).S.transpose_to_front('eV')
+    data = normalize_to_spectrum(data).S.transpose_to_front("eV")
 
     new_data = data.copy(deep=True)
-    new_axis = new_data.coords['eV']
+    new_axis = new_data.coords["eV"]
     new_values = new_data.values * 0
 
     if shift is None:
-        closest_to_zero = data.coords['eV'].sel(eV=0, method='nearest')
+        closest_to_zero = data.coords["eV"].sel(eV=0, method="nearest")
         shift = -closest_to_zero
 
-    stride = data.G.stride('eV', generic_dim_names=False)
+    stride = data.G.stride("eV", generic_dim_names=False)
 
     if np.abs(shift) >= stride:
         n_strides = int(shift / stride)
@@ -162,13 +185,13 @@ def _shift_energy_interpolate(data: DataType, shift=None):
     if shift < 0:
         new_values[:-1] = new_values[:-1] + data.values[1:] * weight
 
-    new_data.coords['eV'] = new_axis
+    new_data.coords["eV"] = new_axis
     new_data.values = new_values
 
     return new_data
 
 
-@update_provenance('Symmetrize')
+@update_provenance("Symmetrize")
 def symmetrize(data: DataType, subpixel=False, full_spectrum=False):
     """
     Symmetrizes data across the chemical potential. This provides a crude tool by which
@@ -182,7 +205,7 @@ def symmetrize(data: DataType, subpixel=False, full_spectrum=False):
            the other half is identical.
     :return:
     """
-    data = normalize_to_spectrum(data).S.transpose_to_front('eV')
+    data = normalize_to_spectrum(data).S.transpose_to_front("eV")
 
     if subpixel or full_spectrum:
         data = _shift_energy_interpolate(data)
@@ -190,7 +213,7 @@ def symmetrize(data: DataType, subpixel=False, full_spectrum=False):
     above = data.sel(eV=slice(0, None))
     below = data.sel(eV=slice(None, 0)).copy(deep=True)
 
-    l = len(above.coords['eV'])
+    l = len(above.coords["eV"])
 
     zeros = below.values * 0
     zeros[-l:] = above.values[::-1]
@@ -204,9 +227,9 @@ def symmetrize(data: DataType, subpixel=False, full_spectrum=False):
         full_data = below.copy(deep=True)
 
         new_above = full_data.copy(deep=True)[::-1]
-        new_above.coords['eV'] = (new_above.coords['eV'] * -1)
+        new_above.coords["eV"] = new_above.coords["eV"] * -1
 
-        full_data = xr.concat([full_data, new_above[1:]], dim='eV')
+        full_data = xr.concat([full_data, new_above[1:]], dim="eV")
 
         result = full_data
     else:

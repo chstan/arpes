@@ -17,11 +17,16 @@ from arpes.utilities.math import fermi_distribution
 
 from .filters import gaussian_filter_arr
 
-__all__ = ('normalize_by_fermi_distribution', 'symmetrize_axis', 'condense', 'rebin',
-           'fit_fermi_edge')
+__all__ = (
+    "normalize_by_fermi_distribution",
+    "symmetrize_axis",
+    "condense",
+    "rebin",
+    "fit_fermi_edge",
+)
 
 
-@update_provenance('Fit Fermi Edge')
+@update_provenance("Fit Fermi Edge")
 def fit_fermi_edge(data, energy_range=None):
     """
     Fits a Fermi edge. Not much easier than doing it manually, but this can be
@@ -34,16 +39,21 @@ def fit_fermi_edge(data, energy_range=None):
         energy_range = slice(-0.1, 0.1)
 
     broadcast_directions = list(data.dims)
-    broadcast_directions.remove('eV')
-    assert len(broadcast_directions) == 1 # for now we don't support more
+    broadcast_directions.remove("eV")
+    assert len(broadcast_directions) == 1  # for now we don't support more
 
     edge_fit = broadcast_model(GStepBModel, data.sel(eV=energy_range), broadcast_directions[0])
     return edge_fit
 
 
-@update_provenance('Normalized by the 1/Fermi Dirac Distribution at sample temp')
+@update_provenance("Normalized by the 1/Fermi Dirac Distribution at sample temp")
 def normalize_by_fermi_distribution(
-        data: DataType, max_gain=None, rigid_shift=0, instrumental_broadening=None, total_broadening=None):
+    data: DataType,
+    max_gain=None,
+    rigid_shift=0,
+    instrumental_broadening=None,
+    total_broadening=None,
+):
     """
     Normalizes a scan by 1/the fermi dirac distribution. You can control the maximum gain with ``clamp``, and whether
     the Fermi edge needs to be shifted (this is for those desperate situations where you want something that
@@ -60,29 +70,27 @@ def normalize_by_fermi_distribution(
     data = normalize_to_spectrum(data)
 
     if total_broadening:
-        distrib = fermi_distribution(data.coords['eV'].values - rigid_shift,
-                                     total_broadening / arpes.constants.K_BOLTZMANN_EV_KELVIN)
+        distrib = fermi_distribution(
+            data.coords["eV"].values - rigid_shift,
+            total_broadening / arpes.constants.K_BOLTZMANN_EV_KELVIN,
+        )
     else:
-        distrib = fermi_distribution(data.coords['eV'].values - rigid_shift, data.S.temp)
+        distrib = fermi_distribution(data.coords["eV"].values - rigid_shift, data.S.temp)
 
     # don't boost by more than 90th percentile of input, by default
     if max_gain is None:
         max_gain = min(np.mean(data.values), np.percentile(data.values, 10))
 
-    distrib[distrib < 1/max_gain] = 1/max_gain
-    distrib_arr = xr.DataArray(
-        distrib,
-        {'eV': data.coords['eV'].values},
-        ['eV']
-    )
+    distrib[distrib < 1 / max_gain] = 1 / max_gain
+    distrib_arr = xr.DataArray(distrib, {"eV": data.coords["eV"].values}, ["eV"])
 
     if instrumental_broadening is not None:
-        distrib_arr = gaussian_filter_arr(distrib_arr, sigma={'eV': instrumental_broadening})
+        distrib_arr = gaussian_filter_arr(distrib_arr, sigma={"eV": instrumental_broadening})
 
     return data / distrib_arr
 
 
-@update_provenance('Symmetrize about axis')
+@update_provenance("Symmetrize about axis")
 def symmetrize_axis(data, axis_name, flip_axes=None, shift_axis=True):
     """
     Symmetrizes data across an axis. It would be better ultimately to be able
@@ -95,7 +103,7 @@ def symmetrize_axis(data, axis_name, flip_axes=None, shift_axis=True):
     :param shift_axis:
     :return:
     """
-    data = data.copy(deep=True) # slow but make sure we don't bork axis on original
+    data = data.copy(deep=True)  # slow but make sure we don't bork axis on original
     data.coords[axis_name].values = data.coords[axis_name].values - data.coords[axis_name].values[0]
 
     selector = {}
@@ -116,7 +124,7 @@ def symmetrize_axis(data, axis_name, flip_axes=None, shift_axis=True):
     return rev.combine_first(data)
 
 
-@update_provenance('Condensed array')
+@update_provenance("Condensed array")
 def condense(data: xr.DataArray):
     """
     Clips the data so that only regions where there is substantial weight are included. In
@@ -126,14 +134,20 @@ def condense(data: xr.DataArray):
     :param data: xarray.DataArray
     :return:
     """
-    if 'eV' in data.dims:
+    if "eV" in data.dims:
         data = data.sel(eV=slice(None, 0.05))
 
     return data
 
 
-@update_provenance('Rebinned array')
-def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=None, interpolate=False, **kwargs):
+@update_provenance("Rebinned array")
+def rebin(
+    data: DataType,
+    shape: dict = None,
+    reduction: typing.Union[int, dict] = None,
+    interpolate=False,
+    **kwargs
+):
     """
     Rebins the data onto a different (smaller) shape. By default the behavior is to
     split the data into chunks that are integrated over. An interpolation option is also
@@ -153,7 +167,9 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
 
     if isinstance(data, xr.Dataset):
         new_vars = {
-            datavar: rebin(data[datavar], shape=shape, reduction=reduction, interpolate=interpolate, **kwargs)
+            datavar: rebin(
+                data[datavar], shape=shape, reduction=reduction, interpolate=interpolate, **kwargs
+            )
             for datavar in data.data_vars
         }
         new_coords = {}
@@ -168,9 +184,9 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
         reduction = kwargs
 
     if interpolate:
-        raise NotImplementedError('The interpolation option has not been implemented')
+        raise NotImplementedError("The interpolation option has not been implemented")
 
-    assert(shape is None or reduction is None)
+    assert shape is None or reduction is None
 
     if isinstance(reduction, int):
         reduction = {d: reduction for d in data.dims}
@@ -197,20 +213,19 @@ def rebin(data: DataType, shape: dict=None, reduction: typing.Union[int, dict]=N
     trimmed_data = data.data[[slices[d] for d in data.dims]]
     trimmed_coords = {d: coord[slices[d]] for d, coord in data.indexes.items()}
 
-    temp_shape = [[trimmed_data.shape[i] // reduction.get(d, 1), reduction.get(d, 1)]
-                  for i, d in enumerate(data.dims)]
+    temp_shape = [
+        [trimmed_data.shape[i] // reduction.get(d, 1), reduction.get(d, 1)]
+        for i, d in enumerate(data.dims)
+    ]
     temp_shape = itertools.chain(*temp_shape)
     reduced_data = trimmed_data.reshape(*temp_shape)
 
     for i in range(len(data.dims)):
         reduced_data = reduced_data.mean(i + 1)
 
-    reduced_coords = {d: coord[::reduction.get(d, 1)] for d, coord in trimmed_coords.items()}
-    reduced_coords.update({c: data.coords[c] for c in data.coords.keys() if c not in trimmed_coords})
-
-    return xr.DataArray(
-        reduced_data,
-        reduced_coords,
-        data.dims,
-        attrs=data.attrs
+    reduced_coords = {d: coord[:: reduction.get(d, 1)] for d, coord in trimmed_coords.items()}
+    reduced_coords.update(
+        {c: data.coords[c] for c in data.coords.keys() if c not in trimmed_coords}
     )
+
+    return xr.DataArray(reduced_data, reduced_coords, data.dims, attrs=data.attrs)

@@ -3,11 +3,16 @@ import scipy.ndimage.filters
 
 import arpes.fits
 import xarray as xr
-from arpes.analysis.band_analysis_utils import (param_getter,
-                                                param_stderr_getter)
+from arpes.analysis.band_analysis_utils import param_getter, param_stderr_getter
 
-__all__ = ['Band', 'MultifitBand', 'VoigtBand', 'BackgroundBand', 'FermiEdgeBand',
-           'AffineBackgroundBand']
+__all__ = [
+    "Band",
+    "MultifitBand",
+    "VoigtBand",
+    "BackgroundBand",
+    "FermiEdgeBand",
+    "AffineBackgroundBand",
+]
 
 
 class Band:
@@ -30,12 +35,11 @@ class Band:
 
         def embed_nan(values, padding):
             embedded = np.ndarray((values.shape[0] + 2 * padding,))
-            embedded[:] = float('nan')
+            embedded[:] = float("nan")
             embedded[padding:-padding] = values
             return embedded
 
         raw_values = embed_nan(np.copy(self.center.values), 50)
-
 
         masked = np.copy(raw_values)
         masked[raw_values != raw_values] = 0
@@ -44,18 +48,14 @@ class Band:
         nan_mask[raw_values != raw_values] = 0
 
         sigma = 0.1 / spacing
-        nan_mask = scipy.ndimage.gaussian_filter(nan_mask, sigma, mode='mirror')
-        masked = scipy.ndimage.gaussian_filter(masked, sigma, mode='mirror')
+        nan_mask = scipy.ndimage.gaussian_filter(nan_mask, sigma, mode="mirror")
+        masked = scipy.ndimage.gaussian_filter(masked, sigma, mode="mirror")
 
-        return xr.DataArray(
-            np.gradient(masked / nan_mask, spacing)[50:-50],
-            self.coords,
-            self.dims
-        )
+        return xr.DataArray(np.gradient(masked / nan_mask, spacing)[50:-50], self.coords, self.dims)
 
     @property
     def fermi_velocity(self):
-        return self.velocity.sel(eV=0, method='nearest')
+        return self.velocity.sel(eV=0, method="nearest")
 
     @property
     def band_width(self):
@@ -77,7 +77,7 @@ class Band:
             return self._data[var_name].values
 
         output = np.copy(self._data[var_name].values)
-        output[self._data[var_name + '_stderr'].values > 0.01] = float('nan')
+        output[self._data[var_name + "_stderr"].values > 0.01] = float("nan")
 
         return xr.DataArray(
             output,
@@ -87,19 +87,19 @@ class Band:
 
     @property
     def center(self, clean=True):
-        return self.get_dataarray('center', clean)
+        return self.get_dataarray("center", clean)
 
     @property
     def center_stderr(self, clean=False):
-        return self.get_dataarray('center_stderr', clean)
+        return self.get_dataarray("center_stderr", clean)
 
     @property
     def sigma(self, clean=True):
-        return self.get_dataarray('sigma', clean)
+        return self.get_dataarray("sigma", clean)
 
     @property
     def amplitude(self, clean=True):
-        return self.get_dataarray('amplitude', clean)
+        return self.get_dataarray("amplitude", clean)
 
     @property
     def indexes(self):
@@ -122,8 +122,8 @@ class MultifitBand(Band):
     def get_dataarray(self, var_name, clean=True):
         full_var_name = self.label + var_name
 
-        if 'stderr' in full_var_name:
-            return self._data.G.map(param_stderr_getter(full_var_name.split('_stderr')[0]))
+        if "stderr" in full_var_name:
+            return self._data.G.map(param_stderr_getter(full_var_name.split("_stderr")[0]))
 
         return self._data.G.map(param_getter(full_var_name))
 

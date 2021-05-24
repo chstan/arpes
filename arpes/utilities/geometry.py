@@ -1,7 +1,11 @@
 import numpy as np
 from scipy.spatial import ConvexHull
 
-__all__ = ('polyhedron_intersect_plane', 'segment_contains_point', 'point_plane_intersection',)
+__all__ = (
+    "polyhedron_intersect_plane",
+    "segment_contains_point",
+    "point_plane_intersection",
+)
 
 
 def point_plane_intersection(plane_normal, plane_point, line_a, line_b, epsilon=1e-6):
@@ -86,11 +90,13 @@ def polyhedron_intersect_plane(poly_faces, plane_normal, plane_point, epsilon=1e
     for poly_face in poly_faces:
         segments = list(zip(poly_face, np.concatenate([poly_face[1:], [poly_face[0]]])))
         for a, b in segments:
-            intersection = point_plane_intersection(plane_normal, plane_point, a, b, epsilon=epsilon)
+            intersection = point_plane_intersection(
+                plane_normal, plane_point, a, b, epsilon=epsilon
+            )
             if segment_contains_point(a, b, intersection, epsilon=epsilon):
                 add_point(intersection)
 
-    points = ConvexHull(collected_points, qhull_options='Qc QJ').points
+    points = ConvexHull(collected_points, qhull_options="Qc QJ").points
 
     # sort
     for_sort = points - np.mean(points, axis=0)

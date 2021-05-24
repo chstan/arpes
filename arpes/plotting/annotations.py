@@ -3,9 +3,14 @@ import numpy as np
 from arpes.plotting.utils import name_for_dim, unit_for_dim
 from arpes.utilities.conversion.forward import convert_coordinates_to_kspace_forward
 
-__all__ = ('annotate_cuts', 'annotate_point', 'annotate_experimental_conditions',)
+__all__ = (
+    "annotate_cuts",
+    "annotate_point",
+    "annotate_experimental_conditions",
+)
 
-def annotate_experimental_conditions(ax, data, desc, show=False, orientation='top', **kwargs):
+
+def annotate_experimental_conditions(ax, data, desc, show=False, orientation="top", **kwargs):
     """
     Renders information about the experimental conditions onto a set of axes,
     also adjust the axes limits and hides the axes.
@@ -26,7 +31,14 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation='to
     :return:
     """
 
-    if isinstance(desc, (str, int, float,)):
+    if isinstance(
+        desc,
+        (
+            str,
+            int,
+            float,
+        ),
+    ):
         desc = [desc]
 
     ax.grid(False)
@@ -38,45 +50,45 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation='to
 
     delta = -1
     current = 100
-    if orientation == 'bottom':
+    if orientation == "bottom":
         delta = 1
         current = 0
 
-    fontsize = kwargs.pop('fontsize', 16)
+    fontsize = kwargs.pop("fontsize", 16)
     delta = fontsize * delta
 
     conditions = data.S.experimental_conditions
 
     def render_polarization(c):
-        pol = c['polarization']
-        if pol in ['lc', 'rc']:
-            return '\\textbf{' + pol.upper() + '}'
+        pol = c["polarization"]
+        if pol in ["lc", "rc"]:
+            return "\\textbf{" + pol.upper() + "}"
 
         symbol_pol = {
-            's': '',
-            'p': '',
-            's-p': '',
-            'p-s': '',
+            "s": "",
+            "p": "",
+            "s-p": "",
+            "p-s": "",
         }
 
-        prefix = ''
-        if pol in ['s-p', 'p-s']:
-            prefix = '\\textbf{Linear Dichroism, }'
+        prefix = ""
+        if pol in ["s-p", "p-s"]:
+            prefix = "\\textbf{Linear Dichroism, }"
 
         symbol = symbol_pol[pol]
         if symbol:
-            return prefix + '$' + symbol + '$/\\textbf{' + pol + '}'
+            return prefix + "$" + symbol + "$/\\textbf{" + pol + "}"
 
-        return prefix + '\\textbf{' + pol + '}'
+        return prefix + "\\textbf{" + pol + "}"
 
     def render_photon(c):
-        return '\\textbf{' + str(c['hv']) + ' eV'
+        return "\\textbf{" + str(c["hv"]) + " eV"
 
     renderers = {
-        'temp': lambda c: '\\textbf{T = ' + '{:.3g}'.format(c['temp']) + ' K}',
-        'photon': render_photon,
-        'photon polarization': lambda c: render_photon(c) + ', ' + render_polarization(c),
-        'polarization': render_polarization,
+        "temp": lambda c: "\\textbf{T = " + "{:.3g}".format(c["temp"]) + " K}",
+        "photon": render_photon,
+        "photon polarization": lambda c: render_photon(c) + ", " + render_polarization(c),
+        "polarization": render_polarization,
     }
 
     for item in desc:
@@ -84,7 +96,7 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation='to
             current += item + delta
             continue
 
-        item = item.replace('_', ' ').lower()
+        item = item.replace("_", " ").lower()
 
         ax.text(0, current, renderers[item](conditions), fontsize=fontsize, **kwargs)
         current += delta
@@ -105,43 +117,58 @@ def annotate_cuts(ax, data, plotted_axes, include_text_labels=False, **kwargs):
     assert len(plotted_axes) == 2
 
     for k, v in kwargs.items():
-        if not isinstance(v, (tuple, list, np.ndarray,)):
+        if not isinstance(
+            v,
+            (
+                tuple,
+                list,
+                np.ndarray,
+            ),
+        ):
             v = [v]
 
-        selected = converted_coordinates.sel(**dict([[k, v]]), method='nearest')
+        selected = converted_coordinates.sel(**dict([[k, v]]), method="nearest")
 
         for coords_dict, obj in selected.G.iterate_axis(k):
             css = [obj[d].values for d in plotted_axes]
-            ax.plot(*css, color='red', ls='--', linewidth=1, dashes=(5, 5))
+            ax.plot(*css, color="red", ls="--", linewidth=1, dashes=(5, 5))
 
             if include_text_labels:
                 idx = np.argmin(css[1])
 
-                ax.text(css[0][idx] + 0.05, css[1][idx], '{} = {} {}'.format(name_for_dim(k), coords_dict[k].item(), unit_for_dim(k)),
-                        color='red', size='medium')
+                ax.text(
+                    css[0][idx] + 0.05,
+                    css[1][idx],
+                    "{} = {} {}".format(name_for_dim(k), coords_dict[k].item(), unit_for_dim(k)),
+                    color="red",
+                    size="medium",
+                )
 
 
 def annotate_point(ax, location, label, delta=None, **kwargs):
     label = {
-        'G': '$\\Gamma$',
-        'X': r'\textbf{X}',
-        'Y': r'\textbf{Y}',
-        'K': r'\textbf{K}',
-        'M': r'\textbf{M}',
+        "G": "$\\Gamma$",
+        "X": r"\textbf{X}",
+        "Y": r"\textbf{Y}",
+        "K": r"\textbf{K}",
+        "M": r"\textbf{M}",
     }.get(label, label)
 
     if delta is None:
-        delta = (-0.05, 0.05,)
+        delta = (
+            -0.05,
+            0.05,
+        )
 
-    c = kwargs.pop('color', 'red')
+    c = kwargs.pop("color", "red")
 
     if len(delta) == 2:
         dx, dy = tuple(delta)
         x, y = tuple(location)
-        ax.plot([x], [y], 'o', c=c)
+        ax.plot([x], [y], "o", c=c)
         ax.text(x + dx, y + dy, label, color=c, **kwargs)
     else:
         dx, dy, dz = tuple(delta)
         x, y, z = tuple(location)
-        ax.plot([x], [y], [z], 'o', c=c)
+        ax.plot([x], [y], [z], "o", c=c)
         ax.text(x + dx, y + dy, z + dz, label, color=c, **kwargs)

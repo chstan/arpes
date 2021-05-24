@@ -2,7 +2,8 @@
 
 from PyQt5 import QtGui, QtWidgets
 
-__all__ = ('AxisInfoWidget',)
+__all__ = ("AxisInfoWidget",)
+
 
 class AxisInfoWidget(QtWidgets.QGroupBox):
     def __init__(self, parent=None, root=None, axis_index=None):
@@ -10,8 +11,8 @@ class AxisInfoWidget(QtWidgets.QGroupBox):
 
         self.layout = QtGui.QGridLayout(self)
 
-        self.label = QtWidgets.QLabel('Cursor: ')
-        self.transpose_button = QtWidgets.QPushButton('To Front')
+        self.label = QtWidgets.QLabel("Cursor: ")
+        self.transpose_button = QtWidgets.QPushButton("To Front")
         self.transpose_button.clicked.connect(self.on_transpose)
 
         self.layout.addWidget(self.label)
@@ -29,9 +30,9 @@ class AxisInfoWidget(QtWidgets.QGroupBox):
     def recompute(self):
         self.setTitle(self.root.data.dims[self.axis_index])
         try:
-            cursor_index = self.root.context['cursor'][self.axis_index]
-            cursor_value = self.root.context['value_cursor'][self.axis_index]
-            self.label.setText('Cursor: {}, {:.3g}'.format(int(cursor_index), cursor_value))
+            cursor_index = self.root.context["cursor"][self.axis_index]
+            cursor_value = self.root.context["value_cursor"][self.axis_index]
+            self.label.setText("Cursor: {}, {:.3g}".format(int(cursor_index), cursor_value))
         except KeyError:
             pass
 

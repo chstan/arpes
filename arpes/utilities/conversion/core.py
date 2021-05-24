@@ -36,7 +36,7 @@ from typing import Union
 from .kx_ky_conversion import ConvertKxKy, ConvertKp
 from .kz_conversion import ConvertKpKz
 
-__all__ = ['convert_to_kspace', 'slice_along_path']
+__all__ = ["convert_to_kspace", "slice_along_path"]
 
 
 def infer_kspace_coordinate_transform(arr: xr.DataArray):
@@ -51,19 +51,43 @@ def infer_kspace_coordinate_transform(arr: xr.DataArray):
     conversion functions
     """
     old_coords = deepcopy(list(arr.coords))
-    assert 'eV' in old_coords
-    old_coords.remove('eV')
+    assert "eV" in old_coords
+    old_coords.remove("eV")
     old_coords.sort()
 
     new_coords = {
-        ('phi',): ['kp'],
-        ('beta', 'phi',): ['kx', 'ky'],
-        ('phi', 'theta',): ['kx', 'ky'],
-        ('phi', 'psi',): ['kx', 'ky'],
-        ('hv', 'phi',): ['kp', 'kz'],
-        ('beta', 'hv', 'phi',): ['kx', 'ky', 'kz'],
-        ('hv', 'phi', 'theta',): ['kx', 'ky', 'kz'],
-        ('hv', 'phi', 'psi',): ['kx', 'ky', 'kz'],
+        ("phi",): ["kp"],
+        (
+            "beta",
+            "phi",
+        ): ["kx", "ky"],
+        (
+            "phi",
+            "theta",
+        ): ["kx", "ky"],
+        (
+            "phi",
+            "psi",
+        ): ["kx", "ky"],
+        (
+            "hv",
+            "phi",
+        ): ["kp", "kz"],
+        (
+            "beta",
+            "hv",
+            "phi",
+        ): ["kx", "ky", "kz"],
+        (
+            "hv",
+            "phi",
+            "theta",
+        ): ["kx", "ky", "kz"],
+        (
+            "hv",
+            "phi",
+            "psi",
+        ): ["kx", "ky", "kz"],
     }.get(tuple(old_coords))
 
     # At this point we need to do a bit of work in order to determine the functions
@@ -71,17 +95,16 @@ def infer_kspace_coordinate_transform(arr: xr.DataArray):
 
     # TODO Also provide the Jacobian of the coordinate transform to properly
     return {
-        'dims': new_coords,
-        'transforms': {
-
-        },
-        'calculate_bounds': None,
-        'jacobian': None,
+        "dims": new_coords,
+        "transforms": {},
+        "calculate_bounds": None,
+        "jacobian": None,
     }
 
 
-def grid_interpolator_from_dataarray(arr: xr.DataArray, fill_value=0.0, method='linear',
-                                     bounds_error=False):
+def grid_interpolator_from_dataarray(
+    arr: xr.DataArray, fill_value=0.0, method="linear", bounds_error=False
+):
     """
     Translates the contents of an xarray.DataArray into a scipy.interpolate.RegularGridInterpolator.
 
@@ -98,13 +121,25 @@ def grid_interpolator_from_dataarray(arr: xr.DataArray, fill_value=0.0, method='
         values = np.flip(values, arr.dims.index(dim))
 
     return scipy.interpolate.RegularGridInterpolator(
-        points=[arr.coords[d].values[::-1] if d in flip_axes else arr.coords[d].values for d in arr.dims],
+        points=[
+            arr.coords[d].values[::-1] if d in flip_axes else arr.coords[d].values for d in arr.dims
+        ],
         values=values,
-        bounds_error=bounds_error, fill_value=fill_value, method=method)
+        bounds_error=bounds_error,
+        fill_value=fill_value,
+        method=method,
+    )
 
 
-def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=None, resolution=None,
-                     shift_gamma=True, extend_to_edge=False, **kwargs):
+def slice_along_path(
+    arr: xr.DataArray,
+    interpolation_points=None,
+    axis_name=None,
+    resolution=None,
+    shift_gamma=True,
+    extend_to_edge=False,
+    **kwargs
+):
     """
     TODO: There might be a little bug here where the last coordinate has a value of 0, causing the interpolation to loop
     back to the start point. For now I will just deal with this in client code where I see it until I understand if it is
@@ -145,13 +180,13 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
     """
 
     if interpolation_points is None:
-        raise ValueError('You must provide points specifying an interpolation path')
+        raise ValueError("You must provide points specifying an interpolation path")
 
     def extract_symmetry_point(name):
-        raw_point = arr.attrs['symmetry_points'][name]
-        G = arr.attrs['symmetry_points']['G']
+        raw_point = arr.attrs["symmetry_points"][name]
+        G = arr.attrs["symmetry_points"]["G"]
 
-        if not extend_to_edge or name == 'G':
+        if not extend_to_edge or name == "G":
             return raw_point
 
         # scale the point so that it reaches the edge of the dataset
@@ -178,9 +213,10 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
         S = (S - G) * scale_factor + G
         return dict(zip([d for d in arr.dims if d in raw_point], S))
 
-
     parsed_interpolation_points = [
-        x if isinstance(x, collections.Iterable) and not isinstance(x, str) else extract_symmetry_point(x)
+        x
+        if isinstance(x, collections.Iterable) and not isinstance(x, str)
+        else extract_symmetry_point(x)
         for x in interpolation_points
     ]
 
@@ -196,25 +232,54 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
         for coord, values in seen_coordinates.items():
             if coord not in point:
                 if len(values) != 1:
-                    raise ValueError('Ambiguous interpolation waypoint broadcast at dimension {}'.format(coord))
+                    raise ValueError(
+                        "Ambiguous interpolation waypoint broadcast at dimension {}".format(coord)
+                    )
                 else:
                     point[coord] = list(values)[0]
 
     if axis_name is None:
         axis_name = {
-            ('beta', 'phi',): 'angle',
-            ('chi', 'phi',): 'angle',
-            ('phi', 'psi',): 'angle',
-            ('phi', 'theta',): 'angle',
-            ('kx', 'ky',): 'kp',
-            ('kx', 'kz',): 'k',
-            ('ky', 'kz',): 'k',
-            ('kx', 'ky', 'kz',): 'k'
-        }.get(tuple(sorted(seen_coordinates.keys())), 'inter')
+            (
+                "beta",
+                "phi",
+            ): "angle",
+            (
+                "chi",
+                "phi",
+            ): "angle",
+            (
+                "phi",
+                "psi",
+            ): "angle",
+            (
+                "phi",
+                "theta",
+            ): "angle",
+            (
+                "kx",
+                "ky",
+            ): "kp",
+            (
+                "kx",
+                "kz",
+            ): "k",
+            (
+                "ky",
+                "kz",
+            ): "k",
+            (
+                "kx",
+                "ky",
+                "kz",
+            ): "k",
+        }.get(tuple(sorted(seen_coordinates.keys())), "inter")
 
-        if axis_name == 'angle' or axis_name == 'inter':
-            warnings.warn('Interpolating along axes with different dimensions '
-                          'will not include Jacobian correction factor.')
+        if axis_name == "angle" or axis_name == "inter":
+            warnings.warn(
+                "Interpolating along axes with different dimensions "
+                "will not include Jacobian correction factor."
+            )
 
     converted_coordinates = None
     converted_dims = free_coordinates + [axis_name]
@@ -236,9 +301,9 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
     segment_lengths = [element_distance(*segment) for segment in path_segments]
     path_length = sum(segment_lengths)
 
-    gamma_offset = 0 # offset the gamma point to a k coordinate of 0 if possible
-    if 'G' in interpolation_points and shift_gamma:
-        gamma_offset = sum(segment_lengths[0:interpolation_points.index('G')])
+    gamma_offset = 0  # offset the gamma point to a k coordinate of 0 if possible
+    if "G" in interpolation_points and shift_gamma:
+        gamma_offset = sum(segment_lengths[0 : interpolation_points.index("G")])
 
     if resolution is None:
         resolution = np.min([required_sampling_density(*segment) for segment in path_segments])
@@ -267,8 +332,9 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
                 seg_start, seg_end = path_segments[i]
                 dim_start, dim_end = seg_start[name], seg_end[name]
                 mask = np.logical_and(normalized >= 0, normalized < 1)
-                dest_coordinate[mask] = \
+                dest_coordinate[mask] = (
                     dim_start * (1 - normalized[mask]) + dim_end * normalized[mask]
+                )
                 start = end
 
             return dest_coordinate
@@ -278,16 +344,18 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
     converted_coordinates = {d: arr.coords[d].values for d in free_coordinates}
 
     # Adjust this coordinate under special circumstances
-    converted_coordinates[axis_name] = np.linspace(0, path_length, int(path_length / resolution)) - gamma_offset
+    converted_coordinates[axis_name] = (
+        np.linspace(0, path_length, int(path_length / resolution)) - gamma_offset
+    )
 
     converted_ds = convert_coordinates(
         arr,
         converted_coordinates,
         {
-            'dims': converted_dims,
-            'transforms': dict(zip(arr.dims, [converter_for_coordinate_name(d) for d in arr.dims]))
+            "dims": converted_dims,
+            "transforms": dict(zip(arr.dims, [converter_for_coordinate_name(d) for d in arr.dims])),
         },
-        as_dataset=True
+        as_dataset=True,
     )
 
     if axis_name in arr.dims and len(parsed_interpolation_points) == 2:
@@ -295,22 +363,32 @@ def slice_along_path(arr: xr.DataArray, interpolation_points=None, axis_name=Non
             # swap the sign on this axis as a convenience to the caller
             converted_ds.coords[axis_name].data = -converted_ds.coords[axis_name].data
 
-    if 'id' in converted_ds.attrs:
-        del converted_ds.attrs['id']
-        provenance(converted_ds, arr, {
-            'what': 'Slice along path',
-            'by': 'slice_along_path',
-            'parsed_interpolation_points': parsed_interpolation_points,
-            'interpolation_points': interpolation_points,
-        })
+    if "id" in converted_ds.attrs:
+        del converted_ds.attrs["id"]
+        provenance(
+            converted_ds,
+            arr,
+            {
+                "what": "Slice along path",
+                "by": "slice_along_path",
+                "parsed_interpolation_points": parsed_interpolation_points,
+                "interpolation_points": interpolation_points,
+            },
+        )
 
     return converted_ds
 
 
-@update_provenance('Automatically k-space converted')
-def convert_to_kspace(arr: xr.DataArray, forward=False, bounds=None, resolution=None,
-                      calibration=None,
-                      coords=None, **kwargs):
+@update_provenance("Automatically k-space converted")
+def convert_to_kspace(
+    arr: xr.DataArray,
+    forward=False,
+    bounds=None,
+    resolution=None,
+    calibration=None,
+    coords=None,
+    **kwargs
+):
     """
     "Forward" or "backward" converts the data to momentum space.
 
@@ -367,27 +445,28 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, bounds=None, resolution=
     coords.update(kwargs)
 
     if isinstance(arr, xr.Dataset):
-        warnings.warn('Remember to use a DataArray not a Dataset, attempting to extract spectrum')
+        warnings.warn("Remember to use a DataArray not a Dataset, attempting to extract spectrum")
         attrs = arr.attrs.copy()
         arr = normalize_to_spectrum(arr)
         arr.attrs.update(attrs)
 
     if forward:
-        raise NotImplementedError('Forward conversion of datasets not supported. Coordinate conversion is. '
-                                  'See `arpes.utilities.conversion.forward.convert_coordinates_to_kspace_forward`')
+        raise NotImplementedError(
+            "Forward conversion of datasets not supported. Coordinate conversion is. "
+            "See `arpes.utilities.conversion.forward.convert_coordinates_to_kspace_forward`"
+        )
 
-    has_eV = 'eV' in arr.dims
+    has_eV = "eV" in arr.dims
 
     # TODO be smarter about the resolution inference
     old_dims = list(deepcopy(arr.dims))
-    remove_dims = ['eV', 'delay', 'cycle', 'temp', 'x', 'y',
-                   'optics_insertion']
+    remove_dims = ["eV", "delay", "cycle", "temp", "x", "y", "optics_insertion"]
 
     def unconvertible(dimension: str) -> bool:
         if dimension in remove_dims:
             return True
 
-        if 'volt' in dimension:
+        if "volt" in dimension:
             return True
 
         return False
@@ -401,90 +480,106 @@ def convert_to_kspace(arr: xr.DataArray, forward=False, bounds=None, resolution=
 
     # This should always be true because otherwise we have no hope of carrying
     # through with the conversion
-    if 'eV' in removed:
-        removed.remove('eV') # This is put at the front as a standardization
+    if "eV" in removed:
+        removed.remove("eV")  # This is put at the front as a standardization
 
     old_dims.sort()
 
     if not old_dims:
-        return arr # no need to convert, might be XPS or similar
+        return arr  # no need to convert, might be XPS or similar
 
-    converted_dims = (['eV'] if has_eV else []) + {
-        ('phi',): ['kp'],
-
-        ('phi', 'theta'): ['kx', 'ky'],
-        ('beta', 'phi'): ['kx', 'ky'],
-        ('phi', 'psi'): ['kx', 'ky'],
-
-        ('hv', 'phi'): ['kp', 'kz'],
-
-        ('hv', 'phi', 'theta'): ['kx', 'ky', 'kz'],
-        ('beta', 'hv', 'phi'): ['kx', 'ky', 'kz'],
-        ('hv', 'phi', 'psi'): ['kx', 'ky', 'kz'],
-    }.get(tuple(old_dims)) + removed
+    converted_dims = (
+        (["eV"] if has_eV else [])
+        + {
+            ("phi",): ["kp"],
+            ("phi", "theta"): ["kx", "ky"],
+            ("beta", "phi"): ["kx", "ky"],
+            ("phi", "psi"): ["kx", "ky"],
+            ("hv", "phi"): ["kp", "kz"],
+            ("hv", "phi", "theta"): ["kx", "ky", "kz"],
+            ("beta", "hv", "phi"): ["kx", "ky", "kz"],
+            ("hv", "phi", "psi"): ["kx", "ky", "kz"],
+        }.get(tuple(old_dims))
+        + removed
+    )
 
     convert_cls = {
-        ('phi',): ConvertKp,
-
-        ('beta', 'phi'): ConvertKxKy,
-        ('phi', 'theta'): ConvertKxKy,
-        ('phi', 'psi'): ConvertKxKy,
-        #('chi', 'phi',): ConvertKxKy,
-
-        ('hv', 'phi'): ConvertKpKz,
+        ("phi",): ConvertKp,
+        ("beta", "phi"): ConvertKxKy,
+        ("phi", "theta"): ConvertKxKy,
+        ("phi", "psi"): ConvertKxKy,
+        # ('chi', 'phi',): ConvertKxKy,
+        ("hv", "phi"): ConvertKpKz,
     }.get(tuple(old_dims))
     converter = convert_cls(arr, converted_dims, calibration=calibration)
 
-    n_kspace_coordinates = len(set(converted_dims).intersection({'kp', 'kx', 'ky', 'kz'}))
+    n_kspace_coordinates = len(set(converted_dims).intersection({"kp", "kx", "ky", "kz"}))
     if n_kspace_coordinates > 1 and forward:
-        raise AnalysisError('You cannot forward convert more than one momentum to k-space.')
+        raise AnalysisError("You cannot forward convert more than one momentum to k-space.")
 
-    converted_coordinates = converter.get_coordinates(
-        resolution=resolution, bounds=bounds)
+    converted_coordinates = converter.get_coordinates(resolution=resolution, bounds=bounds)
 
     if not set(coords.keys()).issubset(converted_coordinates.keys()):
         extra = set(coords.keys()).difference(converted_coordinates.keys())
-        raise ValueError('Unexpected passed coordinates: {}'.format(extra))
+        raise ValueError("Unexpected passed coordinates: {}".format(extra))
 
     converted_coordinates.update(coords)
 
     return convert_coordinates(
-        arr, converted_coordinates, {
-            'dims': converted_dims,
-            'transforms': dict(zip(arr.dims, [converter.conversion_for(d) for d in arr.dims]))})[0]
+        arr,
+        converted_coordinates,
+        {
+            "dims": converted_dims,
+            "transforms": dict(zip(arr.dims, [converter.conversion_for(d) for d in arr.dims])),
+        },
+    )[0]
 
 
-def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transform, as_dataset=False):
+def convert_coordinates(
+    arr: xr.DataArray, target_coordinates, coordinate_transform, as_dataset=False
+):
     ordered_source_dimensions = arr.dims
     grid_interpolator = grid_interpolator_from_dataarray(
-        arr.transpose(*ordered_source_dimensions), fill_value=float('nan'))
+        arr.transpose(*ordered_source_dimensions), fill_value=float("nan")
+    )
 
     # Skip the Jacobian correction for now
     # Convert the raw coordinate axes to a set of gridded points
-    meshed_coordinates = np.meshgrid(*[target_coordinates[dim] for dim in coordinate_transform['dims']],
-                                     indexing='ij')
+    meshed_coordinates = np.meshgrid(
+        *[target_coordinates[dim] for dim in coordinate_transform["dims"]], indexing="ij"
+    )
     meshed_coordinates = [meshed_coord.ravel() for meshed_coord in meshed_coordinates]
 
-    if 'eV' not in arr.dims:
+    if "eV" not in arr.dims:
         try:
-            meshed_coordinates = [arr.S.lookup_offset_coord('eV')] + meshed_coordinates
+            meshed_coordinates = [arr.S.lookup_offset_coord("eV")] + meshed_coordinates
         except ValueError:
             pass
 
     old_coord_names = [dim for dim in arr.dims if dim not in target_coordinates]
-    old_coordinate_transforms = [coordinate_transform['transforms'][dim] for dim in arr.dims if dim not in target_coordinates]
-    old_dimensions = [np.reshape(tr(*meshed_coordinates), [len(target_coordinates[d]) for d in coordinate_transform['dims']], order='C')
-                      for tr in old_coordinate_transforms]
+    old_coordinate_transforms = [
+        coordinate_transform["transforms"][dim] for dim in arr.dims if dim not in target_coordinates
+    ]
+    old_dimensions = [
+        np.reshape(
+            tr(*meshed_coordinates),
+            [len(target_coordinates[d]) for d in coordinate_transform["dims"]],
+            order="C",
+        )
+        for tr in old_coordinate_transforms
+    ]
 
-    ordered_transformations = [coordinate_transform['transforms'][dim] for dim in arr.dims]
-    converted_volume = grid_interpolator(np.array([tr(*meshed_coordinates) for tr in ordered_transformations]).T)
+    ordered_transformations = [coordinate_transform["transforms"][dim] for dim in arr.dims]
+    converted_volume = grid_interpolator(
+        np.array([tr(*meshed_coordinates) for tr in ordered_transformations]).T
+    )
 
     # Wrap it all up
     def acceptable_coordinate(c: Union[np.ndarray, xr.DataArray]) -> bool:
         # Currently we do this to filter out coordinates that are functions of the old angular dimensions,
         # we could forward convert these, but right now we do not
         try:
-            if set(c.dims).issubset(coordinate_transform['dims']):
+            if set(c.dims).issubset(coordinate_transform["dims"]):
                 return True
             else:
                 return False
@@ -493,15 +588,21 @@ def convert_coordinates(arr: xr.DataArray, target_coordinates, coordinate_transf
 
     target_coordinates = {k: v for k, v in target_coordinates.items() if acceptable_coordinate(v)}
     data = xr.DataArray(
-        np.reshape(converted_volume, [len(target_coordinates[d]) for d in coordinate_transform['dims']], order='C'),
+        np.reshape(
+            converted_volume,
+            [len(target_coordinates[d]) for d in coordinate_transform["dims"]],
+            order="C",
+        ),
         target_coordinates,
-        coordinate_transform['dims'],
+        coordinate_transform["dims"],
         attrs=arr.attrs,
     )
-    old_mapped_coords = [xr.DataArray(values, target_coordinates, coordinate_transform['dims'], attrs=arr.attrs) for values in
-                         old_dimensions]
+    old_mapped_coords = [
+        xr.DataArray(values, target_coordinates, coordinate_transform["dims"], attrs=arr.attrs)
+        for values in old_dimensions
+    ]
     if as_dataset:
-        vars = {'data': data}
+        vars = {"data": data}
         vars.update(dict(zip(old_coord_names, old_mapped_coords)))
         return xr.Dataset(vars, attrs=arr.attrs)
 

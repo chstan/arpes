@@ -24,4 +24,5 @@ from arpes.workflow import *
 from arpes.laue import load_laue
 
 import arpes.config
+
 arpes.config.load_plugins()

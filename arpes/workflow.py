@@ -34,8 +34,15 @@ from arpes.config import WorkspaceManager
 from arpes.plotting.utils import path_for_plot
 from arpes.utilities.jupyter import get_notebook_name
 
-__all__ = ('go_to_figures', "go_to_workspace", "go_to_cwd",
-           'publish_data', 'read_data', 'consume_data', 'summarize_data',)
+__all__ = (
+    "go_to_figures",
+    "go_to_workspace",
+    "go_to_cwd",
+    "publish_data",
+    "read_data",
+    "consume_data",
+    "summarize_data",
+)
 
 
 def with_workspace(f):
@@ -43,7 +50,8 @@ def with_workspace(f):
     def wrapped_with_workspace(*args, workspace=None, **kwargs):
         with WorkspaceManager(workspace=workspace):
             import arpes.config
-            workspace = arpes.config.CONFIG['WORKSPACE']
+
+            workspace = arpes.config.CONFIG["WORKSPACE"]
 
         return f(*args, workspace=workspace, **kwargs)
 
@@ -57,7 +65,7 @@ def _open_path(p):
     :return:
     """
     if "win" in sys.platform:
-        subprocess.Popen(rf'explorer {p}')
+        subprocess.Popen(rf"explorer {p}")
 
     print(p)
 
@@ -71,6 +79,7 @@ def go_to_workspace(workspace=None):
     path = os.getcwd()
 
     from arpes.config import CONFIG
+
     workspace = workspace or CONFIG["WORKSPACE"]
 
     if workspace:
@@ -93,9 +102,9 @@ def go_to_figures():
     otherwise finds the most recent one and opens it.
     :return:
     """
-    path = path_for_plot('')
+    path = path_for_plot("")
     if not Path(path).exists():
-        path = sorted([str(p) for p in Path(path).parent.glob('*')])[-1]
+        path = sorted([str(p) for p in Path(path).parent.glob("*")])[-1]
 
     _open_path(path)
 
@@ -110,55 +119,57 @@ class DataProvider:
 
     def _read_pickled(self, name, default=None):
         try:
-            with open(str(self.path / f'{name}.pickle'), 'rb') as f:
+            with open(str(self.path / f"{name}.pickle"), "rb") as f:
                 return dill.load(f)
         except FileNotFoundError:
             return default
 
     def _write_pickled(self, name, value):
-        with open(str(self.path / f'{name}.pickle'), 'wb') as f:
+        with open(str(self.path / f"{name}.pickle"), "wb") as f:
             dill.dump(value, f)
 
     @property
     def publishers(self):
-        return self._read_pickled('publishers', defaultdict(list))
+        return self._read_pickled("publishers", defaultdict(list))
 
     @publishers.setter
     def publishers(self, new_publishers):
         assert isinstance(new_publishers, dict)
-        self._write_pickled('publishers', new_publishers)
+        self._write_pickled("publishers", new_publishers)
 
     @property
     def consumers(self):
-        return self._read_pickled('consumers', defaultdict(list))
+        return self._read_pickled("consumers", defaultdict(list))
 
     @consumers.setter
     def consumers(self, new_consumers):
         assert isinstance(new_consumers, dict)
-        self._write_pickled('consumers', new_consumers)
+        self._write_pickled("consumers", new_consumers)
 
     def __init__(self, path: Path, workspace_name: str = None):
-        self.path = path / 'data_provider'
+        self.path = path / "data_provider"
         self.workspace_name = workspace_name
 
         if self.workspace_name is None:
             if not self.path.exists():
-                raise ValueError('No detected workspace or "data_provider" folder. Ensure you are in '
-                                 'a workspace or let PyARPES know this is safe by adding the "data_provider"'
-                                 'folder yourself.')
+                raise ValueError(
+                    'No detected workspace or "data_provider" folder. Ensure you are in '
+                    'a workspace or let PyARPES know this is safe by adding the "data_provider"'
+                    "folder yourself."
+                )
         else:
             if not self.path.exists():
                 self.path.mkdir(parents=True)
 
-        if not (self.path / 'data').exists():
-            (self.path / 'data').mkdir(parents=True)
+        if not (self.path / "data").exists():
+            (self.path / "data").mkdir(parents=True)
 
     def publish(self, key, data):
         context = get_running_context()
         publishers = self.publishers
 
         old_publisher = publishers[key]
-        print(f'{old_publisher} -> {[context]}')
+        print(f"{old_publisher} -> {[context]}")
 
         publishers[key] = [context]
         self.publishers = publishers
@@ -176,14 +187,14 @@ class DataProvider:
                 consumers[key].append(context)
                 self.consumers = consumers
 
-            self.summarize_clients(key if key != '*' else None)
+            self.summarize_clients(key if key != "*" else None)
 
         return self.read_data(key)
 
     @classmethod
     def from_workspace(cls, workspace=None):
         if workspace is not None:
-            return cls(path=Path(workspace['path']), workspace_name=workspace['name'])
+            return cls(path=Path(workspace["path"]), workspace_name=workspace["name"])
 
         return cls(path=Path(os.getcwd()), workspace_name=None)
 
@@ -192,7 +203,7 @@ class DataProvider:
         self.summarize_consumers(key=key)
 
     def summarize_publishers(self, key=None):
-        if key == '*':
+        if key == "*":
             key = None
 
         publishers = self.publishers
@@ -208,21 +219,21 @@ class DataProvider:
         if key is None:
             pprint(dict(consumers))
         else:
-            pprint({k: v for k, v in consumers.items() if k in {'*', key}})
+            pprint({k: v for k, v in consumers.items() if k in {"*", key}})
 
     @property
     def data_keys(self) -> List[str]:
-        return [p.stem for p in (self.path / 'data').glob('*.pickle')]
+        return [p.stem for p in (self.path / "data").glob("*.pickle")]
 
-    def read_data(self, key: str = '*'):
-        if key == '*':
+    def read_data(self, key: str = "*"):
+        if key == "*":
             return {k: self.read_data(key=k) for k in self.data_keys}
 
-        with open(str(self.path / 'data' / f'{key}.pickle'), 'rb') as f:
+        with open(str(self.path / "data" / f"{key}.pickle"), "rb") as f:
             return dill.load(f)
 
     def write_data(self, key: str, data: Any):
-        with open(str(self.path / 'data' / f'{key}.pickle'), 'wb') as f:
+        with open(str(self.path / "data" / f"{key}.pickle"), "wb") as f:
             return dill.dump(data, f)
 
 
@@ -233,7 +244,7 @@ def publish_data(key, data, workspace):
 
 
 @with_workspace
-def read_data(key='*', workspace=None):
+def read_data(key="*", workspace=None):
     provider = DataProvider.from_workspace(workspace)
     return provider.consume(key, subscribe=False)
 
@@ -245,8 +256,6 @@ def summarize_data(key=None, workspace=None):
 
 
 @with_workspace
-def consume_data(key='*', workspace=None):
+def consume_data(key="*", workspace=None):
     provider = DataProvider.from_workspace(workspace)
     return provider.consume(key, subscribe=True)
-
-

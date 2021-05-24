@@ -5,29 +5,33 @@ import warnings
 
 from arpes.endstations import load_scan
 from arpes.io import dataset_exists, save_dataset, save_dataset_for_export
-from arpes.utilities import (attach_extra_dataset_columns,
-                             clean_datavar_attribute_names,
-                             modern_clean_xlsx_dataset,
-                             rename_datavar_standard_attrs)
+from arpes.utilities import (
+    attach_extra_dataset_columns,
+    clean_datavar_attribute_names,
+    modern_clean_xlsx_dataset,
+    rename_datavar_standard_attrs,
+)
 from arpes.utilities.dataset import walk_datasets
 
-__all__ = ('prepare_raw_files',)
+__all__ = ("prepare_raw_files",)
 
 
-def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quiet=False, export=False, **kwargs):
+def prepare_raw_files(
+    workspace=None, debug=False, reload=False, file=None, quiet=False, export=False, **kwargs
+):
     import arpes.xarray_extensions
     import arpes.config
 
     stop_debug = False
-    if debug == 'first':
+    if debug == "first":
         stop_debug = True
         debug = True
 
     arpes.config.attempt_determine_workspace(workspace)
-    assert 'path' in arpes.config.CONFIG['WORKSPACE']
-    workspace_path = arpes.config.CONFIG['WORKSPACE']['path']
+    assert "path" in arpes.config.CONFIG["WORKSPACE"]
+    workspace_path = arpes.config.CONFIG["WORKSPACE"]["path"]
 
-    print('Found: {}'.format(workspace_path))
+    print("Found: {}".format(workspace_path))
     files = walk_datasets(use_workspace=True)
     if file:
         print("├{}".format(file))
@@ -38,20 +42,20 @@ def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quie
         # initially cause some problems but should be much better in the end
         ds = modern_clean_xlsx_dataset(dataset_path, with_inferred_cols=False, write=True)
 
-        print('└┐')
+        print("└┐")
         for iter_index, (file, scan) in enumerate(ds.iterrows()):
-            print(' ├{}'.format(file))
-            scan['file'] = scan.get('path', file)
-            if not dataset_exists(scan.get('id')) or reload:
+            print(" ├{}".format(file))
+            scan["file"] = scan.get("path", file)
+            if not dataset_exists(scan.get("id")) or reload:
                 try:
                     with warnings.catch_warnings():
                         if quiet:
-                            warnings.simplefilter('ignore')
+                            warnings.simplefilter("ignore")
                         data = load_scan(dict(scan), **kwargs)
                     data = rename_datavar_standard_attrs(data)
                     data = clean_datavar_attribute_names(data)
                     if export:
-                        index = scan['file']
+                        index = scan["file"]
                         try:
                             index = int(index)
                         except ValueError:
@@ -67,8 +71,9 @@ def prepare_raw_files(workspace=None, debug=False, reload=False, file=None, quie
                             debug = False
 
                         import pdb
+
                         pdb.post_mortem(e.__traceback__)
                     else:
-                        print('Encountered Error {}. Skipping...'.format(e))
+                        print("Encountered Error {}. Skipping...".format(e))
 
         attach_extra_dataset_columns(dataset_path)

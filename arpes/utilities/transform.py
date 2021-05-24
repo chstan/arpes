@@ -30,8 +30,10 @@ marginal at the currently iterated point.
 
 
 if isinstance(self._obj, xr.Dataset):
-    raise TypeError('transform can only work on xr.DataArrays for now because of '
-                    'how the type inference works')
+    raise TypeError(
+        "transform can only work on xr.DataArrays for now because of "
+        "how the type inference works"
+    )
 
 dest = None
 for coord, value in self.iterate_axis(axes):
@@ -41,19 +43,19 @@ for coord, value in self.iterate_axis(axes):
         new_value = transform_fn(value, coord, *args, **kwargs)
 
         original_dims = [d for d in self._obj.dims if d not in value.dims]
-        original_shape = [self._obj.shape[self._obj.dims.index(d)]
-                          for d in original_dims]
-        original_coords = {k: v for k, v in self._obj.coords.items()
-                           if k not in value.dims}
+        original_shape = [self._obj.shape[self._obj.dims.index(d)] for d in original_dims]
+        original_coords = {k: v for k, v in self._obj.coords.items() if k not in value.dims}
 
         full_shape = original_shape + list(new_value.shape)
 
         new_coords = original_coords
-        new_coords.update({k: v for k, v in new_value.coords.items()
-                           if k not in original_coords})
+        new_coords.update({k: v for k, v in new_value.coords.items() if k not in original_coords})
         new_dims = original_dims + list(new_value.dims)
-        dest = xr.DataArray(np.zeros(full_shape, dtype=dtype or new_value.data.dtype),
-                            coords=new_coords, dims=new_dims)
+        dest = xr.DataArray(
+            np.zeros(full_shape, dtype=dtype or new_value.data.dtype),
+            coords=new_coords,
+            dims=new_dims,
+        )
 
     dest.loc[coord] = new_value
 

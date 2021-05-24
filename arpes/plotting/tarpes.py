@@ -7,7 +7,8 @@ import numpy as np
 from arpes.provenance import save_plot_provenance
 
 
-__all__ = ('plot_subtraction_reference',)
+__all__ = ("plot_subtraction_reference",)
+
 
 @save_plot_provenance
 def plot_subtraction_reference(data, title=None, out=None, norm=None, **kwargs):
@@ -15,25 +16,27 @@ def plot_subtraction_reference(data, title=None, out=None, norm=None, **kwargs):
 
     # first we need to sum over dimensions that we do not need
 
-    warnings.warn('Unfinished plot_subtraction_reference')
+    warnings.warn("Unfinished plot_subtraction_reference")
     return None
 
-    sum_dimensions = {'cycle',}
+    sum_dimensions = {
+        "cycle",
+    }
     sum_dimensions.intersection_update(set(data.dims))
 
     # summed_data = data.sum(*list(sum_dimensions))
 
     matplotlib.use("Agg")
     if title is None:
-        title = data.S.label.replace('_', ' ')
+        title = data.S.label.replace("_", " ")
 
-    FFMpegWriter = manimation.writers['ffmpeg']
-    metadata = dict(title=title or 'Test title', artist='Matplotlib')
+    FFMpegWriter = manimation.writers["ffmpeg"]
+    metadata = dict(title=title or "Test title", artist="Matplotlib")
 
     writer = FFMpegWriter(fps=15, metadata=metadata)
 
     fig = plt.figure()
-    l, = plt.plot([], [], 'k-o')
+    (l,) = plt.plot([], [], "k-o")
 
     plt.xlim(-5, 5)
     plt.ylim(-5, 5)

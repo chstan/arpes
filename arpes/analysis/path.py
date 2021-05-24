@@ -4,7 +4,11 @@ import xarray as xr
 from arpes.provenance import update_provenance
 from arpes.typing import DataType
 
-__all__ = ('discretize_path', 'select_along_path', 'path_from_points',)
+__all__ = (
+    "discretize_path",
+    "select_along_path",
+    "path_from_points",
+)
 
 
 def path_from_points(data: DataType, symmetry_points_or_interpolation_points):
@@ -15,10 +19,10 @@ def path_from_points(data: DataType, symmetry_points_or_interpolation_points):
     :param symmetry_points_or_interpolation_points:
     :return:
     """
-    raise NotImplementedError('')
+    raise NotImplementedError("")
 
 
-@update_provenance('Discretize Path')
+@update_provenance("Discretize Path")
 def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
     """
     Shares logic with slice_along_path
@@ -45,7 +49,7 @@ def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
         return np.linalg.norm((as_vec(a) - as_vec(b)) * scaling)
 
     length = 0
-    for idx_low, idx_high in (zip(path.index.values, path.index[1:].values)):
+    for idx_low, idx_high in zip(path.index.values, path.index[1:].values):
         coord_low, coord_high = path.sel(index=idx_low), path.sel(index=idx_high)
         length += distance(coord_low, coord_high)
 
@@ -60,16 +64,18 @@ def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
     distances = np.linspace(0, n_points - 1, n_points) * sep
 
     total_dist = 0
-    for idx_low, idx_high in (zip(path.index.values, path.index[1:].values)):
+    for idx_low, idx_high in zip(path.index.values, path.index[1:].values):
         coord_low, coord_high = path.sel(index=idx_low), path.sel(index=idx_high)
 
         current_dist = distance(coord_low, coord_high)
         current_points = distances[distances < total_dist + current_dist]
         current_points = (current_points - total_dist) / current_dist
-        distances = distances[len(current_points):]
+        distances = distances[len(current_points) :]
         total_dist += current_dist
 
-        points = points + list(np.outer(current_points, as_vec(coord_high) - as_vec(coord_low)) + as_vec(coord_low))
+        points = points + list(
+            np.outer(current_points, as_vec(coord_high) - as_vec(coord_low)) + as_vec(coord_low)
+        )
 
     points.append(as_vec(path.sel(index=path.index.values[-1])))
 
@@ -79,13 +85,15 @@ def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
         index = order.index(name)
         data = [p[index] for p in points]
 
-        return xr.DataArray(np.array(data), {'index': new_index}, ['index'])
+        return xr.DataArray(np.array(data), {"index": new_index}, ["index"])
 
     return xr.Dataset({k: to_dataarray(k) for k in order})
 
 
-@update_provenance('Select from data along a path')
-def select_along_path(path: xr.Dataset, data: DataType, radius=None, n_points=None, fast=True, scaling=None, **kwargs):
+@update_provenance("Select from data along a path")
+def select_along_path(
+    path: xr.Dataset, data: DataType, radius=None, n_points=None, fast=True, scaling=None, **kwargs
+):
     """
     Performs integration along a path. This functionally allows for performing a finite width
     cut (with finite width perpendicular to the local path direction) along some path,
@@ -104,7 +112,7 @@ def select_along_path(path: xr.Dataset, data: DataType, radius=None, n_points=No
     new_path = discretize_path(path, n_points, scaling)
 
     selections = []
-    for _, view in new_path.G.iterate_axis('index'):
+    for _, view in new_path.G.iterate_axis("index"):
         selections.append(data.S.select_around(view, radius=radius, fast=fast, **kwargs))
 
     return xr.concat(selections, new_path.index)

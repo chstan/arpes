@@ -96,9 +96,7 @@ class QtInfo:
 
         self._pg_patched = True
 
-        pg.setConfigOptions(
-            antialias=True, foreground=(0, 0, 0), background=(255, 255, 255)
-        )
+        pg.setConfigOptions(antialias=True, foreground=(0, 0, 0), background=(255, 255, 255))
 
         def patchedLinkedViewChanged(self, view, axis):
             """

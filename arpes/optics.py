@@ -17,11 +17,19 @@ Things to offer in the future:
 
 import numpy as np
 
-__all__ = ('waist', 'waist_R', 'rayleigh_range', 'lens_transfer', 'magnification', 'waist_from_divergence', 'waist_from_rr')
+__all__ = (
+    "waist",
+    "waist_R",
+    "rayleigh_range",
+    "lens_transfer",
+    "magnification",
+    "waist_from_divergence",
+    "waist_from_rr",
+)
 
 
 def waist(wavelength, z, z_R):
-    raise NotImplementedError('waist not implemented')
+    raise NotImplementedError("waist not implemented")
 
 
 def waist_R(waist_0, m_squared=1):
@@ -46,7 +54,7 @@ def lens_transfer(s, f, beam_rayleigh_range, m_squared=1):
     :return:
     """
 
-    t = 1/f - 1/(s + (beam_rayleigh_range/m_squared) ** 2/(s - f))
+    t = 1 / f - 1 / (s + (beam_rayleigh_range / m_squared) ** 2 / (s - f))
     return 1 / t
 
 
@@ -63,4 +71,4 @@ def magnification(s, f, beam_rayleigh_range, m_squared=1):
     :param m_squared:
     :return:
     """
-    return 1/np.sqrt((1 - s/f) ** 2 + (beam_rayleigh_range/f/m_squared)**2)
+    return 1 / np.sqrt((1 - s / f) ** 2 + (beam_rayleigh_range / f / m_squared) ** 2)

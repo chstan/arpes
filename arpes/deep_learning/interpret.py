@@ -58,9 +58,7 @@ class InterpretationItem:
             input_formatter.show(x, ax)
 
         ax.set_title(
-            "Item {index}; loss={loss:.3f}\n".format(
-                index=self.index, loss=float(self.loss)
-            )
+            "Item {index}; loss={loss:.3f}\n".format(index=self.index, loss=float(self.loss))
         )
 
         if target_formatter is not None:
@@ -74,9 +72,7 @@ class InterpretationItem:
                 target_formatter.context = dict(is_ground_truth=False)
 
             predicted = (
-                self.decodes_target(self.predicted_target)
-                if pullback
-                else self.predicted_target
+                self.decodes_target(self.predicted_target) if pullback else self.predicted_target
             )
             target_formatter.show(predicted, ax)
 
@@ -159,9 +155,7 @@ class Interpretation:
     def from_trainer(cls, trainer: pl.Trainer):
         return cls(trainer.model, trainer.train_dataloader, trainer.val_dataloaders)
 
-    def dataloader_to_item_list(
-        self, dataloader: DataLoader
-    ) -> List[InterpretationItem]:
+    def dataloader_to_item_list(self, dataloader: DataLoader) -> List[InterpretationItem]:
         items = []
 
         for batch in tqdm.tqdm(dataloader.iter_all()):
@@ -171,13 +165,9 @@ class Interpretation:
                 y_hats = torch.unbind(y_hat, axis=0)
                 ys = torch.unbind(y, axis=0)
 
-                losses = [
-                    self.model.criterion(yi_hat, yi) for yi_hat, yi in zip(y_hats, ys)
-                ]
+                losses = [self.model.criterion(yi_hat, yi) for yi_hat, yi in zip(y_hats, ys)]
 
-            for (yi, yi_hat, loss, index) in zip(
-                ys, y_hats, losses, torch.unbind(indices, axis=0)
-            ):
+            for (yi, yi_hat, loss, index) in zip(ys, y_hats, losses, torch.unbind(indices, axis=0)):
                 items.append(
                     InterpretationItem(
                         torch.squeeze(yi),
@@ -198,6 +188,4 @@ class Interpretation:
         """
 
         self.train_items = self.dataloader_to_item_list(self.train_dataloader)
-        self.val_item_lists = [
-            self.dataloader_to_item_list(dl) for dl in self.val_dataloaders
-        ]
+        self.val_item_lists = [self.dataloader_to_item_list(dl) for dl in self.val_dataloaders]

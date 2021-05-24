@@ -10,26 +10,30 @@ from numpy import ndarray
 from arpes.utilities.funcutils import collect_leaves, iter_leaves
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-__all__ = ('extract_coords', 'find_clean_coords',)
+__all__ = (
+    "extract_coords",
+    "find_clean_coords",
+)
 
 DEFAULT_DIMENSION_RENAMINGS = {
-    'Beta': 'beta',
-    'Theta': 'theta',
-    'Delay': 'delay',
-    'Sample-X': 'cycle',
-    'null': 'cycle',
-    'Mira': 'pump_power',
-    'X': 'x',
-    'Y': 'y',
-    'Z': 'z',
+    "Beta": "beta",
+    "Theta": "theta",
+    "Delay": "delay",
+    "Sample-X": "cycle",
+    "null": "cycle",
+    "Mira": "pump_power",
+    "X": "x",
+    "Y": "y",
+    "Z": "z",
 }
 
 CoordsDict = Dict[str, ndarray]
 Dimension = str
 
 
-def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = None) \
-        -> Tuple[CoordsDict, List[Dimension], List[int]]:
+def extract_coords(
+    attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = None
+) -> Tuple[CoordsDict, List[Dimension], List[int]]:
     """
     Does the hard work of extracting coordinates from the scan description.
     :param attrs:
@@ -40,24 +44,58 @@ def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = 
         dimension_renamings = DEFAULT_DIMENSION_RENAMINGS
 
     try:
-        n_loops = attrs['LWLVLPN']
+        n_loops = attrs["LWLVLPN"]
     except KeyError:
         # Looks like no scan, this happens for instance in the SToF when you take a single
         # EDC
-        return {}, [], (),
+        return (
+            {},
+            [],
+            (),
+        )
     scan_dimension = []
     scan_shape = []
     scan_coords = {}
     for loop in range(n_loops):
-        n_scan_dimensions = attrs['NMSBDV%g' % loop]
-        if attrs['SCNTYP%g' % loop] == 0:  # computed
+        n_scan_dimensions = attrs["NMSBDV%g" % loop]
+        if attrs["SCNTYP%g" % loop] == 0:  # computed
             for i in range(n_scan_dimensions):
                 name, start, end, n = (
-                    attrs['NM_%g_%g' % (loop, i,)],
+                    attrs[
+                        "NM_%g_%g"
+                        % (
+                            loop,
+                            i,
+                        )
+                    ],
                     # attrs['UN_0_%g' % i],
-                    float(attrs['ST_%g_%g' % (loop, i,)]),
-                    float(attrs['EN_%g_%g' % (loop, i,)]),
-                    int(attrs['N_%g_%g' % (loop, i,)]),
+                    float(
+                        attrs[
+                            "ST_%g_%g"
+                            % (
+                                loop,
+                                i,
+                            )
+                        ]
+                    ),
+                    float(
+                        attrs[
+                            "EN_%g_%g"
+                            % (
+                                loop,
+                                i,
+                            )
+                        ]
+                    ),
+                    int(
+                        attrs[
+                            "N_%g_%g"
+                            % (
+                                loop,
+                                i,
+                            )
+                        ]
+                    ),
                 )
 
                 name = dimension_renamings.get(name, name)
@@ -66,14 +104,44 @@ def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = 
                 scan_shape.append(n)
                 scan_coords[name] = np.linspace(start, end, n, endpoint=True)
         else:  # tabulated scan, this is more complicated
-            if 'NMPOS_%g' % loop not in attrs and n_scan_dimensions > 1:
+            if "NMPOS_%g" % loop not in attrs and n_scan_dimensions > 1:
                 for i in range(n_scan_dimensions):
                     name, start, end, n = (
-                        attrs['NM_%g_%g' % (loop, i,)],
+                        attrs[
+                            "NM_%g_%g"
+                            % (
+                                loop,
+                                i,
+                            )
+                        ],
                         # attrs['UN_0_%g' % i],
-                        float(attrs['ST_%g_%g' % (loop, i,)]),
-                        float(attrs['EN_%g_%g' % (loop, i,)]),
-                        int(attrs['N_%g_%g' % (loop, i,)]),
+                        float(
+                            attrs[
+                                "ST_%g_%g"
+                                % (
+                                    loop,
+                                    i,
+                                )
+                            ]
+                        ),
+                        float(
+                            attrs[
+                                "EN_%g_%g"
+                                % (
+                                    loop,
+                                    i,
+                                )
+                            ]
+                        ),
+                        int(
+                            attrs[
+                                "N_%g_%g"
+                                % (
+                                    loop,
+                                    i,
+                                )
+                            ]
+                        ),
                     )
 
                     name = dimension_renamings.get(name, name)
@@ -85,18 +153,18 @@ def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = 
             else:
                 # region based tabulated scan
                 name, n = (
-                    attrs['NM_%g_0' % loop],
-                    attrs['NMPOS_%g' % loop],
+                    attrs["NM_%g_0" % loop],
+                    attrs["NMPOS_%g" % loop],
                 )
 
                 try:
-                    n_regions_key = {'Delay': 'DS_NR'}.get(name, 'DS_NR')
+                    n_regions_key = {"Delay": "DS_NR"}.get(name, "DS_NR")
                     n_regions = attrs[n_regions_key]
 
                     name = dimension_renamings.get(name, name)
                 except KeyError:
-                    if 'ST_{}_1'.format(loop) in attrs:
-                        warnings.warn('More than one region detected but unhandled.')
+                    if "ST_{}_1".format(loop) in attrs:
+                        warnings.warn("More than one region detected but unhandled.")
 
                     n_regions = 1
                     name = dimension_renamings.get(name, name)
@@ -104,13 +172,35 @@ def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = 
                 coord = np.array(())
                 for region in range(n_regions):
                     start, end, n = (
-                        attrs['ST_%g_%g' % (loop, region,)],
-                        attrs['EN_%g_%g' % (loop, region,)],
-                        attrs['N_%g_%g' % (loop, region,)],
+                        attrs[
+                            "ST_%g_%g"
+                            % (
+                                loop,
+                                region,
+                            )
+                        ],
+                        attrs[
+                            "EN_%g_%g"
+                            % (
+                                loop,
+                                region,
+                            )
+                        ],
+                        attrs[
+                            "N_%g_%g"
+                            % (
+                                loop,
+                                region,
+                            )
+                        ],
                     )
 
-                    coord = np.concatenate((coord, np.linspace(
-                        start, end, n, endpoint=True),))
+                    coord = np.concatenate(
+                        (
+                            coord,
+                            np.linspace(start, end, n, endpoint=True),
+                        )
+                    )
 
                 scan_dimension.append(name)
                 scan_shape.append(len(coord))
@@ -118,9 +208,13 @@ def extract_coords(attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = 
     return scan_coords, scan_dimension, scan_shape
 
 
-def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional[Any] = None, mode: str = 'ToF',
-                      dimension_renamings: Optional[Any] = None) \
-        -> Tuple[CoordsDict, Dict[str, List[Dimension]], Dict[str, Any]]:
+def find_clean_coords(
+    hdu: BinTableHDU,
+    attrs: Dict[str, Any],
+    spectra: Optional[Any] = None,
+    mode: str = "ToF",
+    dimension_renamings: Optional[Any] = None,
+) -> Tuple[CoordsDict, Dict[str, List[Dimension]], Dict[str, Any]]:
     """
     Determines the scan degrees of freedom, the shape of the actual "spectrum"
     and reads and parses the coordinates from the header information in the recorded
@@ -146,15 +240,17 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
     if dimension_renamings is None:
         dimension_renamings = DEFAULT_DIMENSION_RENAMINGS
 
-    scan_coords, scan_dimension, scan_shape = extract_coords(attrs, dimension_renamings=dimension_renamings)
+    scan_coords, scan_dimension, scan_shape = extract_coords(
+        attrs, dimension_renamings=dimension_renamings
+    )
 
     # bit of a hack to deal with the internal motor used for the swept spectra being considered as a cycle
-    if 'cycle' in scan_coords and len(scan_coords['cycle']) > 200:
-        idx = scan_dimension.index('cycle')
+    if "cycle" in scan_coords and len(scan_coords["cycle"]) > 200:
+        idx = scan_dimension.index("cycle")
 
-        real_data_for_cycle = hdu.data.columns['null'].array
+        real_data_for_cycle = hdu.data.columns["null"].array
 
-        scan_coords['cycle'] = real_data_for_cycle
+        scan_coords["cycle"] = real_data_for_cycle
         scan_shape[idx] = len(real_data_for_cycle)
 
     scan_dimension = [dimension_renamings.get(s, s) for s in scan_dimension[::-1]]
@@ -173,7 +269,7 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
 
     for spectrum_key in spectra:
         skip_names = {
-            lambda name: True if ('beamview' in name or 'IMAQdx' in name) else False,
+            lambda name: True if ("beamview" in name or "IMAQdx" in name) else False,
         }
 
         if spectrum_key is None:
@@ -196,23 +292,23 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
             continue
 
         try:
-            offset = hdu.header['TRVAL%g' % spectrum_key]
-            delta = hdu.header['TDELT%g' % spectrum_key]
+            offset = hdu.header["TRVAL%g" % spectrum_key]
+            delta = hdu.header["TDELT%g" % spectrum_key]
             offset = literal_eval(offset) if isinstance(offset, str) else offset
             delta = literal_eval(delta) if isinstance(delta, str) else delta
 
             try:
-                shape = hdu.header['TDIM%g' % spectrum_key]
+                shape = hdu.header["TDIM%g" % spectrum_key]
                 shape = literal_eval(shape) if isinstance(shape, str) else shape
                 loaded_shape_from_header = True
             except:
                 shape = hdu.data.field(spectrum_key - 1).shape
 
             try:
-                desc = hdu.header['TDESC%g' % spectrum_key]
-                if '(' in desc:
+                desc = hdu.header["TDESC%g" % spectrum_key]
+                if "(" in desc:
                     # might be a malformed tuple, we can't use literal_eval unfortunately
-                    desc = desc.replace('(', '').replace(')', '').split(',')
+                    desc = desc.replace("(", "").replace(")", "").split(",")
 
                 if isinstance(desc, str):
                     desc = (desc,)
@@ -235,21 +331,23 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
             # the ToF pads with ones on single EDCs
             shape = shape[1:]
 
-        if mode == 'ToF':
-            rest_shape = shape[len(scan_shape):]
+        if mode == "ToF":
+            rest_shape = shape[len(scan_shape) :]
         else:
             if isinstance(desc, tuple):
-                rest_shape = shape[-len(desc):]
+                rest_shape = shape[-len(desc) :]
             elif not loaded_shape_from_header:
                 rest_shape = shape[1:]
             else:
                 rest_shape = shape
 
-        assert(len(offset) == len(delta) and len(delta) == len(rest_shape))
+        assert len(offset) == len(delta) and len(delta) == len(rest_shape)
 
         # Build the actually coordinates
-        coords = [np.linspace(o, o + s * d, s, endpoint=False)
-                  for o, d, s in zip(offset, delta, rest_shape)]
+        coords = [
+            np.linspace(o, o + s * d, s, endpoint=False)
+            for o, d, s in zip(offset, delta, rest_shape)
+        ]
 
         # We need to do smarter inference here
         def infer_hemisphere_dimensions() -> List[Dimension]:
@@ -258,9 +356,9 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
             # try to get the description or the UNIT
             if desc is not None:
                 RECOGNIZED_DESCRIPTIONS = {
-                    'eV': 'eV',
-                    'pixels': 'pixel',
-                    'pixel': 'pixel',
+                    "eV": "eV",
+                    "pixels": "pixel",
+                    "pixel": "pixel",
                 }
 
                 if all(d in RECOGNIZED_DESCRIPTIONS for d in desc):
@@ -268,7 +366,7 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
 
             try:
                 # TODO read above like desc
-                unit = hdu.header['TUNIT{}'.format(spectrum_key)]
+                unit = hdu.header["TUNIT{}".format(spectrum_key)]
                 RECOGNIZED_UNITS = {
                     # it's probably 'arb' which doesn't tell us anything...
                     # because all spectra have arbitrary absolute intensity
@@ -281,34 +379,34 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
             # Need to fall back on some human in the loop to improve the read
             # here
             import pdb
-            pdb.set_trace()
 
+            pdb.set_trace()
 
         # TODO for cleanup in future, these should be provided by the implementing endstation class, so they do not
         # get so cluttered, best way will be to make this function a class method, and use class attributes for
         # each of `coord_names_for_spectrum`, etc. For now, patching to avoid error with the microscope camera images
         # at BL7
         coord_names_for_spectrum = {
-            'Time_Spectra': ['time'],
-            'Energy_Spectra': ['eV'],
+            "Time_Spectra": ["time"],
+            "Energy_Spectra": ["eV"],
             # MC hemisphere image, this can still be k-integrated, E-integrated, etc
-            'wave':  ['time'],
-            'targetPlus': ['time'],
-            'targetMinus': ['time'],
-            'Energy_Target_Up': ['eV'],
-            'Energy_Target_Down': ['eV'],
-            'Energy_Up': ['eV'],
-            'Energy_Down': ['eV'],
-            'Energy_Pol': ['eV'],
+            "wave": ["time"],
+            "targetPlus": ["time"],
+            "targetMinus": ["time"],
+            "Energy_Target_Up": ["eV"],
+            "Energy_Target_Down": ["eV"],
+            "Energy_Up": ["eV"],
+            "Energy_Down": ["eV"],
+            "Energy_Pol": ["eV"],
         }
 
         spectra_types = {
-            'Fixed_Spectra',
-            'Swept_Spectra',
+            "Fixed_Spectra",
+            "Swept_Spectra",
         }
 
         time_spectra_type = {
-            'Time_Target',
+            "Time_Target",
         }
         coord_names = None
         if spectrum_name not in coord_names_for_spectrum:
@@ -317,16 +415,19 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
             if any(s in spectrum_name for s in spectra_types):
                 coord_names = infer_hemisphere_dimensions
             elif any(s in spectrum_name for s in time_spectra_type):
-                coord_names = ['time',]
+                coord_names = [
+                    "time",
+                ]
             else:
                 import pdb
+
                 pdb.set_trace()
         else:
             coord_names = coord_names_for_spectrum[spectrum_name]
 
         if callable(coord_names):
             coord_names = coord_names()
-            if len(coord_names) > 1 and mode == 'MC':
+            if len(coord_names) > 1 and mode == "MC":
                 # for whatever reason, the main chamber records data
                 # in nonstandard byte order
                 coord_names = coord_names[::-1]
@@ -336,25 +437,26 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
         coords_for_spectrum = dict(zip(coord_names, coords))
         # we need to store the coordinates that were kept in a table separately, because they are allowed to differ
         # between different scan configurations in the same file
-        if mode == 'ToF':
+        if mode == "ToF":
             extra_coords.update(coords_for_spectrum)
         else:
             extra_coords[spectrum_name] = coords_for_spectrum
-        dimensions_for_spectra[spectrum_name] = \
-            tuple(scan_dimension) + tuple(coord_names)
+        dimensions_for_spectra[spectrum_name] = tuple(scan_dimension) + tuple(coord_names)
         spectrum_shapes[spectrum_name] = tuple(scan_shape) + tuple(rest_shape)
         coords_for_spectrum.update(scan_coords)
 
     extra_coords.update(scan_coords)
 
-    if mode != 'ToF':
+    if mode != "ToF":
         detector_coord_names = [k for k, v in extra_coords.items() if isinstance(v, dict)]
 
         from collections import Counter
+
         c = Counter(item for name in detector_coord_names for item in extra_coords[name])
-        conflicted = [k for k, v in c.items() if v != 1 and k != 'cycle']
+        conflicted = [k for k, v in c.items() if v != 1 and k != "cycle"]
 
         flat_coordinates = collect_leaves(extra_coords)
+
         def can_resolve_conflict(c):
             coordinates = flat_coordinates[c]
 
@@ -362,21 +464,30 @@ def find_clean_coords(hdu: BinTableHDU, attrs: Dict[str, Any], spectra: Optional
                 return True
 
             # check if list of arrays is all equal
-            return functools.reduce(lambda x, y: (np.array_equal(x[1], y) and x[0], y), coordinates, (True, coordinates[0]))[0]
+            return functools.reduce(
+                lambda x, y: (np.array_equal(x[1], y) and x[0], y),
+                coordinates,
+                (True, coordinates[0]),
+            )[0]
 
         conflicted = [c for c in conflicted if not can_resolve_conflict(c)]
 
         def clarify_dimensions(dims: List[Dimension], sname: str) -> List[Dimension]:
-            return [d if d not in conflicted else d + '-' + sname for d in dims]
+            return [d if d not in conflicted else d + "-" + sname for d in dims]
 
-        def clarify_coordinate(coordinates: Union[CoordsDict, ndarray], sname: str) -> \
-                Union[CoordsDict, ndarray]:
+        def clarify_coordinate(
+            coordinates: Union[CoordsDict, ndarray], sname: str
+        ) -> Union[CoordsDict, ndarray]:
             if not isinstance(coordinates, dict):
                 return coordinates
 
-            return {k if k not in conflicted else k + '-' + sname: v for k, v in coordinates.items()}
+            return {
+                k if k not in conflicted else k + "-" + sname: v for k, v in coordinates.items()
+            }
 
-        dimensions_for_spectra = {k: clarify_dimensions(v, k) for k, v in dimensions_for_spectra.items()}
+        dimensions_for_spectra = {
+            k: clarify_dimensions(v, k) for k, v in dimensions_for_spectra.items()
+        }
         extra_coords = {k: clarify_coordinate(v, k) for k, v in extra_coords.items()}
         extra_coords = dict(iter_leaves(extra_coords))
 

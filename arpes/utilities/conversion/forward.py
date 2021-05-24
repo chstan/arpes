@@ -2,14 +2,21 @@ import numpy as np
 import xarray as xr
 
 from arpes.provenance import update_provenance
-from arpes.utilities.conversion.bounds_calculations import (euler_to_kx, euler_to_ky, euler_to_kz,
-                                                            full_angles_to_k)
+from arpes.utilities.conversion.bounds_calculations import (
+    euler_to_kx,
+    euler_to_ky,
+    euler_to_kz,
+    full_angles_to_k,
+)
 from arpes.typing import DataType
 
-__all__ = ('convert_coordinates_to_kspace_forward', 'convert_coordinates',)
+__all__ = (
+    "convert_coordinates_to_kspace_forward",
+    "convert_coordinates",
+)
 
 
-@update_provenance('Forward convert coordinates')
+@update_provenance("Forward convert coordinates")
 def convert_coordinates(arr: DataType, collapse_parallel=False, **kwargs):
     def unwrap_coord(c):
         try:
@@ -20,14 +27,18 @@ def convert_coordinates(arr: DataType, collapse_parallel=False, **kwargs):
             except (TypeError, AttributeError):
                 return c
 
-    coord_names = ['phi', 'psi', 'alpha', 'theta', 'beta', 'chi', 'hv']
-    raw_coords = {k: unwrap_coord(arr.S.lookup_offset_coord(k)) for k in (coord_names + ['eV'])}
-    raw_angles = {k: v for k, v in raw_coords.items() if k not in {'eV', 'hv'}}
+    coord_names = ["phi", "psi", "alpha", "theta", "beta", "chi", "hv"]
+    raw_coords = {k: unwrap_coord(arr.S.lookup_offset_coord(k)) for k in (coord_names + ["eV"])}
+    raw_angles = {k: v for k, v in raw_coords.items() if k not in {"eV", "hv"}}
 
-    parallel_collapsible = len([k for k in raw_angles.keys() if isinstance(raw_angles[k], np.ndarray)]) > 1
+    parallel_collapsible = (
+        len([k for k in raw_angles.keys() if isinstance(raw_angles[k], np.ndarray)]) > 1
+    )
 
-    sort_by = ['eV', 'hv', 'phi', 'psi', 'alpha', 'theta', 'beta', 'chi']
-    old_dims = sorted([k for k in arr.dims if k in (coord_names + ['eV'])], key=lambda item: sort_by.index(item))
+    sort_by = ["eV", "hv", "phi", "psi", "alpha", "theta", "beta", "chi"]
+    old_dims = sorted(
+        [k for k in arr.dims if k in (coord_names + ["eV"])], key=lambda item: sort_by.index(item)
+    )
 
     will_collapse = parallel_collapsible and collapse_parallel
 
@@ -40,12 +51,15 @@ def convert_coordinates(arr: DataType, collapse_parallel=False, **kwargs):
         return c[tuple(index_list)]
 
     # build the full kinetic energy array over relevant dimensions
-    kinetic_energy = (expand_to('eV', raw_coords['eV']) +
-                      expand_to('hv', raw_coords['hv']) -
-                      arr.S.work_function)
+    kinetic_energy = (
+        expand_to("eV", raw_coords["eV"]) + expand_to("hv", raw_coords["hv"]) - arr.S.work_function
+    )
 
-    kx, ky, kz = full_angles_to_k(kinetic_energy, inner_potential=arr.S.inner_potential,
-                                  **{k: expand_to(k, v) for k, v in raw_angles.items()})
+    kx, ky, kz = full_angles_to_k(
+        kinetic_energy,
+        inner_potential=arr.S.inner_potential,
+        **{k: expand_to(k, v) for k, v in raw_angles.items()}
+    )
 
     if will_collapse:
         if np.sum(kx ** 2) > np.sum(ky ** 2):
@@ -54,17 +68,18 @@ def convert_coordinates(arr: DataType, collapse_parallel=False, **kwargs):
             sign = ky / np.sqrt(ky ** 2 + 1e-8)
 
         kp = sign * np.sqrt(kx ** 2 + ky ** 2)
-        data_vars = {'kp': (old_dims, np.squeeze(kp)),
-                     'kz': (old_dims, np.squeeze(kz))}
+        data_vars = {"kp": (old_dims, np.squeeze(kp)), "kz": (old_dims, np.squeeze(kz))}
     else:
-        data_vars = {'kx': (old_dims, np.squeeze(kx)),
-                     'ky': (old_dims, np.squeeze(ky)),
-                     'kz': (old_dims, np.squeeze(kx)),}
+        data_vars = {
+            "kx": (old_dims, np.squeeze(kx)),
+            "ky": (old_dims, np.squeeze(ky)),
+            "kz": (old_dims, np.squeeze(kx)),
+        }
 
     return xr.Dataset(data_vars, coords=arr.indexes)
 
 
-@update_provenance('Forward convert coordinates to momentum')
+@update_provenance("Forward convert coordinates to momentum")
 def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
     """
     Forward converts all the individual coordinates of the data array
@@ -75,8 +90,10 @@ def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
 
     arr = arr.copy(deep=True)
 
-    skip = {'eV', 'cycle', 'delay', 'T'}
-    keep = {'eV', }
+    skip = {"eV", "cycle", "delay", "T"}
+    keep = {
+        "eV",
+    }
 
     all = {k: v for k, v in arr.indexes.items() if k not in skip}
     kept = {k: v for k, v in arr.indexes.items() if k in keep}
@@ -88,21 +105,40 @@ def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
         return None
 
     dest_coords = {
-        ('phi',): ['kp', 'kz'],
-        ('theta',): ['kp', 'kz'],
-        ('beta',): ['kp', 'kz'],
-        ('phi', 'theta',): ['kx', 'ky', 'kz'],
-        ('beta', 'phi',): ['kx', 'ky', 'kz'],
-        ('hv', 'phi',): ['kx', 'ky', 'kz'],
-        ('hv',): ['kp', 'kz'],
-        ('beta', 'hv', 'phi',): ['kx', 'ky', 'kz'],
-        ('hv', 'phi', 'theta'): ['kx', 'ky', 'kz'],
-        ('hv', 'phi', 'psi'): ['kx', 'ky', 'kz'],
-        ('chi', 'hv', 'phi',): ['kx', 'ky', 'kz'],
+        ("phi",): ["kp", "kz"],
+        ("theta",): ["kp", "kz"],
+        ("beta",): ["kp", "kz"],
+        (
+            "phi",
+            "theta",
+        ): ["kx", "ky", "kz"],
+        (
+            "beta",
+            "phi",
+        ): ["kx", "ky", "kz"],
+        (
+            "hv",
+            "phi",
+        ): ["kx", "ky", "kz"],
+        ("hv",): ["kp", "kz"],
+        (
+            "beta",
+            "hv",
+            "phi",
+        ): ["kx", "ky", "kz"],
+        ("hv", "phi", "theta"): ["kx", "ky", "kz"],
+        ("hv", "phi", "psi"): ["kx", "ky", "kz"],
+        (
+            "chi",
+            "hv",
+            "phi",
+        ): ["kx", "ky", "kz"],
     }.get(tuple(old_dims))
 
     full_old_dims = old_dims + list(kept.keys())
-    projection_vectors = np.ndarray(shape=tuple(len(arr.coords[d]) for d in full_old_dims), dtype=object)
+    projection_vectors = np.ndarray(
+        shape=tuple(len(arr.coords[d]) for d in full_old_dims), dtype=object
+    )
 
     # these are a little special, depending on the scan type we might not have a phi coordinate
     # that aspect of this is broken for now, but we need not worry
@@ -111,7 +147,13 @@ def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
             if not data.dims:
                 data = data.item()
 
-        if isinstance(data, (int, float,)):
+        if isinstance(
+            data,
+            (
+                int,
+                float,
+            ),
+        ):
             return np.ones(target_shape) * data
 
         # else we are dealing with an actual array
@@ -121,19 +163,32 @@ def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
         return np.asarray(data)[the_slice]
 
     raw_coords = {
-        'phi': arr.coords['phi'].values - arr.S.phi_offset,
-        'beta': (0 if arr.coords['beta'] is None else arr.coords['beta'].values) - arr.S.beta_offset,
-        'theta': (0 if arr.coords['theta'] is None else arr.coords['theta'].values) - arr.S.theta_offset,
-        'hv': arr.coords['hv'],
+        "phi": arr.coords["phi"].values - arr.S.phi_offset,
+        "beta": (0 if arr.coords["beta"] is None else arr.coords["beta"].values)
+        - arr.S.beta_offset,
+        "theta": (0 if arr.coords["theta"] is None else arr.coords["theta"].values)
+        - arr.S.theta_offset,
+        "hv": arr.coords["hv"],
     }
 
-    raw_coords = {k: broadcast_by_dim_location(v, projection_vectors.shape, full_old_dims.index(k) if k in full_old_dims else None)
-                  for k, v in raw_coords.items()}
+    raw_coords = {
+        k: broadcast_by_dim_location(
+            v, projection_vectors.shape, full_old_dims.index(k) if k in full_old_dims else None
+        )
+        for k, v in raw_coords.items()
+    }
 
     # fill in the vectors
-    binding_energy = broadcast_by_dim_location(arr.coords['eV'] - arr.S.work_function,
-                                               projection_vectors.shape, full_old_dims.index('eV') if 'eV' in full_old_dims else None)
-    photon_energy = broadcast_by_dim_location(arr.coords['hv'], projection_vectors.shape, full_old_dims.index('hv') if 'hv' in full_old_dims else None)
+    binding_energy = broadcast_by_dim_location(
+        arr.coords["eV"] - arr.S.work_function,
+        projection_vectors.shape,
+        full_old_dims.index("eV") if "eV" in full_old_dims else None,
+    )
+    photon_energy = broadcast_by_dim_location(
+        arr.coords["hv"],
+        projection_vectors.shape,
+        full_old_dims.index("hv") if "hv" in full_old_dims else None,
+    )
     kinetic_energy = binding_energy + photon_energy
 
     inner_potential = arr.S.inner_potential
@@ -182,22 +237,37 @@ def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
 
     # TODO check me
     raw_translated = {
-        'kx': euler_to_kx(kinetic_energy, raw_coords['phi'], raw_coords['beta'], theta=0,
-                          slit_is_vertical=arr.S.is_slit_vertical),
-        'ky': euler_to_ky(kinetic_energy, raw_coords['phi'], raw_coords['beta'], theta=0,
-                          slit_is_vertical=arr.S.is_slit_vertical),
-        'kz': euler_to_kz(kinetic_energy, raw_coords['phi'], raw_coords['beta'], theta=0,
-                          slit_is_vertical=arr.S.is_slit_vertical,
-                          inner_potential=inner_potential),
+        "kx": euler_to_kx(
+            kinetic_energy,
+            raw_coords["phi"],
+            raw_coords["beta"],
+            theta=0,
+            slit_is_vertical=arr.S.is_slit_vertical,
+        ),
+        "ky": euler_to_ky(
+            kinetic_energy,
+            raw_coords["phi"],
+            raw_coords["beta"],
+            theta=0,
+            slit_is_vertical=arr.S.is_slit_vertical,
+        ),
+        "kz": euler_to_kz(
+            kinetic_energy,
+            raw_coords["phi"],
+            raw_coords["beta"],
+            theta=0,
+            slit_is_vertical=arr.S.is_slit_vertical,
+            inner_potential=inner_potential,
+        ),
     }
 
-    if 'kp' in dest_coords:
-        if np.sum(raw_translated['kx'] ** 2) > np.sum(raw_translated['ky'] ** 2):
-            sign = raw_translated['kx'] / np.sqrt(raw_translated['kx'] ** 2 + 1e-8)
+    if "kp" in dest_coords:
+        if np.sum(raw_translated["kx"] ** 2) > np.sum(raw_translated["ky"] ** 2):
+            sign = raw_translated["kx"] / np.sqrt(raw_translated["kx"] ** 2 + 1e-8)
         else:
-            sign = raw_translated['ky'] / np.sqrt(raw_translated['ky'] ** 2 + 1e-8)
+            sign = raw_translated["ky"] / np.sqrt(raw_translated["ky"] ** 2 + 1e-8)
 
-        raw_translated['kp'] = np.sqrt(raw_translated['kx'] ** 2 + raw_translated['ky'] ** 2) * sign
+        raw_translated["kp"] = np.sqrt(raw_translated["kx"] ** 2 + raw_translated["ky"] ** 2) * sign
 
     data_vars = {}
     for dest_coord in dest_coords:

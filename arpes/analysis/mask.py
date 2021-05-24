@@ -6,8 +6,12 @@ from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('polys_to_mask', 'apply_mask', 'raw_poly_to_mask',
-           'apply_mask_to_coords',)
+__all__ = (
+    "polys_to_mask",
+    "apply_mask",
+    "raw_poly_to_mask",
+    "apply_mask_to_coords",
+)
 
 
 def raw_poly_to_mask(poly):
@@ -24,7 +28,7 @@ def raw_poly_to_mask(poly):
     :return:
     """
     return {
-        'poly': poly,
+        "poly": poly,
     }
 
 
@@ -44,10 +48,13 @@ def polys_to_mask(mask_dict, coords, shape, radius=None, invert=False):
     :return:
     """
 
-    dims = mask_dict['dims']
-    polys = mask_dict['polys']
+    dims = mask_dict["dims"]
+    polys = mask_dict["polys"]
 
-    polys = [[[np.searchsorted(coords[dims[i]], coord) for i, coord in enumerate(p)] for p in poly] for poly in polys]
+    polys = [
+        [[np.searchsorted(coords[dims[i]], coord) for i, coord in enumerate(p)] for p in poly]
+        for poly in polys
+    ]
 
     mask_grids = np.meshgrid(*[np.arange(s) for s in shape])
     mask_grids = tuple(k.flatten() for k in mask_grids)
@@ -71,7 +78,7 @@ def polys_to_mask(mask_dict, coords, shape, radius=None, invert=False):
 
 
 def apply_mask_to_coords(data: xr.Dataset, mask, dims, invert=True):
-    p = Path(mask['poly'])
+    p = Path(mask["poly"])
 
     as_array = np.stack([data.data_vars[d].values for d in dims], axis=-1)
     shape = as_array.shape
@@ -85,7 +92,7 @@ def apply_mask_to_coords(data: xr.Dataset, mask, dims, invert=True):
     return mask
 
 
-@update_provenance('Apply boolean mask to data')
+@update_provenance("Apply boolean mask to data")
 def apply_mask(data: DataType, mask, replace=np.nan, radius=None, invert=False):
     """
     Applies a logical mask, i.e. one given in terms of polygons, to a specific
@@ -110,11 +117,17 @@ def apply_mask(data: DataType, mask, replace=np.nan, radius=None, invert=False):
     :return:
     """
     data = normalize_to_spectrum(data)
-    fermi = mask.get('fermi')
+    fermi = mask.get("fermi")
 
     if isinstance(mask, dict):
-        dims = mask.get('dims', data.dims)
-        mask = polys_to_mask(mask, data.coords, [s for i, s in enumerate(data.shape) if data.dims[i] in dims], radius=radius, invert=invert)
+        dims = mask.get("dims", data.dims)
+        mask = polys_to_mask(
+            mask,
+            data.coords,
+            [s for i, s in enumerate(data.shape) if data.dims[i] in dims],
+            radius=radius,
+            invert=invert,
+        )
 
     masked_data = data.copy(deep=True)
     masked_data.values = masked_data.values * 1.0

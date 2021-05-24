@@ -7,7 +7,10 @@ import numpy as np
 import xarray as xr
 from arpes.provenance import update_provenance
 
-__all__ = ('replace_coords', 'disambiguate_coordinates',)
+__all__ = (
+    "replace_coords",
+    "disambiguate_coordinates",
+)
 
 
 def disambiguate_coordinates(datasets, possibly_clashing_coordinates):
@@ -23,21 +26,23 @@ def disambiguate_coordinates(datasets, possibly_clashing_coordinates):
         if not different_coords:
             continue
 
-        if not functools.reduce(lambda x, y: (
-                    np.array_equal(x[1], y) and x[0], y),
-                                different_coords, (True, different_coords[0]))[0]:
+        if not functools.reduce(
+            lambda x, y: (np.array_equal(x[1], y) and x[0], y),
+            different_coords,
+            (True, different_coords[0]),
+        )[0]:
             conflicted.append(c)
 
     after_deconflict = []
     for d in datasets:
         spectrum_name = list(d.data_vars.keys())[0]
-        to_rename = {name: name + '-' + spectrum_name for name in d.dims if name in conflicted}
+        to_rename = {name: name + "-" + spectrum_name for name in d.dims if name in conflicted}
         after_deconflict.append(d.rename(to_rename))
 
     return after_deconflict
 
 
-@update_provenance('Replace coordinates')
+@update_provenance("Replace coordinates")
 def replace_coords(arr: xr.DataArray, new_coords, mapping):
     coords = dict(copy.deepcopy(arr.coords))
     dims = list(copy.deepcopy(arr.dims))

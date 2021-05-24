@@ -11,7 +11,7 @@ from arpes.load_pxt import read_single_pxt
 from arpes.provenance import provenance_from_file
 from arpes.repair import negate_energy
 
-__all__ = ('IgorExportEndstation',)
+__all__ = ("IgorExportEndstation",)
 
 
 class IgorExportEndstation(SESEndstation):  # , FITSEndstation):
@@ -19,23 +19,26 @@ class IgorExportEndstation(SESEndstation):  # , FITSEndstation):
     The Igor Export "Endstation" for ARPES data
     """
 
-    PRINCIPAL_NAME = 'Igor'
-    ALIASES = ['igor', 'igor-export', ]
+    PRINCIPAL_NAME = "Igor"
+    ALIASES = [
+        "igor",
+        "igor-export",
+    ]
 
     RENAME_KEYS = {}
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
         name, ext = os.path.splitext(frame_path)
 
-        if 'nc' in ext or 'h5' in ext:
+        if "nc" in ext or "h5" in ext:
             # was converted to hdf5/NetCDF format with Conrad's Igor scripts
             scan_desc = copy.deepcopy(scan_desc)
-            scan_desc['path'] = frame_path
+            scan_desc["path"] = frame_path
             return self.load_SES_h5(scan_desc=scan_desc, robust_dimension_labels=True, **kwargs)
 
         # it's given by SES PXT files
         pxt_data = negate_energy(read_single_pxt(frame_path))
-        return xr.Dataset({'spectrum': pxt_data}, attrs=pxt_data.attrs)
+        return xr.Dataset({"spectrum": pxt_data}, attrs=pxt_data.attrs)
 
     def load_SES_h5(self, scan_desc: dict = None, robust_dimension_labels=False, **kwargs):
         """
@@ -50,73 +53,80 @@ class IgorExportEndstation(SESEndstation):  # , FITSEndstation):
 
         scan_desc = copy.deepcopy(scan_desc)
 
-        data_loc = scan_desc.get('path', scan_desc.get('file'))
+        data_loc = scan_desc.get("path", scan_desc.get("file"))
         p = Path(data_loc)
         if not p.exists():
             import arpes.config
+
             data_loc = os.path.join(arpes.config.DATA_PATH, data_loc)
 
         # wave_note = shim_wave_note(data_loc)
         wave_note = ""
-        f = h5py.File(data_loc, 'r')
+        f = h5py.File(data_loc, "r")
 
         primary_dataset_name = list(f)[0]
         # This is bugged for the moment in h5py due to an inability to read fixed length unicode strings
         # wave_note = f['/' + primary_dataset_name].attrs['IGORWaveNote']
 
-        dimension_labels = list(f['/' + primary_dataset_name].attrs['IGORWaveDimensionLabels'][0])
+        dimension_labels = list(f["/" + primary_dataset_name].attrs["IGORWaveDimensionLabels"][0])
         # print(list(f['/' + primary_dataset_name].attrs.keys()))
 
-        if any(x == '' for x in dimension_labels):
+        if any(x == "" for x in dimension_labels):
             # print(dimension_labels)
 
             if not robust_dimension_labels:
-                raise ValueError('Missing dimension labels. Use robust_dimension_labels=True to override')
+                raise ValueError(
+                    "Missing dimension labels. Use robust_dimension_labels=True to override"
+                )
             else:
                 used_blanks = 0
                 for i in range(len(dimension_labels)):
-                    if dimension_labels[i] == '':
-                        dimension_labels[i] = 'missing{}'.format(used_blanks)
+                    if dimension_labels[i] == "":
+                        dimension_labels[i] = "missing{}".format(used_blanks)
                         used_blanks += 1
 
                         # print(dimension_labels)
 
-        scaling = f['/' + primary_dataset_name].attrs['IGORWaveScaling'][-len(dimension_labels):]
-        raw_data = f['/' + primary_dataset_name][:]
+        scaling = f["/" + primary_dataset_name].attrs["IGORWaveScaling"][-len(dimension_labels) :]
+        raw_data = f["/" + primary_dataset_name][:]
 
-        scaling = [np.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
-                   for i, scale in enumerate(scaling)]
+        scaling = [
+            np.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
+            for i, scale in enumerate(scaling)
+        ]
 
         dataset_contents = {}
-        attrs = scan_desc.pop('note', {})
+        attrs = scan_desc.pop("note", {})
         attrs.update(wave_note)
 
         built_coords = dict(zip(dimension_labels, scaling))
 
-        deg_to_rad_coords = {'theta', 'beta', 'phi'}
+        deg_to_rad_coords = {"theta", "beta", "phi"}
 
         # the hemisphere axis is handled below
-        built_coords = {k: c * (np.pi / 180) if k in deg_to_rad_coords else c
-                        for k, c in built_coords.items()}
+        built_coords = {
+            k: c * (np.pi / 180) if k in deg_to_rad_coords else c for k, c in built_coords.items()
+        }
 
-        deg_to_rad_attrs = {'theta', 'beta', 'alpha', 'chi'}
+        deg_to_rad_attrs = {"theta", "beta", "alpha", "chi"}
         for angle_attr in deg_to_rad_attrs:
             if angle_attr in attrs:
                 attrs[angle_attr] = float(attrs[angle_attr]) * np.pi / 180
 
-        dataset_contents['spectrum'] = xr.DataArray(
+        dataset_contents["spectrum"] = xr.DataArray(
             raw_data,
             coords=built_coords,
             dims=dimension_labels,
             attrs=attrs,
         )
 
-        provenance_from_file(dataset_contents['spectrum'], data_loc, {
-            'what': 'Loaded SES dataset from HDF5.',
-            'by': 'load_SES'
-        })
+        provenance_from_file(
+            dataset_contents["spectrum"],
+            data_loc,
+            {"what": "Loaded SES dataset from HDF5.", "by": "load_SES"},
+        )
 
         return xr.Dataset(
             dataset_contents,
-            attrs={**scan_desc, 'name': primary_dataset_name},
+            attrs={**scan_desc, "name": primary_dataset_name},
         )

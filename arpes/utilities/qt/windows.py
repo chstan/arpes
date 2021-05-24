@@ -4,11 +4,19 @@ from PyQt5 import QtGui, QtCore
 
 import arpes.config
 from arpes.utilities.excepthook import patched_excepthook
-from arpes.utilities.ui import PRETTY_KEYS, pretty_key_event, KeyBinding, horizontal, vertical, tabs, CursorRegion, \
-    CursorMode
+from arpes.utilities.ui import (
+    PRETTY_KEYS,
+    pretty_key_event,
+    KeyBinding,
+    horizontal,
+    vertical,
+    tabs,
+    CursorRegion,
+    CursorMode,
+)
 import weakref
 
-__all__ = ('SimpleWindow',)
+__all__ = ("SimpleWindow",)
 
 
 class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
@@ -21,11 +29,12 @@ class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
     3. Lifecycle
     4. Inter-component messaging
     """
+
     HELP_DIALOG_CLS = None
 
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.app = None # this will eventually be a weakref to the application
+        self.app = None  # this will eventually be a weakref to the application
         self._help_dialog = None
 
         self._old_excepthook = sys.excepthook
@@ -38,13 +47,13 @@ class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
 
     def compile_key_bindings(self):
         return [
-            KeyBinding('Close Window', [QtCore.Qt.Key_Escape], self.do_close),
-            KeyBinding('Toggle Help', [QtCore.Qt.Key_H], self.toggle_help),
+            KeyBinding("Close Window", [QtCore.Qt.Key_Escape], self.do_close),
+            KeyBinding("Toggle Help", [QtCore.Qt.Key_H], self.toggle_help),
         ]
 
     def compile_cursor_modes(self):
         return [
-            #CursorMode('Cursor', [QtCore.Qt.Key_C], [self.on_click_cursor, self.on_drag_cursor])
+            # CursorMode('Cursor', [QtCore.Qt.Key_C], [self.on_click_cursor, self.on_drag_cursor])
         ]
 
     def do_close(self, event):
@@ -56,7 +65,12 @@ class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
         super().close()
 
     def eventFilter(self, source, event):
-        special_keys = [QtCore.Qt.Key_Down, QtCore.Qt.Key_Up, QtCore.Qt.Key_Left, QtCore.Qt.Key_Right]
+        special_keys = [
+            QtCore.Qt.Key_Down,
+            QtCore.Qt.Key_Up,
+            QtCore.Qt.Key_Left,
+            QtCore.Qt.Key_Right,
+        ]
 
         if event.type() in [QtCore.QEvent.KeyPress, QtCore.QEvent.ShortcutOverride]:
             if event.type() != QtCore.QEvent.ShortcutOverride or event.key() in special_keys:
@@ -74,8 +88,8 @@ class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
                     binding.handler(event)
 
         if not handled:
-            if arpes.config.SETTINGS.get('DEBUG', False):
-                print(f'{event.key()} @ {type(self)}:{event}')
+            if arpes.config.SETTINGS.get("DEBUG", False):
+                print(f"{event.key()} @ {type(self)}:{event}")
 
     def toggle_help(self, event):
         if self.HELP_DIALOG_CLS is None:

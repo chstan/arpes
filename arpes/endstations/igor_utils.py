@@ -2,7 +2,7 @@ import itertools
 import os.path
 import subprocess
 
-__all__ = ('shim_wave_note',)
+__all__ = ("shim_wave_note",)
 
 
 def shim_wave_note(path):
@@ -17,19 +17,19 @@ def shim_wave_note(path):
     :return:
     """
     wave_name = os.path.splitext(os.path.basename(path))[0]
-    cmd = 'h5dump -A --attribute /{}/IGORWaveNote {}'.format(wave_name, path)
+    cmd = "h5dump -A --attribute /{}/IGORWaveNote {}".format(wave_name, path)
     h5_out = subprocess.getoutput(cmd)
 
-    split_data = h5_out[h5_out.index('DATA {'):]
+    split_data = h5_out[h5_out.index("DATA {") :]
     assert len(split_data.split('"')) == 3
     data = split_data.split('"')[1]
 
     # remove stuff below the end of the header
     try:
-        data = data[:data.index('ENDHEADER')]
+        data = data[: data.index("ENDHEADER")]
     except ValueError:
         pass
 
-    lines = [l.strip() for l in data.splitlines() if '=' in l]
-    lines = itertools.chain(*[l.split(',') for l in lines])
-    return dict([l.split('=') for l in lines])
+    lines = [l.strip() for l in data.splitlines() if "=" in l]
+    lines = itertools.chain(*[l.split(",") for l in lines])
+    return dict([l.split("=") for l in lines])

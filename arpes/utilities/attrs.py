@@ -5,7 +5,7 @@ import pandas as pd
 
 from arpes.typing import DataType
 
-__all__ = ('diff_attrs',)
+__all__ = ("diff_attrs",)
 
 
 def diff_attrs(a: DataType, b: DataType, should_print=True, skip_nan=False, skip_composite=True):
@@ -17,7 +17,12 @@ def diff_attrs(a: DataType, b: DataType, should_print=True, skip_nan=False, skip
 
     def should_skip(k):
         if skip_composite:
-            composites = (dict, list, np.ndarray, pd.DataFrame,)
+            composites = (
+                dict,
+                list,
+                np.ndarray,
+                pd.DataFrame,
+            )
             if isinstance(attrs_a[k], composites) or isinstance(attrs_b[k], composites):
                 if type(attrs_a[k]) == type(attrs_b[k]):
                     return True
@@ -45,21 +50,22 @@ def diff_attrs(a: DataType, b: DataType, should_print=True, skip_nan=False, skip
     values_in_a = [attrs_a[k] for k in common]
     values_in_b = [attrs_b[k] for k in common]
 
-    diff = pd.DataFrame(data={
-        'key': common,
-        'A': values_in_a,
-        'B': values_in_b,
-    }).set_index('key')
-
+    diff = pd.DataFrame(
+        data={
+            "key": common,
+            "A": values_in_a,
+            "B": values_in_b,
+        }
+    ).set_index("key")
 
     if should_print:
-        print('A has:')
+        print("A has:")
         pprint(a_has)
 
-        print('\nB has:')
+        print("\nB has:")
         pprint(b_has)
 
-        print('\nDifferences:')
+        print("\nDifferences:")
         print(diff.to_string())
     else:
         return a_has, b_has, diff

@@ -8,7 +8,14 @@ from arpes.provenance import provenance, update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('curvature', 'dn_along_axis', 'd2_along_axis', 'd1_along_axis', 'minimum_gradient', 'vector_diff')
+__all__ = (
+    "curvature",
+    "dn_along_axis",
+    "d2_along_axis",
+    "d1_along_axis",
+    "minimum_gradient",
+    "vector_diff",
+)
 
 
 def vector_diff(arr, delta, n=1):
@@ -25,8 +32,7 @@ def vector_diff(arr, delta, n=1):
     if n == 0:
         return arr
     if n < 0:
-        raise ValueError(
-            'Order must be non-negative but got ' + repr(n))
+        raise ValueError("Order must be non-negative but got " + repr(n))
 
     nd = arr.ndim
     slice1 = [slice(None)] * nd
@@ -47,28 +53,76 @@ def vector_diff(arr, delta, n=1):
     return arr[slice1] - arr[slice2]
 
 
-@update_provenance('Minimum Gradient')
-def minimum_gradient(data: DataType,delta=1):
+@update_provenance("Minimum Gradient")
+def minimum_gradient(data: DataType, delta=1):
     arr = normalize_to_spectrum(data)
-    new = arr / gradient_modulus(arr,delta=delta)
+    new = arr / gradient_modulus(arr, delta=delta)
     new.values[np.isnan(new.values)] = 0
     return new
 
 
-@update_provenance('Gradient Modulus')
+@update_provenance("Gradient Modulus")
 def gradient_modulus(data: DataType, delta=1):
     spectrum = normalize_to_spectrum(data)
     values = spectrum.values
     gradient_vector = np.zeros(shape=(8,) + values.shape)
 
-    gradient_vector[0, :-delta, :] = vector_diff(values, (delta, 0,))
-    gradient_vector[1, :, :-delta] = vector_diff(values, (0, delta,))
-    gradient_vector[2, delta:, :] = vector_diff(values, (-delta, 0,))
-    gradient_vector[3, :, delta:] = vector_diff(values, (0, -delta,))
-    gradient_vector[4, :-delta, :-delta] = vector_diff(values, (delta, delta,))
-    gradient_vector[5, :-delta, delta:] = vector_diff(values, (delta, -delta,))
-    gradient_vector[6, delta:, :-delta] = vector_diff(values, (-delta, delta,))
-    gradient_vector[7, delta:, delta:] = vector_diff(values, (-delta, -delta,))
+    gradient_vector[0, :-delta, :] = vector_diff(
+        values,
+        (
+            delta,
+            0,
+        ),
+    )
+    gradient_vector[1, :, :-delta] = vector_diff(
+        values,
+        (
+            0,
+            delta,
+        ),
+    )
+    gradient_vector[2, delta:, :] = vector_diff(
+        values,
+        (
+            -delta,
+            0,
+        ),
+    )
+    gradient_vector[3, :, delta:] = vector_diff(
+        values,
+        (
+            0,
+            -delta,
+        ),
+    )
+    gradient_vector[4, :-delta, :-delta] = vector_diff(
+        values,
+        (
+            delta,
+            delta,
+        ),
+    )
+    gradient_vector[5, :-delta, delta:] = vector_diff(
+        values,
+        (
+            delta,
+            -delta,
+        ),
+    )
+    gradient_vector[6, delta:, :-delta] = vector_diff(
+        values,
+        (
+            -delta,
+            delta,
+        ),
+    )
+    gradient_vector[7, delta:, delta:] = vector_diff(
+        values,
+        (
+            -delta,
+            -delta,
+        ),
+    )
 
     data_copy = spectrum.copy(deep=True)
     data_copy.values = np.linalg.norm(gradient_vector, axis=0)
@@ -101,7 +155,7 @@ def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
     :return:
     """
     if beta is not None:
-        alpha = np.power(10., beta)
+        alpha = np.power(10.0, beta)
 
     if directions is None:
         directions = arr.dims[:2]
@@ -123,24 +177,26 @@ def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
     d2fxy = np.gradient(dfx, dy, axis=axis_indices[1])
 
     denom = np.power((1 + cx * dfx_2 + cy * dfy_2), 1.5)
-    numerator = (1 + cx * dfx_2) * cy * d2fy - 2 * cx * cy * dfx * dfy * d2fxy + \
-                (1 + cy * dfy_2) * cx * d2fx
-
-    curv = xr.DataArray(
-        numerator / denom,
-        arr.coords,
-        arr.dims,
-        attrs=arr.attrs
+    numerator = (
+        (1 + cx * dfx_2) * cy * d2fy
+        - 2 * cx * cy * dfx * dfy * d2fxy
+        + (1 + cy * dfy_2) * cx * d2fx
     )
 
-    if 'id' in curv.attrs:
-        del curv.attrs['id']
-        provenance(curv, arr, {
-            'what': 'Curvature',
-            'by': 'curvature',
-            'directions': directions,
-            'alpha': alpha,
-        })
+    curv = xr.DataArray(numerator / denom, arr.coords, arr.dims, attrs=arr.attrs)
+
+    if "id" in curv.attrs:
+        del curv.attrs["id"]
+        provenance(
+            curv,
+            arr,
+            {
+                "what": "Curvature",
+                "by": "curvature",
+                "directions": directions,
+                "alpha": alpha,
+            },
+        )
     return curv
 
 
@@ -160,7 +216,7 @@ def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
     :param order: Specifies how many derivatives to take
     :return:
     """
-    axis_order = ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'beta', 'theta']
+    axis_order = ["eV", "kp", "kx", "kz", "ky", "phi", "beta", "theta"]
     if axis is None:
         axes = [a for a in axis_order if a in arr.dims]
         if axes:
@@ -168,7 +224,9 @@ def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
         else:
             # have to do something
             axis = arr.dims[0]
-            warnings.warn('Choosing axis: {} for the second derivative, no preferred axis found.'.format(axis))
+            warnings.warn(
+                "Choosing axis: {} for the second derivative, no preferred axis found.".format(axis)
+            )
 
     if smooth_fn is None:
         smooth_fn = lambda x: x
@@ -182,21 +240,20 @@ def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
         smoothed = smooth_fn(as_arr)
         values = np.gradient(smoothed.values, d_axis, axis=axis_idx)
 
-    dn_arr = xr.DataArray(
-        values,
-        arr.coords,
-        arr.dims,
-        attrs=arr.attrs
-    )
+    dn_arr = xr.DataArray(values, arr.coords, arr.dims, attrs=arr.attrs)
 
-    if 'id' in dn_arr.attrs:
-        del dn_arr.attrs['id']
-        provenance(dn_arr, arr, {
-            'what': '{}th derivative'.format(order),
-            'by': 'dn_along_axis',
-            'axis': axis,
-            'order': order,
-        })
+    if "id" in dn_arr.attrs:
+        del dn_arr.attrs["id"]
+        provenance(
+            dn_arr,
+            arr,
+            {
+                "what": "{}th derivative".format(order),
+                "by": "dn_along_axis",
+                "axis": axis,
+                "order": order,
+            },
+        )
 
     return dn_arr
 

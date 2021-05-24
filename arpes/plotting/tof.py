@@ -14,33 +14,44 @@ from arpes.plotting.utils import path_for_plot
 from arpes.provenance import save_plot_provenance
 from arpes.typing import DataType
 
-__all__ = ('plot_with_std', 'scatter_with_std',)
+__all__ = (
+    "plot_with_std",
+    "scatter_with_std",
+)
+
 
 @save_plot_provenance
 def jitterplot(data: xr.Dataset, jitter_dimension=None):
     if jitter_dimension is None:
-        jitter_dimension = 'bootstrap'
+        jitter_dimension = "bootstrap"
 
     assert jitter_dimension in data.coords
-
 
 
 @save_plot_provenance
 def plot_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs):
     if name_to_plot is None:
-        var_names = [k for k in data.data_vars.keys() if '_std' not in k]
+        var_names = [k for k in data.data_vars.keys() if "_std" not in k]
         assert len(var_names) == 1
         name_to_plot = var_names[0]
-        assert (name_to_plot + '_std') in data.data_vars.keys()
+        assert (name_to_plot + "_std") in data.data_vars.keys()
 
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (7, 5,)))
+        fig, ax = plt.subplots(
+            figsize=kwargs.pop(
+                "figsize",
+                (
+                    7,
+                    5,
+                ),
+            )
+        )
 
     data.data_vars[name_to_plot].plot(ax=ax, **kwargs)
     x, y = data.data_vars[name_to_plot].G.to_arrays()
 
-    std = data.data_vars[name_to_plot + '_std'].values
+    std = data.data_vars[name_to_plot + "_std"].values
     ax.fill_between(x, y - std, y + std, alpha=0.3, **kwargs)
 
     if out is not None:
@@ -53,21 +64,29 @@ def plot_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs
 
 
 @save_plot_provenance
-def scatter_with_std(data: DataType, name_to_plot=None, ax=None, fmt='o', out=None, **kwargs):
+def scatter_with_std(data: DataType, name_to_plot=None, ax=None, fmt="o", out=None, **kwargs):
     if name_to_plot is None:
-        var_names = [k for k in data.data_vars.keys() if '_std' not in k]
+        var_names = [k for k in data.data_vars.keys() if "_std" not in k]
         assert len(var_names) == 1
         name_to_plot = var_names[0]
-        assert (name_to_plot + '_std') in data.data_vars.keys()
+        assert (name_to_plot + "_std") in data.data_vars.keys()
 
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (7, 5,)))
+        fig, ax = plt.subplots(
+            figsize=kwargs.pop(
+                "figsize",
+                (
+                    7,
+                    5,
+                ),
+            )
+        )
 
     x, y = data.data_vars[name_to_plot].G.to_arrays()
 
-    std = data.data_vars[name_to_plot + '_std'].values
-    ax.errorbar(x, y, yerr=std, fmt=fmt, markeredgecolor='black', **kwargs)
+    std = data.data_vars[name_to_plot + "_std"].values
+    ax.errorbar(x, y, yerr=std, fmt=fmt, markeredgecolor="black", **kwargs)
 
     if out is not None:
         plt.savefig(path_for_plot(out), dpi=400)

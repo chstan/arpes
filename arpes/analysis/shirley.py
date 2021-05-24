@@ -7,12 +7,13 @@ from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
 __all__ = (
-    'calculate_shirley_background',
-    'calculate_shirley_background_full_range',
-    'remove_shirley_background',
+    "calculate_shirley_background",
+    "calculate_shirley_background_full_range",
+    "remove_shirley_background",
 )
 
-@update_provenance('Remove Shirley background')
+
+@update_provenance("Remove Shirley background")
 def remove_shirley_background(xps: DataType, **kwargs):
     """
     Calculates and removes a Shirley background from a spectrum.
@@ -25,7 +26,7 @@ def remove_shirley_background(xps: DataType, **kwargs):
     return xps - calculate_shirley_background(xps, **kwargs)
 
 
-@update_provenance('Calculate full range Shirley background')
+@update_provenance("Calculate full range Shirley background")
 def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=50, n_samples=5):
     """
     Calculates a shirley background in the range of `energy_slice` according to:
@@ -69,7 +70,8 @@ def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=5
 
         for i in range(len(new_bkg)):
             new_bkg.values[i] = i_right + k * (
-                (total_xps - cumulative_xps[i] - (total_background - cumulative_background[i])) / (total_xps - total_background + 1e-5)
+                (total_xps - cumulative_xps[i] - (total_background - cumulative_background[i]))
+                / (total_xps - total_background + 1e-5)
             )
 
         rel_error = np.abs(np.sum(new_bkg.values) - total_background) / (total_background)
@@ -80,14 +82,18 @@ def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=5
             break
 
     if (iter_count + 1) == max_iters:
-        warnings.warn('Shirley background calculation did not converge ' +
-                      'after {} steps with relative error {}!'.format(max_iters, rel_error))
+        warnings.warn(
+            "Shirley background calculation did not converge "
+            + "after {} steps with relative error {}!".format(max_iters, rel_error)
+        )
 
     return background
 
 
-@update_provenance('Calculate limited range Shirley background')
-def calculate_shirley_background(xps: DataType, energy_range: slice=None, eps=1e-7, max_iters=50, n_samples=5):
+@update_provenance("Calculate limited range Shirley background")
+def calculate_shirley_background(
+    xps: DataType, energy_range: slice = None, eps=1e-7, max_iters=50, n_samples=5
+):
     """
     Calculates a shirley background iteratively over the full energy range `energy_range`.
     :param xps:
@@ -105,7 +111,7 @@ def calculate_shirley_background(xps: DataType, energy_range: slice=None, eps=1e
     bkg = calculate_shirley_background_full_range(xps_for_calc, eps, max_iters)
     full_bkg = xps * 0
 
-    left_idx = np.searchsorted(full_bkg.eV.values, bkg.eV.values[0], side='left')
+    left_idx = np.searchsorted(full_bkg.eV.values, bkg.eV.values[0], side="left")
     right_idx = left_idx + len(bkg)
 
     full_bkg.values[:left_idx] = bkg.values[0]

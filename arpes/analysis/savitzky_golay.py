@@ -9,11 +9,13 @@ import xarray as xr
 from arpes.provenance import update_provenance
 from arpes.typing import DataType
 
-__all__ = ('savitzky_golay',)
+__all__ = ("savitzky_golay",)
 
 
-@update_provenance('Savitzky Golay Filter')
-def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, order, deriv=0, rate=1, dim=None):
+@update_provenance("Savitzky Golay Filter")
+def savitzky_golay(
+    data: typing.Union[DataType, list, np.ndarray], window_size, order, deriv=0, rate=1, dim=None
+):
     """
     Implements a Savitzky Golay filter with given window size. You can specify "pass through" dimensions
     which will not be touched with the `dim` argument. This allows for filtering each frame of a map or each equal-energy
@@ -27,7 +29,13 @@ def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, 
     :param dim:
     :return:
     """
-    if isinstance(data, (list, np.ndarray,)):
+    if isinstance(
+        data,
+        (
+            list,
+            np.ndarray,
+        ),
+    ):
         return savitzky_golay_array(data, window_size, order, deriv, rate)
 
     if len(data.dims) == 1:
@@ -42,13 +50,22 @@ def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, 
         if len(data.dims) == 3:
             if dim is None:
                 dim = data.dims[-1]
-            return data.G.map_axes(dim, lambda d, _: savitzky_golay(d, window_size, order, deriv, rate))
+            return data.G.map_axes(
+                dim, lambda d, _: savitzky_golay(d, window_size, order, deriv, rate)
+            )
 
         if len(data.dims) == 2:
             if dim is None:
-                transformed_data = savitzky_golay_2d(data.values, window_size, order, derivative=deriv)
+                transformed_data = savitzky_golay_2d(
+                    data.values, window_size, order, derivative=deriv
+                )
             else:
-                return data.G.map_axes(dim, lambda d, _: savitzky_golay(d, window_size, order, deriv=deriv or 0, rate=rate, dim=None))
+                return data.G.map_axes(
+                    dim,
+                    lambda d, _: savitzky_golay(
+                        d, window_size, order, deriv=deriv or 0, rate=rate, dim=None
+                    ),
+                )
 
     return xr.DataArray(transformed_data, data.coords, data.dims, attrs=data.attrs.copy())
 
@@ -74,7 +91,7 @@ def savitzky_golay_2d(z, window_size, order, derivative=None):
         window_size += 1
 
     if window_size ** 2 < n_terms:
-        raise ValueError('order is too high for the window size')
+        raise ValueError("order is too high for the window size")
 
     half_size = window_size // 2
 
@@ -89,7 +106,9 @@ def savitzky_golay_2d(z, window_size, order, derivative=None):
     # coordinates of points
     ind = np.arange(-half_size, half_size + 1, dtype=np.float64)
     dx = np.repeat(ind, window_size)
-    dy = np.tile(ind, [window_size, 1]).reshape(window_size ** 2, )
+    dy = np.tile(ind, [window_size, 1]).reshape(
+        window_size ** 2,
+    )
 
     # build matrix of system of equation
     A = np.empty((window_size ** 2, len(exps)))
@@ -101,48 +120,61 @@ def savitzky_golay_2d(z, window_size, order, derivative=None):
     Z = np.zeros((new_shape))
     # top band
     band = z[0, :]
-    Z[:half_size, half_size:-half_size] = band - np.abs(np.flipud(z[1:half_size + 1, :]) - band)
+    Z[:half_size, half_size:-half_size] = band - np.abs(np.flipud(z[1 : half_size + 1, :]) - band)
     # bottom band
     band = z[-1, :]
-    Z[-half_size:, half_size:-half_size] = band + np.abs(np.flipud(z[-half_size - 1:-1, :]) - band)
+    Z[-half_size:, half_size:-half_size] = band + np.abs(
+        np.flipud(z[-half_size - 1 : -1, :]) - band
+    )
     # left band
     band = np.tile(z[:, 0].reshape(-1, 1), [1, half_size])
-    Z[half_size:-half_size, :half_size] = band - np.abs(np.fliplr(z[:, 1:half_size + 1]) - band)
+    Z[half_size:-half_size, :half_size] = band - np.abs(np.fliplr(z[:, 1 : half_size + 1]) - band)
     # right band
     band = np.tile(z[:, -1].reshape(-1, 1), [1, half_size])
-    Z[half_size:-half_size, -half_size:] = band + np.abs(np.fliplr(z[:, -half_size - 1:-1]) - band)
+    Z[half_size:-half_size, -half_size:] = band + np.abs(
+        np.fliplr(z[:, -half_size - 1 : -1]) - band
+    )
     # central band
     Z[half_size:-half_size, half_size:-half_size] = z
 
     # top left corner
     band = z[0, 0]
-    Z[:half_size, :half_size] = band - np.abs(np.flipud(np.fliplr(z[1:half_size + 1, 1:half_size + 1])) - band)
+    Z[:half_size, :half_size] = band - np.abs(
+        np.flipud(np.fliplr(z[1 : half_size + 1, 1 : half_size + 1])) - band
+    )
     # bottom right corner
     band = z[-1, -1]
     Z[-half_size:, -half_size:] = band + np.abs(
-        np.flipud(np.fliplr(z[-half_size - 1:-1, -half_size - 1:-1])) - band)
+        np.flipud(np.fliplr(z[-half_size - 1 : -1, -half_size - 1 : -1])) - band
+    )
 
     # top right corner
     band = Z[half_size, -half_size:]
-    Z[:half_size, -half_size:] = band - np.abs(np.flipud(Z[half_size + 1:2 * half_size + 1, -half_size:]) - band)
+    Z[:half_size, -half_size:] = band - np.abs(
+        np.flipud(Z[half_size + 1 : 2 * half_size + 1, -half_size:]) - band
+    )
     # bottom left corner
     band = Z[-half_size:, half_size].reshape(-1, 1)
-    Z[-half_size:, :half_size] = band - np.abs(np.fliplr(Z[-half_size:, half_size + 1:2 * half_size + 1]) - band)
+    Z[-half_size:, :half_size] = band - np.abs(
+        np.fliplr(Z[-half_size:, half_size + 1 : 2 * half_size + 1]) - band
+    )
 
     # solve system and convolve
     if derivative is None:
         m = np.linalg.pinv(A)[0].reshape((window_size, -1))
-        return scipy.signal.fftconvolve(Z, m, mode='valid')
-    elif derivative == 'col':
+        return scipy.signal.fftconvolve(Z, m, mode="valid")
+    elif derivative == "col":
         c = np.linalg.pinv(A)[1].reshape((window_size, -1))
-        return scipy.signal.fftconvolve(Z, -c, mode='valid')
-    elif derivative == 'row':
+        return scipy.signal.fftconvolve(Z, -c, mode="valid")
+    elif derivative == "row":
         r = np.linalg.pinv(A)[2].reshape((window_size, -1))
-        return scipy.signal.fftconvolve(Z, -r, mode='valid')
-    elif derivative == 'both':
+        return scipy.signal.fftconvolve(Z, -r, mode="valid")
+    elif derivative == "both":
         c = np.linalg.pinv(A)[1].reshape((window_size, -1))
         r = np.linalg.pinv(A)[2].reshape((window_size, -1))
-        return scipy.signal.fftconvolve(Z, -r, mode='valid'), scipy.signal.fftconvolve(Z, -c, mode='valid')
+        return scipy.signal.fftconvolve(Z, -r, mode="valid"), scipy.signal.fftconvolve(
+            Z, -c, mode="valid"
+        )
 
 
 def savitzky_golay_array(y, window_size, order, deriv=0, rate=1):
@@ -215,7 +247,7 @@ def savitzky_golay_array(y, window_size, order, deriv=0, rate=1):
     m = np.linalg.pinv(b).A[deriv] * rate ** deriv * factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
-    firstvals = y[0] - np.abs(y[1:half_window + 1][::-1] - y[0])
-    lastvals = y[-1] + np.abs(y[-half_window - 1:-1][::-1] - y[-1])
+    firstvals = y[0] - np.abs(y[1 : half_window + 1][::-1] - y[0])
+    lastvals = y[-1] + np.abs(y[-half_window - 1 : -1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
-    return np.convolve(m[::-1], y, mode='valid')
+    return np.convolve(m[::-1], y, mode="valid")

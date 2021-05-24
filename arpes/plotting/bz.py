@@ -22,29 +22,37 @@ from arpes.utilities.bz import build_2dbz_poly, process_kpath, hex_cell_2d
 from arpes.utilities.bz_spec import A_GRAPHENE, A_WS2, A_WSe2
 from arpes.utilities.geometry import polyhedron_intersect_plane
 
-__all__ = ('annotate_special_paths', 'bz2d_plot', 'bz3d_plot', 'bz_plot',
-           'plot_data_to_bz', 'plot_data_to_bz2d', 'plot_data_to_bz3d', 'plot_plane_to_bz',
-           'bz2d_segments',
-           'overplot_standard',)
+__all__ = (
+    "annotate_special_paths",
+    "bz2d_plot",
+    "bz3d_plot",
+    "bz_plot",
+    "plot_data_to_bz",
+    "plot_data_to_bz2d",
+    "plot_data_to_bz3d",
+    "plot_plane_to_bz",
+    "bz2d_segments",
+    "overplot_standard",
+)
 
 overplot_library = {
-    'graphene': lambda: { 'cell': hex_cell_2d(A_GRAPHENE) },
-    'ws2': lambda: { 'cell': hex_cell_2d(A_WS2) },
-    'wwe2': lambda: { 'cell': hex_cell_2d(A_WSe2) },
+    "graphene": lambda: {"cell": hex_cell_2d(A_GRAPHENE)},
+    "ws2": lambda: {"cell": hex_cell_2d(A_WS2)},
+    "wwe2": lambda: {"cell": hex_cell_2d(A_WSe2)},
 }
 
 
-def segments_standard(name='graphene', rotate=0):
+def segments_standard(name="graphene", rotate=0):
     name = name.lower()
     specification = overplot_library[name]()
     transformations = []
     if rotate:
         transformations = [Rotation.from_rotvec([0, 0, rotate])]
 
-    return bz2d_segments(specification['cell'], transformations)
+    return bz2d_segments(specification["cell"], transformations)
 
 
-def overplot_standard(name='graphene', repeat=None, rotate=0):
+def overplot_standard(name="graphene", repeat=None, rotate=0):
     specification = overplot_library[name]()
     transformations = []
 
@@ -52,9 +60,18 @@ def overplot_standard(name='graphene', repeat=None, rotate=0):
         transformations = [Rotation.from_rotvec([0, 0, rotate])]
 
     def overplot_the_bz(ax):
-        bz_plot(cell=specification['cell'], linewidth=2, ax=ax, paths=[], repeat=repeat,
-                set_equal_aspect=False, hide_ax=False, transformations=transformations,
-                zorder=5, linestyle='-')
+        bz_plot(
+            cell=specification["cell"],
+            linewidth=2,
+            ax=ax,
+            paths=[],
+            repeat=repeat,
+            set_equal_aspect=False,
+            hide_ax=False,
+            transformations=transformations,
+            zorder=5,
+            linestyle="-",
+        )
 
     return overplot_the_bz
 
@@ -92,15 +109,16 @@ class Translation:
         """
         vectors = np.asarray(vectors)
 
-        if vectors.ndim > 2 or vectors.shape[-1] not in {2,3}:
-            raise ValueError('Expected a 2D or 3D vector (2 or 3,) of list of vectors (N, 2 or 3,), instead '
-                             'recevied: {}'.format(vectors.shape))
+        if vectors.ndim > 2 or vectors.shape[-1] not in {2, 3}:
+            raise ValueError(
+                "Expected a 2D or 3D vector (2 or 3,) of list of vectors (N, 2 or 3,), instead "
+                "recevied: {}".format(vectors.shape)
+            )
 
         single_vector = False
         if vectors.ndim == 1:
             single_vector = True
-            vectors = vectors[None, :] # expand dims
-
+            vectors = vectors[None, :]  # expand dims
 
         if inverse:
             result = vectors - self.translation_vector
@@ -113,7 +131,9 @@ class Translation:
 Transformation = Union[Translation, Rotation]
 
 
-def apply_transformations(points: np.ndarray, transformations: List[Transformation] = None, inverse=False) -> np.ndarray:
+def apply_transformations(
+    points: np.ndarray, transformations: List[Transformation] = None, inverse=False
+) -> np.ndarray:
     """
     Applies a series of transformations to a sequence of vectors or a single vector.
 
@@ -131,7 +151,7 @@ def apply_transformations(points: np.ndarray, transformations: List[Transformati
     return points
 
 
-def plot_plane_to_bz(cell, plane, ax, special_points=None, facecolor='red'):
+def plot_plane_to_bz(cell, plane, ax, special_points=None, facecolor="red"):
     from ase.dft.bz import bz_vertices
 
     if isinstance(plane, str):
@@ -146,7 +166,7 @@ def plot_plane_to_bz(cell, plane, ax, special_points=None, facecolor='red'):
 
     collection = Poly3DCollection([pts])
     collection.set_facecolor(facecolor)
-    ax.add_collection3d(collection, zs='z')
+    ax.add_collection3d(collection, zs="z")
 
 
 def plot_data_to_bz(data: DataType, cell, **kwargs):
@@ -156,19 +176,29 @@ def plot_data_to_bz(data: DataType, cell, **kwargs):
     return plot_data_to_bz2d(data, cell, **kwargs)
 
 
-def plot_data_to_bz2d(data: DataType, cell, rotate=None, shift=None, scale=None, ax=None,
-                      mask=True, out=None, bz_number=None, **kwargs):
+def plot_data_to_bz2d(
+    data: DataType,
+    cell,
+    rotate=None,
+    shift=None,
+    scale=None,
+    ax=None,
+    mask=True,
+    out=None,
+    bz_number=None,
+    **kwargs
+):
     data = normalize_to_spectrum(data)
 
-    assert('You must k-space convert data before plotting to BZs' and data.S.is_kspace)
+    assert "You must k-space convert data before plotting to BZs" and data.S.is_kspace
 
     if bz_number is None:
-        bz_number = (0,0)
+        bz_number = (0, 0)
 
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(figsize=(9,9))
-        bz2d_plot(cell, paths='all', ax=ax)
+        fig, ax = plt.subplots(figsize=(9, 9))
+        bz2d_plot(cell, paths="all", ax=ax)
 
     if len(cell) == 2:
         cell = [list(c) + [0] for c in cell] + [[0, 0, 1]]
@@ -196,7 +226,7 @@ def plot_data_to_bz2d(data: DataType, cell, rotate=None, shift=None, scale=None,
         built_mask = apply_mask_to_coords(raveled, build_2dbz_poly(cell=cell), dims)
         copied[built_mask.T] = np.nan
 
-    cmap = kwargs.get('cmap', matplotlib.cm.Blues)
+    cmap = kwargs.get("cmap", matplotlib.cm.Blues)
     if isinstance(cmap, str):
         cmap = matplotlib.cm.get_cmap(cmap)
 
@@ -205,7 +235,12 @@ def plot_data_to_bz2d(data: DataType, cell, rotate=None, shift=None, scale=None,
     delta_x = np.dot(np.array(bz_number), icell[:2, 0])
     delta_y = np.dot(np.array(bz_number), icell[:2, 1])
 
-    ax.pcolormesh(raveled.data_vars[dims[0]].values + delta_x, raveled.data_vars[dims[1]].values + delta_y, copied.T, cmap=cmap)
+    ax.pcolormesh(
+        raveled.data_vars[dims[0]].values + delta_x,
+        raveled.data_vars[dims[1]].values + delta_y,
+        copied.T,
+        cmap=cmap,
+    )
 
     if out is not None:
         plt.savefig(path_for_plot(out), dpi=400)
@@ -214,9 +249,8 @@ def plot_data_to_bz2d(data: DataType, cell, rotate=None, shift=None, scale=None,
     return fig, ax
 
 
-
 def plot_data_to_bz3d(data: DataType, cell, **kwargs):
-    raise NotImplementedError('plot_data_to_bz3d is not implemented yet.')
+    raise NotImplementedError("plot_data_to_bz3d is not implemented yet.")
 
 
 def bz_plot(cell, *args, **kwargs):
@@ -226,9 +260,19 @@ def bz_plot(cell, *args, **kwargs):
     return bz2d_plot(cell, *args, **kwargs)
 
 
-def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
-              elev=None, scale=1, repeat=None, transformations=None,
-              hide_ax=True, **kwargs):
+def bz3d_plot(
+    cell,
+    vectors=False,
+    paths=None,
+    points=None,
+    ax=None,
+    elev=None,
+    scale=1,
+    repeat=None,
+    transformations=None,
+    hide_ax=True,
+    **kwargs
+):
     """
     For now this is lifted from ase.dft.bz.bz3d_plot with some modifications. All copyright and
     licensing terms for this and bz2d_plot are those of the current release of ASE
@@ -245,8 +289,10 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     try:
         from ase.dft.bz import bz_vertices  # dynamic because we do not require ase
     except ImportError:
-        warnings.warn('You will need to install ASE (Atomic Simulation Environment) to use this feature.')
-        raise ImportError('You will need to install ASE before using Brillouin Zone plotting')
+        warnings.warn(
+            "You will need to install ASE (Atomic Simulation Environment) to use this feature."
+        )
+        raise ImportError("You will need to install ASE before using Brillouin Zone plotting")
 
     class Arrow3D(FancyArrowPatch):
         def __init__(self, xs, ys, zs, *args, **kwargs):
@@ -263,12 +309,17 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     kpoints = points
 
     if isinstance(paths, str):
-        from ase.dft.kpoints import (get_special_points, special_paths, parse_path_string,
-                                     crystal_structure_from_cell)
+        from ase.dft.kpoints import (
+            get_special_points,
+            special_paths,
+            parse_path_string,
+            crystal_structure_from_cell,
+        )
+
         special_points = get_special_points(cell)
         structure = crystal_structure_from_cell(cell)
 
-        path_string = special_paths[structure] if paths == 'all' else paths
+        path_string = special_paths[structure] if paths == "all" else paths
         paths = []
         for names in parse_path_string(path_string):
             points = []
@@ -278,7 +329,7 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
 
     if ax is None:
         fig = plt.figure(figsize=(5, 5))
-        ax = fig.gca(projection='3d')
+        ax = fig.gca(projection="3d")
 
     azim = np.pi / 5
     elev = elev or np.pi / 6
@@ -291,7 +342,11 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     maxp = 0.0
 
     if repeat is None:
-        repeat = (1, 1, 1,)
+        repeat = (
+            1,
+            1,
+            1,
+        )
 
     dx, dy, dz = icell[0], icell[1], icell[2]
     rep_x, rep_y, rep_z = repeat
@@ -303,9 +358,8 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     if isinstance(rep_z, int):
         rep_z = (0, rep_z)
 
-    c = kwargs.pop('c', 'k')
-    c = kwargs.pop('color', c)
-
+    c = kwargs.pop("c", "k")
+    c = kwargs.pop("color", c)
 
     for ix, iy, iz in itertools.product(range(*rep_x), range(*rep_y), range(*rep_z)):
         delta = dx * ix + dy * iy + dz * iz
@@ -314,13 +368,13 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
             color = c
 
             if np.dot(normal, view) < 0:
-                ls = ':'
+                ls = ":"
             else:
-                ls = '-'
+                ls = "-"
 
-            cosines = np.dot(icell, normal)/ np.linalg.norm(normal) / np.linalg.norm(icell, axis=1)
+            cosines = np.dot(icell, normal) / np.linalg.norm(normal) / np.linalg.norm(icell, axis=1)
             for idx, cosine in enumerate(cosines):
-                if np.abs(np.abs(cosine) - 1) < 1e-6 and False: # debugging this
+                if np.abs(np.abs(cosine) - 1) < 1e-6 and False:  # debugging this
                     tup = [rep_x, rep_y, rep_z][idx]
                     current = [ix, iy, iz][idx]
 
@@ -331,8 +385,8 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
                         color = (1, 1, 1, 0)
 
                     if current + 1 != tup[1] and current != tup[0]:
-                        ls = ':'
-                        color='blue'
+                        ls = ":"
+                        color = "blue"
 
             x, y, z = np.concatenate([points, points[:1]]).T
             x, y, z = x + delta[0], y + delta[1], z + delta[2]
@@ -341,40 +395,57 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
             maxp = max(maxp, points.max())
 
     if vectors:
-        ax.add_artist(Arrow3D([0, icell[0, 0]],
-                              [0, icell[0, 1]],
-                              [0, icell[0, 2]],
-                              mutation_scale=20, lw=1,
-                              arrowstyle='-|>', color='k'))
-        ax.add_artist(Arrow3D([0, icell[1, 0]],
-                              [0, icell[1, 1]],
-                              [0, icell[1, 2]],
-                              mutation_scale=20, lw=1,
-                              arrowstyle='-|>', color='k'))
-        ax.add_artist(Arrow3D([0, icell[2, 0]],
-                              [0, icell[2, 1]],
-                              [0, icell[2, 2]],
-                              mutation_scale=20, lw=1,
-                              arrowstyle='-|>', color='k'))
+        ax.add_artist(
+            Arrow3D(
+                [0, icell[0, 0]],
+                [0, icell[0, 1]],
+                [0, icell[0, 2]],
+                mutation_scale=20,
+                lw=1,
+                arrowstyle="-|>",
+                color="k",
+            )
+        )
+        ax.add_artist(
+            Arrow3D(
+                [0, icell[1, 0]],
+                [0, icell[1, 1]],
+                [0, icell[1, 2]],
+                mutation_scale=20,
+                lw=1,
+                arrowstyle="-|>",
+                color="k",
+            )
+        )
+        ax.add_artist(
+            Arrow3D(
+                [0, icell[2, 0]],
+                [0, icell[2, 1]],
+                [0, icell[2, 2]],
+                mutation_scale=20,
+                lw=1,
+                arrowstyle="-|>",
+                color="k",
+            )
+        )
         maxp = max(maxp, 0.6 * icell.max())
 
     if paths is not None:
         for names, points in paths:
             x, y, z = np.array(points).T
-            ax.plot(x, y, z, c='r', ls='-')
+            ax.plot(x, y, z, c="r", ls="-")
 
             for name, point in zip(names, points):
                 x, y, z = point
-                if name == 'G':
-                    name = '\\Gamma'
+                if name == "G":
+                    name = "\\Gamma"
                 elif len(name) > 1:
-                    name = name[0] + '_' + name[1]
-                ax.text(x, y, z, '$' + name + '$',
-                        ha='center', va='bottom', color='r')
+                    name = name[0] + "_" + name[1]
+                ax.text(x, y, z, "$" + name + "$", ha="center", va="bottom", color="r")
 
     if kpoints is not None:
         for p in kpoints:
-            ax.scatter(p[0], p[1], p[2], c='b')
+            ax.scatter(p[0], p[1], p[2], c="b")
 
     if hide_ax:
         ax.set_axis_off()
@@ -384,15 +455,23 @@ def bz3d_plot(cell, vectors=False, paths=None, points=None, ax=None,
     ax.set_xlim(-s, s)
     ax.set_ylim(-s, s)
     ax.set_zlim(-s, s)
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
 
     ax.view_init(azim=azim / np.pi * 180, elev=elev / np.pi * 180)
 
 
-def annotate_special_paths(ax, paths, cell=None, transformations=None, offset=None,
-                           special_points=None, labels=None, **kwargs):
-    if paths == '':
-        raise ValueError('Must provide a proper path.')
+def annotate_special_paths(
+    ax,
+    paths,
+    cell=None,
+    transformations=None,
+    offset=None,
+    special_points=None,
+    labels=None,
+    **kwargs
+):
+    if paths == "":
+        raise ValueError("Must provide a proper path.")
 
     if isinstance(paths, (list, str)):
         if isinstance(paths, str):
@@ -407,7 +486,7 @@ def annotate_special_paths(ax, paths, cell=None, transformations=None, offset=No
             labels = [list(l) for l in labels]
             paths = list(zip(labels, paths))
 
-    fontsize = kwargs.pop('fontsize', 14)
+    fontsize = kwargs.pop("fontsize", 14)
 
     if offset is None:
         offset = dict()
@@ -423,17 +502,17 @@ def annotate_special_paths(ax, paths, cell=None, transformations=None, offset=No
         x, y, z = np.array(points).T
 
         if two_d:
-            ax.plot(x, y, c='r', ls='-', **kwargs)
+            ax.plot(x, y, c="r", ls="-", **kwargs)
         else:
-            ax.plot(x, y, z, c='r', ls='-', **kwargs)
+            ax.plot(x, y, z, c="r", ls="-", **kwargs)
 
         for name, point in zip(names, points):
             x, y, z = point
             display_name = name
-            if display_name == 'G':
-                display_name = '\\Gamma'
+            if display_name == "G":
+                display_name = "\\Gamma"
             elif len(name) > 1:
-                name = name[0] + '_' + name[1]
+                name = name[0] + "_" + name[1]
 
             off = offset.get(name, 0)
             try:
@@ -449,9 +528,26 @@ def annotate_special_paths(ax, paths, cell=None, transformations=None, offset=No
                     x, y, z = x + off, y + off, z + off
 
             if two_d:
-                ax.text(x, y, '$' + display_name + '$', ha='center', va='bottom', color='r', fontsize=fontsize)
+                ax.text(
+                    x,
+                    y,
+                    "$" + display_name + "$",
+                    ha="center",
+                    va="bottom",
+                    color="r",
+                    fontsize=fontsize,
+                )
             else:
-                ax.text(x, y, z, '$' + display_name + '$', ha='center', va='bottom', color='r', fontsize=fontsize)
+                ax.text(
+                    x,
+                    y,
+                    z,
+                    "$" + display_name + "$",
+                    ha="center",
+                    va="bottom",
+                    color="r",
+                    fontsize=fontsize,
+                )
 
 
 def bz2d_segments(cell, transformations=None):
@@ -483,9 +579,19 @@ def twocell_to_bz1(cell):
     return bz1, icell, cell
 
 
-def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None,
-              transformations=None, offset=None, hide_ax=True, set_equal_aspect=True,
-              **kwargs):
+def bz2d_plot(
+    cell,
+    vectors=False,
+    paths=None,
+    points=None,
+    repeat=None,
+    ax=None,
+    transformations=None,
+    offset=None,
+    hide_ax=True,
+    set_equal_aspect=True,
+    **kwargs
+):
     """
     This piece of code modified from ase.ase.dft.bz.py:bz2d_plot and follows copyright and license for ASE.
 
@@ -502,12 +608,17 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
         ax = plt.axes()
 
     if isinstance(paths, str):
-        from ase.dft.kpoints import (get_special_points, special_paths, parse_path_string,
-                                     crystal_structure_from_cell)
+        from ase.dft.kpoints import (
+            get_special_points,
+            special_paths,
+            parse_path_string,
+            crystal_structure_from_cell,
+        )
+
         special_points = get_special_points(cell)
         structure = crystal_structure_from_cell(cell)
 
-        path_string = special_paths[structure] if paths == 'all' else paths
+        path_string = special_paths[structure] if paths == "all" else paths
         paths = []
         for names in parse_path_string(path_string):
             points = []
@@ -516,9 +627,9 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
                 paths.append((names, points))
 
     maxp = 0.0
-    c = kwargs.pop('c', 'k')
-    c = kwargs.pop('color', c)
-    ls = kwargs.pop('ls', kwargs.pop('linestyle', '-'))
+    c = kwargs.pop("c", "k")
+    c = kwargs.pop("color", c)
+    ls = kwargs.pop("ls", kwargs.pop("linestyle", "-"))
 
     for points, normal in bz1:
         points = apply_transformations(points, transformations)
@@ -544,31 +655,45 @@ def bz2d_plot(cell, vectors=False, paths=None, points=None, repeat=None, ax=None
                 x, y = x + delta[0], y + delta[1]
                 x, y, z = apply_transformations(np.asarray([x, y, z]).T, transformations).T
 
-                c = kwargs.pop('c', 'k')
-                c = kwargs.pop('color', c)
+                c = kwargs.pop("c", "k")
+                c = kwargs.pop("color", c)
                 ax.plot(x, y, c=c, ls=ls, **kwargs)
                 maxp = max(maxp, points.max())
 
     if vectors:
-        ax.arrow(0, 0, icell[0, 0], icell[0, 1],
-                 lw=1, color='k',
-                 length_includes_head=True,
-                 head_width=0.03, head_length=0.05)
-        ax.arrow(0, 0, icell[1, 0], icell[1, 1],
-                 lw=1, color='k',
-                 length_includes_head=True,
-                 head_width=0.03, head_length=0.05)
+        ax.arrow(
+            0,
+            0,
+            icell[0, 0],
+            icell[0, 1],
+            lw=1,
+            color="k",
+            length_includes_head=True,
+            head_width=0.03,
+            head_length=0.05,
+        )
+        ax.arrow(
+            0,
+            0,
+            icell[1, 0],
+            icell[1, 1],
+            lw=1,
+            color="k",
+            length_includes_head=True,
+            head_width=0.03,
+            head_length=0.05,
+        )
 
     if paths is not None:
         annotate_special_paths(ax, paths, offset=offset, transformations=transformations)
 
     if kpoints is not None:
         for p in kpoints:
-            ax.scatter(p[0], p[1], c='b')
+            ax.scatter(p[0], p[1], c="b")
 
     if hide_ax:
         ax.set_axis_off()
         ax.autoscale_view(tight=True)
 
     if set_equal_aspect:
-        ax.set_aspect('equal')
+        ax.set_aspect("equal")

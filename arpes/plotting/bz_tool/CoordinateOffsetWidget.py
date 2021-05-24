@@ -2,7 +2,7 @@ from functools import partial
 
 from PyQt5 import QtGui, QtWidgets
 
-__all__ = ('CoordinateOffsetWidget',)
+__all__ = ("CoordinateOffsetWidget",)
 
 
 class CoordinateOffsetWidget(QtWidgets.QGroupBox):
@@ -11,7 +11,7 @@ class CoordinateOffsetWidget(QtWidgets.QGroupBox):
 
         self.layout = QtGui.QGridLayout(self)
 
-        self.label = QtWidgets.QLabel('Value: ')
+        self.label = QtWidgets.QLabel("Value: ")
         self.spinbox = QtWidgets.QSpinBox()
         self.slider = QtWidgets.QSlider()
         self.root = root
@@ -41,7 +41,7 @@ class CoordinateOffsetWidget(QtWidgets.QGroupBox):
 
     def recompute(self):
         value = self.spinbox.value()
-        self.label.setText('Value: {:.3g}'.format(value))
+        self.label.setText("Value: {:.3g}".format(value))
 
     def value(self):
         return self.spinbox.value()

@@ -1,13 +1,17 @@
 import xarray as xr
 from arpes.typing import DataType
 
-__all__ = ('normalize_to_spectrum', 'normalize_to_dataset',)
+__all__ = (
+    "normalize_to_spectrum",
+    "normalize_to_dataset",
+)
 
 
 def normalize_to_spectrum(data: DataType):
     from arpes.io import load_dataset
+
     if isinstance(data, xr.Dataset):
-        if 'up' in data.data_vars:
+        if "up" in data.data_vars:
             return data.up
 
         return data.S.spectrum
@@ -21,6 +25,7 @@ def normalize_to_spectrum(data: DataType):
 
 def normalize_to_dataset(data: DataType):
     from arpes.io import load_dataset
+
     if isinstance(data, xr.Dataset):
         return data
 

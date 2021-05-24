@@ -15,11 +15,15 @@ from arpes.provenance import save_plot_provenance
 from arpes.utilities.math import polarization, propagate_statistical_error
 
 
-__all__ = ('spin_polarized_spectrum', 'spin_colored_spectrum',
-           'spin_difference_spectrum',)
+__all__ = (
+    "spin_polarized_spectrum",
+    "spin_colored_spectrum",
+    "spin_difference_spectrum",
+)
 
 
 test_polarization = propagate_statistical_error(polarization)
+
 
 @save_plot_provenance
 def spin_colored_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False, **kwargs):
@@ -37,10 +41,10 @@ def spin_colored_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False,
         pol.values[np.isnan(pol.values)] = 0
         pol.values[pol.values > 1] = 1
         pol.values[pol.values < -1] = -1
-        pol_colors = cm.get_cmap('RdBu')(pol.values[:-1])
+        pol_colors = cm.get_cmap("RdBu")(pol.values[:-1])
 
         if scatter:
-            pol_colors = cm.get_cmap('RdBu')(pol.values)
+            pol_colors = cm.get_cmap("RdBu")(pol.values)
             ax.scatter(coord.values, intensity.values, c=pol_colors, s=1.5)
         else:
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
@@ -50,11 +54,10 @@ def spin_colored_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False,
 
         ax.set_xlim(coord.min().item(), coord.max().item())
         ax.set_ylim(0, intensity.max().item() * 1.15)
-        ax.set_ylabel('ARPES Spectrum Intensity (arb.)')
+        ax.set_ylabel("ARPES Spectrum Intensity (arb.)")
         ax.set_xlabel(label_for_dim(spin_dr, dim_name=intensity.dims[0]))
-        ax.set_title(title if title is not None else 'Spin Polarization')
+        ax.set_title(title if title is not None else "Spin Polarization")
         polarization_colorbar(inset_ax)
-
 
     if out is not None:
         savefig(out, dpi=400)
@@ -62,6 +65,7 @@ def spin_colored_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False,
         return path_for_plot(out)
     else:
         plt.show()
+
 
 @save_plot_provenance
 def spin_difference_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False, **kwargs):
@@ -82,10 +86,10 @@ def spin_difference_spectrum(spin_dr, title=None, ax=None, out=None, scatter=Fal
         pol.values[np.isnan(pol.values)] = 0
         pol.values[pol.values > 1] = 1
         pol.values[pol.values < -1] = -1
-        pol_colors = cm.get_cmap('RdBu')(pol.values[:-1])
+        pol_colors = cm.get_cmap("RdBu")(pol.values[:-1])
 
         if scatter:
-            pol_colors = cm.get_cmap('RdBu')(pol.values)
+            pol_colors = cm.get_cmap("RdBu")(pol.values)
             ax.scatter(coord.values, intensity.values, c=pol_colors, s=1.5)
         else:
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
@@ -95,9 +99,9 @@ def spin_difference_spectrum(spin_dr, title=None, ax=None, out=None, scatter=Fal
 
         ax.set_xlim(coord.min().item(), coord.max().item())
         ax.set_ylim(0, intensity.max().item() * 1.15)
-        ax.set_ylabel('ARPES Spectrum Intensity (arb.)')
+        ax.set_ylabel("ARPES Spectrum Intensity (arb.)")
         ax.set_xlabel(label_for_dim(spin_dr, dim_name=intensity.dims[0]))
-        ax.set_title(title if title is not None else 'Spin Polarization')
+        ax.set_title(title if title is not None else "Spin Polarization")
         polarization_colorbar(inset_ax)
 
     if out is not None:
@@ -110,7 +114,8 @@ def spin_difference_spectrum(spin_dr, title=None, ax=None, out=None, scatter=Fal
 
 @save_plot_provenance
 def spin_polarized_spectrum(
-        spin_dr, title=None, ax=None, out=None, component='y', scatter=False, stats=False, norm=None):
+    spin_dr, title=None, ax=None, out=None, component="y", scatter=False, stats=False, norm=None
+):
     if ax is None:
         _, ax = plt.subplots(2, 1, sharex=True)
 
@@ -128,29 +133,29 @@ def spin_polarized_spectrum(
     up = counts.down.data
     down = counts.up.data
 
-    energies = spin_dr.coords['eV'].values
+    energies = spin_dr.coords["eV"].values
     min_e, max_e = np.min(energies), np.max(energies)
 
     # Plot the spectra
     if stats:
         if scatter:
-            scatter_with_std(counts, 'up', color='red', ax=ax_left)
-            scatter_with_std(counts, 'down', color='blue', ax=ax_left)
+            scatter_with_std(counts, "up", color="red", ax=ax_left)
+            scatter_with_std(counts, "down", color="blue", ax=ax_left)
         else:
             v, s = counts.up.values, counts.up_std.values
-            ax_left.plot(energies, v, 'r')
-            ax_left.fill_between(energies, v - s, v + s, color='r', alpha=0.25)
+            ax_left.plot(energies, v, "r")
+            ax_left.fill_between(energies, v - s, v + s, color="r", alpha=0.25)
 
             v, s = counts.down.values, counts.down_std.values
-            ax_left.plot(energies, v, 'b')
-            ax_left.fill_between(energies, v - s, v + s, color='b', alpha=0.25)
+            ax_left.plot(energies, v, "b")
+            ax_left.fill_between(energies, v - s, v + s, color="b", alpha=0.25)
     else:
-        ax_left.plot(energies, up, 'r')
-        ax_left.plot(energies, down, 'b')
+        ax_left.plot(energies, up, "r")
+        ax_left.plot(energies, down, "b")
 
-    ax_left.set_title(title if title is not None else 'Spin spectrum {}'.format(''))
-    ax_left.set_ylabel(r'\textbf{Spectrum Intensity}')
-    ax_left.set_xlabel(r'\textbf{Kinetic energy} (eV)')
+    ax_left.set_title(title if title is not None else "Spin spectrum {}".format(""))
+    ax_left.set_ylabel(r"\textbf{Spectrum Intensity}")
+    ax_left.set_xlabel(r"\textbf{Kinetic energy} (eV)")
     ax_left.set_xlim(min_e, max_e)
 
     max_up = np.max(up)
@@ -160,26 +165,26 @@ def spin_polarized_spectrum(
     # Plot the polarization and associated statistical error bars
     if stats:
         if scatter:
-            scatter_with_std(pol, 'polarization', ax=ax_right, color='black')
+            scatter_with_std(pol, "polarization", ax=ax_right, color="black")
         else:
             v = pol.polarization.data
             s = pol.polarization_std.data
-            ax_right.plot(energies, v, color='black')
-            ax_right.fill_between(energies, v - s, v + s, color='black', alpha=0.25)
+            ax_right.plot(energies, v, color="black")
+            ax_right.fill_between(energies, v - s, v + s, color="black", alpha=0.25)
 
     else:
-        ax_right.plot(energies, pol.polarization.data, color='black')
-    ax_right.fill_between(energies, 0, 1, facecolor='blue', alpha=0.1)
-    ax_right.fill_between(energies, -1, 0, facecolor='red', alpha=0.1)
+        ax_right.plot(energies, pol.polarization.data, color="black")
+    ax_right.fill_between(energies, 0, 1, facecolor="blue", alpha=0.1)
+    ax_right.fill_between(energies, -1, 0, facecolor="red", alpha=0.1)
 
-    ax_right.set_title('Spin polarization, $\\text{S}_\\textbf{' + component + '}$')
-    ax_right.set_ylabel(r'\textbf{Polarization}')
-    ax_right.set_xlabel(r'\textbf{Kinetic Energy} (eV)')
+    ax_right.set_title("Spin polarization, $\\text{S}_\\textbf{" + component + "}$")
+    ax_right.set_ylabel(r"\textbf{Polarization}")
+    ax_right.set_xlabel(r"\textbf{Kinetic Energy} (eV)")
     ax_right.set_xlim(min_e, max_e)
-    ax_right.axhline(0, color='white', linestyle=':')
+    ax_right.axhline(0, color="white", linestyle=":")
 
     ax_right.set_ylim(-1, 1)
-    ax_right.grid(True, axis='y')
+    ax_right.grid(True, axis="y")
 
     plt.tight_layout()
 
@@ -191,6 +196,7 @@ def spin_polarized_spectrum(
         pass
 
     return ax
+
 
 def polarization_intensity_to_color(data: xr.Dataset, vmax=None, pmax=1):
     """
@@ -208,7 +214,7 @@ def polarization_intensity_to_color(data: xr.Dataset, vmax=None, pmax=1):
         # use the 98th percentile data if not provided
         vmax = np.percentile(data.intensity.values, 98)
 
-    rgbas = cm.RdBu((data.polarization.values/pmax + 1) / 2)
+    rgbas = cm.RdBu((data.polarization.values / pmax + 1) / 2)
     slices = [slice(None) for _ in data.polarization.dims] + [slice(0, 3)]
     rgbs = rgbas[slices]
 
@@ -223,20 +229,32 @@ def polarization_intensity_to_color(data: xr.Dataset, vmax=None, pmax=1):
 
 @save_plot_provenance
 def hue_brightness_plot(data: xr.Dataset, ax=None, out=None, **kwargs):
-    assert('intensity' in data and 'polarization' in data)
+    assert "intensity" in data and "polarization" in data
 
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get('figsize', (7, 5,)))
+        fig, ax = plt.subplots(
+            figsize=kwargs.get(
+                "figsize",
+                (
+                    7,
+                    5,
+                ),
+            )
+        )
 
     x, y = data.coords[data.intensity.dims[0]].values, data.coords[data.intensity.dims[1]].values
     extent = [y[0], y[-1], x[0], x[-1]]
-    ax.imshow(polarization_intensity_to_color(data, **kwargs), extent=extent, aspect='auto', origin='lower')
+    ax.imshow(
+        polarization_intensity_to_color(data, **kwargs),
+        extent=extent,
+        aspect="auto",
+        origin="lower",
+    )
     ax.set_xlabel(data.intensity.dims[1])
     ax.set_ylabel(data.intensity.dims[0])
 
     ax.grid(False)
-
 
     if out is not None:
         plt.savefig(path_for_plot(out), dpi=400)

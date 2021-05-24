@@ -39,95 +39,95 @@ def bz_points_for_hexagonal_lattice(a=1):
 
 
 def image_for(file):
-    f = pathlib.Path(__file__).parent / '..' / 'example_data' / 'brillouin_zones' / file
+    f = pathlib.Path(__file__).parent / ".." / "example_data" / "brillouin_zones" / file
     return str(f.absolute())
 
 
-SURFACE_ZONE_DEFINITIONS = { # : Dict[str, Dict[str, any]]
-    '2H-WS2': {
-        'name': '2H-Tungsten Disulfide',
-        'work_function': None,
-        'inner_potential': None,
-        'bz_points': functools.partial(bz_points_for_hexagonal_lattice, a=A_WS2),
+SURFACE_ZONE_DEFINITIONS = {  # : Dict[str, Dict[str, any]]
+    "2H-WS2": {
+        "name": "2H-Tungsten Disulfide",
+        "work_function": None,
+        "inner_potential": None,
+        "bz_points": functools.partial(bz_points_for_hexagonal_lattice, a=A_WS2),
     },
-    'Graphene': {
-        'name': 'Graphene',
-        'work_function': None,
-        'inner_potential': None,
-        'bz_points': functools.partial(bz_points_for_hexagonal_lattice, a=A_GRAPHENE),
+    "Graphene": {
+        "name": "Graphene",
+        "work_function": None,
+        "inner_potential": None,
+        "bz_points": functools.partial(bz_points_for_hexagonal_lattice, a=A_GRAPHENE),
     },
-    '2H-WSe2': {
-        'name': 'Tungsten Diselenide',
-        'work_function': None,
-        'inner_potential': None,
-        'bz_points': functools.partial(bz_points_for_hexagonal_lattice, a=A_WS2),
+    "2H-WSe2": {
+        "name": "Tungsten Diselenide",
+        "work_function": None,
+        "inner_potential": None,
+        "bz_points": functools.partial(bz_points_for_hexagonal_lattice, a=A_WS2),
     },
-    '1T-TiSe2': {
-        'name': '1T-Titanium Diselenide',
-        'work_function': None,
-        'inner_potential': None,
-        'image': image_for('1t-tise2-bz.png'),
-        'image_waypoints': [
+    "1T-TiSe2": {
+        "name": "1T-Titanium Diselenide",
+        "work_function": None,
+        "inner_potential": None,
+        "image": image_for("1t-tise2-bz.png"),
+        "image_waypoints": [
             # everywhere waypoints are pixel_x, pixel_y, mom_x, mom_y
             # two waypoints are requried in order to specify
             [],
             [],
         ],
-        'image_src': 'https://arxiv.org/abs/1712.04967',
+        "image_src": "https://arxiv.org/abs/1712.04967",
     },
-    'Td-WTe2': {
-        'name': 'Td-Tungsten Ditelluride',
-        'work_function': None,
-        'inner_potential': None,
-        'image': image_for('td-wte2-bz.png'),
-        'image_waypoints': [
+    "Td-WTe2": {
+        "name": "Td-Tungsten Ditelluride",
+        "work_function": None,
+        "inner_potential": None,
+        "image": image_for("td-wte2-bz.png"),
+        "image_waypoints": [
             [445, 650, -0.4, -0.2],
             [1470, 166, 0.4, 0.2],
         ],
-        'image_src': 'https://arxiv.org/abs/1603.08508',
+        "image_src": "https://arxiv.org/abs/1603.08508",
     },
-    'NCCO': {
-        'name': 'Nd_{2-x}Ce_xCuO_4',
-        'work_function': None,
-        'inner_potential': None,
-        'image': image_for('cuprate-bz.png'),
-        'image_waypoints': [
+    "NCCO": {
+        "name": "Nd_{2-x}Ce_xCuO_4",
+        "work_function": None,
+        "inner_potential": None,
+        "image": image_for("cuprate-bz.png"),
+        "image_waypoints": [
             [],
             [],
         ],
-        'image_src': 'https://vishiklab.faculty.ucdavis.edu/wp-content/uploads/sites/394/2016/12/ARPES-studies-of-cuprates-online.pdf',
+        "image_src": "https://vishiklab.faculty.ucdavis.edu/wp-content/uploads/sites/394/2016/12/ARPES-studies-of-cuprates-online.pdf",
     },
-    'Bi2212': {
-        'name': 'Bi_2Sr_2CaCu_2O_{8+x}',
-        'work_function': None,
-        'inner_potential': None,
-        'image': image_for('cuprate-bz.png'),
-        'image_waypoints': [
+    "Bi2212": {
+        "name": "Bi_2Sr_2CaCu_2O_{8+x}",
+        "work_function": None,
+        "inner_potential": None,
+        "image": image_for("cuprate-bz.png"),
+        "image_waypoints": [
             [],
             [],
         ],
-        'image_src': 'https://vishiklab.faculty.ucdavis.edu/wp-content/uploads/sites/394/2016/12/ARPES-studies-of-cuprates-online.pdf',
+        "image_src": "https://vishiklab.faculty.ucdavis.edu/wp-content/uploads/sites/394/2016/12/ARPES-studies-of-cuprates-online.pdf",
     },
-    '1H-NbSe2': {
-        'name': '1H-Niobium Diselenide',
-        'work_function': None,
-        'inner_potential': None,
-        'image': image_for('1h-nbse2-bz.png'),
-        'image_waypoints': [
+    "1H-NbSe2": {
+        "name": "1H-Niobium Diselenide",
+        "work_function": None,
+        "inner_potential": None,
+        "image": image_for("1h-nbse2-bz.png"),
+        "image_waypoints": [
             [],
             [],
         ],
-        'image_src': 'https://www.nature.com/articles/s41467-018-03888-4',
+        "image_src": "https://www.nature.com/articles/s41467-018-03888-4",
     },
-    '1H-TaS2': {
-        'name': '1H-Tantalum Disulfide',
-        'work_function': None,
-        'inner_potential': None,
-        'image': image_for('1h-tas2-bz.png'),
-        'image_waypoints': [
+    "1H-TaS2": {
+        "name": "1H-Tantalum Disulfide",
+        "work_function": None,
+        "inner_potential": None,
+        "image": image_for("1h-tas2-bz.png"),
+        "image_waypoints": [
             [],
             [],
         ],
-        'image_src': 'https://www.nature.com/articles/s41467-018-03888-4',
+        "image_src": "https://www.nature.com/articles/s41467-018-03888-4",
     },
 }

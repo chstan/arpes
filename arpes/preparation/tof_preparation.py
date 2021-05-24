@@ -7,10 +7,15 @@ from arpes.provenance import update_provenance
 
 from .axis_preparation import transform_dataarray_axis
 
-__all__ = ['build_KE_coords_to_time_pixel_coords', 'build_KE_coords_to_time_coords', 'process_DLD', 'process_SToF',]
+__all__ = [
+    "build_KE_coords_to_time_pixel_coords",
+    "build_KE_coords_to_time_coords",
+    "process_DLD",
+    "process_SToF",
+]
 
 
-@update_provenance('Convert ToF data from timing signal to kinetic energy')
+@update_provenance("Convert ToF data from timing signal to kinetic energy")
 def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
     """
     Convert the ToF timing information into an energy histogram
@@ -31,21 +36,27 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
     # This should be simplified
     # c = (0.5) * (9.11e-31) * self.mstar * (self.length ** 2) / (1.6e-19) * (1e18)
     # Removed factors of ten and substituted mstar = 0.5
-    c = (0.5) * (9.11e6) * dataarray.S.spectrometer['mstar'] * (dataarray.S.spectrometer['length'] ** 2) / 1.6
+    c = (
+        (0.5)
+        * (9.11e6)
+        * dataarray.S.spectrometer["mstar"]
+        * (dataarray.S.spectrometer["length"] ** 2)
+        / 1.6
+    )
 
     new_dim_order = list(dataarray.dims)
-    new_dim_order.remove('time')
-    new_dim_order = ['time'] + new_dim_order
+    new_dim_order.remove("time")
+    new_dim_order = ["time"] + new_dim_order
     dataarray = dataarray.transpose(*new_dim_order)
-    new_dim_order[0] = 'eV'
+    new_dim_order[0] = "eV"
 
-    timing = dataarray.coords['time'].values
+    timing = dataarray.coords["time"].values
     assert timing[1] > timing[0]
     t_min, t_max = np.min(timing), np.max(timing)
 
     # Prep arrays
     d_energy = kinetic_energy_axis[1] - kinetic_energy_axis[0]
-    time_index = 0 # after transpose
+    time_index = 0  # after transpose
     new_shape = list(dataarray.data.shape)
     new_shape[time_index] = len(kinetic_energy_axis)
 
@@ -68,28 +79,32 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
         t_L_idx = np.searchsorted(timing, t_L)
         t_S_idx = np.searchsorted(timing, t_S)
 
-        new_data[i] = np.sum(old_data[t_L_idx:t_S_idx], axis=0) + \
-                      ((timing[t_L_idx] - t_L) * old_data[t_L_idx]) + \
-                      ((t_S - timing[t_S_idx - 1]) * old_data[t_S_idx - 1]) / d_energy
+        new_data[i] = (
+            np.sum(old_data[t_L_idx:t_S_idx], axis=0)
+            + ((timing[t_L_idx] - t_L) * old_data[t_L_idx])
+            + ((t_S - timing[t_S_idx - 1]) * old_data[t_S_idx - 1]) / d_energy
+        )
 
     new_coords = dict(dataarray.coords)
-    del new_coords['time']
-    new_coords['eV'] = kinetic_energy_axis
+    del new_coords["time"]
+    new_coords["eV"] = kinetic_energy_axis
 
     # Put provenance here
 
     return xr.DataArray(
-        new_data,
-        coords=new_coords,
-        dims=new_dim_order,
-        attrs=dataarray.attrs,
-        name=dataarray.name
+        new_data, coords=new_coords, dims=new_dim_order, attrs=dataarray.attrs, name=dataarray.name
     )
 
 
 def build_KE_coords_to_time_pixel_coords(dataset: xr.Dataset, interpolation_axis):
-    conv = dataset.S.spectrometer['mstar'] * (9.11e6) * 0.5 * (dataset.S.spectrometer['length'] ** 2) / 1.6
-    time_res = 0.17 # this is only approximate
+    conv = (
+        dataset.S.spectrometer["mstar"]
+        * (9.11e6)
+        * 0.5
+        * (dataset.S.spectrometer["length"] ** 2)
+        / 1.6
+    )
+    time_res = 0.17  # this is only approximate
 
     def KE_coords_to_time_pixel_coords(coords, axis=None):
         """
@@ -101,11 +116,12 @@ def build_KE_coords_to_time_pixel_coords(dataset: xr.Dataset, interpolation_axis
         kinetic_energy_pixel = coords[axis]
         kinetic_energy = interpolation_axis[kinetic_energy_pixel]
         real_timing = math.sqrt(conv / kinetic_energy)
-        pixel_timing = (real_timing - dataset.attrs['timing_offset']) / time_res
+        pixel_timing = (real_timing - dataset.attrs["timing_offset"]) / time_res
         coords_list = list(coords)
         coords_list[axis] = pixel_timing
 
         return tuple(coords_list)
+
     return KE_coords_to_time_pixel_coords
 
 
@@ -117,9 +133,15 @@ def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
     :param interpolation_axis:
     :return:
     """
-    conv = dataset.S.spectrometer['mstar'] * (9.11e6) * 0.5 * (dataset.S.spectrometer['length'] ** 2) / 1.6
-    timing = dataset.coords['time']
-    photon_offset = dataset.attrs['laser_t0'] + dataset.S.spectrometer['length'] * (10 / 3)
+    conv = (
+        dataset.S.spectrometer["mstar"]
+        * (9.11e6)
+        * 0.5
+        * (dataset.S.spectrometer["length"] ** 2)
+        / 1.6
+    )
+    timing = dataset.coords["time"]
+    photon_offset = dataset.attrs["laser_t0"] + dataset.S.spectrometer["length"] * (10 / 3)
     low_offset = np.min(timing)
     d_timing = timing[1] - timing[0]
 
@@ -148,30 +170,30 @@ def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
     return KE_coords_to_time_coords
 
 
-@update_provenance('Convert ToF data from timing signal to kinetic energy ALT')
+@update_provenance("Convert ToF data from timing signal to kinetic energy ALT")
 def convert_SToF_to_energy(dataset: xr.Dataset):
     """
     Achieves the same computation as timeProcessX and t2energyProcessX in LoadTOF_3.51.ipf
     :param dataset:
     :return:
     """
-    e_min, e_max = 0.1, 10.
+    e_min, e_max = 0.1, 10.0
 
     # TODO, we can better infer a reasonable gridding here
-    spacing = dataset.attrs.get('dE', 0.005)
+    spacing = dataset.attrs.get("dE", 0.005)
     ke_axis = np.linspace(e_min, e_max, int((e_max - e_min) / spacing))
 
-    drs = {k: v for k, v in dataset.data_vars.items() if 'time' in v.dims}
+    drs = {k: v for k, v in dataset.data_vars.items() if "time" in v.dims}
 
     new_dataarrays = [convert_to_kinetic_energy(dr, ke_axis) for dr in drs.values()]
 
     for v in new_dataarrays:
-        dataset[v.name.replace('t_', '')] = v
+        dataset[v.name.replace("t_", "")] = v
 
     return dataset
 
 
-@update_provenance('Preliminary data processing Spin-ToF')
+@update_provenance("Preliminary data processing Spin-ToF")
 def process_SToF(dataset: xr.Dataset):
     """
     This isn't the best unit conversion function because it doesn't properly
@@ -182,36 +204,46 @@ def process_SToF(dataset: xr.Dataset):
     :param dataset:
     :return:
     """
-    e_min = dataset.attrs.get('E_min', 1)
-    e_max = dataset.attrs.get('E_max', 10)
-    de = dataset.attrs.get('dE', 0.01)
+    e_min = dataset.attrs.get("E_min", 1)
+    e_max = dataset.attrs.get("E_max", 10)
+    de = dataset.attrs.get("dE", 0.01)
     ke_axis = np.linspace(e_min, e_max, (e_max - e_min) / de)
 
     dataset = transform_dataarray_axis(
         build_KE_coords_to_time_coords(dataset, ke_axis),
-        'time', 'eV', ke_axis, dataset, lambda x: x,
+        "time",
+        "eV",
+        ke_axis,
+        dataset,
+        lambda x: x,
     )
 
-    dataset = dataset.rename({'t_up': 'up', 't_down': 'down'})
+    dataset = dataset.rename({"t_up": "up", "t_down": "down"})
 
-    if 'up' in dataset.data_vars:
+    if "up" in dataset.data_vars:
         # apply the sherman function corrections
-        sherman = dataset.attrs.get('sherman', 0.2)
-        polarization = 1/sherman * (dataset.up - dataset.down)/(dataset.up + dataset.down)
+        sherman = dataset.attrs.get("sherman", 0.2)
+        polarization = 1 / sherman * (dataset.up - dataset.down) / (dataset.up + dataset.down)
         new_up = (dataset.up + dataset.down) * (1 + polarization)
-        new_down = (dataset.up + dataset.down)* (1 - polarization)
+        new_down = (dataset.up + dataset.down) * (1 - polarization)
         dataset = dataset.assign(up=new_up, down=new_down)
 
     return dataset
 
 
-@update_provenance('Preliminary data processing prototype DLD')
+@update_provenance("Preliminary data processing prototype DLD")
 def process_DLD(dataset: xr.Dataset):
     e_min = 1
-    ke_axis = np.linspace(e_min, dataset.attrs['E_max'], (dataset.attrs['E_max'] - e_min) / dataset.attrs['dE'])
+    ke_axis = np.linspace(
+        e_min, dataset.attrs["E_max"], (dataset.attrs["E_max"] - e_min) / dataset.attrs["dE"]
+    )
     dataset = transform_dataarray_axis(
         build_KE_coords_to_time_pixel_coords(dataset, ke_axis),
-        't_pixels', 'kinetic', ke_axis, dataset, lambda x: 'kinetic_spectrum'
+        "t_pixels",
+        "kinetic",
+        ke_axis,
+        dataset,
+        lambda x: "kinetic_spectrum",
     )
 
     return dataset

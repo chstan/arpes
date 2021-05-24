@@ -26,9 +26,19 @@ from arpes.endstations.igor_utils import shim_wave_note
 from arpes.repair import negate_energy
 
 
-__all__ = ('endstation_name_from_alias', 'endstation_from_alias', 'add_endstation', 'load_scan',
-           'EndstationBase', 'FITSEndstation', 'HemisphericalEndstation', 'SynchrotronEndstation',
-           'SingleFileEndstation', 'load_scan_for_endstation', 'resolve_endstation')
+__all__ = (
+    "endstation_name_from_alias",
+    "endstation_from_alias",
+    "add_endstation",
+    "load_scan",
+    "EndstationBase",
+    "FITSEndstation",
+    "HemisphericalEndstation",
+    "SynchrotronEndstation",
+    "SingleFileEndstation",
+    "load_scan_for_endstation",
+    "resolve_endstation",
+)
 
 _ENDSTATION_ALIASES = {}
 
@@ -56,27 +66,42 @@ class EndstationBase:
     work is required. RENAME_KEYS is provided to make this simpler, and is implemented in
     scan post-processessing.
     """
+
     ALIASES = []
     PRINCIPAL_NAME = None
     ATTR_TRANSFORMS = {}
     MERGE_ATTRS = {}
 
-    _SEARCH_DIRECTORIES = ('', 'hdf5', 'fits', '../Data', '../Data/hdf5', '../Data/fits',)
-    _SEARCH_PATTERNS = (
-        r'[\-a-zA-Z0-9_\w]+_[0]+{}$',
-        r'[\-a-zA-Z0-9_\w]+_{}$',
-        r'[\-a-zA-Z0-9_\w]+{}$',
-        r'[\-a-zA-Z0-9_\w]+[0]{}$',
+    _SEARCH_DIRECTORIES = (
+        "",
+        "hdf5",
+        "fits",
+        "../Data",
+        "../Data/hdf5",
+        "../Data/fits",
     )
-    _TOLERATED_EXTENSIONS = {'.h5', '.nc', '.fits', '.pxt', '.nxs', '.txt', }
+    _SEARCH_PATTERNS = (
+        r"[\-a-zA-Z0-9_\w]+_[0]+{}$",
+        r"[\-a-zA-Z0-9_\w]+_{}$",
+        r"[\-a-zA-Z0-9_\w]+{}$",
+        r"[\-a-zA-Z0-9_\w]+[0]{}$",
+    )
+    _TOLERATED_EXTENSIONS = {
+        ".h5",
+        ".nc",
+        ".fits",
+        ".pxt",
+        ".nxs",
+        ".txt",
+    }
     _USE_REGEX = True
 
     # adjust as needed
-    ENSURE_COORDS_EXIST = ['x', 'y', 'z', 'theta', 'beta', 'chi', 'hv', 'alpha', 'psi']
-    CONCAT_COORDS = ['hv', 'chi', 'psi', 'timed_power', 'tilt', 'beta', 'theta']
+    ENSURE_COORDS_EXIST = ["x", "y", "z", "theta", "beta", "chi", "hv", "alpha", "psi"]
+    CONCAT_COORDS = ["hv", "chi", "psi", "timed_power", "tilt", "beta", "theta"]
 
     # phi because this happens sometimes at BL4 with core level scans
-    SUMMABLE_NULL_DIMS = ['phi', 'cycle']
+    SUMMABLE_NULL_DIMS = ["phi", "cycle"]
 
     RENAME_KEYS = {}
 
@@ -91,7 +116,7 @@ class EndstationBase:
                 return False
 
             for pattern in cls._SEARCH_PATTERNS:
-                regex = re.compile(pattern.format(r'[0-9]+'))
+                regex = re.compile(pattern.format(r"[0-9]+"))
                 if regex.match(p.stem):
                     return True
 
@@ -104,13 +129,17 @@ class EndstationBase:
 
     @classmethod
     def files_for_search(cls, directory):
-        return list(filter(lambda f: os.path.splitext(f)[1] in cls._TOLERATED_EXTENSIONS, os.listdir(directory)))
+        return list(
+            filter(
+                lambda f: os.path.splitext(f)[1] in cls._TOLERATED_EXTENSIONS, os.listdir(directory)
+            )
+        )
 
     @classmethod
     def find_first_file(cls, file, scan_desc, allow_soft_match=False):
-        workspace = arpes.config.CONFIG['WORKSPACE']
-        workspace_path = os.path.join(workspace['path'], 'data')
-        workspace = workspace['name']
+        workspace = arpes.config.CONFIG["WORKSPACE"]
+        workspace_path = os.path.join(workspace["path"], "data")
+        workspace = workspace["name"]
 
         base_dir = workspace_path or os.path.join(arpes.config.DATA_PATH, workspace)
         dir_options = [os.path.join(base_dir, option) for option in cls._SEARCH_DIRECTORIES]
@@ -137,7 +166,7 @@ class EndstationBase:
                         if os.path.splitext(file)[0] == os.path.splitext(f)[0]:
                             return os.path.join(dir, f)
                         if allow_soft_match:
-                            matcher = os.path.splitext(f)[0].split('_')[-1]
+                            matcher = os.path.splitext(f)[0].split("_")[-1]
                             try:
                                 if int(matcher) == int(file):
                                     return os.path.join(dir, f)  # soft match
@@ -146,14 +175,14 @@ class EndstationBase:
             except FileNotFoundError:
                 pass
 
-        if str(file) and str(file)[0] == 'f':  # try trimming the f off
+        if str(file) and str(file)[0] == "f":  # try trimming the f off
             return cls.find_first_file(str(file)[1:], scan_desc, allow_soft_match=allow_soft_match)
 
-        raise ValueError('Could not find file associated to {}'.format(file))
+        raise ValueError("Could not find file associated to {}".format(file))
 
     def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
         if not frames:
-            raise ValueError('Could not read any frames.')
+            raise ValueError("Could not read any frames.")
 
         if len(frames) == 1:
             return frames[0]
@@ -177,7 +206,9 @@ class EndstationBase:
         return xr.concat(frames, scan_coord)
 
     def resolve_frame_locations(self, scan_desc: dict = None) -> typing.List[str]:
-        raise NotImplementedError('You need to define resolve_frame_locations or subclass SingleFileEndstation.')
+        raise NotImplementedError(
+            "You need to define resolve_frame_locations or subclass SingleFileEndstation."
+        )
         return []
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
@@ -187,9 +218,10 @@ class EndstationBase:
     def postprocess(self, frame: xr.Dataset):
         from arpes.utilities import rename_keys
 
-        frame = xr.Dataset({
-            k: rename_dataarray_attrs(v, self.RENAME_KEYS) for k, v in frame.data_vars.items()
-        }, attrs=rename_keys(frame.attrs, self.RENAME_KEYS))
+        frame = xr.Dataset(
+            {k: rename_dataarray_attrs(v, self.RENAME_KEYS) for k, v in frame.data_vars.items()},
+            attrs=rename_keys(frame.attrs, self.RENAME_KEYS),
+        )
 
         sum_dims = []
         for dim in frame.dims:
@@ -205,37 +237,56 @@ class EndstationBase:
         # attach the 'spectrum_type'
         # TODO move this logic into xarray extensions and customize here
         # only as necessary
-        coord_names = tuple(sorted([c for c in data.dims if c != 'cycle']))
+        coord_names = tuple(sorted([c for c in data.dims if c != "cycle"]))
 
         spectrum_type = None
-        if any(d in coord_names for d in {'x', 'y', 'z'}):
-            coord_names = tuple(c for c in coord_names if c not in {'x', 'y', 'z'})
+        if any(d in coord_names for d in {"x", "y", "z"}):
+            coord_names = tuple(c for c in coord_names if c not in {"x", "y", "z"})
             spectrum_types = {
-                ('eV',): 'spem',
-                ('eV', 'phi',): 'ucut',
+                ("eV",): "spem",
+                (
+                    "eV",
+                    "phi",
+                ): "ucut",
             }
             spectrum_type = spectrum_types.get(coord_names)
         else:
             spectrum_types = {
-                ('eV',): 'xps',
-                ('eV', 'phi', 'theta',): 'map',
-                ('eV', 'phi', 'psi',): 'map',
-                ('beta', 'eV', 'phi',): 'map',
-                ('eV', 'hv', 'phi',): 'hv_map',
-                ('eV', 'phi'): 'cut',
+                ("eV",): "xps",
+                (
+                    "eV",
+                    "phi",
+                    "theta",
+                ): "map",
+                (
+                    "eV",
+                    "phi",
+                    "psi",
+                ): "map",
+                (
+                    "beta",
+                    "eV",
+                    "phi",
+                ): "map",
+                (
+                    "eV",
+                    "hv",
+                    "phi",
+                ): "hv_map",
+                ("eV", "phi"): "cut",
             }
             spectrum_type = spectrum_types.get(coord_names)
 
-        if 'phi' not in data.coords:
+        if "phi" not in data.coords:
             # XPS
-            data.coords['phi'] = 0
+            data.coords["phi"] = 0
             for s in data.S.spectra:
-                s.coords['phi'] = 0
+                s.coords["phi"] = 0
 
         if spectrum_type is not None:
-            data.attrs['spectrum_type'] = spectrum_type
-            if 'spectrum' in data.data_vars:
-                data.spectrum.attrs['spectrum_type'] = spectrum_type
+            data.attrs["spectrum_type"] = spectrum_type
+            if "spectrum" in data.data_vars:
+                data.spectrum.attrs["spectrum_type"] = spectrum_type
 
         ls = [data] + data.S.spectra
         for l in ls:
@@ -258,21 +309,25 @@ class EndstationBase:
                     if c in l.attrs:
                         l.coords[c] = l.attrs[c]
                     else:
-                        warnings.warn(f'Could not assign coordinate {c} from attributes, assigning np.nan instead.')
+                        warnings.warn(
+                            f"Could not assign coordinate {c} from attributes, assigning np.nan instead."
+                        )
                         l.coords[c] = np.nan
 
         for l in ls:
-            if 'chi' in l.coords and 'chi_offset' not in l.attrs:
-                l.attrs['chi_offset'] = l.coords['chi'].item()
+            if "chi" in l.coords and "chi_offset" not in l.attrs:
+                l.attrs["chi_offset"] = l.coords["chi"].item()
 
         return data
 
     def load_from_path(self, path: typing.Union[str, Path]):
         path = str(path)
-        return self.load({
-            'file': path,
-            'location': self.PRINCIPAL_NAME,
-        })
+        return self.load(
+            {
+                "file": path,
+                "location": self.PRINCIPAL_NAME,
+            }
+        )
 
     def load(self, scan_desc: dict = None, **kwargs):
         """
@@ -283,15 +338,19 @@ class EndstationBase:
         :return:
         """
         resolved_frame_locations = self.resolve_frame_locations(scan_desc)
-        resolved_frame_locations = [f if isinstance(f, str) else str(f) for f in resolved_frame_locations]
+        resolved_frame_locations = [
+            f if isinstance(f, str) else str(f) for f in resolved_frame_locations
+        ]
 
-        frames = [self.load_single_frame(fpath, scan_desc, **kwargs) for fpath in resolved_frame_locations]
+        frames = [
+            self.load_single_frame(fpath, scan_desc, **kwargs) for fpath in resolved_frame_locations
+        ]
         frames = [self.postprocess(f) for f in frames]
         concatted = self.concatenate_frames(frames, scan_desc)
         concatted = self.postprocess_final(concatted, scan_desc)
 
-        if 'id' in scan_desc:
-            concatted.attrs['id'] = scan_desc['id']
+        if "id" in scan_desc:
+            concatted.attrs["id"] = scan_desc["id"]
 
         return concatted
 
@@ -304,11 +363,14 @@ class SingleFileEndstation(EndstationBase):
     Unlike general endstations, if your data comes in a single file you can trust that the
     file given to you in the spreadsheet or direct load calls is all there is.
     """
+
     def resolve_frame_locations(self, scan_desc: dict = None):
         if scan_desc is None:
-            raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
+            raise ValueError(
+                "Must pass dictionary as file scan_desc to all endstation loading code."
+            )
 
-        original_data_loc = scan_desc.get('path', scan_desc.get('file'))
+        original_data_loc = scan_desc.get("path", scan_desc.get("file"))
         p = Path(original_data_loc)
         if not p.exists():
             original_data_loc = os.path.join(arpes.config.DATA_PATH, original_data_loc)
@@ -324,11 +386,14 @@ class SESEndstation(EndstationBase):
 
     These files have special frame names, at least at the beamlines Conrad has encountered.
     """
+
     def resolve_frame_locations(self, scan_desc: dict = None):
         if scan_desc is None:
-            raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
+            raise ValueError(
+                "Must pass dictionary as file scan_desc to all endstation loading code."
+            )
 
-        original_data_loc = scan_desc.get('path', scan_desc.get('file'))
+        original_data_loc = scan_desc.get("path", scan_desc.get("file"))
         p = Path(original_data_loc)
         if not p.exists():
             original_data_loc = os.path.join(arpes.config.DATA_PATH, original_data_loc)
@@ -336,18 +401,18 @@ class SESEndstation(EndstationBase):
         p = Path(original_data_loc)
         return find_ses_files_associated(p)
 
-    def load_single_frame(self, frame_path: str=None, scan_desc: dict = None, **kwargs):
+    def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
         name, ext = os.path.splitext(frame_path)
 
-        if 'nc' in ext:
+        if "nc" in ext:
             # was converted to hdf5/NetCDF format with Conrad's Igor scripts
             scan_desc = copy.deepcopy(scan_desc)
-            scan_desc['path'] = frame_path
+            scan_desc["path"] = frame_path
             return self.load_SES_nc(scan_desc=scan_desc, **kwargs)
 
         # it's given by SES PXT files
         pxt_data = negate_energy(read_single_pxt(frame_path))
-        return xr.Dataset({'spectrum': pxt_data}, attrs=pxt_data.attrs)
+        return xr.Dataset({"spectrum": pxt_data}, attrs=pxt_data.attrs)
 
     def postprocess(self, frame: xr.Dataset):
         import arpes.xarray_extensions  # pylint: disable=unused-import, redefined-outer-name
@@ -369,72 +434,78 @@ class SESEndstation(EndstationBase):
 
         scan_desc = copy.deepcopy(scan_desc)
 
-        data_loc = scan_desc.get('path', scan_desc.get('file'))
+        data_loc = scan_desc.get("path", scan_desc.get("file"))
         p = Path(data_loc)
         if not p.exists():
             data_loc = os.path.join(arpes.config.DATA_PATH, data_loc)
 
         wave_note = shim_wave_note(data_loc)
-        f = h5py.File(data_loc, 'r')
+        f = h5py.File(data_loc, "r")
 
         primary_dataset_name = list(f)[0]
         # This is bugged for the moment in h5py due to an inability to read fixed length unicode strings
         # wave_note = f['/' + primary_dataset_name].attrs['IGORWaveNote']
 
         # Use dimension labels instead of
-        dimension_labels = list(f['/' + primary_dataset_name].attrs['IGORWaveDimensionLabels'][0])
-        if any(x == '' for x in dimension_labels):
+        dimension_labels = list(f["/" + primary_dataset_name].attrs["IGORWaveDimensionLabels"][0])
+        if any(x == "" for x in dimension_labels):
             print(dimension_labels)
 
             if not robust_dimension_labels:
-                raise ValueError('Missing dimension labels. Use robust_dimension_labels=True to override')
+                raise ValueError(
+                    "Missing dimension labels. Use robust_dimension_labels=True to override"
+                )
             else:
                 used_blanks = 0
                 for i in range(len(dimension_labels)):
-                    if dimension_labels[i] == '':
-                        dimension_labels[i] = 'missing{}'.format(used_blanks)
+                    if dimension_labels[i] == "":
+                        dimension_labels[i] = "missing{}".format(used_blanks)
                         used_blanks += 1
 
                 print(dimension_labels)
 
-        scaling = f['/' + primary_dataset_name].attrs['IGORWaveScaling'][-len(dimension_labels):]
-        raw_data = f['/' + primary_dataset_name][:]
+        scaling = f["/" + primary_dataset_name].attrs["IGORWaveScaling"][-len(dimension_labels) :]
+        raw_data = f["/" + primary_dataset_name][:]
 
-        scaling = [np.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
-                   for i, scale in enumerate(scaling)]
+        scaling = [
+            np.linspace(scale[1], scale[1] + scale[0] * raw_data.shape[i], raw_data.shape[i])
+            for i, scale in enumerate(scaling)
+        ]
 
         dataset_contents = {}
-        attrs = scan_desc.pop('note', {})
+        attrs = scan_desc.pop("note", {})
         attrs.update(wave_note)
 
         built_coords = dict(zip(dimension_labels, scaling))
 
-        deg_to_rad_coords = {'theta', 'beta', 'phi', 'alpha', 'psi'}
+        deg_to_rad_coords = {"theta", "beta", "phi", "alpha", "psi"}
 
         # the hemisphere axis is handled below
-        built_coords = {k: c * (np.pi / 180) if k in deg_to_rad_coords else c
-                        for k, c in built_coords.items()}
+        built_coords = {
+            k: c * (np.pi / 180) if k in deg_to_rad_coords else c for k, c in built_coords.items()
+        }
 
-        deg_to_rad_attrs = {'theta', 'beta', 'alpha', 'psi', 'chi'}
+        deg_to_rad_attrs = {"theta", "beta", "alpha", "psi", "chi"}
         for angle_attr in deg_to_rad_attrs:
             if angle_attr in attrs:
                 attrs[angle_attr] = float(attrs[angle_attr]) * np.pi / 180
 
-        dataset_contents['spectrum'] = xr.DataArray(
+        dataset_contents["spectrum"] = xr.DataArray(
             raw_data,
             coords=built_coords,
             dims=dimension_labels,
             attrs=attrs,
         )
 
-        provenance_from_file(dataset_contents['spectrum'], data_loc, {
-            'what': 'Loaded SES dataset from HDF5.',
-            'by': 'load_SES'
-        })
+        provenance_from_file(
+            dataset_contents["spectrum"],
+            data_loc,
+            {"what": "Loaded SES dataset from HDF5.", "by": "load_SES"},
+        )
 
         return xr.Dataset(
             dataset_contents,
-            attrs={**scan_desc, 'name': primary_dataset_name},
+            attrs={**scan_desc, "name": primary_dataset_name},
         )
 
 
@@ -450,62 +521,65 @@ class FITSEndstation(EndstationBase):
     unlikely that many other ARPES labs will adopt this data format moving forward, in
     light of better options derivative of HDF like the NeXuS format.
     """
+
     PREPPED_COLUMN_NAMES = {
-        'time': 'time',
-        'Delay': 'delay-var',  # these are named thus to avoid conflicts with the
-        'Sample-X': 'cycle-var',  # underlying coordinates
-        'Mira': 'pump_power',
+        "time": "time",
+        "Delay": "delay-var",  # these are named thus to avoid conflicts with the
+        "Sample-X": "cycle-var",  # underlying coordinates
+        "Mira": "pump_power",
         # insert more as needed
     }
 
     SKIP_COLUMN_NAMES = {
-        'Phi',
-        'null',
-        'X',
-        'Y',
-        'Z',
-        'mono_eV',
-        'Slit Defl',
-        'Optics Stage',
-        'Scan X',
-        'Scan Y',
-        'Scan Z',
+        "Phi",
+        "null",
+        "X",
+        "Y",
+        "Z",
+        "mono_eV",
+        "Slit Defl",
+        "Optics Stage",
+        "Scan X",
+        "Scan Y",
+        "Scan Z",
         # insert more as needed
     }
 
     SKIP_COLUMN_FORMULAS = {
-        lambda name: True if ('beamview' in name or 'IMAQdx' in name) else False,
+        lambda name: True if ("beamview" in name or "IMAQdx" in name) else False,
     }
 
     RENAME_KEYS = {
-        'Phi': 'chi',
-        'Beta': 'beta',
-        'Azimuth': 'chi',
-        'Pump_energy_uJcm2': 'pump_fluence',
-        'T0_ps': 't0_nominal',
-        'W_func': 'workfunction',
-        'Slit': 'slit',
-        'LMOTOR0': 'x',
-        'LMOTOR1': 'y',
-        'LMOTOR2': 'z',
-        'LMOTOR3': 'theta',
-        'LMOTOR4': 'beta',
-        'LMOTOR5': 'chi',
-        'LMOTOR6': 'alpha',
+        "Phi": "chi",
+        "Beta": "beta",
+        "Azimuth": "chi",
+        "Pump_energy_uJcm2": "pump_fluence",
+        "T0_ps": "t0_nominal",
+        "W_func": "workfunction",
+        "Slit": "slit",
+        "LMOTOR0": "x",
+        "LMOTOR1": "y",
+        "LMOTOR2": "z",
+        "LMOTOR3": "theta",
+        "LMOTOR4": "beta",
+        "LMOTOR5": "chi",
+        "LMOTOR6": "alpha",
     }
 
     def resolve_frame_locations(self, scan_desc: dict = None):
         if scan_desc is None:
-            raise ValueError('Must pass dictionary as file scan_desc to all endstation loading code.')
+            raise ValueError(
+                "Must pass dictionary as file scan_desc to all endstation loading code."
+            )
 
-        original_data_loc = scan_desc.get('path', scan_desc.get('file'))
+        original_data_loc = scan_desc.get("path", scan_desc.get("file"))
         p = Path(original_data_loc)
         if not p.exists():
             original_data_loc = os.path.join(arpes.config.DATA_PATH, original_data_loc)
 
         return [original_data_loc]
 
-    def load_single_frame(self, frame_path: str=None, scan_desc: dict = None, **kwargs):
+    def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
         # Use dimension labels instead of
         hdulist = fits.open(frame_path, ignore_missing_end=True)
         primary_dataset_name = None
@@ -513,17 +587,17 @@ class FITSEndstation(EndstationBase):
         # Clean the header because sometimes out LabView produces improper FITS files
         for i in range(len(hdulist)):
             # This looks a little stupid, but because of confusing astropy internals actually works
-            hdulist[i].header['UN_0_0'] = ''  # TODO This card is broken, this is not a good fix
-            del hdulist[i].header['UN_0_0']
-            hdulist[i].header['UN_0_0'] = ''
-            if 'TTYPE2' in hdulist[i].header and hdulist[i].header['TTYPE2'] == 'Delay':
-                hdulist[i].header['TUNIT2'] = ''
-                del hdulist[i].header['TUNIT2']
-                hdulist[i].header['TUNIT2'] = 'ps'
+            hdulist[i].header["UN_0_0"] = ""  # TODO This card is broken, this is not a good fix
+            del hdulist[i].header["UN_0_0"]
+            hdulist[i].header["UN_0_0"] = ""
+            if "TTYPE2" in hdulist[i].header and hdulist[i].header["TTYPE2"] == "Delay":
+                hdulist[i].header["TUNIT2"] = ""
+                del hdulist[i].header["TUNIT2"]
+                hdulist[i].header["TUNIT2"] = "ps"
 
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                hdulist[i].verify('fix+warn')
+                warnings.simplefilter("ignore")
+                hdulist[i].verify("fix+warn")
                 hdulist[i].header.update()
             # This actually requires substantially more work because it is lossy to information
             # on the unit that was encoded
@@ -531,22 +605,23 @@ class FITSEndstation(EndstationBase):
         hdu = hdulist[1]
 
         scan_desc = copy.deepcopy(scan_desc)
-        attrs = scan_desc.pop('note', scan_desc)
+        attrs = scan_desc.pop("note", scan_desc)
         attrs.update(dict(hdulist[0].header))
 
-        drop_attrs = ['COMMENT', 'HISTORY', 'EXTEND', 'SIMPLE', 'SCANPAR', 'SFKE_0']
+        drop_attrs = ["COMMENT", "HISTORY", "EXTEND", "SIMPLE", "SCANPAR", "SFKE_0"]
         for dropped_attr in drop_attrs:
             if dropped_attr in attrs:
                 del attrs[dropped_attr]
 
         from arpes.utilities import rename_keys
-        built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs, mode='MC')
+
+        built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs, mode="MC")
         attrs = rename_keys(attrs, self.RENAME_KEYS)
         scan_desc = rename_keys(scan_desc, self.RENAME_KEYS)
 
         def clean_key_name(k: str) -> str:
-            if '#' in k:
-                k = k.replace('#', 'num')
+            if "#" in k:
+                k = k.replace("#", "num")
 
             return k
 
@@ -554,7 +629,7 @@ class FITSEndstation(EndstationBase):
         scan_desc = {clean_key_name(k): v for k, v in scan_desc.items()}
 
         # don't have phi because we need to convert pixels first
-        deg_to_rad_coords = {'beta', 'theta', 'chi'}
+        deg_to_rad_coords = {"beta", "theta", "chi"}
 
         # convert angular attributes to radians
         for coord_name in deg_to_rad_coords:
@@ -572,7 +647,7 @@ class FITSEndstation(EndstationBase):
         data_vars = {}
 
         all_names = hdu.columns.names
-        n_spectra = len([n for n in all_names if 'Fixed_Spectra' in n or 'Swept_Spectra' in n])
+        n_spectra = len([n for n in all_names if "Fixed_Spectra" in n or "Swept_Spectra" in n])
         for column_name in hdu.columns.names:
             # we skip some fixed set of the columns, such as the one dimensional axes, as well as things that are too
             # tricky to load at the moment, like the microscope images from MAESTRO
@@ -592,17 +667,17 @@ class FITSEndstation(EndstationBase):
             column_shape = real_spectrum_shape[column_name]
 
             column_display = self.PREPPED_COLUMN_NAMES.get(column_name, column_name)
-            if 'Fixed_Spectra' in column_display:
+            if "Fixed_Spectra" in column_display:
                 if n_spectra == 1:
-                    column_display = 'spectrum'
+                    column_display = "spectrum"
                 else:
-                    column_display = 'spectrum' + '-' + column_display.split('Fixed_Spectra')[1]
+                    column_display = "spectrum" + "-" + column_display.split("Fixed_Spectra")[1]
 
-            if 'Swept_Spectra' in column_display:
+            if "Swept_Spectra" in column_display:
                 if n_spectra == 1:
-                    column_display = 'spectrum'
+                    column_display = "spectrum"
                 else:
-                    column_display = 'spectrum' + '-' + column_display.split('Swept_Spectra')[1]
+                    column_display = "spectrum" + "-" + column_display.split("Swept_Spectra")[1]
 
             # sometimes if a scan is terminated early it can happen that the sizes do not match the expected value
             # as an example, if a beta map is supposed to have 401 slices, it might end up having only 260 if it were
@@ -621,17 +696,21 @@ class FITSEndstation(EndstationBase):
                 n_slices = total_n // n_per_slice
                 # if this isn't true, we can't recover
                 data_for_resize = hdu.data.columns[column_name].array
-                if (total_n // n_per_slice != total_n / n_per_slice):
+                if total_n // n_per_slice != total_n / n_per_slice:
                     # the last slice was in the middle of writing when something hit the fan
                     # we need to infer how much of the data to read, and then repeat the above
                     # we need to cut the data
 
                     # This can happen when the labview crashes during data collection,
                     # we use column_shape[1] because of the row order that is used in the FITS file
-                    data_for_resize = data_for_resize[0:(total_n // n_per_slice) * column_shape[1]]
+                    data_for_resize = data_for_resize[
+                        0 : (total_n // n_per_slice) * column_shape[1]
+                    ]
                     warnings.warn(
-                        'Column {} was in the middle of slice when DAQ stopped. Throwing out incomplete slice...'.format(
-                            column_name))
+                        "Column {} was in the middle of slice when DAQ stopped. Throwing out incomplete slice...".format(
+                            column_name
+                        )
+                    )
 
                 column_shape = list(column_shape)
                 column_shape[0] = n_slices
@@ -657,32 +736,47 @@ class FITSEndstation(EndstationBase):
             # don't do center pixel inference because the main chamber
             # at least consistently records the offset from the edge
             # of the recorded window
-            if 'pixel' in data.coords:
-                phi_axis = data.coords['pixel'].values * \
-                           arpes.constants.SPECTROMETER_MC['rad_per_pixel']
-                data = replace_coords(data, {
-                    'phi': phi_axis
-                }, [('pixel', 'phi',)])
+            if "pixel" in data.coords:
+                phi_axis = (
+                    data.coords["pixel"].values * arpes.constants.SPECTROMETER_MC["rad_per_pixel"]
+                )
+                data = replace_coords(
+                    data,
+                    {"phi": phi_axis},
+                    [
+                        (
+                            "pixel",
+                            "phi",
+                        )
+                    ],
+                )
 
             # Always attach provenance
-            provenance_from_file(data, frame_path, {
-                'what': 'Loaded MC dataset from FITS.',
-                'by': 'load_MC',
-            })
+            provenance_from_file(
+                data,
+                frame_path,
+                {
+                    "what": "Loaded MC dataset from FITS.",
+                    "by": "load_MC",
+                },
+            )
 
             return data
 
-        if 'spectrum' in data_vars:
-            data_vars['spectrum'] = prep_spectrum(data_vars['spectrum'])
+        if "spectrum" in data_vars:
+            data_vars["spectrum"] = prep_spectrum(data_vars["spectrum"])
 
         # adjust angular coordinates
-        built_coords = {k: c * (np.pi / 180) if k in deg_to_rad_coords else c
-                        for k, c in built_coords.items()}
+        built_coords = {
+            k: c * (np.pi / 180) if k in deg_to_rad_coords else c for k, c in built_coords.items()
+        }
 
         return xr.Dataset(
-            {'safe-{}'.format(name) if name in data_var.coords else name: data_var
-             for name, data_var in data_vars.items()},
-            attrs={**scan_desc, 'name': primary_dataset_name},
+            {
+                "safe-{}".format(name) if name in data_var.coords else name: data_var
+                for name, data_var in data_vars.items()
+            },
+            attrs={**scan_desc, "name": primary_dataset_name},
         )
 
 
@@ -694,6 +788,7 @@ class SynchrotronEndstation(EndstationBase):
     experimental settings. Additionally, subclassing this is used in resolution
     calculations to signal that such a resolution lookup is required.
     """
+
     RESOLUTION_TABLE = None
 
 
@@ -704,6 +799,7 @@ class HemisphericalEndstation(EndstationBase):
     and ideally correction databases for dead pixels + detector nonlinearity
     information
     """
+
     ANALYZER_INFORMATION = None
     SLIT_ORIENTATION = None
     PIXELS_PER_DEG = None
@@ -742,16 +838,23 @@ def add_endstation(endstation_cls: type) -> None:
 
         _ENDSTATION_ALIASES[alias] = endstation_cls
 
-    if endstation_cls.PRINCIPAL_NAME in _ENDSTATION_ALIASES and endstation_cls.PRINCIPAL_NAME not in endstation_cls.ALIASES:
+    if (
+        endstation_cls.PRINCIPAL_NAME in _ENDSTATION_ALIASES
+        and endstation_cls.PRINCIPAL_NAME not in endstation_cls.ALIASES
+    ):
         # indicates it was added earlier, so there's an alias conflict
         if False:
-            warnings.warn('Endstation name or alias conflicts with existing {}'.format(endstation_cls.PRINCIPAL_NAME))
+            warnings.warn(
+                "Endstation name or alias conflicts with existing {}".format(
+                    endstation_cls.PRINCIPAL_NAME
+                )
+            )
 
     _ENDSTATION_ALIASES[endstation_cls.PRINCIPAL_NAME] = endstation_cls
 
 
 def load_scan_for_endstation(scan_desc, endstation_cls, **kwargs):
-    note = scan_desc.get('note', scan_desc)
+    note = scan_desc.get("note", scan_desc)
     full_note = copy.deepcopy(scan_desc)
     full_note.update(note)
 
@@ -759,22 +862,27 @@ def load_scan_for_endstation(scan_desc, endstation_cls, **kwargs):
 
 
 def resolve_endstation(retry=True, **kwargs):
-    endstation_name = case_insensitive_get(kwargs, 'location', case_insensitive_get(kwargs, 'endstation'))
+    endstation_name = case_insensitive_get(
+        kwargs, "location", case_insensitive_get(kwargs, "endstation")
+    )
     if endstation_name is None:
-        warnings.warn('Endstation not provided. Using `fallback` plugin.')
-        endstation_name = 'fallback'
+        warnings.warn("Endstation not provided. Using `fallback` plugin.")
+        endstation_name = "fallback"
 
     try:
         return endstation_from_alias(endstation_name)
     except KeyError:
         if retry:
             import arpes.config  # pylint: disable=redefined-outer-name
+
             arpes.config.load_plugins()
             return resolve_endstation(retry=False, **kwargs)
         else:
-            raise ValueError('Could not identify endstation. '
-                             'Did you set the endstation or location? Find a description of the available options '
-                             'in the endstations module.')
+            raise ValueError(
+                "Could not identify endstation. "
+                "Did you set the endstation or location? Find a description of the available options "
+                "in the endstations module."
+            )
 
 
 def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Dataset:
@@ -787,13 +895,13 @@ def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Datase
     :param kwargs:
     :return:
     """
-    note = scan_desc.get('note', scan_desc)
+    note = scan_desc.get("note", scan_desc)
     full_note = copy.deepcopy(scan_desc)
     full_note.update(note)
 
     endstation_cls = resolve_endstation(retry=retry, **full_note)
 
-    key = 'file' if 'file' in scan_desc else 'path'
+    key = "file" if "file" in scan_desc else "path"
 
     file = scan_desc[key]
 

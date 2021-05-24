@@ -19,7 +19,7 @@ from string import ascii_lowercase
 import lmfit
 import numpy as np
 from tqdm import tqdm_notebook
-from concurrent.futures import ProcessPoolExecutor 
+from concurrent.futures import ProcessPoolExecutor
 
 import arpes.fits.fit_models
 from typing import Union, Tuple, Any, Dict, List
@@ -29,12 +29,13 @@ from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('broadcast_model', 'result_to_hints', 'make_pickle_safe')
+__all__ = ("broadcast_model", "result_to_hints", "make_pickle_safe")
 
 
 TypeIterable = Union[List[type], Tuple[type]]
 
 XARRAY_REQUIRES_VALUES_WRAPPING = version.parse(xr.__version__) > version.parse("0.10.0")
+
 
 def wrap_for_xarray_values_unpacking(item):
     """
@@ -42,8 +43,9 @@ def wrap_for_xarray_values_unpacking(item):
     """
     if XARRAY_REQUIRES_VALUES_WRAPPING:
         return np.array(item, dtype=object)
-    
+
     return item
+
 
 def make_pickle_safe(result: lmfit.model.ModelResult):
     return result
@@ -57,7 +59,7 @@ def result_to_hints(m: lmfit.model.ModelResult, defaults: None) -> Dict[str, Dic
     """
     if m is None:
         return defaults
-    return {k: {'value': m.params[k].value} for k in m.params}
+    return {k: {"value": m.params[k].value} for k in m.params}
 
 
 def parse_model(model):
@@ -78,10 +80,10 @@ def parse_model(model):
     if not isinstance(model, str):
         return model
 
-    pad_all = ['+', '-', '*', '/', '(', ')']
+    pad_all = ["+", "-", "*", "/", "(", ")"]
 
     for pad in pad_all:
-        model = model.replace(pad, ' {} '.format(pad))
+        model = model.replace(pad, " {} ".format(pad))
 
     special = set(pad_all)
 
@@ -95,7 +97,7 @@ def parse_model(model):
             try:
                 return arpes.fits.fit_models.__dict__[token]
             except KeyError:
-                raise ValueError('Could not find model: {}'.format(token))
+                raise ValueError("Could not find model: {}".format(token))
 
     return [read_token(token) for token in model.split()]
 
@@ -107,20 +109,31 @@ def _parens_to_nested(items):
     :return:
     """
 
-    parens = [(token, idx,) for idx, token in enumerate(items) if isinstance(token, str) and token in '()']
+    parens = [
+        (
+            token,
+            idx,
+        )
+        for idx, token in enumerate(items)
+        if isinstance(token, str) and token in "()"
+    ]
     if parens:
         first_idx, last_idx = parens[0][1], parens[-1][1]
-        if parens[0][0] != '(' or parens[-1][0] != ')':
-            raise ValueError('Parentheses do not match!')
+        if parens[0][0] != "(" or parens[-1][0] != ")":
+            raise ValueError("Parentheses do not match!")
 
-        return items[0:first_idx] + [_parens_to_nested(items[first_idx + 1:last_idx])] + items[last_idx + 1:]
+        return (
+            items[0:first_idx]
+            + [_parens_to_nested(items[first_idx + 1 : last_idx])]
+            + items[last_idx + 1 :]
+        )
     else:
         return items
 
 
 def reduce_model_with_operators(model):
     if isinstance(model, tuple):
-        return model[0](prefix='{}_'.format(model[1]), nan_policy='omit')
+        return model[0](prefix="{}_".format(model[1]), nan_policy="omit")
 
     if isinstance(model, list) and len(model) == 1:
         return reduce_model_with_operators(model[0])
@@ -128,13 +141,13 @@ def reduce_model_with_operators(model):
     left, op, right = model[0], model[1], model[2:]
     left, right = reduce_model_with_operators(left), reduce_model_with_operators(right)
 
-    if op == '+':
+    if op == "+":
         return left + right
-    elif op == '*':
+    elif op == "*":
         return left * right
-    elif op == '-':
+    elif op == "-":
         return left - right
-    elif op == '/':
+    elif op == "/":
         return left / right
 
 
@@ -148,10 +161,10 @@ def compile_model(model, params=None, prefixes=None):
     if params is None:
         params = {}
 
-    prefix_compile = '{}'
+    prefix_compile = "{}"
     if prefixes is None:
         prefixes = ascii_lowercase
-        prefix_compile = '{}_'
+        prefix_compile = "{}_"
 
     try:
         if issubclass(model, lmfit.Model):
@@ -160,7 +173,10 @@ def compile_model(model, params=None, prefixes=None):
         pass
 
     if isinstance(model, (list, tuple)) and all([isinstance(token, type) for token in model]):
-        models = [m(prefix=prefix_compile.format(prefixes[i]), nan_policy='omit') for i, m in enumerate(model)]
+        models = [
+            m(prefix=prefix_compile.format(prefixes[i]), nan_policy="omit")
+            for i, m in enumerate(model)
+        ]
         if isinstance(params, (list, tuple)):
             for cs, m in zip(params, models):
                 for name, params_for_name in cs.items():
@@ -168,7 +184,7 @@ def compile_model(model, params=None, prefixes=None):
 
         built = functools.reduce(operator.add, models)
     else:
-        warnings.warn('Beware of equal operator precedence.')
+        warnings.warn("Beware of equal operator precedence.")
         prefix = iter(prefixes)
         model = [m if isinstance(m, str) else (m, next(prefix)) for m in model]
         built = reduce_model_with_operators(_parens_to_nested(model))
@@ -184,12 +200,13 @@ def unwrap_params(params, iter_coordinate):
     :param iter_coordinate:
     :return:
     """
+
     def transform_or_walk(v):
         if isinstance(v, dict):
             return unwrap_params(v, iter_coordinate)
 
         if isinstance(v, xr.DataArray):
-            return v.sel(**iter_coordinate, method='nearest').item()
+            return v.sel(**iter_coordinate, method="nearest").item()
 
         return v
 
@@ -208,10 +225,20 @@ def _apply_window(data: xr.DataArray, cut_coords: Dict[str, Union[float, slice]]
     return cut_data, original_cut_data
 
 
-@update_provenance('Broadcast a curve fit along several dimensions')
-def broadcast_model(model_cls: Union[type, TypeIterable],
-                    data: DataType, broadcast_dims, params=None, progress=True, dataset=True,
-                    weights=None, safe=False, prefixes=None, window=None, multithread=False):
+@update_provenance("Broadcast a curve fit along several dimensions")
+def broadcast_model(
+    model_cls: Union[type, TypeIterable],
+    data: DataType,
+    broadcast_dims,
+    params=None,
+    progress=True,
+    dataset=True,
+    weights=None,
+    safe=False,
+    prefixes=None,
+    window=None,
+    multithread=False,
+):
     """
     Perform a fit across a number of dimensions. Allows composite models as well as models
     defined and compiled through strings.
@@ -257,29 +284,44 @@ def broadcast_model(model_cls: Union[type, TypeIterable],
     if progress:
         wrap_progress = tqdm_notebook
 
-    _fit_func = functools.partial(_perform_fit, data=data, model=model, params=params, safe=safe, weights=weights, window=window)
+    _fit_func = functools.partial(
+        _perform_fit,
+        data=data,
+        model=model,
+        params=params,
+        safe=safe,
+        weights=weights,
+        window=window,
+    )
 
     if multithread:
         with ProcessPoolExecutor() as executor:
-            for fit_result, fit_residual, coords in executor.map(_fit_func, template.G.iter_coords()):
+            for fit_result, fit_residual, coords in executor.map(
+                _fit_func, template.G.iter_coords()
+            ):
                 template.loc[coords] = wrap_for_xarray_values_unpacking(fit_result)
                 residual.loc[coords] = fit_residual
     else:
-        for indices, cut_coords in wrap_progress(template.G.enumerate_iter_coords(), desc='Fitting', total=n_fits):
+        for indices, cut_coords in wrap_progress(
+            template.G.enumerate_iter_coords(), desc="Fitting", total=n_fits
+        ):
             fit_result, fit_residual, _ = _fit_func(cut_coords)
 
             template.loc[cut_coords] = wrap_for_xarray_values_unpacking(fit_result)
             residual.loc[cut_coords] = fit_residual
 
     if dataset:
-        return xr.Dataset({
-            'results': template,
-            'data': data,
-            'residual': residual,
-            'norm_residual': residual / data,
-        }, residual.coords)
+        return xr.Dataset(
+            {
+                "results": template,
+                "data": data,
+                "residual": residual,
+                "norm_residual": residual / data,
+            },
+            residual.coords,
+        )
 
-    template.attrs['original_data'] = data
+    template.attrs["original_data"] = data
     return template
 
 
@@ -304,6 +346,8 @@ def _perform_fit(cut_coords, data, model, params, safe, weights, window):
     elif window is None:
         true_residual = fit_result.residual
     else:
-        true_residual = original_cut_data - fit_result.eval(x=original_cut_data.coords[original_cut_data.dims[0]].values)
+        true_residual = original_cut_data - fit_result.eval(
+            x=original_cut_data.coords[original_cut_data.dims[0]].values
+        )
 
     return fit_result, true_residual, cut_coords

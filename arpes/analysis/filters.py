@@ -6,7 +6,12 @@ from scipy import ndimage
 import xarray as xr
 from arpes.provenance import provenance
 
-__all__ = ('gaussian_filter_arr', 'gaussian_filter', 'boxcar_filter_arr', 'boxcar_filter',)
+__all__ = (
+    "gaussian_filter_arr",
+    "gaussian_filter",
+    "boxcar_filter_arr",
+    "boxcar_filter",
+)
 
 
 def gaussian_filter_arr(arr: xr.DataArray, sigma=None, n=1, default_size=1):
@@ -37,21 +42,20 @@ def gaussian_filter_arr(arr: xr.DataArray, sigma=None, n=1, default_size=1):
     for _ in range(n):
         values = ndimage.filters.gaussian_filter(values, sigma)
 
-    filtered_arr = xr.DataArray(
-        values,
-        arr.coords,
-        arr.dims,
-        attrs=copy.deepcopy(arr.attrs)
-    )
+    filtered_arr = xr.DataArray(values, arr.coords, arr.dims, attrs=copy.deepcopy(arr.attrs))
 
-    if 'id' in filtered_arr.attrs:
-        del filtered_arr.attrs['id']
+    if "id" in filtered_arr.attrs:
+        del filtered_arr.attrs["id"]
 
-        provenance(filtered_arr, arr, {
-            'what': 'Gaussian filtered data',
-            'by': 'gaussian_filter_arr',
-            'sigma': sigma,
-        })
+        provenance(
+            filtered_arr,
+            arr,
+            {
+                "what": "Gaussian filtered data",
+                "by": "gaussian_filter_arr",
+                "sigma": sigma,
+            },
+        )
 
     return filtered_arr
 
@@ -125,21 +129,20 @@ def boxcar_filter_arr(arr: xr.DataArray, size=None, n=1, default_size=1, skip_na
         for i in range(n):
             values = ndimage.filters.uniform_filter(values, size)
 
-    filtered_arr = xr.DataArray(
-        values,
-        arr.coords,
-        arr.dims,
-        attrs=copy.deepcopy(arr.attrs)
-    )
+    filtered_arr = xr.DataArray(values, arr.coords, arr.dims, attrs=copy.deepcopy(arr.attrs))
 
-    if 'id' in arr.attrs:
-        del filtered_arr.attrs['id']
+    if "id" in arr.attrs:
+        del filtered_arr.attrs["id"]
 
-        provenance(filtered_arr, arr, {
-            'what': 'Boxcar filtered data',
-            'by': 'boxcar_filter_arr',
-            'size': size,
-            'skip_nan': skip_nan,
-        })
+        provenance(
+            filtered_arr,
+            arr,
+            {
+                "what": "Boxcar filtered data",
+                "by": "boxcar_filter_arr",
+                "size": size,
+                "skip_nan": skip_nan,
+            },
+        )
 
     return filtered_arr

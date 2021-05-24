@@ -24,13 +24,26 @@ from pathlib import Path
 
 from arpes.provenance import provenance_from_file
 
-northstar_62_69_dtype = np.dtype([
-    ('pad1', 'B', (2364,),), # unused
-    ('sample', 'S52'),
-    ('user', 'S52'),
-    ('comment', 'S512',),
-    ('pad2', 'B', (228,),), # unused
-])
+northstar_62_69_dtype = np.dtype(
+    [
+        (
+            "pad1",
+            "B",
+            (2364,),
+        ),  # unused
+        ("sample", "S52"),
+        ("user", "S52"),
+        (
+            "comment",
+            "S512",
+        ),
+        (
+            "pad2",
+            "B",
+            (228,),
+        ),  # unused
+    ]
+)
 
 
 def load_laue(path: typing.Union[Path, str]):
@@ -45,18 +58,25 @@ def load_laue(path: typing.Union[Path, str]):
 
     arr = xarray.DataArray(
         table,
-        coords={'x': np.array(range(256)), 'y': np.array(range(256))},
-        dims=['x', 'y',],
+        coords={"x": np.array(range(256)), "y": np.array(range(256))},
+        dims=[
+            "x",
+            "y",
+        ],
         attrs={
-            'sample': header[1].split(b'\0')[0].decode('ascii'),
-            'user': header[2].split(b'\0')[0].decode('ascii'),
-            'comment': header[3].split(b'\0')[0].decode('ascii'),
-        }
+            "sample": header[1].split(b"\0")[0].decode("ascii"),
+            "user": header[2].split(b"\0")[0].decode("ascii"),
+            "comment": header[3].split(b"\0")[0].decode("ascii"),
+        },
     )
 
-    provenance_from_file(arr, str(path), {
-        'what': 'Loaded Laue dataset from Northstar.',
-        'by': 'load_laue',
-    })
+    provenance_from_file(
+        arr,
+        str(path),
+        {
+            "what": "Loaded Laue dataset from Northstar.",
+            "by": "load_laue",
+        },
+    )
 
     return arr

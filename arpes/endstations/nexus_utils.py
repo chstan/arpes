@@ -3,7 +3,7 @@ Provides a jumping off point for defining data loading plugins using the NeXuS f
 Currently we assume that the raw file format is actually HDF.
 """
 
-__all__ = ('read_data_attributes_from',)
+__all__ = ("read_data_attributes_from",)
 
 
 def read_data_attributes_from(group, paths):
@@ -23,7 +23,7 @@ def read_data_attributes_from(group, paths):
 
         for attribute_name in attributes:
             try:
-                data = group[attribute_name]['data']
+                data = group[attribute_name]["data"]
             except ValueError:
                 data = group[attribute_name]
             try:

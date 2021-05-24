@@ -5,11 +5,18 @@ from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from typing import List
 
-__all__ = ('decomposition_along',
-           'nmf_along', 'pca_along', 'ica_along', 'factor_analysis_along',)
+__all__ = (
+    "decomposition_along",
+    "nmf_along",
+    "pca_along",
+    "ica_along",
+    "factor_analysis_along",
+)
 
 
-def decomposition_along(data: DataType, axes: List[str], decomposition_cls, correlation=False, **kwargs):
+def decomposition_along(
+    data: DataType, axes: List[str], decomposition_cls, correlation=False, **kwargs
+):
     """
     Performs a change of basis of your data according to `sklearn` decomposition classes. This allows
     for robust and simple PCA, ICA, factor analysis, and other decompositions of your data even when it
@@ -44,7 +51,6 @@ def decomposition_along(data: DataType, axes: List[str], decomposition_cls, corr
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import StandardScaler
 
-
     if len(axes) > 1:
         flattened_data = normalize_to_spectrum(data).stack(fit_axis=axes)
         stacked = True
@@ -53,8 +59,9 @@ def decomposition_along(data: DataType, axes: List[str], decomposition_cls, corr
         stacked = False
 
     if len(flattened_data.dims) != 2:
-        raise ValueError('Inappropriate number of dimensions after flattening: [{}]'.format(
-            flattened_data.dims))
+        raise ValueError(
+            "Inappropriate number of dimensions after flattening: [{}]".format(flattened_data.dims)
+        )
 
     if correlation:
         pipeline = make_pipeline(StandardScaler(), decomposition_cls(**kwargs))
@@ -70,20 +77,24 @@ def decomposition_along(data: DataType, axes: List[str], decomposition_cls, corr
     into = flattened_data.copy(deep=True)
     into_first = into.dims[0]
     into = into.isel(**dict([[into_first, slice(0, transform.shape[1])]]))
-    into = into.rename(dict([[into_first, 'components']]))
+    into = into.rename(dict([[into_first, "components"]]))
 
     into.values = transform.T
 
     if stacked:
-        into = into.unstack('fit_axis')
+        into = into.unstack("fit_axis")
 
-    provenance(into, data, {
-        'what': 'sklearn decomposition',
-        'by': 'decomposition_along',
-        'axes': axes,
-        'correlation': False,
-        'decomposition_cls': decomposition_cls.__name__,
-    })
+    provenance(
+        into,
+        data,
+        {
+            "what": "sklearn decomposition",
+            "by": "decomposition_along",
+            "axes": axes,
+            "correlation": False,
+            "decomposition_cls": decomposition_cls.__name__,
+        },
+    )
 
     return into, decomp
 
@@ -91,22 +102,26 @@ def decomposition_along(data: DataType, axes: List[str], decomposition_cls, corr
 @wraps(decomposition_along)
 def pca_along(*args, **kwargs):
     from sklearn.decomposition import PCA
+
     return decomposition_along(*args, **kwargs, decomposition_cls=PCA)
 
 
 @wraps(decomposition_along)
 def factor_analysis_along(*args, **kwargs):
     from sklearn.decomposition import FactorAnalysis
+
     return decomposition_along(*args, **kwargs, decomposition_cls=FactorAnalysis)
 
 
 @wraps(decomposition_along)
 def ica_along(*args, **kwargs):
     from sklearn.decomposition import FastICA
+
     return decomposition_along(*args, **kwargs, decomposition_cls=FastICA)
 
 
 @wraps(decomposition_along)
 def nmf_along(*args, **kwargs):
     from sklearn.decomposition import NMF
+
     return decomposition_along(*args, **kwargs, decomposition_cls=NMF)

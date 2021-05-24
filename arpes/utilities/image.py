@@ -3,7 +3,10 @@ import warnings
 import numpy as np
 import xarray as xr
 
-__all__ = ('imread_to_xarray', 'imread',)
+__all__ = (
+    "imread_to_xarray",
+    "imread",
+)
 
 
 def imread(str_or_path):
@@ -19,6 +22,7 @@ def imread(str_or_path):
     """
     try:
         import cv2
+
         using_cv2 = True
     except ImportError:
         try:
@@ -26,7 +30,7 @@ def imread(str_or_path):
 
             using_cv2 = False
         except ImportError as e:
-            warnings.warn('You need OpenCV or imageio in order to read images in PyARPES.')
+            warnings.warn("You need OpenCV or imageio in order to read images in PyARPES.")
             raise e
 
     if using_cv2:
@@ -34,7 +38,7 @@ def imread(str_or_path):
         return np.stack([arr[:, :, 2], arr[:, :, 1], arr[:, :, 0]], axis=-1)
     else:
         arr = imageio.imread(str(str_or_path))
-        return arr[:,:,:3]
+        return arr[:, :, :3]
 
 
 def imread_to_xarray(str_or_path):
@@ -50,10 +54,6 @@ def imread_to_xarray(str_or_path):
 
     return xr.DataArray(
         raw_arr,
-        coords={
-            'x': np.asarray(range(sx)),
-            'y': np.asarray(range(sy)),
-            'color': ['r', 'g', 'b']
-        },
-        dims=['x', 'y', 'color']
+        coords={"x": np.asarray(range(sx)), "y": np.asarray(range(sy)), "color": ["r", "g", "b"]},
+        dims=["x", "y", "color"],
     )

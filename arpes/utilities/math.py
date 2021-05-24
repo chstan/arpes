@@ -43,6 +43,7 @@ def propagate_statistical_error(f):
 
     return compute_propagated_error
 
+
 def shift_by(arr, value, axis=0, by_axis=0, **kwargs):
     assert axis != by_axis
     arr_copy = arr.copy()

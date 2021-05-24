@@ -5,7 +5,10 @@ import numpy as np
 import weakref
 from scipy import interpolate
 
-__all__ = ('DataArrayImageView', 'DataArrayPlot',)
+__all__ = (
+    "DataArrayImageView",
+    "DataArrayPlot",
+)
 
 
 class CoordAxis(pg.AxisItem):
@@ -17,11 +20,13 @@ class CoordAxis(pg.AxisItem):
 
     def setImage(self, image):
         self.coord = image.coords[image.dims[self.dim_index]].values
-        self.interp = interpolate.interp1d(np.arange(0, len(self.coord)), self.coord, fill_value='extrapolate')
+        self.interp = interpolate.interp1d(
+            np.arange(0, len(self.coord)), self.coord, fill_value="extrapolate"
+        )
 
     def tickStrings(self, values, scale, spacing):
         try:
-            return ['{:.3f}'.format(f) for f in self.interp(values)]
+            return ["{:.3f}".format(f) for f in self.interp(values)]
         except TypeError:
             return super().tickStrings(values, scale, spacing)
 
@@ -30,7 +35,7 @@ class DataArrayPlot(pg.PlotWidget):
     def __init__(self, root, orientation, *args, **kwargs):
         self.orientation = orientation
 
-        axis_or = 'bottom' if orientation == 'horiz' else 'left'
+        axis_or = "bottom" if orientation == "horiz" else "left"
         self._coord_axis = CoordAxis(dim_index=0, orientation=axis_or)
 
         super().__init__(axisItems=dict([[axis_or, self._coord_axis]]), *args, **kwargs)
@@ -39,7 +44,7 @@ class DataArrayPlot(pg.PlotWidget):
         y = data.values
         self._coord_axis.setImage(data)
 
-        if self.orientation == 'horiz':
+        if self.orientation == "horiz":
             self.plotItem.plot(np.arange(0, len(y)), y, *args, **kwargs)
         else:
             self.plotItem.plot(y, np.arange(0, len(y)), *args, **kwargs)
@@ -51,10 +56,11 @@ class DataArrayImageView(pg.ImageView):
 
     This makes it easier to build interactive applications around realistic scientific datasets.
     """
+
     def __init__(self, root, *args, **kwargs):
         self._coord_axes = {
-            'left': CoordAxis(dim_index=1, orientation='left'),
-            'bottom': CoordAxis(dim_index=0, orientation='bottom'),
+            "left": CoordAxis(dim_index=1, orientation="left"),
+            "bottom": CoordAxis(dim_index=0, orientation="bottom"),
         }
         plot_item = pg.PlotItem(axisItems=self._coord_axes)
         super().__init__(view=plot_item, *args, **kwargs)

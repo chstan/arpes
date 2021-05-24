@@ -4,8 +4,16 @@ from collections import OrderedDict
 from arpes.utilities.xarray import lift_dataarray_attrs, lift_datavar_attrs
 from typing import Any, Dict, Union
 
-__all__ = ('rename_keys', 'clean_keys', 'rename_dataarray_attrs', 'rename_datavar_attrs',
-           'clean_datavar_attribute_names', 'clean_attribute_names', 'case_insensitive_get')
+__all__ = (
+    "rename_keys",
+    "clean_keys",
+    "rename_dataarray_attrs",
+    "rename_datavar_attrs",
+    "clean_datavar_attribute_names",
+    "clean_attribute_names",
+    "case_insensitive_get",
+)
+
 
 def _rename_key(d: Union[Dict[str, Any], OrderedDict], k: str, nk: str) -> None:
     if k in d:
@@ -13,7 +21,9 @@ def _rename_key(d: Union[Dict[str, Any], OrderedDict], k: str, nk: str) -> None:
         del d[k]
 
 
-def rename_keys(d: Union[Dict[str, Any], OrderedDict], keys_dict: Dict[str, str]) -> Union[Dict[str, Any], OrderedDict]:
+def rename_keys(
+    d: Union[Dict[str, Any], OrderedDict], keys_dict: Dict[str, str]
+) -> Union[Dict[str, Any], OrderedDict]:
     d = d.copy()
     for k, nk in keys_dict.items():
         _rename_key(d, k, nk)
@@ -23,11 +33,11 @@ def rename_keys(d: Union[Dict[str, Any], OrderedDict], keys_dict: Dict[str, str]
 
 def clean_keys(d):
     def clean_single_key(k):
-        k = k.replace(' ', '_')
-        k = k.replace('.', '_')
+        k = k.replace(" ", "_")
+        k = k.replace(".", "_")
         k = k.lower()
-        k = re.sub(r'[()/?]', '', k)
-        k = k.replace('__', '_')
+        k = re.sub(r"[()/?]", "", k)
+        k = k.replace("__", "_")
         return k
 
     return dict(zip([clean_single_key(k) for k in d.keys()], d.values()))
@@ -49,7 +59,7 @@ def case_insensitive_get(d: dict, key: str, default=None, take_first=False):
     for k, v in d.items():
         if k.lower() == key.lower():
             if not take_first and found_value:
-                raise ValueError('Duplicate case insensitive keys')
+                raise ValueError("Duplicate case insensitive keys")
 
             value = v
             found_value = True

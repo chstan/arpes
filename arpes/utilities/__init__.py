@@ -73,14 +73,11 @@ def jacobian_correction(energies, lattice_constant, theta, beta, alpha, phis, rh
 
     k0s = constants.K_INV_ANGSTROM * np.sqrt(energies) * lattice_constant / np.pi
 
-    dkxdphi = (cos(theta) * cos(alpha) * np.cos(phis) -
-               sin(theta) * np.sin(phis))
+    dkxdphi = cos(theta) * cos(alpha) * np.cos(phis) - sin(theta) * np.sin(phis)
 
-    dkydphi = (
-        -cos(theta) * sin(beta) * np.sin(phis) +
-        np.cos(phis) * (
-            cos(beta) * sin(alpha) -
-            cos(alpha) * sin(theta) * sin(beta)))
+    dkydphi = -cos(theta) * sin(beta) * np.sin(phis) + np.cos(phis) * (
+        cos(beta) * sin(alpha) - cos(alpha) * sin(theta) * sin(beta)
+    )
 
     # return the dot product
     rhat_x, rhat_y = rhat
@@ -116,26 +113,26 @@ def unarrange_by_indices(items, indices):
 
 
 ATTRS_MAP = {
-    'PuPol': 'pump_pol',
-    'PrPol': 'probe_pol',
-    'SFLNM0': 'lens_mode',
-    'Lens Mode': 'lens_mode',
-    'Excitation Energy': 'hv',
-    'SFPE_0': 'pass_energy',
-    'Pass Energy': 'pass_energy',
-    'Slit Plate': 'slit',
-    'Number of Sweeps': 'n_sweeps',
-    'Acquisition Mode': 'scan_mode',
-    'Region Name': 'scan_region',
-    'Instrument': 'instrument',
-    'Pressure': 'pressure',
-    'User': 'user',
-    'Polar': 'theta',
-    'Theta': 'theta',
-    'Sample': 'sample',
-    'Beta': 'beta',
-    'Azimuth': 'chi',
-    'Location': 'location',
+    "PuPol": "pump_pol",
+    "PrPol": "probe_pol",
+    "SFLNM0": "lens_mode",
+    "Lens Mode": "lens_mode",
+    "Excitation Energy": "hv",
+    "SFPE_0": "pass_energy",
+    "Pass Energy": "pass_energy",
+    "Slit Plate": "slit",
+    "Number of Sweeps": "n_sweeps",
+    "Acquisition Mode": "scan_mode",
+    "Region Name": "scan_region",
+    "Instrument": "instrument",
+    "Pressure": "pressure",
+    "User": "user",
+    "Polar": "theta",
+    "Theta": "theta",
+    "Sample": "sample",
+    "Beta": "beta",
+    "Azimuth": "chi",
+    "Location": "location",
 }
 
 rename_standard_attrs = lambda x: rename_dataarray_attrs(x, ATTRS_MAP)
@@ -144,36 +141,36 @@ rename_datavar_standard_attrs = lambda x: rename_datavar_attrs(x, ATTRS_MAP)
 
 def walk_scans(path, only_id=False):
     for path, _, files in os.walk(path):
-        json_files = [f for f in files if '.json' in f]
-        excel_files = [f for f in files if '.xlsx' in f or '.xlx' in f]
+        json_files = [f for f in files if ".json" in f]
+        excel_files = [f for f in files if ".xlsx" in f or ".xlx" in f]
 
         for j in json_files:
-            with open(os.path.join(path, j), 'r') as f:
+            with open(os.path.join(path, j), "r") as f:
                 metadata = json.load(f)
 
             for scan in metadata:
                 if only_id:
-                    yield scan['id']
+                    yield scan["id"]
                 else:
                     yield scan
 
         for x in excel_files:
-            if 'cleaned' in x or 'cleaned' in path:
+            if "cleaned" in x or "cleaned" in path:
                 continue
 
             ds = clean_xlsx_dataset(os.path.join(path, x))
             for file, scan in ds.iterrows():
-                scan['file'] = scan.get('path', file)
-                scan['short_file'] = file
+                scan["file"] = scan.get("path", file)
+                scan["short_file"] = file
                 if only_id:
-                    yield scan['id']
+                    yield scan["id"]
                 else:
                     yield scan
 
 
-_wrappable = {'note', 'data_preparation', 'provenance', 'corrections', 'symmetry_points'}
-WHITELIST_KEYS = {'scan_region', 'sample', 'scan_mode', 'id', 'scan_mode'}
-FREEZE_PROPS = {'spectrum_type'}
+_wrappable = {"note", "data_preparation", "provenance", "corrections", "symmetry_points"}
+WHITELIST_KEYS = {"scan_region", "sample", "scan_mode", "id", "scan_mode"}
+FREEZE_PROPS = {"spectrum_type"}
 
 
 def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
@@ -191,7 +188,7 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
                 resolved = normalize_to_spectrum(original_data).S
                 attrs_copy[prop] = getattr(resolved, prop)
             except AttributeError:
-                warnings.warn('Unresolvable attribute: {}'.format(prop))
+                warnings.warn("Unresolvable attribute: {}".format(prop))
 
     for k, v in attrs_copy.items():
         if v is None:
@@ -199,26 +196,39 @@ def wrap_attrs_dict(attrs: dict, original_data: DataType = None) -> dict:
             attrs_copy[k] = json.dumps(v)
         elif isinstance(v, bool):
             attrs_copy[k] = 1 if v else 0
-        elif isinstance(v, (pd.Timestamp, datetime.time,)):
+        elif isinstance(
+            v,
+            (
+                pd.Timestamp,
+                datetime.time,
+            ),
+        ):
             attrs_copy[k] = v.isoformat()
         elif isinstance(v, (datetime.datetime,)):
             attrs_copy[k] = str(v)
-        elif not isinstance(v, (str, float, int,)):
-            print('Be careful about type: {}'.format(type(v)))
+        elif not isinstance(
+            v,
+            (
+                str,
+                float,
+                int,
+            ),
+        ):
+            print("Be careful about type: {}".format(type(v)))
 
     def clean_key(key: str):
-        return key.replace('#', 'num_')
+        return key.replace("#", "num_")
 
     attrs_copy = {k: v for k, v in attrs_copy.items() if len(k)}
     attrs_copy = {clean_key(k): v for k, v in attrs_copy.items()}
 
-    attrs_copy['freeze_extra'] = json.dumps(freeze_extra)
+    attrs_copy["freeze_extra"] = json.dumps(freeze_extra)
     return attrs_copy
 
 
 def unwrap_attrs_dict(attrs: dict) -> dict:
     attrs_copy = copy.deepcopy(attrs)
-    freeze_extra = json.loads(attrs_copy.pop('freeze_extra', '[]'))
+    freeze_extra = json.loads(attrs_copy.pop("freeze_extra", "[]"))
 
     for key in _wrappable:
         if key not in attrs_copy:

@@ -51,9 +51,14 @@ from collections import namedtuple
 
 import functools
 from PyQt5.QtWidgets import (
-    QGridLayout, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
+    QGridLayout,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QTabWidget,
     QSplitter,
-    QGroupBox, QLabel,
+    QGroupBox,
+    QLabel,
 )
 
 from PyQt5 import QtCore, QtGui
@@ -62,40 +67,47 @@ from PyQt5.QtCore import Qt
 from .widgets import *
 
 __all__ = (
-    'CollectUI',
-
-    'CursorRegion',
-
+    "CollectUI",
+    "CursorRegion",
     # layouts
-    'layout', 'grid', 'vertical', 'horizontal',
-
-    'splitter',
-
+    "layout",
+    "grid",
+    "vertical",
+    "horizontal",
+    "splitter",
     # widgets
-    'group', 'label', 'tabs', 'button', 'check_box', 'combo_box', 'file_dialog',
-    'line_edit', 'radio_button', 'slider', 'spin_box', 'text_edit', 'numeric_input',
-
+    "group",
+    "label",
+    "tabs",
+    "button",
+    "check_box",
+    "combo_box",
+    "file_dialog",
+    "line_edit",
+    "radio_button",
+    "slider",
+    "spin_box",
+    "text_edit",
+    "numeric_input",
     # Observable tools
-    'submit',
-
-     # @dataclass utils
-    'layout_dataclass',
-    'bind_dataclass',
-
+    "submit",
+    # @dataclass utils
+    "layout_dataclass",
+    "bind_dataclass",
     # Keybinding
-    'PRETTY_KEYS',
-    'pretty_key_event',
-    'KeyBinding',
+    "PRETTY_KEYS",
+    "pretty_key_event",
+    "KeyBinding",
 )
 
 
-KeyBinding = namedtuple('KeyBinding', ('label', 'chord', 'handler'))
-CursorMode = namedtuple('CursorMode', ('label', 'chord', 'handler', 'supported_dimensions'))
+KeyBinding = namedtuple("KeyBinding", ("label", "chord", "handler"))
+CursorMode = namedtuple("CursorMode", ("label", "chord", "handler", "supported_dimensions"))
 
 PRETTY_KEYS = {}
 for key, value in vars(QtCore.Qt).items():
     if isinstance(value, QtCore.Qt.Key):
-        PRETTY_KEYS[value] = key.partition('_')[2]
+        PRETTY_KEYS[value] = key.partition("_")[2]
 
 
 def pretty_key_event(event):
@@ -113,8 +125,8 @@ def pretty_key_event(event):
     return key_sequence
 
 
-
 ACTIVE_UI = None
+
 
 def ui_builder(f):
     @functools.wraps(f)
@@ -169,9 +181,11 @@ def layout(*children, layout_cls=None, widget=None):
 
     return widget
 
+
 grid = functools.partial(layout, layout_cls=QGridLayout)
 vertical = functools.partial(layout, layout_cls=QVBoxLayout)
 horizontal = functools.partial(layout, layout_cls=QHBoxLayout)
+
 
 @ui_builder
 def splitter(first, second, direction=Qt.Vertical, size=None):
@@ -184,6 +198,7 @@ def splitter(first, second, direction=Qt.Vertical, size=None):
         split_widget.setSizes(size)
 
     return split_widget
+
 
 splitter.Vertical = Qt.Vertical
 splitter.Horizontal = Qt.Horizontal
@@ -209,9 +224,11 @@ def group(*args, label=None, layout_cls=None):
     groupbox.setLayout(layout)
     return groupbox
 
+
 @ui_builder
 def label(text, *args, **kwargs):
     return QLabel(text, *args, **kwargs)
+
 
 @ui_builder
 def tabs(*children):
@@ -221,13 +238,16 @@ def tabs(*children):
 
     return widget
 
+
 @ui_builder
 def button(text, *args):
     return SubjectivePushButton(text, *args)
 
+
 @ui_builder
 def check_box(text, *args):
     return SubjectiveCheckBox(text, *args)
+
 
 @ui_builder
 def combo_box(items, *args, name=None):
@@ -239,17 +259,21 @@ def combo_box(items, *args, name=None):
 
     return widget
 
+
 @ui_builder
 def file_dialog(*args):
     return SubjectiveFileDialog(*args)
+
 
 @ui_builder
 def line_edit(*args):
     return SubjectiveLineEdit(*args)
 
+
 @ui_builder
 def radio_button(text, *args):
     return SubjectiveRadioButton(text, *args)
+
 
 @ui_builder
 def slider(minimum=0, maximum=10, interval=None, horizontal=True):
@@ -261,6 +285,7 @@ def slider(minimum=0, maximum=10, interval=None, horizontal=True):
         widget.setTickInterval(interval)
 
     return widget
+
 
 @ui_builder
 def spin_box(minimum=0, maximum=10, step=1, adaptive=True, value=None):
@@ -278,9 +303,11 @@ def spin_box(minimum=0, maximum=10, step=1, adaptive=True, value=None):
 
     return widget
 
+
 @ui_builder
-def text_edit(text='', *args):
+def text_edit(text="", *args):
     return SubjectiveTextEdit(text, *args)
+
 
 @ui_builder
 def numeric_input(value=0, input_type: type = float, *args, validator_settings=None):
@@ -290,14 +317,14 @@ def numeric_input(value=0, input_type: type = float, *args, validator_settings=N
     }
     default_settings = {
         int: {
-            'bottom': -1e6,
-            'top': 1e6,
+            "bottom": -1e6,
+            "top": 1e6,
         },
         float: {
-            'bottom': -1e6,
-            'top': 1e6,
-            'decimals': 3,
-        }
+            "bottom": -1e6,
+            "top": 1e6,
+            "decimals": 3,
+        },
     }
 
     if validator_settings is None:
@@ -308,14 +335,17 @@ def numeric_input(value=0, input_type: type = float, *args, validator_settings=N
 
     return widget
 
+
 def _wrap_text(str_or_widget):
     return label(str_or_widget) if isinstance(str_or_widget, str) else str_or_widget
+
 
 def _unwrap_subject(subject_or_widget):
     try:
         return subject_or_widget.subject
     except AttributeError:
         return subject_or_widget
+
 
 def submit(gate: str, keys: List[str], ui: Dict[str, QWidget]) -> rx.Observable:
     if isinstance(gate, str):
@@ -325,15 +355,13 @@ def submit(gate: str, keys: List[str], ui: Dict[str, QWidget]) -> rx.Observable:
     items = [_unwrap_subject(ui[k]) for k in keys]
 
     combined = items[0].pipe(
-        ops.combine_latest(*items[1:]),
-        ops.map(lambda vs: dict(zip(keys, vs)))
+        ops.combine_latest(*items[1:]), ops.map(lambda vs: dict(zip(keys, vs)))
     )
 
     return gate.pipe(
-        ops.filter(lambda x: x),
-        ops.with_latest_from(combined),
-        ops.map(lambda x: x[1])
+        ops.filter(lambda x: x), ops.with_latest_from(combined), ops.map(lambda x: x[1])
     )
+
 
 def _try_unwrap_value(v):
     try:
@@ -343,7 +371,7 @@ def _try_unwrap_value(v):
 
 
 def enum_option_names(enum_cls: Type[enum.Enum]) -> List[str]:
-    names = [x for x in dir(enum_cls) if '__' not in x]
+    names = [x for x in dir(enum_cls) if "__" not in x]
     values = [_try_unwrap_value(getattr(enum_cls, n)) for n in names]
 
     return [x[0] for x in sorted(zip(names, values), key=lambda x: x[1])]
@@ -358,25 +386,29 @@ def enum_mapping(enum_cls: Type[enum.Enum], invert=False):
 
 
 def _layout_dataclass_field(dataclass_cls, field_name: str, prefix: str):
-        id_for_field = f'{prefix}.{field_name}'
+    id_for_field = f"{prefix}.{field_name}"
 
-        field = dataclass_cls.__dataclass_fields__[field_name]
-        if field.type in [int, float,]:
-            field_input = numeric_input(value=0, input_type=field.type, id=id_for_field)
-        elif field.type == str:
-            field_input = line_edit('', id=id_for_field)
-        elif issubclass(field.type, enum.Enum):
-            enum_options = enum_option_names(field.type)
-            field_input = combo_box(enum_options, id=id_for_field)
-        elif field.type == bool:
-            field_input = check_box(field_name, id=id_for_field)
-        else:
-            raise Exception('Could not render field: {}'.format(field))
+    field = dataclass_cls.__dataclass_fields__[field_name]
+    if field.type in [
+        int,
+        float,
+    ]:
+        field_input = numeric_input(value=0, input_type=field.type, id=id_for_field)
+    elif field.type == str:
+        field_input = line_edit("", id=id_for_field)
+    elif issubclass(field.type, enum.Enum):
+        enum_options = enum_option_names(field.type)
+        field_input = combo_box(enum_options, id=id_for_field)
+    elif field.type == bool:
+        field_input = check_box(field_name, id=id_for_field)
+    else:
+        raise Exception("Could not render field: {}".format(field))
 
-        return group(
-            field_name,
-            field_input,
-        )
+    return group(
+        field_name,
+        field_input,
+    )
+
 
 def layout_dataclass(dataclass_cls, prefix: Optional[str] = None):
     """
@@ -390,9 +422,12 @@ def layout_dataclass(dataclass_cls, prefix: Optional[str] = None):
         prefix = dataclass_cls.__name__
 
     return vertical(
-        *[_layout_dataclass_field(dataclass_cls, field_name, prefix)
-          for field_name in dataclass_cls.__dataclass_fields__]
+        *[
+            _layout_dataclass_field(dataclass_cls, field_name, prefix)
+            for field_name in dataclass_cls.__dataclass_fields__
+        ]
     )
+
 
 def bind_dataclass(dataclass_instance, prefix: str, ui: Dict[str, QWidget]):
     """
@@ -407,7 +442,7 @@ def bind_dataclass(dataclass_instance, prefix: str, ui: Dict[str, QWidget]):
     :param ui: Collected UI elements
     :return:
     """
-    relevant_widgets = {k.split(prefix)[1]: v  for k, v in ui.items() if k.startswith(prefix)}
+    relevant_widgets = {k.split(prefix)[1]: v for k, v in ui.items() if k.startswith(prefix)}
     for field_name, field in dataclass_instance.__dataclass_fields__.items():
         translate_from_field, translate_to_field = {
             int: (lambda x: str(x), lambda x: int(x)),
@@ -415,7 +450,9 @@ def bind_dataclass(dataclass_instance, prefix: str, ui: Dict[str, QWidget]):
         }.get(field.type, (lambda x: x, lambda x: x))
 
         if issubclass(field.type, Enum):
-            forward_mapping = dict(sorted(enum_mapping(field.type).items(), key=lambda x: int(x[1])))
+            forward_mapping = dict(
+                sorted(enum_mapping(field.type).items(), key=lambda x: int(x[1]))
+            )
             inverse_mapping = {v: k for k, v in forward_mapping.items()}
 
             def extract_field(v):

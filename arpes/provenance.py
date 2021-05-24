@@ -41,8 +41,8 @@ def attach_id(data: xr.DataArray) -> None:
     :param data:
     :return:
     """
-    if 'id' not in data.attrs:
-        data.attrs['id'] = str(uuid.uuid1())
+    if "id" not in data.attrs:
+        data.attrs["id"] = str(uuid.uuid1())
 
 
 def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file, record):
@@ -56,16 +56,16 @@ def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file
     """
     from arpes.utilities.jupyter import get_recent_history
 
-    if 'id' not in child_arr.attrs:
+    if "id" not in child_arr.attrs:
         attach_id(child_arr)
 
-    child_arr.attrs['provenance'] = {
-        'record': record,
-        'file': file,
-        'jupyter_context': get_recent_history(5),
-        'parents_provenance': 'filesystem',
-        'time': datetime.datetime.now().isoformat(),
-        'version': VERSION,
+    child_arr.attrs["provenance"] = {
+        "record": record,
+        "file": file,
+        "jupyter_context": get_recent_history(5),
+        "parents_provenance": "filesystem",
+        "time": datetime.datetime.now().isoformat(),
+        "version": VERSION,
     }
 
 
@@ -78,13 +78,15 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
     :param keep_parent_ref: Whether to keep a pointer to the parents in the hierarchy or not.
     :return: decorator
     """
+
     def update_provenance_decorator(fn):
         @functools.wraps(fn)
         def func_wrapper(*args: Any, **kwargs: Any) -> xr.DataArray:
 
-            arg_parents = [v for v in args if isinstance(v, xr_types) and 'id' in v.attrs]
-            kwarg_parents = {k: v for k, v in kwargs.items()
-                             if isinstance(v, xr_types) and 'id' in v.attrs}
+            arg_parents = [v for v in args if isinstance(v, xr_types) and "id" in v.attrs]
+            kwarg_parents = {
+                k: v for k, v in kwargs.items() if isinstance(v, xr_types) and "id" in v.attrs
+            }
             all_parents = arg_parents + list(kwarg_parents.values())
             result = fn(*args, **kwargs)
 
@@ -94,23 +96,30 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
             result_not_identity = not any(p is result for p in all_parents)
 
             if isinstance(result, xr_types) and result_not_identity:
-                if 'id' in result.attrs:
-                    del result.attrs['id']
+                if "id" in result.attrs:
+                    del result.attrs["id"]
 
                 provenance_fn = provenance
                 if len(all_parents) > 1:
                     provenance_fn = provenance_multiple_parents
 
                 if all_parents:
-                    provenance_fn(result, all_parents, {
-                        'what': what,
-                        'by': fn.__name__,
-                        'time': datetime.datetime.now().isoformat(),
-                        'version': VERSION,
-                    }, keep_parent_ref)
+                    provenance_fn(
+                        result,
+                        all_parents,
+                        {
+                            "what": what,
+                            "by": fn.__name__,
+                            "time": datetime.datetime.now().isoformat(),
+                            "version": VERSION,
+                        },
+                        keep_parent_ref,
+                    )
 
             return result
+
         return func_wrapper
+
     return update_provenance_decorator
 
 
@@ -135,30 +144,38 @@ def save_plot_provenance(plot_fn):
 
         path = plot_fn(*args, **kwargs)
         if isinstance(path, str) and os.path.exists(path):
-            workspace = arpes.config.CONFIG['WORKSPACE']
+            workspace = arpes.config.CONFIG["WORKSPACE"]
 
             try:
-                workspace = workspace['name']
+                workspace = workspace["name"]
             except (TypeError, KeyError):
                 pass
 
             if not workspace or workspace not in path:
-                warnings.warn(('Plotting function {} appears not to abide by '
-                               'practice of placing plots into designated workspaces.').format(plot_fn.__name__))
+                warnings.warn(
+                    (
+                        "Plotting function {} appears not to abide by "
+                        "practice of placing plots into designated workspaces."
+                    ).format(plot_fn.__name__)
+                )
 
             provenance_context = {
-                'VERSION': VERSION,
-                'time': datetime.datetime.now().isoformat(),
-                'jupyter_context': get_recent_history(5),
-                'name': plot_fn.__name__,
-                'args': [arg.attrs.get('provenance', {}) for arg in args
-                         if isinstance(arg, xr.DataArray)],
-                'kwargs': {k: v.attrs.get('provenance', {}) for k, v in kwargs.items()
-                           if isinstance(v, xr.DataArray)}
+                "VERSION": VERSION,
+                "time": datetime.datetime.now().isoformat(),
+                "jupyter_context": get_recent_history(5),
+                "name": plot_fn.__name__,
+                "args": [
+                    arg.attrs.get("provenance", {}) for arg in args if isinstance(arg, xr.DataArray)
+                ],
+                "kwargs": {
+                    k: v.attrs.get("provenance", {})
+                    for k, v in kwargs.items()
+                    if isinstance(v, xr.DataArray)
+                },
             }
 
-            provenance_path = path + '.provenance.json'
-            with open(provenance_path, 'w') as f:
+            provenance_path = path + ".provenance.json"
+            with open(provenance_path, "w") as f:
                 json.dump(provenance_context, f, indent=2)
 
         return path
@@ -166,7 +183,12 @@ def save_plot_provenance(plot_fn):
     return func_wrapper
 
 
-def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typing.List[DataType]], record, keep_parent_ref=False):
+def provenance(
+    child_arr: xr.DataArray,
+    parent_arr: typing.Union[DataType, typing.List[DataType]],
+    record,
+    keep_parent_ref=False,
+):
     """
     Function that updates the provenance for a piece of data with a single parent.
 
@@ -182,27 +204,27 @@ def provenance(child_arr: xr.DataArray, parent_arr: typing.Union[DataType, typin
         assert len(parent_arr) == 1
         parent_arr = parent_arr[0]
 
-    if 'id' not in child_arr.attrs:
+    if "id" not in child_arr.attrs:
         attach_id(child_arr)
 
-    parent_id = parent_arr.attrs.get('id')
+    parent_id = parent_arr.attrs.get("id")
     if parent_id is None:
-        warnings.warn('Parent array has no ID.')
+        warnings.warn("Parent array has no ID.")
 
-    if child_arr.attrs['id'] == parent_id:
-        warnings.warn('Duplicate id for dataset %s' % child_arr.attrs['id'])
+    if child_arr.attrs["id"] == parent_id:
+        warnings.warn("Duplicate id for dataset %s" % child_arr.attrs["id"])
 
-    child_arr.attrs['provenance'] = {
-        'record': record,
-        'jupyter_context': get_recent_history(5),
-        'parent_id': parent_id,
-        'parents_provanence': parent_arr.attrs.get('provenance'),
-        'time': datetime.datetime.now().isoformat(),
-        'version': VERSION,
+    child_arr.attrs["provenance"] = {
+        "record": record,
+        "jupyter_context": get_recent_history(5),
+        "parent_id": parent_id,
+        "parents_provanence": parent_arr.attrs.get("provenance"),
+        "time": datetime.datetime.now().isoformat(),
+        "version": VERSION,
     }
 
     if keep_parent_ref:
-        child_arr.attrs['provenance']['parent'] = parent_arr
+        child_arr.attrs["provenance"]["parent"] = parent_arr
 
 
 def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_parent_ref=False):
@@ -219,19 +241,19 @@ def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_paren
     """
     from arpes.utilities.jupyter import get_recent_history
 
-    if 'id' not in child_arr.attrs:
+    if "id" not in child_arr.attrs:
         attach_id(child_arr)
 
-    if child_arr.attrs['id'] in {p.attrs.get('id', None) for p in parents}:
-        warnings.warn('Duplicate id for dataset %s' % child_arr.attrs['id'])
+    if child_arr.attrs["id"] in {p.attrs.get("id", None) for p in parents}:
+        warnings.warn("Duplicate id for dataset %s" % child_arr.attrs["id"])
 
-    child_arr.attrs['provenance'] = {
-        'record': record,
-        'jupyter_context': get_recent_history(5),
-        'parent_id': [p.attrs['id'] for p in parents],
-        'parents_provenance': [p.attrs['provenance'] for p in parents],
-        'time': datetime.datetime.now().isoformat(),
+    child_arr.attrs["provenance"] = {
+        "record": record,
+        "jupyter_context": get_recent_history(5),
+        "parent_id": [p.attrs["id"] for p in parents],
+        "parents_provenance": [p.attrs["provenance"] for p in parents],
+        "time": datetime.datetime.now().isoformat(),
     }
 
     if keep_parent_ref:
-        child_arr.attrs['provenance']['parent'] = parents
+        child_arr.attrs["provenance"]["parent"] = parents

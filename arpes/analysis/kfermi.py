@@ -3,7 +3,7 @@ import numpy as np
 from arpes.fits import LinearModel
 from arpes.typing import DataType
 
-__all__ = ('kfermi_from_mdcs',)
+__all__ = ("kfermi_from_mdcs",)
 
 
 def kfermi_from_mdcs(mdc_results: DataType, param=None):
@@ -26,7 +26,7 @@ def kfermi_from_mdcs(mdc_results: DataType, param=None):
     if param in param_names and param is not None:
         real_param_name = param
     else:
-        best_names = [p for p in param_names if 'center' in p]
+        best_names = [p for p in param_names if "center" in p]
         if param is not None:
             best_names = [p for p in best_names if param in p]
 
@@ -36,5 +36,8 @@ def kfermi_from_mdcs(mdc_results: DataType, param=None):
     def nan_sieve(_, x):
         return not np.isnan(x.item())
 
-    return LinearModel().guess_fit(
-        mdc_results.F.p(real_param_name).G.filter_coord('eV', nan_sieve)).eval(x=0)
+    return (
+        LinearModel()
+        .guess_fit(mdc_results.F.p(real_param_name).G.filter_coord("eV", nan_sieve))
+        .eval(x=0)
+    )

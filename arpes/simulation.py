@@ -138,15 +138,15 @@ def cloud_to_arr(point_cloud, shape):
         cloud_as_image[int(np.floor(x)) % shape_x][int(np.floor(y)) % shape_y] += (
             frac_low_x * frac_low_y
         )
-        cloud_as_image[(int(np.floor(x)) + 1) % shape_x][
-            int(np.floor(y)) % shape_y
-        ] += (1 - frac_low_x) * frac_low_y
+        cloud_as_image[(int(np.floor(x)) + 1) % shape_x][int(np.floor(y)) % shape_y] += (
+            1 - frac_low_x
+        ) * frac_low_y
         cloud_as_image[int(np.floor(x)) % shape_x][
             (int(np.floor(y)) + 1) % shape_y
         ] += frac_low_x * (1 - frac_low_y)
-        cloud_as_image[(int(np.floor(x)) + 1) % shape_x][
-            (int(np.floor(y)) + 1) % shape_y
-        ] += (1 - frac_low_x) * (1 - frac_low_y)
+        cloud_as_image[(int(np.floor(x)) + 1) % shape_x][(int(np.floor(y)) + 1) % shape_y] += (
+            1 - frac_low_x
+        ) * (1 - frac_low_y)
 
     return cloud_as_image
 
@@ -180,8 +180,7 @@ def sample_from_distribution(distribution, N=5000):
     """
     cdf_rows = np.cumsum(np.sum(distribution.values, axis=1))
     norm_rows = np.cumsum(
-        distribution.values
-        / np.expand_dims(np.sum(distribution.values, axis=1), axis=1),
+        distribution.values / np.expand_dims(np.sum(distribution.values, axis=1), axis=1),
         axis=1,
     )
 
@@ -286,9 +285,7 @@ class SpectralFunction:
 
     def occupied_spectral_function(self):
         spectral = self.spectral_function()
-        spectral.values = spectral.values * np.expand_dims(
-            self.fermi_dirac(self.omega), axis=1
-        )
+        spectral.values = spectral.values * np.expand_dims(self.fermi_dirac(self.omega), axis=1)
         return spectral
 
     def spectral_function(self):
@@ -301,17 +298,11 @@ class SpectralFunction:
 
         numerator = np.outer(np.abs(imag_self_energy), np.ones(shape=bare.shape))
         data = numerator / (
-            (
-                full_omegas
-                - np.expand_dims(bare, axis=0)
-                - np.expand_dims(real_self_energy, axis=1)
-            )
+            (full_omegas - np.expand_dims(bare, axis=0) - np.expand_dims(real_self_energy, axis=1))
             ** 2
             + np.expand_dims(imag_self_energy ** 2, axis=1)
         )
-        return xr.DataArray(
-            data, coords={"k": self.k, "omega": self.omega}, dims=["omega", "k"]
-        )
+        return xr.DataArray(data, coords={"k": self.k, "omega": self.omega}, dims=["omega", "k"])
 
 
 class SpectralFunctionMFL(SpectralFunction):  # pylint: disable=invalid-name
@@ -400,9 +391,7 @@ class SpectralFunctionBSSCO(SpectralFunction):
             (full_omegas - np.expand_dims(bare, axis=0) - real_self_energy) ** 2
             + imag_self_energy ** 2
         )
-        return xr.DataArray(
-            data, coords={"k": self.k, "omega": self.omega}, dims=["omega", "k"]
-        )
+        return xr.DataArray(data, coords={"k": self.k, "omega": self.omega}, dims=["omega", "k"])
 
 
 class SpectralFunctionPhaseCoherent(SpectralFunctionBSSCO):
@@ -423,6 +412,4 @@ class SpectralFunctionPhaseCoherent(SpectralFunctionBSSCO):
         imag_self_e = np.imag(self_e)
         real_self_e = np.imag(sig.hilbert(imag_self_e, axis=0))
 
-        return self_e + 3 * (
-            np.random.random(self_e.shape) + np.random.random(self_e.shape) * 1.0j
-        )
+        return self_e + 3 * (np.random.random(self_e.shape) + np.random.random(self_e.shape) * 1.0j)

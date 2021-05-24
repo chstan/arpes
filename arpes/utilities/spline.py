@@ -3,7 +3,7 @@ import numpy as np
 
 from scipy.interpolate import make_lsq_spline
 
-__all__ = ('simple_lsq_spline',)
+__all__ = ("simple_lsq_spline",)
 
 
 def simple_lsq_spline(arr: xr.DataArray, order=3):

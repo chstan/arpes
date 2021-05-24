@@ -4,7 +4,11 @@ import numpy as np
 
 from typing import Any, Dict
 
-__all__ = ('deep_equals', 'deep_update', 'MappableDict',)
+__all__ = (
+    "deep_equals",
+    "deep_update",
+    "MappableDict",
+)
 
 
 class MappableDict(dict):
@@ -14,48 +18,36 @@ class MappableDict(dict):
 
     def __add__(self, other):
         if set(self.keys()) != set(other.keys()):
-            raise ValueError('You can only add two MappableDicts with the same keys.')
+            raise ValueError("You can only add two MappableDicts with the same keys.")
 
-        return MappableDict({
-            k: self.get(k) + other.get(k) for k in self.keys()
-        })
+        return MappableDict({k: self.get(k) + other.get(k) for k in self.keys()})
 
     def __sub__(self, other):
         if set(self.keys()) != set(other.keys()):
-            raise ValueError('You can only subtract two MappableDicts with the same keys.')
+            raise ValueError("You can only subtract two MappableDicts with the same keys.")
 
-        return MappableDict({
-            k: self.get(k) - other.get(k) for k in self.keys()
-        })
+        return MappableDict({k: self.get(k) - other.get(k) for k in self.keys()})
 
     def __mul__(self, other):
         if set(self.keys()) != set(other.keys()):
-            raise ValueError('You can only multiply two MappableDicts with the same keys.')
+            raise ValueError("You can only multiply two MappableDicts with the same keys.")
 
-        return MappableDict({
-            k: self.get(k) * other.get(k) for k in self.keys()
-        })
+        return MappableDict({k: self.get(k) * other.get(k) for k in self.keys()})
 
     def __truediv__(self, other):
         if set(self.keys()) != set(other.keys()):
-            raise ValueError('You can only divide two MappableDicts with the same keys.')
+            raise ValueError("You can only divide two MappableDicts with the same keys.")
 
-        return MappableDict({
-            k: self.get(k) / other.get(k) for k in self.keys()
-        })
+        return MappableDict({k: self.get(k) / other.get(k) for k in self.keys()})
 
     def __floordiv__(self, other):
         if set(self.keys()) != set(other.keys()):
-            raise ValueError('You can only divide (//) two MappableDicts with the same keys.')
+            raise ValueError("You can only divide (//) two MappableDicts with the same keys.")
 
-        return MappableDict({
-            k: self.get(k) // other.get(k) for k in self.keys()
-        })
+        return MappableDict({k: self.get(k) // other.get(k) for k in self.keys()})
 
     def __neg__(self):
-        return MappableDict({
-            k: -self.get(k) for k in self.keys()
-        })
+        return MappableDict({k: -self.get(k) for k in self.keys()})
 
 
 def deep_update(destination: Any, source: Any) -> Dict[str, Any]:
@@ -80,14 +72,35 @@ def deep_equals(a: Any, b: Any) -> bool:
         print(b, a)
         return False
 
-    if isinstance(a, (int, str, float, np.float, np.int, np.float64, np.int64,),):
+    if isinstance(
+        a,
+        (
+            int,
+            str,
+            float,
+            np.float,
+            np.int,
+            np.float64,
+            np.int64,
+        ),
+    ):
         return a == b
 
     if a is None:
         return b is None
 
-    if not isinstance(a, (dict, list, tuple, set,)):
-        raise TypeError('Only dict, list, tuple, and set are supported by deep_equals, not {}'.format(type(a)))
+    if not isinstance(
+        a,
+        (
+            dict,
+            list,
+            tuple,
+            set,
+        ),
+    ):
+        raise TypeError(
+            "Only dict, list, tuple, and set are supported by deep_equals, not {}".format(type(a))
+        )
 
     if isinstance(a, set):
         for item in a:

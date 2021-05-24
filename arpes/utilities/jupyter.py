@@ -8,8 +8,14 @@ from tqdm import tqdm_notebook
 from typing import List, Optional
 
 
-__all__ = ('get_full_notebook_information', 'get_notebook_name', 'generate_logfile_path',
-           'get_recent_logs', 'get_recent_history', 'wrap_tqdm')
+__all__ = (
+    "get_full_notebook_information",
+    "get_notebook_name",
+    "generate_logfile_path",
+    "get_recent_logs",
+    "get_recent_history",
+    "wrap_tqdm",
+)
 
 
 def wrap_tqdm(x, interactive=True, *args, **kwargs):
@@ -33,17 +39,24 @@ def get_full_notebook_information() -> Optional[dict]:
         return None
 
     connection_file = os.path.basename(ipykernel.get_connection_file())
-    kernel_id = connection_file.split('-', 1)[1].split('.')[0]
+    kernel_id = connection_file.split("-", 1)[1].split(".")[0]
 
     servers = notebookapp.list_running_servers()
     for server in servers:
         try:
-            passwordless = not server['token'] and not server['password']
-            url = server['url']+'api/sessions' + ('' if passwordless else '?token={}'.format(server['token']))
+            passwordless = not server["token"] and not server["password"]
+            url = (
+                server["url"]
+                + "api/sessions"
+                + ("" if passwordless else "?token={}".format(server["token"]))
+            )
             sessions = json.load(urllib.request.urlopen(url))
             for sess in sessions:
-                if sess['kernel']['id'] == kernel_id:
-                    return {'server': server, 'session': sess,}
+                if sess["kernel"]["id"] == kernel_id:
+                    return {
+                        "server": server,
+                        "session": sess,
+                    }
         except:
             pass
     return None
@@ -65,7 +78,7 @@ def get_notebook_name() -> Optional[str]:
     jupyter_info = get_full_notebook_information()
 
     try:
-        return jupyter_info['session']['notebook']['name'].split('.')[0]
+        return jupyter_info["session"]["notebook"]["name"].split(".")[0]
     except (KeyError, TypeError):
         return None
 
@@ -76,35 +89,40 @@ def generate_logfile_path() -> Path:
     :return:
     """
 
-    base_name = get_notebook_name() or 'unnamed'
-    full_name = '{}_{}_{}.log'.format(
+    base_name = get_notebook_name() or "unnamed"
+    full_name = "{}_{}_{}.log".format(
         base_name,
         datetime.date.today().isoformat(),
-        datetime.datetime.now().time().isoformat().split('.')[0].replace(':', '-')
+        datetime.datetime.now().time().isoformat().split(".")[0].replace(":", "-"),
     )
-    return Path('logs') / full_name
+    return Path("logs") / full_name
 
 
 def get_recent_history(n_items=10) -> List[str]:
     try:
         import IPython
+
         ipython = IPython.get_ipython()
 
-        return [l[-1] for l in list(ipython.history_manager.get_tail(n=n_items, include_latest=True))]
+        return [
+            l[-1] for l in list(ipython.history_manager.get_tail(n=n_items, include_latest=True))
+        ]
     except (ImportError, AttributeError):
-        return ['No accessible history.']
+        return ["No accessible history."]
 
 
 def get_recent_logs(n_bytes=1000) -> List[str]:
     import arpes.config
+
     try:
         import IPython
+
         ipython = IPython.get_ipython()
-        if arpes.config.CONFIG['LOGGING_STARTED']:
-            logging_file = arpes.config.CONFIG['LOGGING_FILE']
+        if arpes.config.CONFIG["LOGGING_STARTED"]:
+            logging_file = arpes.config.CONFIG["LOGGING_FILE"]
 
             print(logging_file)
-            with open(logging_file, 'rb') as file:
+            with open(logging_file, "rb") as file:
                 try:
                     file.seek(-n_bytes, os.SEEK_END)
                 except OSError:
@@ -119,4 +137,4 @@ def get_recent_logs(n_bytes=1000) -> List[str]:
     except (ImportError, AttributeError):
         pass
 
-    return ['No logging available. Logging is only available inside Jupyter.']
+    return ["No logging available. Logging is only available inside Jupyter."]

@@ -29,7 +29,7 @@ from .fit_models import XModelMixin
 from arpes.utilities.conversion.forward import convert_coordinates
 
 
-__all__ = ('HighSymmetryPointModel',)
+__all__ = ("HighSymmetryPointModel",)
 
 
 def k_points_residual(paramters, coords_dataset, high_symmetry_points, dimensionality=2):
@@ -42,19 +42,31 @@ def k_points_residual(paramters, coords_dataset, high_symmetry_points, dimension
 
     momentum_coordinates = convert_coordinates(coords_dataset)
     if dimensionality == 2:
-        return np.asarray([
-            np.diagonal(momentum_coordinates.kx.values),
-            np.diagonal(momentum_coordinates.ky.values),
-        ])
+        return np.asarray(
+            [
+                np.diagonal(momentum_coordinates.kx.values),
+                np.diagonal(momentum_coordinates.ky.values),
+            ]
+        )
     else:
-        return np.asarray([
-            np.diagonal(momentum_coordinates.kx.values),
-            np.diagonal(momentum_coordinates.ky.values),
-            np.diagonal(momentum_coordinates.kz.values),
-        ])
+        return np.asarray(
+            [
+                np.diagonal(momentum_coordinates.kx.values),
+                np.diagonal(momentum_coordinates.ky.values),
+                np.diagonal(momentum_coordinates.kz.values),
+            ]
+        )
 
 
-def minimum_forward_error(coordinate_samples, phi_offset=0, psi_offset=0, theta_offset=0, beta_offset=0, chi_offset=0, high_symmetry_points=None):
+def minimum_forward_error(
+    coordinate_samples,
+    phi_offset=0,
+    psi_offset=0,
+    theta_offset=0,
+    beta_offset=0,
+    chi_offset=0,
+    high_symmetry_points=None,
+):
     """
     Sets offsets for a dataset of coordinate samples before forward converting them all to momentum. Then, for each sample, the
     closest high symmetry point among the provided `high_symmetry_points` is calculated, and the distance to the high symmetry point obtained.
@@ -90,4 +102,3 @@ def minimum_forward_error(coordinate_samples, phi_offset=0, psi_offset=0, theta_
     :return:
     """
     pass
-

@@ -20,7 +20,8 @@ from xrft.xrft import _hanning
 from arpes.provenance import provenance
 
 # Don't export the xrft additions we monkey patch them onto that module directly.
-__all__ = ('fft_filter',)
+__all__ = ("fft_filter",)
+
 
 def fft_filter(data: xr.DataArray, stops):
     """
@@ -35,28 +36,27 @@ def fft_filter(data: xr.DataArray, stops):
 
     # this will produce a fair amount of ringing, Scipy isn't very clear about how to butterworth filter in Nd
     for stop in stops:
-        kstop = {'freq_' + k if 'freq_' not in k else k: v for k, v in stop.items()} # be nice
+        kstop = {"freq_" + k if "freq_" not in k else k: v for k, v in stop.items()}  # be nice
         kdata.loc[kstop] = 0
 
     kkdata = xrft.idft(kdata)
     kkdata.values = np.real(kkdata.values)
     kkdata.values = kkdata.values - np.min(kkdata.values) + np.mean(data.values)
 
-    filtered_arr = xr.DataArray(
-        kkdata,
-        data.coords,
-        data.dims,
-        attrs=data.attrs.copy()
-    )
+    filtered_arr = xr.DataArray(kkdata, data.coords, data.dims, attrs=data.attrs.copy())
 
-    if 'id' in filtered_arr:
-        del filtered_arr.attrs['id']
+    if "id" in filtered_arr:
+        del filtered_arr.attrs["id"]
 
-        provenance(filtered_arr, data, {
-            'what': 'Apply a filter in frequency space by brick walling coordinate regions.',
-            'by': 'fft_filter',
-            'stops': stops,
-        })
+        provenance(
+            filtered_arr,
+            data,
+            {
+                "what": "Apply a filter in frequency space by brick walling coordinate regions.",
+                "by": "fft_filter",
+                "stops": stops,
+            },
+        )
 
     return filtered_arr
 
@@ -73,11 +73,12 @@ def _spacing(da, dims):
         diff = np.diff(coord)
         if is_timedelta64_dtype(diff):
             # convert to seconds so we get hertz
-            diff = diff.astype('timedelta64[s]').astype('f8')
+            diff = diff.astype("timedelta64[s]").astype("f8")
         delta = diff[0]
         if not np.allclose(diff, diff[0]):
-            raise ValueError("Can't take Fourier transform because"
-                             "coodinate %s is not evenly spaced" % d)
+            raise ValueError(
+                "Can't take Fourier transform because" "coodinate %s is not evenly spaced" % d
+            )
         delta_x.append(delta)
 
     return delta_x
@@ -119,7 +120,7 @@ def rdft(da, dim=None, shift=True, remove_mean=True, window=False):
     delta_x = _spacing(da, dim)
 
     # calculate frequencies from coordinates
-    k = [ np.fft.rfftfreq(Nx, dx) for (Nx, dx) in zip(N, delta_x) ]
+    k = [np.fft.rfftfreq(Nx, dx) for (Nx, dx) in zip(N, delta_x)]
 
     if remove_mean:
         da = da - da.mean(dim=dim)
@@ -129,8 +130,8 @@ def rdft(da, dim=None, shift=True, remove_mean=True, window=False):
 
     # is this the best way to check for dask?
     data = da.data
-    if hasattr(data, 'dask'):
-        assert len(axis_num)==1
+    if hasattr(data, "dask"):
+        assert len(axis_num) == 1
         f = dsar.fft.rfft(data, axis=axis_num[0])
     else:
         f = np.fft.rfftn(data, axes=axis_num)
@@ -140,9 +141,9 @@ def rdft(da, dim=None, shift=True, remove_mean=True, window=False):
         k = [np.fft.fftshift(l) for l in k]
 
     # set up new coordinates for dataarray
-    prefix = 'freq_'
+    prefix = "freq_"
     k_names = [prefix + d for d in dim]
-    k_coords = {key: val for (key,val) in zip(k_names, k)}
+    k_coords = {key: val for (key, val) in zip(k_names, k)}
 
     newdims = list(da.dims)
     for anum, d in zip(axis_num, dim):
@@ -158,9 +159,8 @@ def rdft(da, dim=None, shift=True, remove_mean=True, window=False):
     dk = [l[1] - l[0] for l in k]
 
     new_attrs = da.attrs.copy()
-    new_attrs['N'] = N
+    new_attrs["N"] = N
     return xr.DataArray(f, dims=newdims, coords=newcoords, attrs=new_attrs)
-
 
 
 def irdft(da, dim=None, shift=True, window=False):
@@ -196,13 +196,13 @@ def irdft(da, dim=None, shift=True, window=False):
     delta_x = _spacing(da, dim)
 
     # calculate frequencies from coordinates
-    k = [ np.fft.fftfreq(Nx, dx) for (Nx, dx) in zip(N, delta_x) ]
+    k = [np.fft.fftfreq(Nx, dx) for (Nx, dx) in zip(N, delta_x)]
 
     if window:
         da = _hanning(da, N)
 
     # the hard work
-    #f = np.fft.irfftn(da.values, axes=axis_num)
+    # f = np.fft.irfftn(da.values, axes=axis_num)
     # need special path for dask
     # is this the best way to check for dask?
     data = da.data
@@ -210,21 +210,21 @@ def irdft(da, dim=None, shift=True, window=False):
         data = np.fft.ifftshift(data, axes=axis_num)
         k = [np.fft.ifftshift(l) for l in k]
 
-    if hasattr(data, 'dask'):
-        assert len(axis_num)==1
-        f = dsar.fft.irfft(data, axis=axis_num[0], s=da.attrs.get('N'))
+    if hasattr(data, "dask"):
+        assert len(axis_num) == 1
+        f = dsar.fft.irfft(data, axis=axis_num[0], s=da.attrs.get("N"))
     else:
-        f = np.fft.irfftn(data, axes=axis_num, s=da.attrs.get('N'))
+        f = np.fft.irfftn(data, axes=axis_num, s=da.attrs.get("N"))
 
     # set up new coordinates for dataarray
-    prefix = 'freq_'
+    prefix = "freq_"
     if any(prefix in d for d in da.dims):
         # came from a FFT we performed
         k_names = [d.split(prefix)[-1] for d in dim]
     else:
         k_names = [prefix + d for d in dim]
 
-    k_coords = {key: val for (key,val) in zip(k_names, k)}
+    k_coords = {key: val for (key, val) in zip(k_names, k)}
 
     newdims = list(da.dims)
     for anum, d in zip(axis_num, k_names):
@@ -240,7 +240,7 @@ def irdft(da, dim=None, shift=True, window=False):
     dk = [l[1] - l[0] for l in k]
 
     new_attrs = da.attrs.copy()
-    new_attrs['N'] = N
+    new_attrs["N"] = N
     return xr.DataArray(f, dims=newdims, coords=newcoords, attrs=new_attrs)
 
 
@@ -264,7 +264,9 @@ def idft(da, dim=None, shift=True, window=False):
     daft : `xarray.DataArray`
         The output of the Fourier transformation, with appropriate dimensions.
     """
-    warnings.warn('This is a little buggy, it does not produce an output with monotonic coords for some reason.')
+    warnings.warn(
+        "This is a little buggy, it does not produce an output with monotonic coords for some reason."
+    )
     if np.isnan(da.values).any():
         raise ValueError("Data cannot take NaNs")
 
@@ -278,13 +280,13 @@ def idft(da, dim=None, shift=True, window=False):
     delta_x = _spacing(da, dim)
 
     # calculate frequencies from coordinates
-    k = [ np.fft.fftfreq(Nx, dx) for (Nx, dx) in zip(N, delta_x) ]
+    k = [np.fft.fftfreq(Nx, dx) for (Nx, dx) in zip(N, delta_x)]
 
     if window:
         da = _hanning(da, N)
 
     # the hard work
-    #f = np.fft.ifftn(da.values, axes=axis_num)
+    # f = np.fft.ifftn(da.values, axes=axis_num)
     # need special path for dask
     # is this the best way to check for dask?
     data = da.data
@@ -292,21 +294,21 @@ def idft(da, dim=None, shift=True, window=False):
         data = np.fft.ifftshift(data, axes=axis_num)
         k = [np.fft.ifftshift(l) for l in k]
 
-    if hasattr(data, 'dask'):
-        assert len(axis_num)==1
-        f = dsar.fft.ifft(data, axis=axis_num[0], s=da.attrs.get('N'))
+    if hasattr(data, "dask"):
+        assert len(axis_num) == 1
+        f = dsar.fft.ifft(data, axis=axis_num[0], s=da.attrs.get("N"))
     else:
-        f = np.fft.ifftn(data, axes=axis_num, s=da.attrs.get('N'))
+        f = np.fft.ifftn(data, axes=axis_num, s=da.attrs.get("N"))
 
     # set up new coordinates for dataarray
-    prefix = 'freq_'
+    prefix = "freq_"
     if any(prefix in d for d in da.dims):
         # came from a FFT we performed
         k_names = [d.split(prefix)[-1] for d in dim]
     else:
         k_names = [prefix + d for d in dim]
 
-    k_coords = {key: val for (key,val) in zip(k_names, k)}
+    k_coords = {key: val for (key, val) in zip(k_names, k)}
 
     newdims = list(da.dims)
     for anum, d in zip(axis_num, k_names):
@@ -322,7 +324,7 @@ def idft(da, dim=None, shift=True, window=False):
     dk = [l[1] - l[0] for l in k]
 
     new_attrs = da.attrs.copy()
-    new_attrs['N'] = N
+    new_attrs["N"] = N
     return xr.DataArray(f, dims=newdims, coords=newcoords, attrs=new_attrs)
 
 

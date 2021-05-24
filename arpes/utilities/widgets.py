@@ -2,18 +2,29 @@ import os
 from rx.subject import BehaviorSubject, Subject
 
 from PyQt5.QtWidgets import (
-    QPushButton, QCheckBox, QComboBox,
-    QSpinBox, QTextEdit, QSlider,
-    QLineEdit, QRadioButton,
-    QWidget, QFileDialog, QHBoxLayout
+    QPushButton,
+    QCheckBox,
+    QComboBox,
+    QSpinBox,
+    QTextEdit,
+    QSlider,
+    QLineEdit,
+    QRadioButton,
+    QWidget,
+    QFileDialog,
+    QHBoxLayout,
 )
 
 __all__ = (
-    'SubjectivePushButton', 'SubjectiveCheckBox',
-    'SubjectiveComboBox', 'SubjectiveFileDialog',
-    'SubjectiveLineEdit', 'SubjectiveRadioButton',
-    'SubjectiveSlider', 'SubjectiveSpinBox',
-    'SubjectiveTextEdit',
+    "SubjectivePushButton",
+    "SubjectiveCheckBox",
+    "SubjectiveComboBox",
+    "SubjectiveFileDialog",
+    "SubjectiveLineEdit",
+    "SubjectiveRadioButton",
+    "SubjectiveSlider",
+    "SubjectiveSpinBox",
+    "SubjectiveTextEdit",
 )
 
 
@@ -92,7 +103,7 @@ class SubjectiveFileDialog(QWidget):
         self.subject = BehaviorSubject(None)
 
         layout = QHBoxLayout()
-        self.btn = SubjectivePushButton('Open')
+        self.btn = SubjectivePushButton("Open")
         if single:
             self.btn.subject.subscribe(on_next=lambda _: self.get_file())
         else:
@@ -102,8 +113,7 @@ class SubjectiveFileDialog(QWidget):
         self.setLayout(layout)
 
     def get_file(self):
-        filename = QFileDialog.getOpenFileName(
-            self, 'Open File', self.dialog_root)
+        filename = QFileDialog.getOpenFileName(self, "Open File", self.dialog_root)
 
         self.subject.on_next(filename[0])
 
@@ -132,4 +142,3 @@ class SubjectiveCheckBox(QCheckBox):
 
     def update_ui(self, value):
         self.setCheckState(value)
-

@@ -13,7 +13,7 @@ from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.xarray import unwrap_xarray_dict
 
-__all__ = ('select_disk', 'select_disk_mask', 'unravel_from_mask', 'ravel_from_mask')
+__all__ = ("select_disk", "select_disk_mask", "unravel_from_mask", "ravel_from_mask")
 
 
 def ravel_from_mask(data, mask):
@@ -41,10 +41,14 @@ def unravel_from_mask(template, mask, values, default=np.nan):
     :return:
     """
     dest = template * 0 + 1
-    dest_mask = np.logical_not(np.isnan(template.stack(stacked=template.dims).where(mask.stack(stacked=template.dims)).values))
+    dest_mask = np.logical_not(
+        np.isnan(
+            template.stack(stacked=template.dims).where(mask.stack(stacked=template.dims)).values
+        )
+    )
     dest = (dest * default).stack(stacked=template.dims)
     dest.values[dest_mask] = values
-    return dest.unstack('stacked')
+    return dest.unstack("stacked")
 
 
 def _normalize_point(data, around, **kwargs):
@@ -60,8 +64,14 @@ def _normalize_point(data, around, **kwargs):
     return around
 
 
-def select_disk_mask(data: DataType, radius, outer_radius=None, around: Optional[Union[Dict, xr.Dataset]] = None,
-                     flat=False, **kwargs) -> np.ndarray:
+def select_disk_mask(
+    data: DataType,
+    radius,
+    outer_radius=None,
+    around: Optional[Union[Dict, xr.Dataset]] = None,
+    flat=False,
+    **kwargs
+) -> np.ndarray:
     """
     A complement to select_disk which only generates the mask.
 
@@ -88,7 +98,9 @@ def select_disk_mask(data: DataType, radius, outer_radius=None, around: Optional
     raveled = data.G.ravel()
 
     dim_order = list(around.keys())
-    dist = np.sqrt(np.sum(np.stack([(raveled[d] - around[d]) ** 2 for d in dim_order], axis=1), axis=1))
+    dist = np.sqrt(
+        np.sum(np.stack([(raveled[d] - around[d]) ** 2 for d in dim_order], axis=1), axis=1)
+    )
 
     mask = dist <= radius
     if outer_radius is not None:
@@ -100,9 +112,14 @@ def select_disk_mask(data: DataType, radius, outer_radius=None, around: Optional
     return mask.reshape(data.shape[::-1])
 
 
-def select_disk(data: DataType, radius, outer_radius=None, around: Optional[Union[Dict, xr.Dataset]] = None,
-                invert=False, **kwargs) \
-        -> Tuple[Dict[str, np.ndarray], np.ndarray, np.ndarray]:
+def select_disk(
+    data: DataType,
+    radius,
+    outer_radius=None,
+    around: Optional[Union[Dict, xr.Dataset]] = None,
+    invert=False,
+    **kwargs
+) -> Tuple[Dict[str, np.ndarray], np.ndarray, np.ndarray]:
     """
     Selects the data in a disk (or annulus if `outer_radius` is provided) around the point described
     by `around` and `kwargs`. A point is a labeled collection of coordinates that matches all of the dimensions
@@ -131,11 +148,12 @@ def select_disk(data: DataType, radius, outer_radius=None, around: Optional[Unio
 
     # at this point, around is now a dictionary specifying a point to do the selection around
     raveled = data.G.ravel()
-    data_arr = raveled['data']
+    data_arr = raveled["data"]
 
     dim_order = list(around.keys())
-    dist = np.sqrt(np.sum(np.stack([(raveled[d] - around[d]) ** 2 for d in dim_order], axis=1), axis=1))
+    dist = np.sqrt(
+        np.sum(np.stack([(raveled[d] - around[d]) ** 2 for d in dim_order], axis=1), axis=1)
+    )
 
     masked_coords = {d: cs[mask] for d, cs in raveled.items()}
-    return masked_coords, masked_coords['data'], dist[mask]
-
+    return masked_coords, masked_coords["data"], dist[mask]

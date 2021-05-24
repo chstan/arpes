@@ -3,7 +3,7 @@ import numpy as np
 import xarray as xr
 from typing import Any
 
-__all__ = ['CoordinateConverter', 'K_SPACE_BORDER', 'MOMENTUM_BREAKPOINTS']
+__all__ = ["CoordinateConverter", "K_SPACE_BORDER", "MOMENTUM_BREAKPOINTS"]
 
 K_SPACE_BORDER = 0.02
 MOMENTUM_BREAKPOINTS = [0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
@@ -37,9 +37,11 @@ class CoordinateConverter:
     @property
     def is_slit_vertical(self) -> bool:
         # 89 - 91 degrees
-        return np.abs(self.arr.S.lookup_offset_coord('alpha') - np.pi / 2) < (np.pi / 180)
+        return np.abs(self.arr.S.lookup_offset_coord("alpha") - np.pi / 2) < (np.pi / 180)
 
-    def kspace_to_BE(self, binding_energy: np.ndarray, *args: np.ndarray, **kwargs: Any) -> np.ndarray:
+    def kspace_to_BE(
+        self, binding_energy: np.ndarray, *args: np.ndarray, **kwargs: Any
+    ) -> np.ndarray:
         return binding_energy
 
     def conversion_for(self, dim):
@@ -48,7 +50,7 @@ class CoordinateConverter:
     def identity_transform(self, axis_name, *args, **kwargs):
         return args[self.dim_order.index(axis_name)]
 
-    def get_coordinates(self, resolution: dict=None, bounds: dict=None):
+    def get_coordinates(self, resolution: dict = None, bounds: dict = None):
         coordinates = {}
-        coordinates['eV'] = self.arr.coords['eV']
+        coordinates["eV"] = self.arr.coords["eV"]
         return coordinates

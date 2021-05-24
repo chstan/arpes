@@ -1,13 +1,12 @@
-from arpes.corrections.fermi_edge_corrections import \
-    apply_copper_fermi_edge_correction
+from arpes.corrections.fermi_edge_corrections import apply_copper_fermi_edge_correction
 
 from .pattern_imports import *
 
 
 def corrections_from_copper_reference():
     # hypothetical dataset
-    scan = simple_load('scan')
-    reference = simple_load('copper')
+    scan = simple_load("scan")
+    reference = simple_load("copper")
 
     corrected = apply_copper_fermi_edge_correction(scan, reference)
 

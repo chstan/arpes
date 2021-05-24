@@ -18,9 +18,7 @@ class FloatTitleFormatter:
 
     @property
     def computed_context(self) -> Dict[str, Any]:
-        return {
-            "label": "True" if self.context.get("is_ground_truth", False) else "Pred"
-        }
+        return {"label": "True" if self.context.get("is_ground_truth", False) else "Pred"}
 
     def show(self, data, ax=None):
         title = ax.get_title()

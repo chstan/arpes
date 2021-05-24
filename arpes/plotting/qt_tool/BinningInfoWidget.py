@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 
 from arpes.utilities.ui import layout
 
-__all__ = ('BinningInfoWidget',)
+__all__ = ("BinningInfoWidget",)
 
 
 class BinningInfoWidget(QtWidgets.QGroupBox):

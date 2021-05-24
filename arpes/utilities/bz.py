@@ -13,25 +13,36 @@ from collections import Counter, namedtuple
 import matplotlib.path
 import numpy as np
 
-__all__ = ('bz_symmetry', 'bz_cutter', 'reduced_bz_selection',
-           'reduced_bz_axes', 'reduced_bz_mask', 'reduced_bz_poly',
-           'reduced_bz_axis_to', 'reduced_bz_E_mask', 'axis_along',
-           'hex_cell', 'hex_cell_2d', 'orthorhombic_cell', 'process_kpath')
+__all__ = (
+    "bz_symmetry",
+    "bz_cutter",
+    "reduced_bz_selection",
+    "reduced_bz_axes",
+    "reduced_bz_mask",
+    "reduced_bz_poly",
+    "reduced_bz_axis_to",
+    "reduced_bz_E_mask",
+    "axis_along",
+    "hex_cell",
+    "hex_cell_2d",
+    "orthorhombic_cell",
+    "process_kpath",
+)
 
 
 _SYMMETRY_TYPES = {
-    ('G', 'X', 'Y'): 'rect',
-    ('G', 'X'): 'square',
-    ('G', 'X', 'BX'): 'hex',
+    ("G", "X", "Y"): "rect",
+    ("G", "X"): "square",
+    ("G", "X", "BX"): "hex",
 }
 
 _POINT_NAMES_FOR_SYMMETRY = {
-    'rect': {'G', 'X', 'Y'},
-    'square': {'G', 'X'},
-    'hex': {'G', 'X', 'BX'},
+    "rect": {"G", "X", "Y"},
+    "square": {"G", "X"},
+    "hex": {"G", "X", "BX"},
 }
 
-SpecialPoint = namedtuple('SpecialPoint', ('name', 'negate', 'bz_coord'))
+SpecialPoint = namedtuple("SpecialPoint", ("name", "negate", "bz_coord"))
 
 
 def as_3d(points):
@@ -40,7 +51,7 @@ def as_3d(points):
     :param points:
     :return:
     """
-    return np.concatenate([points, points[:,0][:,None] * 0], axis=1)
+    return np.concatenate([points, points[:, 0][:, None] * 0], axis=1)
 
 
 def as_2d(points):
@@ -49,29 +60,33 @@ def as_2d(points):
     :param points:
     :return:
     """
-    return points[:,:2]
+    return points[:, :2]
 
 
 def parse_single_path(path):
     # first tokenize
-    tokens = [name for name in re.split(r'([A-Z][a-z0-9]*(?:\([0-9,\s]+\))?)', path) if name]
+    tokens = [name for name in re.split(r"([A-Z][a-z0-9]*(?:\([0-9,\s]+\))?)", path) if name]
 
     # normalize Gamma to G
-    tokens = [token.replace('Gamma', 'G') for token in tokens]
+    tokens = [token.replace("Gamma", "G") for token in tokens]
 
     # convert to standard format
     points = []
     for token in tokens:
         name, rest = token[0], token[1:]
         negate = False
-        if rest and rest[0] == 'n':
+        if rest and rest[0] == "n":
             negate = True
             rest = rest[1:]
 
-        bz_coords = (0, 0, 0,)
+        bz_coords = (
+            0,
+            0,
+            0,
+        )
         if rest:
-            rest = ''.join(c for c in rest if c not in '( \t\n\r)')
-            bz_coords = tuple([int(c) for c in rest.split(',')])
+            rest = "".join(c for c in rest if c not in "( \t\n\r)")
+            bz_coords = tuple([int(c) for c in rest.split(",")])
 
         if len(bz_coords) == 2:
             bz_coords = tuple(list(bz_coords) + [0])
@@ -86,17 +101,17 @@ def parse_path(paths):
         # some manual string work in order to make sure we do not split on commas inside BZ indices
         idxs = []
         for i, p in enumerate(paths):
-            if p == ',':
+            if p == ",":
                 c = Counter(paths[:i])
-                if c['('] - c[')'] == 0:
+                if c["("] - c[")"] == 0:
                     idxs.append(i)
 
         paths = list(paths)
         for idx in idxs:
-            paths[idx] = ':'
+            paths[idx] = ":"
 
-        paths = ''.join(paths)
-        paths = paths.split(':')
+        paths = "".join(paths)
+        paths = paths.split(":")
 
     return [parse_single_path(p) for p in paths]
 
@@ -121,16 +136,20 @@ def process_kpath(paths, cell, special_points=None):
 
     if special_points is None:
         from ase.dft.kpoints import get_special_points  # pylint: disable=import-error
+
         special_points = get_special_points(cell)
 
-    points = [[special_point_to_vector(elem, icell, special_points) for elem in p]
-               for p in parse_path(paths)]
+    points = [
+        [special_point_to_vector(elem, icell, special_points) for elem in p]
+        for p in parse_path(paths)
+    ]
 
     if promoted:
         print(points)
         pass
 
     return points
+
 
 # Some common Brillouin zone formats
 def orthorhombic_cell(a=1, b=1, c=1):
@@ -175,11 +194,11 @@ def flat_bz_indices_list(bz_indices_list=None):
     """
 
     if bz_indices_list is None:
-        bz_indices_list = [(0,0)]
+        bz_indices_list = [(0, 0)]
 
     try:
         l = len(bz_indices_list[0])
-        if l not in {2,3}:
+        if l not in {2, 3}:
             raise ValueError()
     except (ValueError, TypeError):
         bz_indices_list = [bz_indices_list]
@@ -190,7 +209,12 @@ def flat_bz_indices_list(bz_indices_list=None):
             rx = range(bz_x, bz_x + 1) if isinstance(bz_x, int) else range(*bz_x)
             ry = range(bz_y, bz_y + 1) if isinstance(bz_y, int) else range(*bz_y)
             for x, y in itertools.product(rx, ry):
-                indices.append((x, y,))
+                indices.append(
+                    (
+                        x,
+                        y,
+                    )
+                )
     else:
         for bz_x, bz_y, bz_z in bz_indices_list:
             rx = range(bz_x, bz_x + 1) if isinstance(bz_x, int) else range(*bz_x)
@@ -214,7 +238,18 @@ def generate_2d_equivalent_points(points, icell, bz_indices_list=None):
     points_list = []
     for x, y in flat_bz_indices_list(bz_indices_list):
         points_list.append(
-            points[:,:2] + x * icell[0][None, :2,] + y * icell[1][None, :2,])
+            points[:, :2]
+            + x
+            * icell[0][
+                None,
+                :2,
+            ]
+            + y
+            * icell[1][
+                None,
+                :2,
+            ]
+        )
 
     return np.unique(np.concatenate(points_list), axis=0)
 
@@ -231,7 +266,7 @@ def build_2dbz_poly(vertices=None, icell=None, cell=None):
     from arpes.analysis.mask import raw_poly_to_mask
     from ase.dft.bz import bz_vertices  # pylint: disable=import-error
 
-    assert(cell is not None or vertices is not None or icell is not None)
+    assert cell is not None or vertices is not None or icell is not None
 
     if vertices is None:
         if icell is None:
@@ -270,19 +305,21 @@ def reduced_bz_axis_to(data, S, include_E=False):
     symmetry_points, _ = data.S.symmetry_points()
     points = {k: v[0] for k, v in symmetry_points.items() if k in point_names}
 
-    coords_by_point = {k: np.array([v.get(d, 0) for d in data.dims if d in v.keys() or include_E and d == 'eV'])
-                       for k, v in points.items()}
-    if symmetry == 'rect':
-        if S == 'X':
-            return coords_by_point['X'] - coords_by_point['G']
-        return coords_by_point['Y'] - coords_by_point['G']
-    elif symmetry == 'square':
+    coords_by_point = {
+        k: np.array([v.get(d, 0) for d in data.dims if d in v.keys() or include_E and d == "eV"])
+        for k, v in points.items()
+    }
+    if symmetry == "rect":
+        if S == "X":
+            return coords_by_point["X"] - coords_by_point["G"]
+        return coords_by_point["Y"] - coords_by_point["G"]
+    elif symmetry == "square":
         raise NotImplementedError()
-        return coords_by_point['X'] - coords_by_point['G']
-    elif symmetry == 'hex':
-        if S == 'X':
-            return coords_by_point['X'] - coords_by_point['G']
-        return coords_by_point['BX'] - coords_by_point['G']
+        return coords_by_point["X"] - coords_by_point["G"]
+    elif symmetry == "hex":
+        if S == "X":
+            return coords_by_point["X"] - coords_by_point["G"]
+        return coords_by_point["BX"] - coords_by_point["G"]
     else:
         raise NotImplementedError()
 
@@ -294,17 +331,19 @@ def reduced_bz_axes(data):
     symmetry_points, _ = data.S.symmetry_points()
     points = {k: v[0] for k, v in symmetry_points.items() if k in point_names}
 
-    coords_by_point = {k: np.array([v[d] for d in data.dims if d in v.keys()]) for k, v in points.items()}
-    if symmetry == 'rect':
-        dx = coords_by_point['X'] - coords_by_point['G']
-        dy = coords_by_point['Y'] - coords_by_point['G']
-    elif symmetry == 'square':
+    coords_by_point = {
+        k: np.array([v[d] for d in data.dims if d in v.keys()]) for k, v in points.items()
+    }
+    if symmetry == "rect":
+        dx = coords_by_point["X"] - coords_by_point["G"]
+        dy = coords_by_point["Y"] - coords_by_point["G"]
+    elif symmetry == "square":
         raise NotImplementedError()
-        dx = coords_by_point['X'] - coords_by_point['G']
-        dy = coords_by_point['X'] - coords_by_point['G']
-    elif symmetry == 'hex':
-        dx = coords_by_point['X'] - coords_by_point['G']
-        dy = coords_by_point['BX'] - coords_by_point['G']
+        dx = coords_by_point["X"] - coords_by_point["G"]
+        dy = coords_by_point["X"] - coords_by_point["G"]
+    elif symmetry == "hex":
+        dx = coords_by_point["X"] - coords_by_point["G"]
+        dy = coords_by_point["BX"] - coords_by_point["G"]
     else:
         raise NotImplementedError()
 
@@ -324,13 +363,15 @@ def axis_along(data, S):
     symmetry_points, _ = data.S.symmetry_points()
     points = {k: v[0] for k, v in symmetry_points.items() if k in point_names}
 
-    coords_by_point = {k: np.array([v[d] for d in data.dims if d in v.keys()]) for k, v in points.items()}
+    coords_by_point = {
+        k: np.array([v[d] for d in data.dims if d in v.keys()]) for k, v in points.items()
+    }
 
-    dS = coords_by_point[S] - coords_by_point['G']
+    dS = coords_by_point[S] - coords_by_point["G"]
 
     max = -np.inf
     max_dim = None
-    for dD, d in zip(dS, [d for d in data.dims if d != 'eV']):
+    for dD, d in zip(dS, [d for d in data.dims if d != "eV"]):
         if np.abs(dD) > max:
             max = np.abs(dD)
             max_dim = d
@@ -349,21 +390,27 @@ def reduced_bz_poly(data, scale_zone=False):
 
     symmetry_points, _ = data.S.symmetry_points()
     points = {k: v[0] for k, v in symmetry_points.items() if k in point_names}
-    coords_by_point = {k: np.array([v.get(d, 0) for d in data.dims if d in v.keys()]) for k, v in points.items()}
+    coords_by_point = {
+        k: np.array([v.get(d, 0) for d in data.dims if d in v.keys()]) for k, v in points.items()
+    }
 
-    if symmetry == 'hex':
-        return np.array([
-            coords_by_point['G'],
-            coords_by_point['G'] + dx,
-            coords_by_point['G'] + dy,
-        ])
+    if symmetry == "hex":
+        return np.array(
+            [
+                coords_by_point["G"],
+                coords_by_point["G"] + dx,
+                coords_by_point["G"] + dy,
+            ]
+        )
 
-    return np.array([
-        coords_by_point['G'],
-        coords_by_point['G'] + dx,
-        coords_by_point['G'] + dx + dy,
-        coords_by_point['G'] + dy,
-    ])
+    return np.array(
+        [
+            coords_by_point["G"],
+            coords_by_point["G"] + dx,
+            coords_by_point["G"] + dx + dy,
+            coords_by_point["G"] + dy,
+        ]
+    )
 
 
 def reduced_bz_E_mask(data, S, e_cut, scale_zone=False):
@@ -372,23 +419,26 @@ def reduced_bz_E_mask(data, S, e_cut, scale_zone=False):
     point_names = _POINT_NAMES_FOR_SYMMETRY[symmetry]
     # bz_dims = tuple(d for d in data.dims if d in list(symmetry_points.values())[0][0].keys())
 
-
     symmetry_points, _ = data.S.symmetry_points()
     points = {k: v[0] for k, v in symmetry_points.items() if k in point_names}
-    coords_by_point = {k: np.array([v.get(d,0) for d in data.dims if d in v.keys() or d == 'eV'])
-                       for k, v in points.items()}
+    coords_by_point = {
+        k: np.array([v.get(d, 0) for d in data.dims if d in v.keys() or d == "eV"])
+        for k, v in points.items()
+    }
 
     dx_to = reduced_bz_axis_to(data, S, include_E=True)
     if scale_zone:
         dx_to = dx_to * 3
-    dE = np.array([0 if d != 'eV' else e_cut for d in data.dims])
+    dE = np.array([0 if d != "eV" else e_cut for d in data.dims])
 
-    poly_points = np.array([
-        coords_by_point['G'],
-        coords_by_point['G'] + dx_to,
-        coords_by_point['G'] + dx_to + dE,
-        coords_by_point['G'] + dE,
-    ])
+    poly_points = np.array(
+        [
+            coords_by_point["G"],
+            coords_by_point["G"] + dx_to,
+            coords_by_point["G"] + dx_to + dE,
+            coords_by_point["G"] + dE,
+        ]
+    )
 
     skip_col = None
     for i in range(poly_points.shape[1]):
@@ -397,14 +447,18 @@ def reduced_bz_E_mask(data, S, e_cut, scale_zone=False):
 
     assert skip_col is not None
     selector_val = poly_points[0, skip_col]
-    poly_points = np.concatenate((poly_points[:, 0:skip_col], poly_points[:, skip_col+1:]), axis=1)
+    poly_points = np.concatenate(
+        (poly_points[:, 0:skip_col], poly_points[:, skip_col + 1 :]), axis=1
+    )
 
     selector = dict()
     selector[data.dims[skip_col]] = selector_val
-    sdata = data.sel(**selector, method='nearest')
+    sdata = data.sel(**selector, method="nearest")
 
     path = matplotlib.path.Path(poly_points)
-    grid = np.array([a.ravel() for a in np.meshgrid(*[data.coords[d] for d in sdata.dims], indexing='ij')]).T
+    grid = np.array(
+        [a.ravel() for a in np.meshgrid(*[data.coords[d] for d in sdata.dims], indexing="ij")]
+    ).T
     mask = path.contains_points(grid)
     mask = np.reshape(mask, sdata.data.shape)
     return mask
@@ -415,11 +469,12 @@ def reduced_bz_mask(data, **kwargs):
     bz_dims = tuple(d for d in data.dims if d in list(symmetry_points.values())[0][0].keys())
 
     poly_points = reduced_bz_poly(data, **kwargs)
-    extra_dims_shape = tuple(len(data.coords[d]) for d in data.dims
-                             if d in bz_dims)
+    extra_dims_shape = tuple(len(data.coords[d]) for d in data.dims if d in bz_dims)
 
     path = matplotlib.path.Path(poly_points)
-    grid = np.array([a.ravel() for a in np.meshgrid(*[data.coords[d] for d in bz_dims], indexing='ij')]).T
+    grid = np.array(
+        [a.ravel() for a in np.meshgrid(*[data.coords[d] for d in bz_dims], indexing="ij")]
+    ).T
     mask = path.contains_points(grid)
     mask = np.reshape(mask, extra_dims_shape)
 
@@ -442,10 +497,9 @@ def bz_cutter(symmetry_points, reduced=True):
     :param reduced:
     :return:
     """
+
     def build_bz_mask(data):
         pass
-
-
 
     def cutter(data, cut_value=np.nan):
         mask = build_bz_mask(data)

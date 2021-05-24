@@ -3,17 +3,21 @@ import numpy as np
 import xarray as xr
 from arpes.provenance import update_provenance
 
-__all__ = ('infer_center_pixel', 'stitch_maps', )
+__all__ = (
+    "infer_center_pixel",
+    "stitch_maps",
+)
+
 
 def infer_center_pixel(arr: xr.DataArray):
-    import arpes.xarray_extensions # pylint: disable=unused-import
+    import arpes.xarray_extensions  # pylint: disable=unused-import
 
     edges = arr.S.find_spectrum_angular_edges()
-    return float((np.max(edges) + np.min(edges)) / 2 + np.min(arr.coords['pixel']))
+    return float((np.max(edges) + np.min(edges)) / 2 + np.min(arr.coords["pixel"]))
 
 
-@update_provenance('Stitch maps together')
-def stitch_maps(arr: xr.DataArray, arr2: xr.DataArray, dimension='beta'):
+@update_provenance("Stitch maps together")
+def stitch_maps(arr: xr.DataArray, arr2: xr.DataArray, dimension="beta"):
     """
     Stitches together two maps by appending and potentially dropping frames in the first dataset.
 
@@ -32,7 +36,10 @@ def stitch_maps(arr: xr.DataArray, arr2: xr.DataArray, dimension='beta'):
     i, lower, higher = None, None, None
 
     # search for the breakpoint
-    for i, (lower, higher,) in enumerate(zip(coord1, coord1[1:])):
+    for i, (
+        lower,
+        higher,
+    ) in enumerate(zip(coord1, coord1[1:])):
         if higher > first_repair_coordinate:
             break
 

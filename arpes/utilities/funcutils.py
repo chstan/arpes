@@ -9,8 +9,11 @@ from arpes.typing import DataType
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple
 
 __all__ = [
-    'Debounce', 'lift_dataarray_to_generic', 'iter_leaves', 'group_by',
-    'cycle',
+    "Debounce",
+    "lift_dataarray_to_generic",
+    "iter_leaves",
+    "group_by",
+    "cycle",
 ]
 
 
@@ -55,6 +58,7 @@ def collect_leaves(tree: Dict[str, Any], is_leaf: Optional[Any] = None) -> Dict:
     :param is_leaf:
     :return:
     """
+
     def reducer(dd: Dict, item: Tuple[str, ndarray]) -> Dict:
         dd[item[0]].append(item[1])
         return dd
@@ -62,7 +66,9 @@ def collect_leaves(tree: Dict[str, Any], is_leaf: Optional[Any] = None) -> Dict:
     return functools.reduce(reducer, iter_leaves(tree, is_leaf), defaultdict(list))
 
 
-def iter_leaves(tree: Dict[str, Any], is_leaf: Optional[Callable] = None) -> Iterator[Tuple[str, ndarray]]:
+def iter_leaves(
+    tree: Dict[str, Any], is_leaf: Optional[Callable] = None
+) -> Iterator[Tuple[str, ndarray]]:
     """
     Iterates across the leaves of a nested dictionary. Whether a particular piece
     of data counts as a leaf is controlled by the predicate `is_leaf`. By default,
@@ -104,15 +110,14 @@ def lift_dataarray_to_generic(f):
     :param f:
     :return:
     """
+
     @functools.wraps(f)
     def func_wrapper(data: DataType, *args, **kwargs):
         if isinstance(data, xr.DataArray):
             return f(data, *args, **kwargs)
         else:
             assert isinstance(data, xr.Dataset)
-            new_vars = {
-                datavar: f(data[datavar], *args, **kwargs) for datavar in data.data_vars
-            }
+            new_vars = {datavar: f(data[datavar], *args, **kwargs) for datavar in data.data_vars}
 
             for var_name, var in new_vars.items():
                 if isinstance(var, xr.DataArray) and var.name is None:
@@ -157,4 +162,5 @@ class Debounce:
                 f(*args, **kwargs)  # call wrapped function
             else:
                 self.count_rejected += 1
+
         return wrapped

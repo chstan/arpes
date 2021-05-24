@@ -12,8 +12,12 @@ from .cycle import *
 
 from arpes.io import simple_load
 
-__all__ = ('build_reference_set', 'reference_key', 'apply_from_reference_set',
-           'correction_from_reference_set',)
+__all__ = (
+    "build_reference_set",
+    "reference_key",
+    "apply_from_reference_set",
+    "correction_from_reference_set",
+)
 
 
 class HashableDict(OrderedDict):
@@ -21,6 +25,7 @@ class HashableDict(OrderedDict):
     Implements hashing for ordered dictionaries. The dictionary
     must be ordered for the hash to be stable.
     """
+
     def __hash__(self):
         return hash(frozenset(self.items()))
 
@@ -61,7 +66,7 @@ def build_reference_set(df: pd.DataFrame, mask=None):
         data = simple_load(int(index), df)
         settings = data.S.reference_settings
 
-        data = data.spectrum.S.sum_other(['phi', 'eV'])
+        data = data.spectrum.S.sum_other(["phi", "eV"])
 
         if mask is not None:
             data = apply_mask(data, mask, radius=-15)

@@ -9,10 +9,14 @@ from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('deconvolve_ice', 'deconvolve_rl', 'make_psf1d',)
+__all__ = (
+    "deconvolve_ice",
+    "deconvolve_rl",
+    "make_psf1d",
+)
 
 
-@update_provenance('Approximate Iterative Deconvolution')
+@update_provenance("Approximate Iterative Deconvolution")
 def deconvolve_ice(data: DataType, psf, n_iterations=5, deg=None):
     """
     Deconvolves data by a given point spread function using the iterative convolution extrapolation method.
@@ -53,9 +57,10 @@ def deconvolve_ice(data: DataType, psf, n_iterations=5, deg=None):
     return result
 
 
-@update_provenance('Lucy Richardson Deconvolution')
-def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
-                  sigma=None, mode='reflect', progress=True):
+@update_provenance("Lucy Richardson Deconvolution")
+def deconvolve_rl(
+    data: DataType, psf=None, n_iterations=10, axis=None, sigma=None, mode="reflect", progress=True
+):
     """Deconvolves data by a given point spread function using the Richardson-Lucy method.
 
     :param data:
@@ -91,37 +96,52 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
             if len(other_dim) == 1:
                 # two-dimensional data
                 other_dim = other_dim[0]
-                result = arr.copy(deep=True).transpose(other_dim,
-                                                       axis)  # not sure why the dims only seems to work in this order. seems like I should be able to swap it to (axis,other_dim) and also change the data collection to result[x_ind,y_ind], but this gave different results
+                result = arr.copy(deep=True).transpose(
+                    other_dim, axis
+                )  # not sure why the dims only seems to work in this order. seems like I should be able to swap it to (axis,other_dim) and also change the data collection to result[x_ind,y_ind], but this gave different results
 
-                for i, (od, iteration) in wrap_progress(enumerate(arr.G.iterate_axis(other_dim)),
-                                                        desc="Iterating " + other_dim,
-                                                        total=len(arr[other_dim])):  # TODO tidy this gross-looking loop
+                for i, (od, iteration) in wrap_progress(
+                    enumerate(arr.G.iterate_axis(other_dim)),
+                    desc="Iterating " + other_dim,
+                    total=len(arr[other_dim]),
+                ):  # TODO tidy this gross-looking loop
                     # indices of data being deconvolved
                     x_ind = xr.DataArray(list(range(len(arr[axis]))), dims=[axis])
                     y_ind = xr.DataArray([i] * len(x_ind), dims=[other_dim])
                     # perform deconvolution on this one-dimensional piece
-                    deconv = deconvolve_rl(data=iteration, psf=psf, n_iterations=n_iterations, axis=None, mode=mode)
+                    deconv = deconvolve_rl(
+                        data=iteration, psf=psf, n_iterations=n_iterations, axis=None, mode=mode
+                    )
                     # build results out of these pieces
                     result[y_ind, x_ind] = deconv.values
             elif len(other_dim) == 2:
                 # three-dimensional data
-                result = arr.copy(deep=True).transpose(*other_dim,
-                                                       axis)  # not sure why the dims only seems to work in this order. seems like I should be able to swap it to (axis,*other_dim) and also change the data collection to result[x_ind,y_ind,z_ind], but this gave different results
-                for i, (od0, iteration0) in wrap_progress(enumerate(arr.G.iterate_axis(other_dim[0])),
-                                                          desc="Iterating " + other_dim[0], total=len(
-                                arr[other_dim[0]])):  # TODO tidy this gross-looking loop
-                    for j, (od1, iteration1) in wrap_progress(enumerate(iteration0.G.iterate_axis(other_dim[1])),
-                                                              desc="Iterating " + other_dim[1],
-                                                              total=len(arr[other_dim[1]]),
-                                                              leave=False):  # TODO tidy this gross-looking loop
+                result = arr.copy(deep=True).transpose(
+                    *other_dim, axis
+                )  # not sure why the dims only seems to work in this order. seems like I should be able to swap it to (axis,*other_dim) and also change the data collection to result[x_ind,y_ind,z_ind], but this gave different results
+                for i, (od0, iteration0) in wrap_progress(
+                    enumerate(arr.G.iterate_axis(other_dim[0])),
+                    desc="Iterating " + other_dim[0],
+                    total=len(arr[other_dim[0]]),
+                ):  # TODO tidy this gross-looking loop
+                    for j, (od1, iteration1) in wrap_progress(
+                        enumerate(iteration0.G.iterate_axis(other_dim[1])),
+                        desc="Iterating " + other_dim[1],
+                        total=len(arr[other_dim[1]]),
+                        leave=False,
+                    ):  # TODO tidy this gross-looking loop
                         # indices of data being deconvolved
                         x_ind = xr.DataArray(list(range(len(arr[axis]))), dims=[axis])
                         y_ind = xr.DataArray([i] * len(x_ind), dims=[other_dim[0]])
                         z_ind = xr.DataArray([j] * len(x_ind), dims=[other_dim[1]])
                         # perform deconvolution on this one-dimensional piece
-                        deconv = deconvolve_rl(data=iteration1, psf=psf, n_iterations=n_iterations, axis=None,
-                                               mode=mode)
+                        deconv = deconvolve_rl(
+                            data=iteration1,
+                            psf=psf,
+                            n_iterations=n_iterations,
+                            axis=None,
+                            mode=mode,
+                        )
                         # build results out of these pieces
                         result[y_ind, z_ind, x_ind] = deconv.values
             elif len(other_dim) >= 3:
@@ -141,8 +161,9 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
 
             for i in range(n_iterations):
                 c = scipy.ndimage.convolve(u[-1], psf, mode=mode)
-                u.append(u[-1] * scipy.ndimage.convolve(arr / c, np.flip(psf, None),
-                                                        mode=mode))  # careful about which axis (axes) to flip here...! need to explicitly specify for some versions of numpy
+                u.append(
+                    u[-1] * scipy.ndimage.convolve(arr / c, np.flip(psf, None), mode=mode)
+                )  # careful about which axis (axes) to flip here...! need to explicitly specify for some versions of numpy
 
             result = u[-1]
     else:
@@ -153,8 +174,9 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
 
         for i in range(n_iterations):
             c = scipy.ndimage.convolve(u[-1], psf, mode=mode)
-            u.append(u[-1] * scipy.ndimage.convolve(arr / c, np.flip(psf, 0),
-                                                    mode=mode))  # not yet tested to ensure flip correct for asymmetric psf
+            u.append(
+                u[-1] * scipy.ndimage.convolve(arr / c, np.flip(psf, 0), mode=mode)
+            )  # not yet tested to ensure flip correct for asymmetric psf
             # note: need to explicitly specify axis number in np.flip in lower versions of numpy
 
         if type(data) is np.ndarray:
@@ -171,7 +193,7 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
     return result
 
 
-@update_provenance('Make 1D-Point Spread Function')
+@update_provenance("Make 1D-Point Spread Function")
 def make_psf1d(data: DataType, dim, sigma):
     """Produces a 1-dimensional gaussian point spread function for use in deconvolve_rl.
 
@@ -197,7 +219,7 @@ def make_psf1d(data: DataType, dim, sigma):
     return psf
 
 
-@update_provenance('Make Point Spread Function')
+@update_provenance("Make Point Spread Function")
 def make_psf(data: DataType, sigmas):
     """Not yet operational; produces an n-dimensional gaussian point spread function for use in deconvolve_rl.
 

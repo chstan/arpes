@@ -5,10 +5,10 @@ from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ('find_t0', 'relative_change', 'normalized_relative_change')
+__all__ = ("find_t0", "relative_change", "normalized_relative_change")
 
 
-@update_provenance('Normalized subtraction map')
+@update_provenance("Normalized subtraction map")
 def normalized_relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
     """
     Calculates a normalized relative change, obtained by normalizing along the pump-probe "delay"
@@ -21,7 +21,7 @@ def normalized_relative_change(data: DataType, t0=None, buffer=0.3, normalize_de
     """
     spectrum = normalize_to_spectrum(data)
     if normalize_delay:
-        spectrum = normalize_dim(spectrum, 'delay')
+        spectrum = normalize_dim(spectrum, "delay")
     subtracted = relative_change(spectrum, t0, buffer, normalize_delay=False)
     normalized = subtracted / spectrum
     normalized.values[np.isinf(normalized.values)] = 0
@@ -29,7 +29,7 @@ def normalized_relative_change(data: DataType, t0=None, buffer=0.3, normalize_de
     return normalized
 
 
-@update_provenance('Created simple subtraction map')
+@update_provenance("Created simple subtraction map")
 def relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
     """
     Like normalized_relative_change, but only subtracts the before t0 data rather than
@@ -42,9 +42,9 @@ def relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
     """
     spectrum = normalize_to_spectrum(data)
     if normalize_delay:
-        spectrum = normalize_dim(spectrum, 'delay')
+        spectrum = normalize_dim(spectrum, "delay")
 
-    delay_coords = spectrum.coords['delay']
+    delay_coords = spectrum.coords["delay"]
     delay_start = np.min(delay_coords)
 
     if t0 is None:
@@ -53,7 +53,7 @@ def relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
     assert t0 - buffer > delay_start
 
     before_t0 = spectrum.sel(delay=slice(None, t0 - buffer))
-    subtracted = spectrum - before_t0.mean('delay')
+    subtracted = spectrum - before_t0.mean("delay")
     return subtracted
 
 
@@ -67,14 +67,14 @@ def find_t0(data: DataType, e_bound=0.02, approx=True):
     """
     spectrum = normalize_to_spectrum(data)
 
-    assert 'delay' in spectrum.dims
-    assert 'eV' in spectrum.dims
+    assert "delay" in spectrum.dims
+    assert "eV" in spectrum.dims
 
     sum_dims = set(spectrum.dims)
-    sum_dims.remove('delay')
-    sum_dims.remove('eV')
+    sum_dims.remove("delay")
+    sum_dims.remove("eV")
 
-    summed = spectrum.sum(list(sum_dims)).sel(eV=slice(e_bound, None)).mean('eV')
+    summed = spectrum.sum(list(sum_dims)).sel(eV=slice(e_bound, None)).mean("eV")
     coord_max = summed.argmax().item()
 
-    return summed.coords['delay'].values[coord_max]
+    return summed.coords["delay"].values[coord_max]

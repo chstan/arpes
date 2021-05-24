@@ -2,7 +2,7 @@ from collections import namedtuple
 
 import numpy as np
 
-ParamType = namedtuple('ParamType', ['value', 'stderr'])
+ParamType = namedtuple("ParamType", ["value", "stderr"])
 
 
 def param_getter(param_name, safe=True):

@@ -30,15 +30,18 @@ from arpes.utilities import lift_dataarray_to_generic
 from arpes.utilities.normalize import normalize_to_spectrum
 from arpes.utilities.region import normalize_region
 
-__all__ = ('bootstrap', 'estimate_prior_adjustment',
-           'resample_true_counts', 'bootstrap_counts',
-           'bootstrap_intensity_polarization',
+__all__ = (
+    "bootstrap",
+    "estimate_prior_adjustment",
+    "resample_true_counts",
+    "bootstrap_counts",
+    "bootstrap_intensity_polarization",
+    "Normal",
+    "propagate_errors",
+)
 
-           'Normal',
-           'propagate_errors')
 
-
-@update_provenance('Estimate prior')
+@update_provenance("Estimate prior")
 def estimate_prior_adjustment(data: DataType, region: Union[dict, str] = None) -> float:
     r"""
     Estimates the parameters of a distribution generating the intensity
@@ -57,12 +60,12 @@ def estimate_prior_adjustment(data: DataType, region: Union[dict, str] = None) -
     data = normalize_to_spectrum(data)
 
     if region is None:
-        region = 'copper_prior'
+        region = "copper_prior"
 
     region = normalize_region(region)
 
-    if 'cycle' in data.dims:
-        data = data.sum('cycle')
+    if "cycle" in data.dims:
+        data = data.sum("cycle")
 
     data = data.S.zero_spectrometer_edges().S.region_sel(region)
     values = data.values.ravel()
@@ -70,7 +73,7 @@ def estimate_prior_adjustment(data: DataType, region: Union[dict, str] = None) -
     return np.std(values) / np.mean(values)
 
 
-@update_provenance('Resample cycle dimension')
+@update_provenance("Resample cycle dimension")
 @lift_dataarray_to_generic
 def resample_cycle(data: xr.DataArray, **kwargs):
     """
@@ -83,31 +86,31 @@ def resample_cycle(data: xr.DataArray, **kwargs):
     n_cycles = len(data.cycle)
     which = [random.randint(0, n_cycles - 1) for _ in range(n_cycles)]
 
-    resampled = data.isel(cycle=which).sum('cycle', keep_attrs=True)
+    resampled = data.isel(cycle=which).sum("cycle", keep_attrs=True)
 
-    if 'id' in resampled.attrs:
-        del resampled.attrs['id']
+    if "id" in resampled.attrs:
+        del resampled.attrs["id"]
 
     return resampled
 
 
-@update_provenance('Resample with prior adjustment')
+@update_provenance("Resample with prior adjustment")
 @lift_dataarray_to_generic
 def resample(data: xr.DataArray, prior_adjustment=1, **kwargs):
     resampled = xr.DataArray(
         np.random.poisson(lam=data.values * prior_adjustment, size=data.values.shape),
         coords=data.coords,
         dims=data.dims,
-        attrs=data.attrs
+        attrs=data.attrs,
     )
 
-    if 'id' in resampled.attrs:
-        del resampled.attrs['id']
+    if "id" in resampled.attrs:
+        del resampled.attrs["id"]
 
     return resampled
 
 
-@update_provenance('Resample electron-counted data')
+@update_provenance("Resample electron-counted data")
 @lift_dataarray_to_generic
 def resample_true_counts(data: xr.DataArray) -> xr.DataArray:
     """
@@ -123,13 +126,13 @@ def resample_true_counts(data: xr.DataArray) -> xr.DataArray:
         attrs=data.attrs,
     )
 
-    if 'id' in resampled.attrs:
-        del resampled.attrs['id']
+    if "id" in resampled.attrs:
+        del resampled.attrs["id"]
 
     return resampled
 
 
-@update_provenance('Bootstrap true electron counts')
+@update_provenance("Bootstrap true electron counts")
 @lift_dataarray_to_generic
 def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
     """
@@ -144,13 +147,13 @@ def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
     :return:
     """
 
-    assert (data.name is not None or name is not None)
+    assert data.name is not None or name is not None
     name = data.name if data.name is not None else name
 
-    desc_fragment = ' {}'.format(name)
+    desc_fragment = " {}".format(name)
 
     resampled_sets = []
-    for _ in tqdm_notebook(range(N), desc='Resampling{}...'.format(desc_fragment)):
+    for _ in tqdm_notebook(range(N), desc="Resampling{}...".format(desc_fragment)):
         resampled_sets.append(resample_true_counts(data))
 
     resampled_arr = np.stack([s.values for s in resampled_sets], axis=0)
@@ -161,7 +164,7 @@ def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
 
     data_vars = {}
     data_vars[name] = mean
-    data_vars[name + '_std'] = std
+    data_vars[name + "_std"] = std
 
     return xr.Dataset(data_vars=data_vars, coords=data.coords, attrs=data.attrs.copy())
 
@@ -190,8 +193,8 @@ def propagate_errors(f):
     @functools.wraps(f)
     def operates_on_distributions(*args, **kwargs):
         exclude = set(
-            [i for i, arg in enumerate(args) if not isinstance(arg, Distribution)] + \
-            [k for k, arg in kwargs.items() if not isinstance(arg, Distribution)]
+            [i for i, arg in enumerate(args) if not isinstance(arg, Distribution)]
+            + [k for k, arg in kwargs.items() if not isinstance(arg, Distribution)]
         )
 
         if len(exclude) == len(args) + len(kwargs):
@@ -199,8 +202,10 @@ def propagate_errors(f):
             return f(*args, **kwargs)
 
         vec_f = np.vectorize(f, excluded=exclude)
-        res = vec_f(*[a.draw_samples() if isinstance(a, Distribution) else a for a in args],
-                    **{k: v.draw_samples() if isinstance(v, Distribution) else v for k, v in kwargs.items()})
+        res = vec_f(
+            *[a.draw_samples() if isinstance(a, Distribution) else a for a in args],
+            **{k: v.draw_samples() if isinstance(v, Distribution) else v for k, v in kwargs.items()}
+        )
 
         try:
             print(scipy.stats.describe(res))
@@ -208,10 +213,11 @@ def propagate_errors(f):
             pass
 
         return res
+
     return operates_on_distributions
 
 
-@update_provenance('Bootstrap spin detector polarization and intensity')
+@update_provenance("Bootstrap spin detector polarization and intensity")
 def bootstrap_intensity_polarization(data, N=100):
     """
     Uses the parametric bootstrap to get uncertainties on the intensity and polarization of ToF-SARPES data.
@@ -231,44 +237,53 @@ def bootstrap(fn, skip=None, resample_method=None):
 
     if resample_method is None:
         resample_fn = resample
-    elif resample_method == 'cycle':
+    elif resample_method == "cycle":
         resample_fn = resample_cycle
 
     def bootstrapped(*args, N=20, prior_adjustment=1, **kwargs):
         # examine args to determine which to resample
-        resample_indices = [i for i, arg in enumerate(args) if isinstance(arg, (xr.DataArray, xr.Dataset)) and i not in skip]
+        resample_indices = [
+            i
+            for i, arg in enumerate(args)
+            if isinstance(arg, (xr.DataArray, xr.Dataset)) and i not in skip
+        ]
         data_is_arraylike = False
 
         runs = []
 
         def get_label(i):
             if isinstance(args[i], xr.Dataset):
-                return 'xr.Dataset: [{}]'.format(', '.join(args[i].data_vars.keys()))
+                return "xr.Dataset: [{}]".format(", ".join(args[i].data_vars.keys()))
             if args[i].name:
                 return args[i].name
 
             try:
-                return args[i].attrs['id']
+                return args[i].attrs["id"]
             except KeyError:
-                return 'Label-less DataArray'
+                return "Label-less DataArray"
 
-        print('Resampling args: {}'.format(','.join([get_label(i) for i in resample_indices])))
+        print("Resampling args: {}".format(",".join([get_label(i) for i in resample_indices])))
 
         # examine kwargs to determine which to resample
-        resample_kwargs = [k for k, v in kwargs.items() if isinstance(v, xr.DataArray) and k not in skip]
-        print('Resampling kwargs: {}'.format(','.join(resample_kwargs)))
+        resample_kwargs = [
+            k for k, v in kwargs.items() if isinstance(v, xr.DataArray) and k not in skip
+        ]
+        print("Resampling kwargs: {}".format(",".join(resample_kwargs)))
 
-        print('Fair warning 1: Make sure you understand whether it is appropriate to resample your data.')
-        print('Fair warning 2: Ensure that the data to resample is in a DataArray and not a Dataset')
+        print(
+            "Fair warning 1: Make sure you understand whether it is appropriate to resample your data."
+        )
+        print(
+            "Fair warning 2: Ensure that the data to resample is in a DataArray and not a Dataset"
+        )
 
-        for _ in tqdm_notebook(range(N), desc='Resampling...'):
+        for _ in tqdm_notebook(range(N), desc="Resampling..."):
             new_args = list(args)
             new_kwargs = copy.copy(kwargs)
             for i in resample_indices:
                 new_args[i] = resample_fn(args[i], prior_adjustment=prior_adjustment)
             for k in resample_kwargs:
                 new_kwargs[k] = resample_fn(kwargs[k], prior_adjustment=prior_adjustment)
-
 
             run = fn(*new_args, **new_kwargs)
             if isinstance(run, (xr.DataArray, xr.Dataset)):
@@ -279,7 +294,7 @@ def bootstrap(fn, skip=None, resample_method=None):
             for i, run in enumerate(runs):
                 run = run.assign_coords(bootstrap=i)
 
-            return xr.concat(runs, dim='bootstrap')
+            return xr.concat(runs, dim="bootstrap")
 
         return runs
 

@@ -5,41 +5,51 @@ from arpes.typing import DataType
 from arpes.utilities.math import shift_by
 from arpes.utilities.normalize import normalize_to_spectrum
 
-__all__ = ('apply_cycle_fermi_edge_correction', 'build_cycle_fermi_edge_correction',)
+__all__ = (
+    "apply_cycle_fermi_edge_correction",
+    "build_cycle_fermi_edge_correction",
+)
 
 
-@update_provenance('Build Fermi edge correction for cycle dimension')
+@update_provenance("Build Fermi edge correction for cycle dimension")
 def build_cycle_fermi_edge_correction(data: DataType, energy_range=None):
     arr = normalize_to_spectrum(data)
 
-    if 'pixels' in arr.dims or 'phi' in arr.dims:
-        arr = arr.S.region_sel('wide_angular')
+    if "pixels" in arr.dims or "phi" in arr.dims:
+        arr = arr.S.region_sel("wide_angular")
 
     if energy_range is None:
         energy_range = slice(-0.1, 0.1)
 
-    arr = arr.S.sum_other(['eV', 'cycle'])
-    return broadcast_model(GStepBModel, arr.sel(eV=energy_range), 'cycle')
+    arr = arr.S.sum_other(["eV", "cycle"])
+    return broadcast_model(GStepBModel, arr.sel(eV=energy_range), "cycle")
 
 
-@update_provenance('Apply Fermi edge correction for cycle dimension')
+@update_provenance("Apply Fermi edge correction for cycle dimension")
 def apply_cycle_fermi_edge_correction(data: DataType, energy_range=None, shift=True):
     correction = build_cycle_fermi_edge_correction(data, energy_range)
 
     if shift:
-        correction_values = correction.G.map(lambda x: x.params['center'].value)
-        correction_shift = - correction_values / data.S.spectrum.G.stride(generic_dim_names=False)['eV']
+        correction_values = correction.G.map(lambda x: x.params["center"].value)
+        correction_shift = (
+            -correction_values / data.S.spectrum.G.stride(generic_dim_names=False)["eV"]
+        )
         dataarr = data.S.spectrum
         shifted = xr.DataArray(
-            shift_by(dataarr.values, correction_shift, axis=dataarr.dims.index('eV'),
-                     by_axis=dataarr.dims.index('cycle'), order=1),
+            shift_by(
+                dataarr.values,
+                correction_shift,
+                axis=dataarr.dims.index("eV"),
+                by_axis=dataarr.dims.index("cycle"),
+                order=1,
+            ),
             dataarr.coords,
             dataarr.dims,
-            attrs=dataarr.attrs.copy()
+            attrs=dataarr.attrs.copy(),
         )
-        if 'id' in shifted.attrs:
-            del shifted.attrs['id']
+        if "id" in shifted.attrs:
+            del shifted.attrs["id"]
 
         return shifted
     else:
-        raise NotImplementedError('Need to do l2 fit, then shift axis')
+        raise NotImplementedError("Need to do l2 fit, then shift axis")

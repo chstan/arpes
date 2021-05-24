@@ -8,18 +8,18 @@ from arpes.provenance import save_plot_provenance
 
 from .utils import path_for_plot
 
-__all__ = ['plot_isosurface', 'plot_trisurf', 'plotly_trisurf']
+__all__ = ["plot_isosurface", "plot_trisurf", "plotly_trisurf"]
 
 
 @save_plot_provenance
 def plot_isosurface(data, level=None, percentile=99.5, smoothing=None, out=None, ax=None):
-    assert 'eV' in data.dims
+    assert "eV" in data.dims
 
     new_dim_order = list(data.dims)
-    new_dim_order.remove('eV')
-    new_dim_order = new_dim_order + ['eV']
+    new_dim_order.remove("eV")
+    new_dim_order = new_dim_order + ["eV"]
     data = data.transpose(*new_dim_order)
-    colormap = plt.get_cmap('viridis')
+    colormap = plt.get_cmap("viridis")
 
     if smoothing is not None:
         data = filters.gaussian_filter_arr(data, sigma=smoothing)
@@ -31,14 +31,14 @@ def plot_isosurface(data, level=None, percentile=99.5, smoothing=None, out=None,
 
     # try to avoid skimage incompatibility with numpy v0.16 as much as possible
     from skimage import measure  # pylint: disable=import-error
+
     verts, faces, normals, values = measure.marching_cubes(data.values, level, spacing=spacing)
 
     if ax is None:
         fig = plt.figure(figsize=(7, 7))
-        ax = fig.add_subplot(1, 1, 1, projection='3d')
+        ax = fig.add_subplot(1, 1, 1, projection="3d")
 
-    ax.plot_trisurf(verts[:, 0], verts[:,1], faces, verts[:, 2],
-                    lw=1, facecolors=colormap(values))
+    ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], lw=1, facecolors=colormap(values))
 
     if out is not None:
         plt.savefig(path_for_plot(out), dpi=400)
@@ -61,25 +61,20 @@ def plotly_trisurf(data):
         )
     ]
     layout = go.Layout(
-        title='Test Title',
+        title="Test Title",
         autosize=True,
         width=900,
         height=900,
-        margin=dict(
-            l=65,
-            r=50,
-            b=65,
-            t=90
-        )
+        margin=dict(l=65, r=50, b=65, t=90),
     )
     fig = go.Figure(data=plot_data, layout=layout)
-    pyo.iplot(fig, filename='test-surface')
+    pyo.iplot(fig, filename="test-surface")
 
 
 def plot_trisurf(data, out=None, ax=None, angles=None):
     if ax is None:
         fig = plt.figure()
-        ax = fig.gca(projection='3d')
+        ax = fig.gca(projection="3d")
 
     Xs, Ys = np.meshgrid(data.coords[data.dims[0]].values, data.coords[data.dims[1]].values)
     triang = Triangulation(Xs.ravel(), Ys.ravel())
@@ -93,8 +88,9 @@ def plot_trisurf(data, out=None, ax=None, angles=None):
     if angles is not None:
         ax.view_init(*angles)
 
-    #plt.show()
+    # plt.show()
     return ax
+
 
 @save_plot_provenance
 def plot_trisurface(data, out=None, ax=None):
@@ -115,15 +111,15 @@ def plot_trisurface(data, out=None, ax=None):
     # (invalid) initial triangles which will be masked
     # out. Enter 0 for no mask.
 
-    min_circle_ratio = .01  # Minimum circle ratio - border triangles with circle
+    min_circle_ratio = 0.01  # Minimum circle ratio - border triangles with circle
     # ratio below this will be masked if they touch a
     # border. Suggested value 0.01 ; Use -1 to keep
     # all triangles.
 
     # Random points
     random_gen = np.random.mtrand.RandomState(seed=127260)
-    x_test = random_gen.uniform(-1., 1., size=n_test)
-    y_test = random_gen.uniform(-1., 1., size=n_test)
+    x_test = random_gen.uniform(-1.0, 1.0, size=n_test)
+    y_test = random_gen.uniform(-1.0, 1.0, size=n_test)
     z_test = experiment_res(x_test, y_test)
 
     # meshing with Delaunay triangulation
@@ -167,29 +163,28 @@ def plot_trisurface(data, out=None, ax=None):
     plot_expected = False  # plot of analytical function values for comparison
 
     # Graphical options for tricontouring
-    levels = np.arange(0., 1., 0.025)
+    levels = np.arange(0.0, 1.0, 0.025)
 
     plt.figure()
-    plt.gca().set_aspect('equal')
-    plt.title("Filtering a Delaunay mesh\n" +
-              "(application to high-resolution tricontouring)")
+    plt.gca().set_aspect("equal")
+    plt.title("Filtering a Delaunay mesh\n" + "(application to high-resolution tricontouring)")
 
     # 1) plot of the refined (computed) data contours:
-    plt.tricontour(tri_refi, z_test_refi, levels=levels, cmap='Blues',
-                   linewidths=[2.0, 0.5, 1.0, 0.5])
+    plt.tricontour(
+        tri_refi, z_test_refi, levels=levels, cmap="Blues", linewidths=[2.0, 0.5, 1.0, 0.5]
+    )
     # 2) plot of the expected (analytical) data contours (dashed):
     if plot_expected:
-        plt.tricontour(tri_refi, z_expected, levels=levels, cmap='Blues',
-                       linestyles='--')
+        plt.tricontour(tri_refi, z_expected, levels=levels, cmap="Blues", linestyles="--")
     # 3) plot of the fine mesh on which interpolation was done:
     if plot_refi_tri:
-        plt.triplot(tri_refi, color='0.97')
+        plt.triplot(tri_refi, color="0.97")
     # 4) plot of the initial 'coarse' mesh:
     if plot_tri:
-        plt.triplot(tri, color='0.7')
+        plt.triplot(tri, color="0.7")
     # 4) plot of the unvalidated triangles from naive Delaunay Triangulation:
     if plot_masked_tri:
-        plt.triplot(flat_tri, color='red')
+        plt.triplot(flat_tri, color="red")
 
     plt.show()
 

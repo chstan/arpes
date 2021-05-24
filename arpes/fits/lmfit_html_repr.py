@@ -29,8 +29,10 @@ def repr_html_ModelResult(self, **kwargs):
         """
     return template.format(
         success=self.success,
-        formatted_components=''.join('<div>{}</div>'.format(c._repr_html_()) for c in self.components),
-        parameters=self.params._repr_html_(**kwargs)
+        formatted_components="".join(
+            "<div>{}</div>".format(c._repr_html_()) for c in self.components
+        ),
+        parameters=self.params._repr_html_(**kwargs),
     )
 
 
@@ -49,8 +51,8 @@ def repr_html_Model(self):
 
 
 def repr_html_Parameters(self, short=False):
-    skip_on_short = {'Min', 'Max', 'Vary', 'Expr', 'Brute_Step'}
-    all = ['Name', 'Value', 'Min', 'Max', 'Stderr', 'Vary', 'Expr', 'Brute_Step']
+    skip_on_short = {"Min", "Max", "Vary", "Expr", "Brute_Step"}
+    all = ["Name", "Value", "Min", "Max", "Stderr", "Vary", "Expr", "Brute_Step"]
     keys = list(self.keys())
     keys.sort()
     template = """
@@ -66,9 +68,10 @@ def repr_html_Parameters(self, short=False):
     </table>
     """
     return template.format(
-        cols=''.join('<th>{}</th>'.format(c) for c in all if not short or c not in skip_on_short),
-        rows=''.join(self[p].to_table_row(short=short) for p in keys)
+        cols="".join("<th>{}</th>".format(c) for c in all if not short or c not in skip_on_short),
+        rows="".join(self[p].to_table_row(short=short) for p in keys),
     )
+
 
 def repr_html_Parameter(self, short=False):
     if short:
@@ -78,7 +81,11 @@ def repr_html_Parameter(self, short=False):
                 <th>{value:.3f}</th>
                 <th>{stderr:.3f}</th>
             </tr>
-            """.format(name=self.name, value=self.value, stderr=self.stderr,)
+            """.format(
+            name=self.name,
+            value=self.value,
+            stderr=self.stderr,
+        )
 
     template = """
             <tr>
@@ -99,13 +106,13 @@ def repr_html_Parameter(self, short=False):
         max=self.max,
         stderr=self.stderr or np.inf,
         vary=self.vary,
-        expr=self.expr or '',
-        brute_step=self.brute_step or ''
+        expr=self.expr or "",
+        brute_step=self.brute_step or "",
     )
 
 
 model.Model._repr_html_ = repr_html_Model
-#model.Parameter._repr_html_ = repr_html_Parameter
+# model.Parameter._repr_html_ = repr_html_Parameter
 model.Parameters._repr_html_ = repr_html_Parameters
 model.ModelResult._repr_html_ = repr_html_ModelResult
 

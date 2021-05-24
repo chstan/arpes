@@ -2,7 +2,7 @@ import traceback
 import sys
 from collections import namedtuple
 
-__all__ = ('patched_excepthook',)
+__all__ = ("patched_excepthook",)
 
 
 def patched_excepthook(exc_type, exc_value, exc_tb):
@@ -19,4 +19,4 @@ def _add_missing_frames(tb):
     return result
 
 
-fake_tb = namedtuple('fake_tb', ('tb_frame', 'tb_lasti', 'tb_lineno', 'tb_next'))
+fake_tb = namedtuple("fake_tb", ("tb_frame", "tb_lasti", "tb_lineno", "tb_next"))

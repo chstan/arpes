@@ -3,7 +3,8 @@ from functools import partial
 from PyQt5 import QtGui, QtWidgets
 
 
-__all__ = ('RangeOrSingleValueWidget',)
+__all__ = ("RangeOrSingleValueWidget",)
+
 
 class RangeOrSingleValueWidget(QtWidgets.QGroupBox):
     def __init__(self, parent=None, root=None, coordinate_name=None, value=None):
@@ -11,10 +12,10 @@ class RangeOrSingleValueWidget(QtWidgets.QGroupBox):
 
         self.layout = QtGui.QGridLayout(self)
 
-        self.label = QtWidgets.QLabel('Value: ')
+        self.label = QtWidgets.QLabel("Value: ")
         self.spinbox = QtWidgets.QSpinBox()
         self.slider = QtWidgets.QSlider()
-        self.checkbox = QtWidgets.QCheckBox('Ranged')
+        self.checkbox = QtWidgets.QCheckBox("Ranged")
 
         self.root = root
 
@@ -48,7 +49,7 @@ class RangeOrSingleValueWidget(QtWidgets.QGroupBox):
 
     def recompute(self):
         value = self.spinbox.value()
-        self.label.setText('Value: {:.3g}'.format(value))
+        self.label.setText("Value: {:.3g}".format(value))
 
     def value(self):
         return self.spinbox.value()

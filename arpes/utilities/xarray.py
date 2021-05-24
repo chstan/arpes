@@ -4,8 +4,14 @@ import xarray as xr
 
 from arpes.typing import DataType
 
-__all__ = ('apply_dataarray', 'lift_datavar_attrs', 'lift_dataarray_attrs', 'lift_dataarray',
-           'unwrap_xarray_item', 'unwrap_xarray_dict')
+__all__ = (
+    "apply_dataarray",
+    "lift_datavar_attrs",
+    "lift_dataarray_attrs",
+    "lift_dataarray",
+    "unwrap_xarray_item",
+    "unwrap_xarray_dict",
+)
 
 
 def unwrap_xarray_item(item):
@@ -38,12 +44,7 @@ def unwrap_xarray_dict(d: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def apply_dataarray(arr: xr.DataArray, f, *args, **kwargs):
-    return xr.DataArray(
-        f(arr.values, *args, **kwargs),
-        arr.coords,
-        arr.dims,
-        attrs=arr.attrs
-    )
+    return xr.DataArray(f(arr.values, *args, **kwargs), arr.coords, arr.dims, attrs=arr.attrs)
 
 
 def lift_dataarray(f):
@@ -70,12 +71,7 @@ def lift_dataarray_attrs(f):
     """
 
     def g(arr: xr.DataArray, *args, **kwargs):
-        return xr.DataArray(
-            arr.values,
-            arr.coords,
-            arr.dims,
-            attrs=f(arr.attrs, *args, **kwargs)
-        )
+        return xr.DataArray(arr.values, arr.coords, arr.dims, attrs=f(arr.attrs, *args, **kwargs))
 
     return g
 

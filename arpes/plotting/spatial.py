@@ -12,24 +12,31 @@ import matplotlib.gridspec as gridspec
 
 from arpes.io import simple_load
 from arpes.plotting.annotations import annotate_point
-from arpes.plotting.utils import (path_for_plot, frame_with,
-                                  remove_colorbars, fancy_labels,
-                                  ddata_daxis_units)
+from arpes.plotting.utils import (
+    path_for_plot,
+    frame_with,
+    remove_colorbars,
+    fancy_labels,
+    ddata_daxis_units,
+)
 from arpes.provenance import save_plot_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.xarray import unwrap_xarray_item
 
 
-__all__ = ('reference_scan_spatial', 'plot_spatial_reference')
+__all__ = ("reference_scan_spatial", "plot_spatial_reference")
 
 
 @save_plot_provenance
 def plot_spatial_reference(
-        reference_map: DataType, data_list: List[DataType],
-        offset_list: Optional[List[Dict[str, Any]]] = None,
-        annotation_list: Optional[List[str]] = None,
-        out: Optional[str] = None, plot_refs: bool = True):
+    reference_map: DataType,
+    data_list: List[DataType],
+    offset_list: Optional[List[Dict[str, Any]]] = None,
+    annotation_list: Optional[List[str]] = None,
+    out: Optional[str] = None,
+    plot_refs: bool = True,
+):
     """
     Helpfully plots data against a reference scanning dataset. This is essential to understand
     where data was taken and can be used early in the analysis phase in order to highlight the
@@ -53,34 +60,55 @@ def plot_spatial_reference(
 
     n_references = len(data_list)
     if n_references == 1 and plot_refs:
-        fig, axes = plt.subplots(1, 2, figsize=(12, 5,))
+        fig, axes = plt.subplots(
+            1,
+            2,
+            figsize=(
+                12,
+                5,
+            ),
+        )
         ax = axes[0]
         ax_refs = [axes[1]]
     elif plot_refs:
         n_extra_axes = 1 + (n_references // 4)
-        fig = plt.figure(figsize=(6 * (1 + n_extra_axes), 5,))
+        fig = plt.figure(
+            figsize=(
+                6 * (1 + n_extra_axes),
+                5,
+            )
+        )
         spec = gridspec.GridSpec(ncols=2 * (1 + n_extra_axes), nrows=2, figure=fig)
         ax = fig.add_subplot(spec[:2, :2])
 
-        ax_refs = [fig.add_subplot(spec[i // (2 * n_extra_axes), 2 + i % (2 * n_extra_axes)])
-                   for i in range(n_references)]
+        ax_refs = [
+            fig.add_subplot(spec[i // (2 * n_extra_axes), 2 + i % (2 * n_extra_axes)])
+            for i in range(n_references)
+        ]
     else:
         ax_refs = []
-        fig, ax = plt.subplots(1, 1, figsize=(6, 5,))
+        fig, ax = plt.subplots(
+            1,
+            1,
+            figsize=(
+                6,
+                5,
+            ),
+        )
 
     try:
         reference_map = reference_map.S.spectra[0]
     except Exception:
         pass
 
-    reference_map = reference_map.S.mean_other(['x', 'y', 'z'])
+    reference_map = reference_map.S.mean_other(["x", "y", "z"])
 
     ref_dims = reference_map.dims[::-1]
 
     assert len(reference_map.dims) == 2
-    reference_map.S.plot(ax=ax, cmap='Blues')
+    reference_map.S.plot(ax=ax, cmap="Blues")
 
-    cmap = cm.get_cmap('Reds')
+    cmap = cm.get_cmap("Reds")
     rendered_annotations = []
     for i, (data, offset, annotation) in enumerate(zip(data_list, offset_list, annotation_list)):
         if offset is None:
@@ -90,8 +118,9 @@ def plot_spatial_reference(
                 offset = {}
 
         coords = {c: unwrap_xarray_item(data.coords[c]) for c in ref_dims}
-        n_array_coords = len([cv for cv in coords.values()
-                              if isinstance(cv, (np.ndarray, xr.DataArray))])
+        n_array_coords = len(
+            [cv for cv in coords.values() if isinstance(cv, (np.ndarray, xr.DataArray))]
+        )
         color = cmap(0.4 + (0.5 * i / len(data_list)))
         x = coords[ref_dims[0]] + offset.get(ref_dims[0], 0)
         y = coords[ref_dims[1]] + offset.get(ref_dims[1], 0)
@@ -126,16 +155,34 @@ def plot_spatial_reference(
             ax.add_patch(rect)
 
         dp = ddata_daxis_units(ax)
-        text_location = np.asarray([ref_x, ref_y, ]) + dp * scale * np.asarray([off_x, off_y])
-        text = ax.annotate(annotation, text_location, color='black', size=15)
+        text_location = (
+            np.asarray(
+                [
+                    ref_x,
+                    ref_y,
+                ]
+            )
+            + dp * scale * np.asarray([off_x, off_y])
+        )
+        text = ax.annotate(annotation, text_location, color="black", size=15)
         rendered_annotations.append(text)
-        text.set_path_effects([path_effects.Stroke(linewidth=2, foreground='white'),
-                               path_effects.Normal()])
+        text.set_path_effects(
+            [path_effects.Stroke(linewidth=2, foreground="white"), path_effects.Normal()]
+        )
         if plot_refs:
             ax_ref = ax_refs[i]
             keep_preference = list(ref_dims) + [
-                'eV', 'temperature', 'kz', 'hv', 'kp', 'kx', 'ky', 'phi', 'theta', 'beta',
-                'pixel',
+                "eV",
+                "temperature",
+                "kz",
+                "hv",
+                "kp",
+                "kx",
+                "ky",
+                "phi",
+                "theta",
+                "beta",
+                "pixel",
             ]
             keep = [d for d in keep_preference if d in data.dims][:2]
             data.S.mean_other(keep).S.plot(ax=ax_ref)
@@ -143,16 +190,22 @@ def plot_spatial_reference(
             fancy_labels(ax_ref)
             frame_with(ax_ref, color=color, linewidth=3)
 
-    ax.set_title('')
+    ax.set_title("")
     remove_colorbars()
     fancy_labels(ax)
     plt.tight_layout()
 
     try:
         from adjustText import adjust_text
-        adjust_text(rendered_annotations, ax=ax,
-                    avoid_points=False, avoid_objects=False,
-                    avoid_self=False, autoalign='xy')
+
+        adjust_text(
+            rendered_annotations,
+            ax=ax,
+            avoid_points=False,
+            avoid_objects=False,
+            avoid_self=False,
+            autoalign="xy",
+        )
     except ImportError:
         pass
 
@@ -167,7 +220,7 @@ def plot_spatial_reference(
 def reference_scan_spatial(data, out=None, **kwargs):
     data = normalize_to_spectrum(data)
 
-    dims = [d for d in data.dims if d in {'cycle', 'phi', 'eV'}]
+    dims = [d for d in data.dims if d in {"cycle", "phi", "eV"}]
 
     summed_data = data.sum(dims, keep_attrs=True)
 
@@ -175,24 +228,24 @@ def reference_scan_spatial(data, out=None, **kwargs):
     flat_axes = list(itertools.chain(*ax))
 
     summed_data.plot(ax=flat_axes[0])
-    flat_axes[0].set_title(r'Full \textbf{eV} range')
+    flat_axes[0].set_title(r"Full \textbf{eV} range")
 
-    dims_except_eV = [d for d in dims if d != 'eV']
+    dims_except_eV = [d for d in dims if d != "eV"]
     summed_data = data.sum(dims_except_eV)
 
     mul = 0.2
-    rng = data.coords['eV'].max().item() - data.coords['eV'].min().item()
-    offset = data.coords['eV'].max().item()
+    rng = data.coords["eV"].max().item() - data.coords["eV"].min().item()
+    offset = data.coords["eV"].max().item()
     if offset > 0:
         offset = 0
 
     if rng > 3:
-        mul = rng / 5.
+        mul = rng / 5.0
 
     for i in range(5):
         low_e, high_e = -mul * (i + 1) + offset, -mul * i + offset
-        title = r'\textbf{eV}' + ': {:.2g} to {:.2g}'.format(low_e, high_e)
-        summed_data.sel(eV=slice(low_e, high_e)).sum('eV').plot(ax=flat_axes[i+1])
+        title = r"\textbf{eV}" + ": {:.2g} to {:.2g}".format(low_e, high_e)
+        summed_data.sel(eV=slice(low_e, high_e)).sum("eV").plot(ax=flat_axes[i + 1])
         flat_axes[i + 1].set_title(title)
 
     y_range = flat_axes[0].get_ylim()
@@ -206,14 +259,16 @@ def reference_scan_spatial(data, out=None, **kwargs):
     # idea here is to collect points by those that are close together, then
     # only plot one annotation
     condensed = []
-    cutoff = 3 # 3 percent
+    cutoff = 3  # 3 percent
     for index, row in referenced.iterrows():
         ff = simple_load(index)
 
         x, y, _ = ff.S.sample_pos
         found = False
         for cx, cy, cl in condensed:
-            if abs(cx  - x) < cutoff * abs(delta_one_percent[0]) and abs(cy - y) < cutoff * abs(delta_one_percent[1]):
+            if abs(cx - x) < cutoff * abs(delta_one_percent[0]) and abs(cy - y) < cutoff * abs(
+                delta_one_percent[1]
+            ):
                 cl.append(index)
                 found = True
                 break
@@ -223,8 +278,16 @@ def reference_scan_spatial(data, out=None, **kwargs):
 
     for fax in flat_axes:
         for cx, cy, cl in condensed:
-            annotate_point(fax, (cx, cy,), ','.join([str(l) for l in cl]),
-                           delta=smart_delta, fontsize='large')
+            annotate_point(
+                fax,
+                (
+                    cx,
+                    cy,
+                ),
+                ",".join([str(l) for l in cl]),
+                delta=smart_delta,
+                fontsize="large",
+            )
 
     plt.tight_layout()
 
