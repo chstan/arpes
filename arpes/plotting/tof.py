@@ -38,7 +38,7 @@ def plot_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs
         fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (7, 5,)))
 
     data.data_vars[name_to_plot].plot(ax=ax, **kwargs)
-    x, y = data.data_vars[name_to_plot].T.to_arrays()
+    x, y = data.data_vars[name_to_plot].G.to_arrays()
 
     std = data.data_vars[name_to_plot + '_std'].values
     ax.fill_between(x, y - std, y + std, alpha=0.3, **kwargs)
@@ -64,7 +64,7 @@ def scatter_with_std(data: DataType, name_to_plot=None, ax=None, fmt='o', out=No
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (7, 5,)))
 
-    x, y = data.data_vars[name_to_plot].T.to_arrays()
+    x, y = data.data_vars[name_to_plot].G.to_arrays()
 
     std = data.data_vars[name_to_plot + '_std'].values
     ax.errorbar(x, y, yerr=std, fmt=fmt, markeredgecolor='black', **kwargs)

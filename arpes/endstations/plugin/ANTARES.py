@@ -155,7 +155,7 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
                     diff = np.abs(s - est_n)
                     closest = s
 
-            if diff is not 0:
+            if diff != 0:
                 warnings.warn('Could not identify axis by length.')
             return np.linspace(low, high, closest, endpoint=False), idx
 

@@ -27,8 +27,8 @@ def apply_cycle_fermi_edge_correction(data: DataType, energy_range=None, shift=T
     correction = build_cycle_fermi_edge_correction(data, energy_range)
 
     if shift:
-        correction_values = correction.T.map(lambda x: x.params['center'].value)
-        correction_shift = - correction_values / data.S.spectrum.T.stride(generic_dim_names=False)['eV']
+        correction_values = correction.G.map(lambda x: x.params['center'].value)
+        correction_shift = - correction_values / data.S.spectrum.G.stride(generic_dim_names=False)['eV']
         dataarr = data.S.spectrum
         shifted = xr.DataArray(
             shift_by(dataarr.values, correction_shift, axis=dataarr.dims.index('eV'),

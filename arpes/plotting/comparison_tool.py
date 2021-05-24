@@ -45,7 +45,7 @@ class ComparisonTool(BokehInteractiveTool):
             'plots': {},
             'figures': {},
             'widgets': {},
-            'data_range': self.arr.T.range(),
+            'data_range': self.arr.G.range(),
             'color_maps': {},
         })
 
@@ -98,7 +98,7 @@ class ComparisonTool(BokehInteractiveTool):
         x_axis_name = self.arr.dims[0]
         y_axis_name = self.arr.dims[1]
 
-        stride = self.arr.T.stride()
+        stride = self.arr.G.stride()
         delta_x_axis = stride['x']
         delta_y_axis = stride['y']
 

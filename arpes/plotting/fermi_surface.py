@@ -48,7 +48,7 @@ def magnify_circular_regions_plot(data: DataType, magnified_points, mag=10, radi
     pts = np.zeros(shape=(len(data.values.ravel()), 2,))
     mask = mask > 0
 
-    raveled = data.T.ravel()
+    raveled = data.G.ravel()
     pts[:,0] = raveled[data.dims[0]]
     pts[:,1] = raveled[data.dims[1]]
 

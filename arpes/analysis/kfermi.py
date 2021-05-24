@@ -37,4 +37,4 @@ def kfermi_from_mdcs(mdc_results: DataType, param=None):
         return not np.isnan(x.item())
 
     return LinearModel().guess_fit(
-        mdc_results.F.p(real_param_name).T.filter_coord('eV', nan_sieve)).eval(x=0)
+        mdc_results.F.p(real_param_name).G.filter_coord('eV', nan_sieve)).eval(x=0)

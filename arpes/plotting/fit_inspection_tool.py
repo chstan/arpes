@@ -203,7 +203,7 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
 
             if data is not None:
                 if self.remove_outliers:
-                    data = data.T.clean_outliers(clip=self.outlier_clip)
+                    data = data.G.clean_outliers(clip=self.outlier_clip)
 
                 plots['main'].data_source.data = {
                     'image': [data.values.T],

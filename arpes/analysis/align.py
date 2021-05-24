@@ -44,8 +44,8 @@ def align2d(a, b, subpixel=True):
     y = 1. * y - a.values.shape[0] / 2.
     x = 1. * x - a.values.shape[1] / 2.
 
-    return (y * a.T.stride(generic_dim_names=False)[a.dims[0]],
-            x * a.T.stride(generic_dim_names=False)[a.dims[1]],)
+    return (y * a.G.stride(generic_dim_names=False)[a.dims[0]],
+            x * a.G.stride(generic_dim_names=False)[a.dims[1]],)
 
 
 def align1d(a, b, subpixel=True):
@@ -67,7 +67,7 @@ def align1d(a, b, subpixel=True):
         x = x + -mod.params['b'].value / (2 * mod.params['a'].value)
 
     x = 1. * x - a.values.shape[0] / 2.
-    return x * a.T.stride(generic_dim_names=False)[a.dims[0]]
+    return x * a.G.stride(generic_dim_names=False)[a.dims[0]]
 
 
 def align(a, b, **kwargs):

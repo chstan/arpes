@@ -42,13 +42,13 @@ def savitzky_golay(data: typing.Union[DataType, list, np.ndarray], window_size, 
         if len(data.dims) == 3:
             if dim is None:
                 dim = data.dims[-1]
-            return data.T.map_axes(dim, lambda d, _: savitzky_golay(d, window_size, order, deriv, rate))
+            return data.G.map_axes(dim, lambda d, _: savitzky_golay(d, window_size, order, deriv, rate))
 
         if len(data.dims) == 2:
             if dim is None:
                 transformed_data = savitzky_golay_2d(data.values, window_size, order, derivative=deriv)
             else:
-                return data.T.map_axes(dim, lambda d, _: savitzky_golay(d, window_size, order, deriv=deriv or 0, rate=rate, dim=None))
+                return data.G.map_axes(dim, lambda d, _: savitzky_golay(d, window_size, order, deriv=deriv or 0, rate=rate, dim=None))
 
     return xr.DataArray(transformed_data, data.coords, data.dims, attrs=data.attrs.copy())
 
@@ -190,7 +190,7 @@ def savitzky_golay_array(y, window_size, order, deriv=0, rate=1):
        Data by Simplified Least Squares Procedures. Analytical
        Chemistry, 1964, 36 (8), pp 1627-1639.
     .. [2] Numerical Recipes 3rd Edition: The Art of Scientific Computing
-       W.H. Press, S.A. Teukolsky, W.T. Vetterling, B.P. Flannery
+       W.H. Press, S.A. Teukolsky, W.G. Vetterling, B.P. Flannery
        Cambridge University Press ISBN-13: 9780521880688
     """
 

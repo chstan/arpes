@@ -82,7 +82,7 @@ def radial_edcs_along_pocket(data: DataType, angle, inner_radius=0, outer_radius
     center_as_vector = np.array([center_point.get(d, 0) for d in fermi_surface_dims])
 
     if n_points is None:
-        stride = data.T.stride(generic_dim_names=False)
+        stride = data.G.stride(generic_dim_names=False)
         granularity = np.mean(np.array([stride[d] for d in fermi_surface_dims]))
         n_points = int(1. * (outer_radius - inner_radius) / granularity)
 
@@ -146,7 +146,7 @@ def curves_along_pocket(data: DataType, n_points=None, inner_radius=0, outer_rad
         # determine N approximately by the granularity
         n_points = np.min(list(len(data.coords[d].values) for d in fermi_surface_dims))
 
-    stride = data.T.stride(generic_dim_names=False)
+    stride = data.G.stride(generic_dim_names=False)
     resolution = np.min([v for s, v in stride.items() if s in fermi_surface_dims])
 
     angles = np.linspace(0, 2*np.pi, n_points, endpoint=False)

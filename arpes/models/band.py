@@ -123,9 +123,9 @@ class MultifitBand(Band):
         full_var_name = self.label + var_name
 
         if 'stderr' in full_var_name:
-            return self._data.T.map(param_stderr_getter(full_var_name.split('_stderr')[0]))
+            return self._data.G.map(param_stderr_getter(full_var_name.split('_stderr')[0]))
 
-        return self._data.T.map(param_getter(full_var_name))
+        return self._data.G.map(param_getter(full_var_name))
 
 
 class VoigtBand(Band):

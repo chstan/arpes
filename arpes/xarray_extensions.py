@@ -388,7 +388,7 @@ class ARPESAccessorBase:
         along_dims = list(points.values())[0].dims
         selected_dims = list(points.keys())
 
-        stride = self._obj.T.stride(generic_dim_names=False)
+        stride = self._obj.G.stride(generic_dim_names=False)
 
         new_dim_order = [d for d in self._obj.dims if d not in along_dims] + list(
             along_dims
@@ -396,7 +396,7 @@ class ARPESAccessorBase:
 
         data_for = self._obj.transpose(*new_dim_order)
         new_data = data_for.sum(selected_dims, keep_attrs=True)
-        for coord, value in data_for.T.iterate_axis(along_dims):
+        for coord, value in data_for.G.iterate_axis(along_dims):
             nearest_sel_params = {}
             if safe:
                 for d, v in radius.items():
@@ -504,7 +504,7 @@ class ARPESAccessorBase:
         # make sure we are taking at least one pixel along each
         nearest_sel_params = {}
         if safe:
-            stride = self._obj.T.stride(generic_dim_names=False)
+            stride = self._obj.G.stride(generic_dim_names=False)
             for d, v in radius.items():
                 if v < stride[d]:
                     nearest_sel_params[d] = point[d]
@@ -894,7 +894,7 @@ class ARPESAccessorBase:
         if indices:
             return edges
 
-        delta = self._obj.T.stride(generic_dim_names=False)
+        delta = self._obj.G.stride(generic_dim_names=False)
         return edges * delta["eV"] + self._obj.coords["eV"].values[0]
 
     def find_spectrum_angular_edges_full(self, indices=False):
@@ -955,7 +955,7 @@ class ARPESAccessorBase:
         if indices:
             return np.array(low_edges), np.array(high_edges), rebinned.coords["eV"]
 
-        delta = self._obj.T.stride(generic_dim_names=False)
+        delta = self._obj.G.stride(generic_dim_names=False)
 
         low_edges = (
             np.array(low_edges) * delta[angular_dim]
@@ -998,14 +998,14 @@ class ARPESAccessorBase:
                 cut_margin = 50
             else:
                 cut_margin = int(
-                    0.08 / self._obj.T.stride(generic_dim_names=False)[angular_dim]
+                    0.08 / self._obj.G.stride(generic_dim_names=False)[angular_dim]
                 )
         else:
             if isinstance(cut_margin, float):
                 assert angular_dim == "phi"
                 cut_margin = int(
                     cut_margin
-                    / self._obj.T.stride(generic_dim_names=False)[angular_dim]
+                    / self._obj.G.stride(generic_dim_names=False)[angular_dim]
                 )
 
         if interp_range is not None:
@@ -1087,7 +1087,7 @@ class ARPESAccessorBase:
         if indices:
             return edges
 
-        delta = self._obj.T.stride(generic_dim_names=False)
+        delta = self._obj.G.stride(generic_dim_names=False)
         return edges * delta[angular_dim] + self._obj.coords[angular_dim].values[0]
 
     def trimmed_selector(self):
@@ -1955,8 +1955,8 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 NORMALIZED_DIM_NAMES = ["x", "y", "z", "w"]
 
 
-@xr.register_dataset_accessor("T")
-@xr.register_dataarray_accessor("T")
+@xr.register_dataset_accessor("G")
+@xr.register_dataarray_accessor("G")
 class GenericAccessorTools:
     _obj = None
 
@@ -2007,7 +2007,7 @@ class GenericAccessorTools:
 
         assert len(
             dims
-        ) == 2 and "You must supply exactly two dims to `.T.extent` not {}".format(dims)
+        ) == 2 and "You must supply exactly two dims to `.G.extent` not {}".format(dims)
         return [
             self._obj.coords[dims[0]][0].item(),
             self._obj.coords[dims[0]][-1].item(),
@@ -2151,7 +2151,7 @@ class GenericAccessorTools:
 
         Ex:
 
-        plt.scatter(*data.T.as_arrays(), marker='s')
+        plt.scatter(*data.G.as_arrays(), marker='s')
         :return:
         """
         assert len(self._obj.dims) == 1
@@ -2258,7 +2258,7 @@ class GenericAccessorTools:
 
         Then calling
 
-        data.T.transform('X', f)
+        data.G.transform('X', f)
 
         maps to a dataset with the same dimension X but where Y has been replaced by
         the length 2 label {'mean', 'variance'}. The full dimensions in this case are
@@ -2393,7 +2393,7 @@ class GenericAccessorTools:
             shift_axis = option_dims[0]
 
         shift_amount = (
-            -other.values / data.T.stride(generic_dim_names=False)[shift_axis]
+            -other.values / data.G.stride(generic_dim_names=False)[shift_axis]
         )
 
         shifted_data = shift_by(
@@ -2439,7 +2439,7 @@ class SelectionToolAccessor:
         # should only be one!
         (other_dim,) = list(set(self._obj.dims).difference(around.dims))
 
-        for coord, value in around.T.iterate_axis(around.dims):
+        for coord, value in around.G.iterate_axis(around.dims):
             value = value.item()
             marg = self._obj.sel(**coord)
 
@@ -2501,7 +2501,7 @@ class ARPESDatasetFitToolAccessor:
         self._obj = xarray_obj
 
     def eval(self, *args, **kwargs):
-        return self._obj.results.T.map(lambda x: x.eval(*args, **kwargs))
+        return self._obj.results.G.map(lambda x: x.eval(*args, **kwargs))
 
     def show(self):
         fit_diagnostic_tool = FitCheckTool()
@@ -2540,10 +2540,10 @@ class ARPESFitToolsAccessor:
         return fit_diagnostic_tool.make_tool(self._obj)
 
     def p(self, param_name):
-        return self._obj.T.map(param_getter(param_name), otypes=[np.float])
+        return self._obj.G.map(param_getter(param_name), otypes=[np.float])
 
     def s(self, param_name):
-        return self._obj.T.map(param_stderr_getter(param_name), otypes=[np.float])
+        return self._obj.G.map(param_stderr_getter(param_name), otypes=[np.float])
 
     @property
     def bands(self):

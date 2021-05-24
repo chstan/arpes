@@ -83,7 +83,7 @@ def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args
     if correction is None:
         correction = build_direct_fermi_edge_correction(arr, *args, **kwargs)
 
-    shift_amount = -correction / arr.T.stride(generic_dim_names=False)['eV']  # pylint: disable=invalid-unary-operand-type
+    shift_amount = -correction / arr.G.stride(generic_dim_names=False)['eV']  # pylint: disable=invalid-unary-operand-type
     energy_axis = list(arr.dims).index('eV')
 
     correction_axis = list(arr.dims).index(correction.dims[0])
@@ -134,7 +134,7 @@ def build_direct_fermi_edge_correction(arr: xr.DataArray, fit_limit=0.001, energ
     def sieve(c, v):
         return v.item().params['center'].stderr < 0.001
 
-    corrections = edge_fit.T.filter_coord(along, sieve).T.map(lambda x: x.params['center'].value)
+    corrections = edge_fit.G.filter_coord(along, sieve).G.map(lambda x: x.params['center'].value)
 
     if plot:
         corrections.plot()
@@ -191,13 +191,13 @@ def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None
     if correction is None:
         correction = build_photon_energy_fermi_edge_correction(arr, **kwargs)
 
-    correction_values = correction.T.map(lambda x: x.params['center'].value)
+    correction_values = correction.G.map(lambda x: x.params['center'].value)
     if 'corrections' not in arr.attrs:
         arr.attrs['corrections'] = {}
 
     arr.attrs['corrections']['hv_correction'] = list(correction_values.values)
 
-    shift_amount = -correction_values / arr.T.stride(generic_dim_names=False)['eV']
+    shift_amount = -correction_values / arr.G.stride(generic_dim_names=False)['eV']
     energy_axis = arr.dims.index('eV')
     hv_axis = arr.dims.index('hv')
 

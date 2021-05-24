@@ -54,7 +54,7 @@ def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
 
         # extract the data for this param name
         # attributes are on .value and .stderr
-        centers = data.T.map(lambda x: x.params[param].value)
+        centers = data.G.map(lambda x: x.params[param].value)
         if is_bootstrapped:
             centers = centers.mean('bootstrap')
 
@@ -64,9 +64,9 @@ def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
 
         if len(centers.dims) == 1:
             if is_bootstrapped:
-                widths = data.T.map(lambda x: x.params[param].value).std('bootstrap')
+                widths = data.G.map(lambda x: x.params[param].value).std('bootstrap')
             else:
-                widths = data.T.map(lambda x: x.params[param].stderr)
+                widths = data.G.map(lambda x: x.params[param].stderr)
             # then we can plot widths as well, otherwise we need more
             # figures, blergh
             x_coords = centers.coords[centers.dims[0]]

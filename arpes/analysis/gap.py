@@ -113,7 +113,7 @@ def normalize_by_fermi_dirac(data: DataType, reference_data: DataType = None, pl
 
     if temperature_axis:
         without_background = normalize_to_spectrum(without_background)
-        divided = without_background.T.map_axes(
+        divided = without_background.G.map_axes(
             temperature_axis, lambda x, coord: x / broadening_fit.eval(
                 x=x.coords['eV'].values, lin_bkg=0, const_bkg=1, offset=0,
                 conv_width=broadening,
@@ -144,7 +144,7 @@ def _shift_energy_interpolate(data: DataType, shift=None):
         closest_to_zero = data.coords['eV'].sel(eV=0, method='nearest')
         shift = -closest_to_zero
 
-    stride = data.T.stride('eV', generic_dim_names=False)
+    stride = data.G.stride('eV', generic_dim_names=False)
 
     if np.abs(shift) >= stride:
         n_strides = int(shift / stride)

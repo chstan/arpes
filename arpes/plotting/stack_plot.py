@@ -70,8 +70,8 @@ def offset_scatter_plot(data: DataType, name_to_plot=None, stack_axis=None, ferm
         ax.set_ylim(ylim)
 
     # real plotting here
-    for i, (coord, value) in enumerate(data.T.iterate_axis(stack_axis)):
-        delta = data.T.stride(generic_dim_names=False)[other_dim]
+    for i, (coord, value) in enumerate(data.G.iterate_axis(stack_axis)):
+        delta = data.G.stride(generic_dim_names=False)[other_dim]
         data_for = value.copy(deep=True)
         data_for.coords[other_dim] = data_for.coords[other_dim].copy(deep=True)
         data_for.coords[other_dim].values = data_for.coords[other_dim].values.copy()
@@ -155,7 +155,7 @@ def flat_stack_plot(data: DataType, stack_axis=None, fermi_level=True, cbarmap=N
             ax.axvline(0, color='red', alpha=0.8, linestyle='--', linewidth=1)
 
     # meat of the plotting
-    for coord_dict, marginal in list(data.T.iterate_axis(stack_axis)):
+    for coord_dict, marginal in list(data.G.iterate_axis(stack_axis)):
         if transpose:
             if mode == 'line':
                 ax.plot(marginal.values, marginal.coords[marginal.dims[0]].values, color=cmap(coord_dict[stack_axis]), **kwargs)
@@ -167,7 +167,7 @@ def flat_stack_plot(data: DataType, stack_axis=None, fermi_level=True, cbarmap=N
                 marginal.plot(ax=ax, color=cmap(coord_dict[stack_axis]), **kwargs)
             else:
                 assert mode == 'scatter'
-                ax.scatter(*marginal.T.to_arrays(), color=cmap(coord_dict[stack_axis]), **kwargs)
+                ax.scatter(*marginal.G.to_arrays(), color=cmap(coord_dict[stack_axis]), **kwargs)
                 ax.set_xlabel(marginal.dims[0])
 
     ax.set_xlabel(label_for_dim(data, ax.get_xlabel()))
@@ -229,7 +229,7 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
     if scale_factor is None:
         maximum_deviation = -np.inf
 
-        for _, marginal in data.T.iterate_axis(stack_axis):
+        for _, marginal in data.G.iterate_axis(stack_axis):
             marginal_values = -marginal.values if negate else marginal.values
             marginal_offset, right_marginal_offset = marginal_values[0], marginal_values[-1]
 
@@ -247,7 +247,7 @@ def stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, title=None, 
     iteration_order = -1 # might need to fiddle with this in certain cases
     lim = [-np.inf, np.inf]
     labeled = False
-    for i, (coord_dict, marginal) in enumerate(list(data.T.iterate_axis(stack_axis))[::iteration_order]):
+    for i, (coord_dict, marginal) in enumerate(list(data.G.iterate_axis(stack_axis))[::iteration_order]):
         coord_value = coord_dict[stack_axis]
 
         xs = cvalues
@@ -352,7 +352,7 @@ def overlapped_stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, t
     if scale_factor is None:
         maximum_deviation = -np.inf
 
-        for _, marginal in data.T.iterate_axis(stack_axis):
+        for _, marginal in data.G.iterate_axis(stack_axis):
             marginal_values = -marginal.values if negate else marginal.values
             marginal_offset, right_marginal_offset = marginal_values[0], marginal_values[-1]
 
@@ -366,7 +366,7 @@ def overlapped_stack_dispersion_plot(data: DataType, stack_axis=None, ax=None, t
         scale_factor = 0.02 * (np.max(cvalues) - np.min(cvalues)) / maximum_deviation
 
     iteration_order = -1 # might need to fiddle with this in certain cases
-    for coord_dict, marginal in list(data.T.iterate_axis(stack_axis))[::iteration_order]:
+    for coord_dict, marginal in list(data.G.iterate_axis(stack_axis))[::iteration_order]:
         coord_value = coord_dict[stack_axis]
 
         xs = cvalues

@@ -296,7 +296,7 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
     )
 
     total_slices = np.product([len(arr.coords[d]) for d in free_directions])
-    for coord_dict, marginal in wrap_tqdm(arr.T.iterate_axis(free_directions), interactive,
+    for coord_dict, marginal in wrap_tqdm(arr.G.iterate_axis(free_directions), interactive,
                                           desc='fitting',
                                           total=total_slices):
         partial_bands = [resolve_partial_bands_from_description(
@@ -341,7 +341,7 @@ def fit_patterned_bands(arr: xr.DataArray, band_set, direction_normal=True,
     residual = arr.copy(deep=True)
     residual.values = np.zeros(residual.shape)
 
-    for coords in band_results.T.iter_coords():
+    for coords in band_results.G.iter_coords():
         fit_item = band_results.sel(**coords).item()
         if fit_item is None:
             continue

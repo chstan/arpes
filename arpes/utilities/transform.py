@@ -15,7 +15,7 @@ And a dataset with dimensions [X, Y]
 
 Then calling
 
-data.T.transform('X', f)
+data.G.transform('X', f)
 
 maps to a dataset with the same dimension X but where Y has been replaced by
 the length 2 label {'mean', 'variance'}. The full dimensions in this case are

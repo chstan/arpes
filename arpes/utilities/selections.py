@@ -85,7 +85,7 @@ def select_disk_mask(data: DataType, radius, outer_radius=None, around: Optional
     data = normalize_to_spectrum(data)
     around = _normalize_point(data, around, **kwargs)
 
-    raveled = data.T.ravel()
+    raveled = data.G.ravel()
 
     dim_order = list(around.keys())
     dist = np.sqrt(np.sum(np.stack([(raveled[d] - around[d]) ** 2 for d in dim_order], axis=1), axis=1))
@@ -130,7 +130,7 @@ def select_disk(data: DataType, radius, outer_radius=None, around: Optional[Unio
         mask = np.logical_not(mask)
 
     # at this point, around is now a dictionary specifying a point to do the selection around
-    raveled = data.T.ravel()
+    raveled = data.G.ravel()
     data_arr = raveled['data']
 
     dim_order = list(around.keys())

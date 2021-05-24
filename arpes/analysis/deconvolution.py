@@ -94,7 +94,7 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
                 result = arr.copy(deep=True).transpose(other_dim,
                                                        axis)  # not sure why the dims only seems to work in this order. seems like I should be able to swap it to (axis,other_dim) and also change the data collection to result[x_ind,y_ind], but this gave different results
 
-                for i, (od, iteration) in wrap_progress(enumerate(arr.T.iterate_axis(other_dim)),
+                for i, (od, iteration) in wrap_progress(enumerate(arr.G.iterate_axis(other_dim)),
                                                         desc="Iterating " + other_dim,
                                                         total=len(arr[other_dim])):  # TODO tidy this gross-looking loop
                     # indices of data being deconvolved
@@ -108,10 +108,10 @@ def deconvolve_rl(data: DataType, psf=None, n_iterations=10, axis=None,
                 # three-dimensional data
                 result = arr.copy(deep=True).transpose(*other_dim,
                                                        axis)  # not sure why the dims only seems to work in this order. seems like I should be able to swap it to (axis,*other_dim) and also change the data collection to result[x_ind,y_ind,z_ind], but this gave different results
-                for i, (od0, iteration0) in wrap_progress(enumerate(arr.T.iterate_axis(other_dim[0])),
+                for i, (od0, iteration0) in wrap_progress(enumerate(arr.G.iterate_axis(other_dim[0])),
                                                           desc="Iterating " + other_dim[0], total=len(
                                 arr[other_dim[0]])):  # TODO tidy this gross-looking loop
-                    for j, (od1, iteration1) in wrap_progress(enumerate(iteration0.T.iterate_axis(other_dim[1])),
+                    for j, (od1, iteration1) in wrap_progress(enumerate(iteration0.G.iterate_axis(other_dim[1])),
                                                               desc="Iterating " + other_dim[1],
                                                               total=len(arr[other_dim[1]]),
                                                               leave=False):  # TODO tidy this gross-looking loop

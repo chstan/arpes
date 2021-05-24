@@ -44,7 +44,7 @@ def plot_movie(data: xr.DataArray, time_dim, interval=None,
     def animate(i):
         coordinate = animation_coords[i]
         data_for_plot = data.sel(**dict([[time_dim, coordinate]]))
-        plot.set_array(data_for_plot.values.T.ravel())
+        plot.set_array(data_for_plot.values.G.ravel())
         return plot,
 
     if interval:

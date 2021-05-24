@@ -486,7 +486,7 @@ class TestBasicDataLoading(object):
         by_dims = data.S.spectra[0].dims
         ranges = [[pytest.approx(data.coords[d].min().item(), 1e-3),
                    pytest.approx(data.coords[d].max().item(), 1e-3),
-                   pytest.approx(data.T.stride(generic_dim_names=False)[d], 1e-3)] for d in by_dims]
+                   pytest.approx(data.G.stride(generic_dim_names=False)[d], 1e-3)] for d in by_dims]
 
         assert list(zip(by_dims, ranges)) == list(zip(by_dims, [expected['coords'][d] for d in by_dims]))
         for k, v in expected['coords'].items():

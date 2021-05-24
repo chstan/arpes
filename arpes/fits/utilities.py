@@ -261,11 +261,11 @@ def broadcast_model(model_cls: Union[type, TypeIterable],
 
     if multithread:
         with ProcessPoolExecutor() as executor:
-            for fit_result, fit_residual, coords in executor.map(_fit_func, template.T.iter_coords()):
+            for fit_result, fit_residual, coords in executor.map(_fit_func, template.G.iter_coords()):
                 template.loc[coords] = wrap_for_xarray_values_unpacking(fit_result)
                 residual.loc[coords] = fit_residual
     else:
-        for indices, cut_coords in wrap_progress(template.T.enumerate_iter_coords(), desc='Fitting', total=n_fits):
+        for indices, cut_coords in wrap_progress(template.G.enumerate_iter_coords(), desc='Fitting', total=n_fits):
             fit_result, fit_residual, _ = _fit_func(cut_coords)
 
             template.loc[cut_coords] = wrap_for_xarray_values_unpacking(fit_result)
@@ -288,7 +288,7 @@ def _perform_fit(cut_coords, data, model, params, safe, weights, window):
     cut_data, original_cut_data = _apply_window(data, cut_coords, window)
 
     if safe:
-        cut_data = cut_data.T.drop_nan()
+        cut_data = cut_data.G.drop_nan()
 
     weights_for = None
     if weights is not None:

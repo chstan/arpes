@@ -15,7 +15,7 @@ def calculate_background_hull(arr, breakpoints=None):
             processed.append(calculate_background_hull(arr.sel(**dict([[dim, slice(blow, bhigh)]]))))
         return xr.concat(processed, dim)
 
-    points = np.stack(arr.T.to_arrays(), axis=1)
+    points = np.stack(arr.G.to_arrays(), axis=1)
     hull = ConvexHull(points)
 
     vertices = np.array(hull.vertices)
