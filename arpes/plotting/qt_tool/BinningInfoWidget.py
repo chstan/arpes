@@ -10,7 +10,7 @@ __all__ = ('BinningInfoWidget',)
 class BinningInfoWidget(QtWidgets.QGroupBox):
     def __init__(self, parent=None, root=None, axis_index=None):
         super().__init__(title=str(axis_index), parent=parent)
-        self.root = root
+        self._root = root
         self.axis_index = axis_index
 
         self.spinbox = QtWidgets.QSpinBox()
@@ -26,6 +26,10 @@ class BinningInfoWidget(QtWidgets.QGroupBox):
         )
 
         self.recompute()
+
+    @property
+    def root(self):
+        return self._root()
 
     def recompute(self):
         self.setTitle(self.root.data.dims[self.axis_index])

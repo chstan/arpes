@@ -18,9 +18,13 @@ class AxisInfoWidget(QtWidgets.QGroupBox):
         self.layout.addWidget(self.transpose_button)
 
         self.axis_index = axis_index
-        self.root = root
+        self._root = root
         self.setLayout(self.layout)
         self.recompute()
+
+    @property
+    def root(self):
+        return self._root()
 
     def recompute(self):
         self.setTitle(self.root.data.dims[self.axis_index])

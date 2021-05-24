@@ -6,6 +6,7 @@ import arpes.config
 from arpes.utilities.excepthook import patched_excepthook
 from arpes.utilities.ui import PRETTY_KEYS, pretty_key_event, KeyBinding, horizontal, vertical, tabs, CursorRegion, \
     CursorMode
+import weakref
 
 __all__ = ('SimpleWindow',)
 
@@ -24,7 +25,7 @@ class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
 
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.app = None
+        self.app = None # this will eventually be a weakref to the application
         self._help_dialog = None
 
         self._old_excepthook = sys.excepthook
@@ -51,6 +52,7 @@ class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
 
     def close(self):
         sys.excepthook = self._old_excepthook
+        self.app().close()
         super().close()
 
     def eventFilter(self, source, event):

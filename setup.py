@@ -26,9 +26,9 @@ DEPENDENCY_GROUPS = {
 
         'xarray',
 
-        'h5py',
-        'pyqtgraph>=0.11.0,<0.12.0',
-        'PyQt5>=5.15.1,<5.16.0',
+        'h5py>=3.2.1',
+        'pyqtgraph==0.12',
+        'PyQt5==5.15',
         'netCDF4',
         'colorcet',
 
@@ -37,7 +37,7 @@ DEPENDENCY_GROUPS = {
         'dask',
         'numpy',
         'scipy',
-        'lmfit>=1.0.1,<1.1.0',
+        'lmfit==1.0',
         'scikit-learn',
 
         # plotting

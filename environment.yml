@@ -1,4 +1,4 @@
-name: arpes-verify-3
+name: arpes-verify-2
 channels:
   - arpes
   - defaults
@@ -8,15 +8,16 @@ dependencies:
 
   - astropy
   - xarray>=0.16.1
-  - h5py>=3.0.0
-  - pyqtgraph>=0.11.0,<0.12.0
+  - h5py>=3.2.1
+  - pyqtgraph==0.12
 
   - pint
   - pandas
   - dask
   - numpy
   - scipy
-  - lmfit>=1.0.0,<1.1.0
+  - lmfit==1.0
+  - netCDF4
 
   # plotting
   - colorcet
@@ -26,22 +27,18 @@ dependencies:
   - ipywidgets==7.0.1
 
   # Misc deps
-  - xlrd
-  - openpyxl
-  - tqdm
   - scikit-learn
-  - colorama
   - pip
 
   # pip
   - pip:
-    - PyQt5>=5.15.1,<5.16.0
-    - packaging
-    - xlrd
-    - colorama
-    - imageio
-    - titlecase
-    - openpyxl
-    - tqdm
-    - rx
-    - dill
+      - PyQt5==5.15
+      - packaging
+      - xlrd
+      - colorama
+      - imageio
+      - titlecase
+      - openpyxl
+      - tqdm
+      - rx
+      - dill

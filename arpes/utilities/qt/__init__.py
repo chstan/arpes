@@ -1,11 +1,61 @@
 import pyqtgraph as pg
+from pyqtgraph import ViewBox
 
 from .data_array_image_view import DataArrayImageView
 from .help_dialogs import BasicHelpDialog
 from .windows import SimpleWindow
 from .app import SimpleApp
 
-__all__ = ('DataArrayImageView', 'BasicHelpDialog', 'SimpleWindow', 'SimpleApp', 'qt_info',)
+__all__ = (
+    "DataArrayImageView",
+    "BasicHelpDialog",
+    "SimpleWindow",
+    "SimpleApp",
+    "qt_info",
+    "remove_dangling_viewboxes",
+)
+
+
+def remove_dangling_viewboxes():
+    """
+    If you construct a view hierarchy which has circular references
+    then it can happen that Python will retain the references to Qt
+    objects after they have been freed. This has manifested as
+    ViewBoxes which remain and prevent restarting of an interactive tool.
+
+    For now I have actually gone and fixed this problem by removing the circular
+    dependencies, but in a pinch you can also call this function
+    to remove the orphaned ViewBoxes.
+
+    There are two places we need to clean these stale views up:
+
+    * ViewBox.AllViews
+    * ViewBox.NamedViews
+    """
+    import sip
+
+    for_deletion = set()
+
+    # In each case, we need to coerce the collection to
+    # a list before we iterate because we are modifying the
+    # underlying collection
+    for v in list(ViewBox.AllViews):
+        if sip.isdeleted(v):
+            # first remove it from the ViewBox references
+            # and then we will delete it later to prevent an
+            # error
+            for_deletion.add(v)
+            del ViewBox.AllViews[v]
+
+    for vname in list(ViewBox.NamedViews):
+        v = ViewBox.NamedViews[vname]
+
+        if sip.isdeleted(v):
+            for_deletion.add(v)
+            del ViewBox.NamedViews[vname]
+
+    for v in for_deletion:
+        del v
 
 
 class QtInfo:
@@ -20,12 +70,17 @@ class QtInfo:
             return
 
         self._inited = True
-        screen = app.screens()[0]
         dpis = [screen.physicalDotsPerInch() for screen in app.screens()]
         self.screen_dpi = sum(dpis) / len(dpis)
 
     def inches_to_px(self, arg):
-        if isinstance(arg, (int, float,)):
+        if isinstance(
+            arg,
+            (
+                int,
+                float,
+            ),
+        ):
             return self.screen_dpi * arg
 
         return map(lambda x: x * self.screen_dpi, arg)
@@ -41,7 +96,9 @@ class QtInfo:
 
         self._pg_patched = True
 
-        pg.setConfigOptions(antialias=True, foreground=(0, 0, 0), background=(255, 255, 255))
+        pg.setConfigOptions(
+            antialias=True, foreground=(0, 0, 0), background=(255, 255, 255)
+        )
 
         def patchedLinkedViewChanged(self, view, axis):
             """
@@ -104,5 +161,4 @@ class QtInfo:
         pg.ViewBox.linkedViewChanged = patchedLinkedViewChanged
 
 
-qt_info = QtInfo() # singleton configuration
-
+qt_info = QtInfo()  # singleton configuration

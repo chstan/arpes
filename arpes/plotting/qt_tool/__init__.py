@@ -4,21 +4,38 @@ from PyQt5 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import numpy as np
 from collections import namedtuple
+import weakref
 
+import arpes.config
 from arpes.utilities import normalize_to_spectrum
 from arpes.typing import DataType
-import arpes.config
 from arpes.utilities.qt.data_array_image_view import DataArrayPlot
 
 from arpes.utilities.ui import KeyBinding, horizontal, tabs, CursorRegion
-from arpes.utilities.qt import qt_info, DataArrayImageView, BasicHelpDialog, SimpleWindow, SimpleApp
+from arpes.utilities.qt import (
+    qt_info,
+    DataArrayImageView,
+    BasicHelpDialog,
+    SimpleWindow,
+    SimpleApp,
+)
 
 from .AxisInfoWidget import AxisInfoWidget
 from .BinningInfoWidget import BinningInfoWidget
 
-__all__ = ('QtTool', 'qt_tool',)
+__all__ = (
+    "QtTool",
+    "qt_tool",
+)
 
-ReactivePlotRecord = namedtuple('ReactivePlotRecord', ('dims', 'view', 'orientation',))
+ReactivePlotRecord = namedtuple(
+    "ReactivePlotRecord",
+    (
+        "dims",
+        "view",
+        "orientation",
+    ),
+)
 
 qt_info.setup_pyqtgraph()
 
@@ -33,37 +50,42 @@ class QtToolWindow(SimpleWindow):
     HELP_DIALOG_CLS = BasicHelpDialog
 
     def compile_key_bindings(self):
-        return super().compile_key_bindings() + [ # already includes Help and Close
+        return super().compile_key_bindings() + [  # already includes Help and Close
             KeyBinding(
-                'Scroll Cursor',
-                [QtCore.Qt.Key_Left, QtCore.Qt.Key_Right, QtCore.Qt.Key_Up, QtCore.Qt.Key_Down],
-                self.scroll
+                "Scroll Cursor",
+                [
+                    QtCore.Qt.Key_Left,
+                    QtCore.Qt.Key_Right,
+                    QtCore.Qt.Key_Up,
+                    QtCore.Qt.Key_Down,
+                ],
+                self.scroll,
             ),
             KeyBinding(
-                'Center Cursor',
+                "Center Cursor",
                 [QtCore.Qt.Key_C],
                 self.center_cursor,
             ),
             KeyBinding(
-                'Transpose - Roll Axis',
+                "Transpose - Roll Axis",
                 [QtCore.Qt.Key_T],
                 self.transpose_roll,
             ),
             KeyBinding(
-                'Transpose - Swap Front Axes',
+                "Transpose - Swap Front Axes",
                 [QtCore.Qt.Key_Y],
                 self.transpose_swap,
-            )
+            ),
         ]
 
     def center_cursor(self, event):
-        self.app.center_cursor()
+        self.app().center_cursor()
 
     def transpose_roll(self, event):
-        self.app.transpose_to_front(-1)
+        self.app().transpose_to_front(-1)
 
     def transpose_swap(self, event):
-        self.app.transpose_to_front(1)
+        self.app().transpose_to_front(1)
 
     def scroll(self, event: QtGui.QKeyEvent):
         key_map = {
@@ -81,8 +103,9 @@ class QtToolWindow(SimpleWindow):
         if event.nativeModifiers() & 2:  # shift key
             delta = (delta[0], delta[1] * 20)
 
-        if delta is not None and self.app is not None:
-            self.app.scroll(delta)
+        if delta is not None and self.app() is not None:
+            self.app().scroll(delta)
+
 
 class QtTool(SimpleApp):
     """
@@ -91,9 +114,12 @@ class QtTool(SimpleApp):
     with the tool
     """
 
-    TITLE = 'Qt Tool'
+    TITLE = "Qt Tool"
     WINDOW_CLS = QtToolWindow
-    WINDOW_SIZE = (5,5,)
+    WINDOW_SIZE = (
+        5,
+        5,
+    )
 
     def __init__(self):
         super().__init__()
@@ -117,7 +143,7 @@ class QtTool(SimpleApp):
                 cursor.set_location(new_cursor[i])
 
     def scroll(self, delta):
-        cursor = list(self.context['cursor'])
+        cursor = list(self.context["cursor"])
         cursor[delta[0]] += delta[1]
 
         self.update_cursor_position(cursor)
@@ -143,7 +169,7 @@ class QtTool(SimpleApp):
             for cursor in cursors:
                 cursor.set_width(self._binning[i])
 
-        self.update_cursor_position(self.context['cursor'], force=True)
+        self.update_cursor_position(self.context["cursor"], force=True)
 
     def transpose(self, transpose_order):
         reindex_order = [self.data.dims.index(t) for t in transpose_order]
@@ -152,7 +178,7 @@ class QtTool(SimpleApp):
         for widget in self.axis_info_widgets + self.binning_info_widgets:
             widget.recompute()
 
-        new_cursor = [self.context['cursor'][i] for i in reindex_order]
+        new_cursor = [self.context["cursor"][i] for i in reindex_order]
         self.update_cursor_position(new_cursor, force=True)
 
         for i, cursors in self.registered_cursors.items():
@@ -170,58 +196,109 @@ class QtTool(SimpleApp):
 
     def configure_image_widgets(self):
         if len(self.data.dims) == 2:
-            self.generate_marginal_for((), 1, 0, 'xy', cursors=True, layout=self.content_layout)
-            self.generate_marginal_for((1,), 0, 0, 'x', orientation='horiz', layout=self.content_layout)
-            self.generate_marginal_for((0,), 1, 1, 'y', orientation='vert', layout=self.content_layout)
+            self.generate_marginal_for((), 1, 0, "xy", cursors=True, layout=self.content_layout)
+            self.generate_marginal_for(
+                (1,), 0, 0, "x", orientation="horiz", layout=self.content_layout
+            )
+            self.generate_marginal_for(
+                (0,), 1, 1, "y", orientation="vert", layout=self.content_layout
+            )
 
-            self.views['xy'].view.setYLink(self.views['y'])
-            self.views['xy'].view.setXLink(self.views['x'])
+            self.views["xy"].view.setYLink(self.views["y"])
+            self.views["xy"].view.setXLink(self.views["x"])
 
         if len(self.data.dims) == 3:
-            self.generate_marginal_for((1, 2), 0, 0, 'x', orientation='horiz', layout=self.content_layout)
-            self.generate_marginal_for((1,), 1, 0, 'xz', layout=self.content_layout)
-            self.generate_marginal_for((2,), 2, 0, 'xy', cursors=True, layout=self.content_layout)
-            self.generate_marginal_for((0, 1,), 0, 1, 'z', orientation='horiz', cursors=True, layout=self.content_layout)
-            self.generate_marginal_for((0, 2,), 2, 2, 'y', orientation='vert', layout=self.content_layout)
-            self.generate_marginal_for((0,), 2, 1, 'yz', layout=self.content_layout)
+            self.generate_marginal_for(
+                (1, 2), 0, 0, "x", orientation="horiz", layout=self.content_layout
+            )
+            self.generate_marginal_for((1,), 1, 0, "xz", layout=self.content_layout)
+            self.generate_marginal_for((2,), 2, 0, "xy", cursors=True, layout=self.content_layout)
+            self.generate_marginal_for(
+                (
+                    0,
+                    1,
+                ),
+                0,
+                1,
+                "z",
+                orientation="horiz",
+                cursors=True,
+                layout=self.content_layout,
+            )
+            self.generate_marginal_for(
+                (
+                    0,
+                    2,
+                ),
+                2,
+                2,
+                "y",
+                orientation="vert",
+                layout=self.content_layout,
+            )
+            self.generate_marginal_for((0,), 2, 1, "yz", layout=self.content_layout)
 
-            self.views['xy'].view.setYLink(self.views['y'])
-            self.views['xy'].view.setXLink(self.views['x'])
-            self.views['xz'].view.setYLink(self.views['z'])
-            self.views['xz'].view.setXLink(self.views['xy'].view)
+            self.views["xy"].view.setYLink(self.views["y"])
+            self.views["xy"].view.setXLink(self.views["x"])
+            self.views["xz"].view.setYLink(self.views["z"])
+            self.views["xz"].view.setXLink(self.views["xy"].view)
 
         if len(self.data.dims) == 4:
-            self.generate_marginal_for((1, 3), 0, 0, 'xz', layout=self.content_layout)
-            self.generate_marginal_for((2, 3), 1, 0, 'xy', cursors=True, layout=self.content_layout)
-            self.generate_marginal_for((0, 2,), 1, 1, 'yz', layout=self.content_layout)
-            self.generate_marginal_for((0, 1,), 0, 1, 'zw', cursors=True, layout=self.content_layout)
+            self.generate_marginal_for((1, 3), 0, 0, "xz", layout=self.content_layout)
+            self.generate_marginal_for((2, 3), 1, 0, "xy", cursors=True, layout=self.content_layout)
+            self.generate_marginal_for(
+                (
+                    0,
+                    2,
+                ),
+                1,
+                1,
+                "yz",
+                layout=self.content_layout,
+            )
+            self.generate_marginal_for(
+                (
+                    0,
+                    1,
+                ),
+                0,
+                1,
+                "zw",
+                cursors=True,
+                layout=self.content_layout,
+            )
 
     def connect_cursor(self, dimension, the_line):
+        # without weak references we get a circular dependency here
+        # because `the_line` is owned by a child of `self` but we are
+        # providing self to a closure which is retained by `the_line`
         self.registered_cursors[dimension].append(the_line)
+        owner = weakref.ref(self)
 
         def connected_cursor(line: CursorRegion):
-            new_cursor = list(self.context['cursor'])
+            new_cursor = list(owner().context["cursor"])
             new_cursor[dimension] = line.getRegion()[0]
-            self.update_cursor_position(new_cursor)
+            owner().update_cursor_position(new_cursor)
 
         the_line.sigRegionChanged.connect(connected_cursor)
 
     def update_cursor_position(self, new_cursor, force=False, keep_levels=True):
-        old_cursor = list(self.context['cursor'])
-        self.context['cursor'] = new_cursor
+        old_cursor = list(self.context["cursor"])
+        self.context["cursor"] = new_cursor
 
         def index_to_value(value, i):
             d = self.data.dims[i]
             c = self.data.coords[d].values
             return c[0] + value * (c[1] - c[0])
 
-        self.context['value_cursor'] = [index_to_value(v, i) for i, v in enumerate(new_cursor)]
+        self.context["value_cursor"] = [index_to_value(v, i) for i, v in enumerate(new_cursor)]
 
         changed_dimensions = [i for i, (x, y) in enumerate(zip(old_cursor, new_cursor)) if x != y]
 
-        cursor_text = ','.join('{}: {:.4g}'.format(x, y)
-                               for x, y in zip(self.data.dims, self.context['value_cursor']))
-        self.window.statusBar().showMessage('({})'.format(cursor_text))
+        cursor_text = ",".join(
+            "{}: {:.4g}".format(x, y) for x, y in zip(self.data.dims, self.context["value_cursor"])
+        )
+        self.window.statusBar().showMessage("({})".format(cursor_text))
 
         # update axis info widgets
         for widget in self.axis_info_widgets + self.binning_info_widgets:
@@ -246,9 +323,19 @@ class QtTool(SimpleApp):
         for reactive in self.reactive_views:
             if set(reactive.dims).intersection(set(changed_dimensions)) or force:
                 try:
-                    select_coord = dict(zip([self.data.dims[i] for i in reactive.dims],
-                                            [safe_slice(int(new_cursor[i]), int(new_cursor[i] + self.binning[i]), i)
-                                             for i in reactive.dims]))
+                    select_coord = dict(
+                        zip(
+                            [self.data.dims[i] for i in reactive.dims],
+                            [
+                                safe_slice(
+                                    int(new_cursor[i]),
+                                    int(new_cursor[i] + self.binning[i]),
+                                    i,
+                                )
+                                for i in reactive.dims
+                            ],
+                        )
+                    )
                     if isinstance(reactive.view, DataArrayImageView):
                         image_data = self.data.isel(**select_coord)
                         if select_coord:
@@ -260,7 +347,11 @@ class QtTool(SimpleApp):
                         if select_coord:
                             for_plot = for_plot.mean(list(select_coord.keys()))
 
-                        cursors = [l for l in reactive.view.getPlotItem().items if isinstance(l, CursorRegion)]
+                        cursors = [
+                            l
+                            for l in reactive.view.getPlotItem().items
+                            if isinstance(l, CursorRegion)
+                        ]
                         reactive.view.clear()
                         for c in cursors:
                             reactive.view.addItem(c)
@@ -269,7 +360,7 @@ class QtTool(SimpleApp):
                             reactive.view.plot(for_plot)
                             continue
 
-                        if reactive.orientation == 'horiz':
+                        if reactive.orientation == "horiz":
                             reactive.view.plot(for_plot.values)
                         else:
                             reactive.view.plot(for_plot.values, range(len(for_plot.values)))
@@ -277,12 +368,17 @@ class QtTool(SimpleApp):
                     pass
 
     def construct_axes_tab(self):
-        inner_items = [AxisInfoWidget(axis_index=i, root=self) for i in range(len(self.data.dims))]
+        inner_items = [
+            AxisInfoWidget(axis_index=i, root=weakref.ref(self)) for i in range(len(self.data.dims))
+        ]
         return horizontal(*inner_items), inner_items
 
     def construct_binning_tab(self):
-        binning_options = QtWidgets.QLabel('Options')
-        inner_items = [BinningInfoWidget(axis_index=i, root=self) for i in range(len(self.data.dims))]
+        binning_options = QtWidgets.QLabel("Options")
+        inner_items = [
+            BinningInfoWidget(axis_index=i, root=weakref.ref(self))
+            for i in range(len(self.data.dims))
+        ]
 
         return horizontal(binning_options, *inner_items), inner_items
 
@@ -296,10 +392,22 @@ class QtTool(SimpleApp):
         kspace_tab, self.kspace_info_widgets = self.construct_kspace_tab()
 
         self.tabs = tabs(
-            ['Info', horizontal(), ],
-            ['Axes', axes_tab, ],
-            ['Binning', binning_tab, ],
-            ['K-Space', kspace_tab, ],
+            [
+                "Info",
+                horizontal(),
+            ],
+            [
+                "Axes",
+                axes_tab,
+            ],
+            [
+                "Binning",
+                binning_tab,
+            ],
+            [
+                "K-Space",
+                kspace_tab,
+            ],
         )
         self.tabs.setFixedHeight(qt_info.inches_to_px(1))
 
@@ -315,16 +423,19 @@ class QtTool(SimpleApp):
         self.configure_image_widgets()
         self.add_contextual_widgets()
         import matplotlib.cm
+
         self.set_colormap(matplotlib.cm.viridis)
 
     def after_show(self):
         # basic state initialization
-        self.context.update({
-            'cursor': [self.data.coords[d].mean().item() for d in self.data.dims],
-        })
+        self.context.update(
+            {
+                "cursor": [self.data.coords[d].mean().item() for d in self.data.dims],
+            }
+        )
 
         # Display the data
-        self.update_cursor_position(self.context['cursor'], force=True, keep_levels=False)
+        self.update_cursor_position(self.context["cursor"], force=True, keep_levels=False)
         self.center_cursor()
 
     def set_data(self, data: DataType):
@@ -337,5 +448,3 @@ def qt_tool(data: DataType):
     tool = QtTool()
     tool.set_data(data)
     tool.start()
-
-

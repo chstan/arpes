@@ -1,7 +1,8 @@
 # pylint: disable=import-error
-
+from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 import numpy as np
+import weakref
 from scipy import interpolate
 
 __all__ = ('DataArrayImageView', 'DataArrayPlot',)
@@ -27,7 +28,6 @@ class CoordAxis(pg.AxisItem):
 
 class DataArrayPlot(pg.PlotWidget):
     def __init__(self, root, orientation, *args, **kwargs):
-        self.root = root
         self.orientation = orientation
 
         axis_or = 'bottom' if orientation == 'horiz' else 'left'
@@ -56,11 +56,10 @@ class DataArrayImageView(pg.ImageView):
             'left': CoordAxis(dim_index=1, orientation='left'),
             'bottom': CoordAxis(dim_index=0, orientation='bottom'),
         }
-        self.plot_item = pg.PlotItem(axisItems=self._coord_axes)
-        super().__init__(view=self.plot_item, *args, **kwargs)
+        plot_item = pg.PlotItem(axisItems=self._coord_axes)
+        super().__init__(view=plot_item, *args, **kwargs)
 
         self.view.invertY(False)
-        self.root = root
 
     def setImage(self, img, keep_levels=False, *args, **kwargs):
         """

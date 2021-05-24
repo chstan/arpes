@@ -2,6 +2,7 @@ from PyQt5 import QtGui
 import pyqtgraph as pg
 import numpy as np
 import typing
+import weakref
 
 from collections import defaultdict, namedtuple
 
@@ -10,9 +11,16 @@ from .data_array_image_view import DataArrayImageView, DataArrayPlot
 
 import arpes.config
 
-__all__ = ('SimpleApp',)
+__all__ = ("SimpleApp",)
 
-ReactivePlotRecord = namedtuple('ReactivePlotRecord', ('dims', 'view', 'orientation',))
+ReactivePlotRecord = namedtuple(
+    "ReactivePlotRecord",
+    (
+        "dims",
+        "view",
+        "orientation",
+    ),
+)
 
 
 class SimpleApp:
@@ -21,16 +29,19 @@ class SimpleApp:
     """
 
     WINDOW_CLS = None
-    WINDOW_SIZE = (4,4,)
-    TITLE = 'Untitled Tool'
+    WINDOW_SIZE = (
+        4,
+        4,
+    )
+    TITLE = "Untitled Tool"
 
-    DEFAULT_COLORMAP = 'viridis'
+    DEFAULT_COLORMAP = "viridis"
 
     def __init__(self):
         self._ninety_eight_percentile = None
         self.data = None
-        self.window = None
         self.settings = None
+        self._window = None
         self._layout = None
 
         self.context = {}
@@ -40,6 +51,13 @@ class SimpleApp:
         self.registered_cursors: typing.Dict[typing.List[CursorRegion]] = defaultdict(list)
 
         self.settings = arpes.config.SETTINGS.copy()
+
+    def close(self):
+        for v in self.views.values():
+            v.close()
+
+        self.views = {}
+        self.reactive_views = []
 
     @property
     def ninety_eight_percentile(self):
@@ -55,7 +73,7 @@ class SimpleApp:
     @staticmethod
     def build_pg_cmap(colormap):
         sampled_colormap = colormap.colors[::51]
-        sampled_colormap = np.array([s + [1.] for s in sampled_colormap])
+        sampled_colormap = np.array([s + [1.0] for s in sampled_colormap])
 
         if pg.__version__.split(".")[1] != "10":
             sampled_colormap = sampled_colormap * 255  # super frustrating undocumented change
@@ -73,31 +91,35 @@ class SimpleApp:
             if isinstance(view, DataArrayImageView):
                 view.setColorMap(cmap)
 
-    def generate_marginal_for(self, dimensions, column, row, name=None, orientation='horiz', cursors=False, layout=None):
+    def generate_marginal_for(
+        self, dimensions, column, row, name=None, orientation="horiz", cursors=False, layout=None
+    ):
         if layout is None:
             layout = self._layout
 
         remaining_dims = [l for l in list(range(len(self.data.dims))) if l not in dimensions]
 
         if len(remaining_dims) == 1:
-            widget = DataArrayPlot(root=self, name=name, orientation=orientation)
-            #widget = pg.PlotWidget(name=name)
+            widget = DataArrayPlot(name=name, root=weakref.ref(self), orientation=orientation)
             self.views[name] = widget
 
-            if orientation == 'horiz':
+            if orientation == "horiz":
                 widget.setMaximumHeight(200)
             else:
                 widget.setMaximumWidth(200)
 
             if cursors:
                 cursor = CursorRegion(
-                    orientation=CursorRegion.Vertical if orientation == 'vert' else CursorRegion.Horizontal,
-                    movable=True)
+                    orientation=CursorRegion.Vertical
+                    if orientation == "vert"
+                    else CursorRegion.Horizontal,
+                    movable=True,
+                )
                 widget.addItem(cursor, ignoreBounds=False)
                 self.connect_cursor(remaining_dims[0], cursor)
         else:
             assert len(remaining_dims) == 2
-            widget = DataArrayImageView(name=name, root=self)
+            widget = DataArrayImageView(name=name, root=weakref.ref(self))
             widget.view.setAspectLocked(False)
             self.views[name] = widget
 
@@ -113,7 +135,8 @@ class SimpleApp:
                 self.connect_cursor(remaining_dims[1], cursor_horiz)
 
         self.reactive_views.append(
-            ReactivePlotRecord(dims=dimensions, view=widget, orientation=orientation))
+            ReactivePlotRecord(dims=dimensions, view=widget, orientation=orientation)
+        )
         layout.addWidget(widget, column, row)
         return widget
 
@@ -126,27 +149,34 @@ class SimpleApp:
     def layout(self):
         raise NotImplementedError()
 
+    @property
+    def window(self):
+        return self._window
+
     def start(self):
         app = QtGui.QApplication([])
+        app.owner = self
+        # self.app = app
 
         from arpes.utilities.qt import qt_info
+
         qt_info.init_from_app(app)
 
-        self.window = self.WINDOW_CLS()
+        self._window = self.WINDOW_CLS()
         self.window.resize(*qt_info.inches_to_px(self.WINDOW_SIZE))
         self.window.setWindowTitle(self.TITLE)
 
-        cw = QtGui.QWidget()
-        self.window.setCentralWidget(cw)
-        self.window.app = self
-
+        self.cw = QtGui.QWidget()
         self._layout = self.layout()
+        self.cw.setLayout(self._layout)
+        self.window.setCentralWidget(self.cw)
+        self.window.app = weakref.ref(self)
+
         self.before_show()
 
         if self.DEFAULT_COLORMAP is not None:
             self.set_colormap(self.DEFAULT_COLORMAP)
 
-        cw.setLayout(self._layout)
         self.window.show()
 
         self.after_show()
