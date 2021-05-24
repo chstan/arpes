@@ -8,6 +8,24 @@ Primary (X.-.-) version numbers are used to denote backwards incompatibilities
 between versions, while minor (-.X.-) numbers primarily indicate new
 features and documentation.
 
+## 3.0.0 (2021-05-17)
+
+### New
+
+### Changed
+
+1. The xarray data accessor previously at .T has been named to .G to prevent
+   shadowing the transpose function.
+2. pylint -> black
+3. Bump dependency versions, largely due to compatibility requirements with pyqtgraph.
+
+### Fixed
+
+1. Circular references have been removed from tools which use Qt which previously
+   lead to crashes due to objects being freed in C++/Qt5 but retained in Python/PyQt5.
+
+   Additionally, some diagnostics have been added to help deal with similar problems in the future.
+
 ## 2.6.0 (2020-1-20)
 
 ### New
@@ -21,8 +39,8 @@ features and documentation.
 ### Fixed
 
 1. Made loading pxt files more stable by adding a utility to safely
-   decode strings when the encoding used is not known 
-   but is a common format  
+   decode strings when the encoding used is not known
+   but is a common format
 
 ## 2.5.0 (2019-12-5)
 
@@ -33,14 +51,14 @@ features and documentation.
 2. Added a Qt-based masking tool `mask_tool`
 3. Added a Qt-based background subtraction tool `bkg_tool`.
 4. Generic Qt tools that interact with "paths" or "regions" are now simple to add with `CoreTool`
- 
+
 ### Changed
 
 1. Unitful axes on all Qt-based utilities
 
 ## 2.4.0 (2019-11-24)
 
-### New 
+### New
 
 1. Data loading code for the Spectromicroscopy beamline at Elettra.
 2. Added a number of interactive utilities
@@ -52,7 +70,6 @@ features and documentation.
 
 1. Improved the documentation and FAQ.
 2. Refactor file finding to support subfolders and endstation specific behavior
-
 
 ## 2.3.0 (2019-10-28)
 
@@ -77,12 +94,12 @@ to entry for new users.
 
 ### New
 
-1. Moiré analysis module with some code to generate primitive moiré 
+1. Moiré analysis module with some code to generate primitive moiré
    unit cells and plot them
 2. Subpixel alignment in 1D and 2D based on image convolution and quadratic fitting
    this is useful for tracking and correcting shifts in valence data due to work
    function changes, charging, etc.
-3. More or less fully fledged k-independent self energy 
+3. More or less fully fledged k-independent self energy
    analysis module (arpes.analysis.self_energy)
 4. BZ exploration tool
 5. Large refactor to data provenance
@@ -90,8 +107,8 @@ to entry for new users.
    2. By default we configure IPython to log all code execution
    3. Most recent cell/notebook evaluations are included in provenance information
 6. `convert_coordinates` is now nearly an inverse transform to `convert_to_kspace` on the coordinates
-   as is appropriate. In particular, this conversion is exact as opposed to small 
-   angle approximated 
+   as is appropriate. In particular, this conversion is exact as opposed to small
+   angle approximated
 
 #### Minor
 
@@ -104,12 +121,11 @@ to entry for new users.
 4. `xarray_extensions`:
    1. `with_values` -> generates a copy with replaced data
    2. `with_stanard_coords` -> renames deduped (`eV-spectrum0` for instance)
-       coords back to standard on a xr.DataArray
+      coords back to standard on a xr.DataArray
    3. `.logical_offsets` calculates logical offsets for the 'x,y,z' motor set
    4. Correctly prefers `hv` from coords now
    5. `mean_other` as complement to `sum_other`
    6. `transform`: One `map` to rule them all
-   
 
 ### Changed
 
@@ -131,7 +147,6 @@ to entry for new users.
    through conda-forge.
 
 2. colorama now listed as a dependency in conda appropriately.
-
 
 ## 2.1.3 (2019-08-07)
 
@@ -167,7 +182,6 @@ to entry for new users.
 ### Fixed
 
 1. Data moved to a location where it is available in PyPI builds
-
 
 ## 2.1.0 (2019-08-06)
 
@@ -216,7 +230,6 @@ to entry for new users.
    without issue (though normal emission is not guaranteed!)
 3. Documentation changes to reflect these adjustments to the data model
 
-
 ### Fixed:
 
 1. Documentation link in README.rst is now correct.
@@ -233,7 +246,6 @@ to entry for new users.
 3. Users are better warned when spreadsheets are not in the correct format.
    Spreadsheet loading is also generally more permissive, see below.
 
-
 ### Changed:
 
 1. Added more tests, especially around data loading, spreadsheet loading
@@ -248,7 +260,6 @@ to entry for new users.
    is functionally deprecated, but will stay in at least for a little while I consider its removal.
 3. Spreadsheet loading now appropriately handles files with 'cleaned' in their name.
 4. Spreadsheet writing will not include the index and therefore an unnamed column when saving to disk.
-
 
 ## 1.1.0 (2019-07-11)
 
@@ -269,7 +280,6 @@ to entry for new users.
 
 1. Version requirements on `lmfit` are now correct after Nick added `SplitLorentzian` xarray compatible models
 
-
 ## 1.0.2 (2019-07-08)
 
 ### New:
@@ -280,12 +290,12 @@ to entry for new users.
 ### Changed:
 
 1. Lanzara group Main Chamber data loading code will set a photon energy of 5.93 eV
-on all datasets by default
+   on all datasets by default
 
 ### Fixed:
 
 1. `arpes.analysis.derivative.dn_along_axis` now properly accepts a smoothing function (`smooth_fn`) with the
-signature `xr.DataArray -> xr.DataArray`.
+   signature `xr.DataArray -> xr.DataArray`.
 
 ## 1.0.0 (June 2019)
 
