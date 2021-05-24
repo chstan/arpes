@@ -17,6 +17,7 @@ from arpes.fits import *
 
 from arpes.endstations import load_scan
 from arpes.io import load_without_dataset, load_example_data, easy_pickle
+from arpes.preparation import normalize_dim
 from arpes.utilities.conversion import *
 from arpes.workflow import *
 

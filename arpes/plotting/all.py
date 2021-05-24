@@ -32,5 +32,4 @@ from .dyn_tool import *
 from .qt_tool import qt_tool
 from .qt_ktool import ktool
 
-from .utils import savefig
-from .utils import remove_colorbars
+from .utils import savefig, remove_colorbars, fancy_labels
