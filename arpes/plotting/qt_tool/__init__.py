@@ -5,6 +5,7 @@ import pyqtgraph as pg
 import numpy as np
 from collections import namedtuple
 import weakref
+import warnings
 
 import arpes.config
 from arpes.utilities import normalize_to_spectrum
@@ -62,6 +63,19 @@ class QtToolWindow(SimpleWindow):
                 self.scroll,
             ),
             KeyBinding(
+                "Reset Intensity",
+                [QtCore.Qt.Key_I],
+                self.reset_intensity,
+            ),
+            KeyBinding(
+                "Scroll Z-Cursor",
+                [
+                    QtCore.Qt.Key_N,
+                    QtCore.Qt.Key_M,
+                ],
+                self.scroll_z,
+            ),
+            KeyBinding(
                 "Center Cursor",
                 [QtCore.Qt.Key_C],
                 self.center_cursor,
@@ -87,6 +101,30 @@ class QtToolWindow(SimpleWindow):
     def transpose_swap(self, event):
         self.app().transpose_to_front(1)
 
+    @staticmethod
+    def _update_scroll_delta(delta, event: QtGui.QKeyEvent):
+        if event.nativeModifiers() & 1:  # shift key
+            delta = (delta[0], delta[1] * 5)
+
+        if event.nativeModifiers() & 2:  # shift key
+            delta = (delta[0], delta[1] * 20)
+
+        return delta
+
+    def reset_intensity(self, event: QtGui.QKeyEvent):
+        self.app().reset_intensity()
+
+    def scroll_z(self, event: QtGui.QKeyEvent):
+        key_map = {
+            QtCore.Qt.Key_N: (2, -1),
+            QtCore.Qt.Key_M: (2, 1),
+        }
+
+        delta = self._update_scroll_delta(key_map.get(event.key()), event)
+
+        if delta is not None and self.app() is not None:
+            self.app().scroll(delta)
+
     def scroll(self, event: QtGui.QKeyEvent):
         key_map = {
             QtCore.Qt.Key_Left: (0, -1),
@@ -95,13 +133,7 @@ class QtToolWindow(SimpleWindow):
             QtCore.Qt.Key_Up: (1, 1),
         }
 
-        delta = key_map.get(event.key())
-
-        if event.nativeModifiers() & 1:  # shift key
-            delta = (delta[0], delta[1] * 5)
-
-        if event.nativeModifiers() & 2:  # shift key
-            delta = (delta[0], delta[1] * 20)
+        delta = self._update_scroll_delta(key_map.get(event.key()), event)
 
         if delta is not None and self.app() is not None:
             self.app().scroll(delta)
@@ -143,6 +175,10 @@ class QtTool(SimpleApp):
                 cursor.set_location(new_cursor[i])
 
     def scroll(self, delta):
+        if delta[0] >= len(self.context["cursor"]):
+            warnings.warn("Tried to scroll a non-existent dimension.")
+            return
+
         cursor = list(self.context["cursor"])
         cursor[delta[0]] += delta[1]
 
@@ -437,6 +473,9 @@ class QtTool(SimpleApp):
         # Display the data
         self.update_cursor_position(self.context["cursor"], force=True, keep_levels=False)
         self.center_cursor()
+
+    def reset_intensity(self):
+        self.update_cursor_position(self.context["cursor"], force=True, keep_levels=False)
 
     def set_data(self, data: DataType):
         data = normalize_to_spectrum(data)
