@@ -1,5 +1,8 @@
 import numpy as np
 
+import numba
+import math
+
 import arpes.constants
 import xarray as xr
 from typing import Any, Callable, Dict, List
@@ -8,6 +11,62 @@ from .base import CoordinateConverter, K_SPACE_BORDER, MOMENTUM_BREAKPOINTS
 from .bounds_calculations import calculate_kp_bounds, calculate_kx_ky_bounds
 
 __all__ = ["ConvertKp", "ConvertKxKy"]
+
+
+@numba.njit(parallel=True)
+def _exact_arcsin(k_par, k_perp, k_tot, phi, offset, par_tot, negate):
+    mul_idx = 1 if par_tot else 0
+    for i in numba.prange(len(k_par)):
+        result = np.arcsin(k_par[i] / np.sqrt(k_tot[i * mul_idx] ** 2 - k_perp[i] ** 2))
+        if negate:
+            result = -result
+
+        phi[i] = result + offset
+
+
+@numba.njit(parallel=True)
+def _small_angle_arcsin(k_par, k_tot, phi, offset, par_tot, negate):
+    """
+    np.arcsin(k_par / k_tot, phi)
+    phi += offset
+    mul_idx = 0
+    """
+    mul_idx = 1 if par_tot else 0
+    for i in numba.prange(len(k_par)):
+        result = np.arcsin(k_par[i] / k_tot[i * mul_idx])
+
+        if negate:
+            result = -result
+
+        phi[i] = result + offset
+
+
+@numba.njit(parallel=True)
+def _rotate_kx_ky(kx, ky, kxout, kyout, chi):
+    cos_chi = np.cos(chi)
+    sin_chi = np.sin(chi)
+    for i in numba.prange(len(kx)):
+        kxout[i] = kx[i] * cos_chi - ky[i] * sin_chi
+        kyout[i] = ky[i] * cos_chi + kx[i] * sin_chi
+
+
+@numba.njit(parallel=True)
+def _compute_ktot(hv, work_function, binding_energy, k_tot):
+    for i in numba.prange(len(binding_energy)):
+        k_tot[i] = arpes.constants.K_INV_ANGSTROM * math.sqrt(
+            hv - work_function + binding_energy[i]
+        )
+
+
+def _safe_compute_k_tot(hv, work_function, binding_energy):
+    arr_binding_energy = binding_energy
+    if not isinstance(binding_energy, np.ndarray):
+        arr_binding_energy = np.array([binding_energy])
+
+    k_tot = np.zeros_like(arr_binding_energy)
+    _compute_ktot(hv, work_function, arr_binding_energy, k_tot)
+
+    return k_tot
 
 
 class ConvertKp(CoordinateConverter):
@@ -50,9 +109,7 @@ class ConvertKp(CoordinateConverter):
         return coordinates
 
     def compute_k_tot(self, binding_energy: np.ndarray) -> None:
-        self.k_tot = arpes.constants.K_INV_ANGSTROM * np.sqrt(
-            self.arr.S.hv - self.arr.S.work_function + binding_energy
-        )
+        self.k_tot = _safe_compute_k_tot(self.arr.S.hv, self.arr.S.work_function, binding_energy)
 
     def kspace_to_phi(
         self, binding_energy: np.ndarray, kp: np.ndarray, *args: Any, **kwargs: Any
@@ -193,9 +250,7 @@ class ConvertKxKy(CoordinateConverter):
         return coordinates
 
     def compute_k_tot(self, binding_energy: np.ndarray) -> None:
-        self.k_tot = arpes.constants.K_INV_ANGSTROM * np.sqrt(
-            self.arr.S.hv - self.arr.S.work_function + binding_energy
-        )
+        self.k_tot = _safe_compute_k_tot(self.arr.S.hv, self.arr.S.work_function, binding_energy)
 
     def conversion_for(self, dim: str) -> Callable:
         def with_identity(*args, **kwargs):
@@ -225,8 +280,9 @@ class ConvertKxKy(CoordinateConverter):
 
         chi = self.arr.S.lookup_offset_coord("chi")
 
-        self.rkx = kx * np.cos(chi) - ky * np.sin(chi)
-        self.rky = ky * np.cos(chi) + kx * np.sin(chi)
+        self.rkx = np.zeros_like(kx)
+        self.rky = np.zeros_like(ky)
+        _rotate_kx_ky(kx, ky, self.rkx, self.rky, chi)
 
         return self.rkx, self.rky
 
@@ -246,33 +302,23 @@ class ConvertKxKy(CoordinateConverter):
         # In this format, we can very easily compare to the raw coordinate conversion functions that
         # come from Mathematica in order to adjust signs, etc.
         scan_angle = self.direct_angles[1]
+        self.phi = np.zeros_like(ky)
+        offset = self.arr.S.phi_offset + self.arr.S.lookup_offset_coord(self.parallel_angles[0])
+
+        par_tot = isinstance(self.k_tot, np.ndarray) and len(self.k_tot) != 1
+        assert len(self.k_tot) == len(self.phi) or len(self.k_tot) == 1
+
         if scan_angle == "psi":
             if self.is_slit_vertical:
-                self.phi = (
-                    np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2))
-                    + self.arr.S.phi_offset
-                    + self.arr.S.lookup_offset_coord(self.parallel_angles[0])
-                )
+                _exact_arcsin(ky, kx, self.k_tot, self.phi, offset, par_tot, False)
             else:
-                self.phi = (
-                    np.arcsin(kx / np.sqrt(self.k_tot ** 2 - ky ** 2))
-                    + self.arr.S.phi_offset
-                    + self.arr.S.lookup_offset_coord(self.parallel_angles[0])
-                )
+                _exact_arcsin(kx, ky, self.k_tot, self.phi, offset, par_tot, False)
         elif scan_angle == "beta":
             # vertical slit
-            self.phi = (
-                np.arcsin(kx / self.k_tot)
-                + self.arr.S.phi_offset
-                + self.arr.S.lookup_offset_coord(self.parallel_angles[0])
-            )
+            _small_angle_arcsin(kx, self.k_tot, self.phi, offset, par_tot, False)
         elif scan_angle == "theta":
             # vertical slit
-            self.phi = (
-                np.arcsin(ky / self.k_tot)
-                + self.arr.S.phi_offset
-                + self.arr.S.lookup_offset_coord(self.parallel_angles[0])
-            )
+            _small_angle_arcsin(ky, self.k_tot, self.phi, offset, par_tot, False)
         else:
             raise ValueError(
                 "No recognized scan angle found for {}".format(self.parallel_angles[1])
@@ -298,31 +344,32 @@ class ConvertKxKy(CoordinateConverter):
             kx, ky = self.rkx_rky(kx, ky)
 
         scan_angle = self.direct_angles[1]
+        self.perp_angle = np.zeros_like(kx)
+
+        par_tot = isinstance(self.k_tot, np.ndarray) and len(self.k_tot) != 1
+        assert len(self.k_tot) == len(self.perp_angle) or len(self.k_tot) == 1
+
         if scan_angle == "psi":
             if self.is_slit_vertical:
-                self.perp_angle = (
-                    -np.arcsin(kx / self.k_tot)
-                    + self.arr.S.psi_offset
-                    - self.arr.S.lookup_offset_coord(self.parallel_angles[1])
+                offset = self.arr.S.psi_offset - self.arr.S.lookup_offset_coord(
+                    self.parallel_angles[1]
                 )
+                _small_angle_arcsin(kx, self.k_tot, self.perp_angle, offset, par_tot, True)
             else:
-                self.perp_angle = (
-                    np.arcsin(ky / self.k_tot)
-                    + self.arr.S.psi_offset
-                    + self.arr.S.lookup_offset_coord(self.parallel_angles[1])
+                offset = self.arr.S.psi_offset + self.arr.S.lookup_offset_coord(
+                    self.parallel_angles[1]
                 )
+                _small_angle_arcsin(ky, self.k_tot, self.perp_angle, offset, par_tot, False)
         elif scan_angle == "beta":
-            self.perp_angle = (
-                -np.arcsin(ky / np.sqrt(self.k_tot ** 2 - kx ** 2))
-                + self.arr.S.beta_offset
-                + self.arr.S.lookup_offset_coord(self.parallel_angles[1])
+            offset = self.arr.S.beta_offset + self.arr.S.lookup_offset_coord(
+                self.parallel_angles[1]
             )
+            _exact_arcsin(ky, kx, self.k_tot, self.perp_angle, offset, par_tot, True)
         elif scan_angle == "theta":
-            self.perp_angle = (
-                -np.arcsin(kx / np.sqrt(self.k_tot ** 2 - ky ** 2))
-                + self.arr.S.theta_offset
-                - self.arr.S.lookup_offset_coord(self.parallel_angles[1])
+            offset = self.arr.S.theta_offset - self.arr.S.lookup_offset_coord(
+                self.parallel_angles[1]
             )
+            _exact_arcsin(kx, ky, self.k_tot, self.perp_angle, offset, par_tot, True)
         else:
             raise ValueError(
                 "No recognized scan angle found for {}".format(self.parallel_angles[1])

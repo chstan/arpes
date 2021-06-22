@@ -20,6 +20,9 @@ Photon energy -> 'hv'
 Better facilities should be added for ToFs to do simultaneous (timing, angle) to (binding energy, k-space).
 """
 
+from .fast_interp import Interpolator
+
+from arpes.trace import traceable
 import collections
 import warnings
 from copy import deepcopy
@@ -31,7 +34,7 @@ import xarray as xr
 from arpes.exceptions import AnalysisError
 from arpes.provenance import provenance, update_provenance
 from arpes.utilities import normalize_to_spectrum
-from typing import Union
+from typing import Callable, Union
 
 from .kx_ky_conversion import ConvertKxKy, ConvertKp
 from .kz_conversion import ConvertKpKz
@@ -102,8 +105,13 @@ def infer_kspace_coordinate_transform(arr: xr.DataArray):
     }
 
 
+@traceable
 def grid_interpolator_from_dataarray(
-    arr: xr.DataArray, fill_value=0.0, method="linear", bounds_error=False
+    arr: xr.DataArray,
+    fill_value=0.0,
+    method="linear",
+    bounds_error=False,
+    trace: Callable = None,
 ):
     """
     Translates the contents of an xarray.DataArray into a scipy.interpolate.RegularGridInterpolator.
@@ -117,13 +125,22 @@ def grid_interpolator_from_dataarray(
             flip_axes.add(d)
 
     values = arr.values
+    trace("Flipping axes")
     for dim in flip_axes:
         values = np.flip(values, arr.dims.index(dim))
 
+    interp_points = [
+        arr.coords[d].values[::-1] if d in flip_axes else arr.coords[d].values for d in arr.dims
+    ]
+    trace_size = [len(pts) for pts in interp_points]
+
+    if method == "linear":
+        trace(f"Using fast_interp.Interpolator: size {trace_size}")
+        return Interpolator.from_arrays(interp_points, values)
+
+    trace(f"Calling scipy.interpolate.RegularGridInterpolator: size {trace_size}")
     return scipy.interpolate.RegularGridInterpolator(
-        points=[
-            arr.coords[d].values[::-1] if d in flip_axes else arr.coords[d].values for d in arr.dims
-        ],
+        points=interp_points,
         values=values,
         bounds_error=bounds_error,
         fill_value=fill_value,
@@ -138,7 +155,7 @@ def slice_along_path(
     resolution=None,
     shift_gamma=True,
     extend_to_edge=False,
-    **kwargs
+    **kwargs,
 ):
     """
     TODO: There might be a little bug here where the last coordinate has a value of 0, causing the interpolation to loop
@@ -380,6 +397,7 @@ def slice_along_path(
 
 
 @update_provenance("Automatically k-space converted")
+@traceable
 def convert_to_kspace(
     arr: xr.DataArray,
     forward=False,
@@ -387,7 +405,9 @@ def convert_to_kspace(
     resolution=None,
     calibration=None,
     coords=None,
-    **kwargs
+    allow_chunks: bool = False,
+    trace: Callable = None,
+    **kwargs,
 ):
     """
     "Forward" or "backward" converts the data to momentum space.
@@ -438,12 +458,12 @@ def convert_to_kspace(
     :param resolution:
     :return:
     """
-
     if coords is None:
         coords = {}
 
     coords.update(kwargs)
 
+    trace("Normalizing to spectrum")
     if isinstance(arr, xr.Dataset):
         warnings.warn("Remember to use a DataArray not a Dataset, attempting to extract spectrum")
         attrs = arr.attrs.copy()
@@ -458,7 +478,50 @@ def convert_to_kspace(
 
     has_eV = "eV" in arr.dims
 
+    if allow_chunks and has_eV and len(arr.eV) > 50:
+        DESIRED_CHUNK_SIZE = 1000 * 1000 * 20
+        n_chunks = np.prod(arr.shape) // DESIRED_CHUNK_SIZE
+        if n_chunks > 100:
+            warnings.warn("Input array is very large. Please consider resampling.")
+
+        chunk_thickness = max(len(arr.eV) // n_chunks, 1)
+
+        trace(f"Chunking along energy: {n_chunks}, thickness {chunk_thickness}")
+
+        finished = []
+        low_idx = 0
+        high_idx = chunk_thickness
+
+        while low_idx < len(arr.eV):
+            chunk = arr.isel(eV=slice(low_idx, high_idx))
+
+            if len(chunk.eV) == 1:
+                chunk = chunk.squeeze("eV")
+
+            kchunk = convert_to_kspace(
+                chunk,
+                forward=forward,
+                bounds=bounds,
+                resolution=resolution,
+                calibration=calibration,
+                coords=coords,
+                allow_chunks=False,
+                trace=trace,
+                **kwargs,
+            )
+
+            if "eV" not in kchunk.dims:
+                kchunk = kchunk.expand_dims("eV")
+
+            finished.append(kchunk)
+
+            low_idx = high_idx
+            high_idx = min(len(arr.eV), high_idx + chunk_thickness)
+
+        return xr.concat(finished, dim="eV")
+
     # TODO be smarter about the resolution inference
+    trace("Determining dimensions and resolution")
     old_dims = list(deepcopy(arr.dims))
     remove_dims = ["eV", "delay", "cycle", "temp", "x", "y", "optics_insertion"]
 
@@ -517,6 +580,7 @@ def convert_to_kspace(
     if n_kspace_coordinates > 1 and forward:
         raise AnalysisError("You cannot forward convert more than one momentum to k-space.")
 
+    trace("Converting coordinates")
     converted_coordinates = converter.get_coordinates(resolution=resolution, bounds=bounds)
 
     if not set(coords.keys()).issubset(converted_coordinates.keys()):
@@ -525,29 +589,44 @@ def convert_to_kspace(
 
     converted_coordinates.update(coords)
 
-    return convert_coordinates(
+    trace("Calling convert_coordinates")
+    result = convert_coordinates(
         arr,
         converted_coordinates,
         {
             "dims": converted_dims,
             "transforms": dict(zip(arr.dims, [converter.conversion_for(d) for d in arr.dims])),
         },
+        trace=trace,
     )[0]
+    trace("Finished.")
+    return result
 
 
+@traceable
 def convert_coordinates(
-    arr: xr.DataArray, target_coordinates, coordinate_transform, as_dataset=False
+    arr: xr.DataArray,
+    target_coordinates,
+    coordinate_transform,
+    as_dataset=False,
+    trace: Callable = None,
 ):
     ordered_source_dimensions = arr.dims
+    trace("Instantiating grid interpolator.")
     grid_interpolator = grid_interpolator_from_dataarray(
-        arr.transpose(*ordered_source_dimensions), fill_value=float("nan")
+        arr.transpose(*ordered_source_dimensions),
+        fill_value=float("nan"),
+        trace=trace,
     )
+    trace("Finished instantiating grid interpolator.")
 
     # Skip the Jacobian correction for now
     # Convert the raw coordinate axes to a set of gridded points
+    trace(f"Calling meshgrid: {[len(target_coordinates[d]) for d in coordinate_transform['dims']]}")
     meshed_coordinates = np.meshgrid(
         *[target_coordinates[dim] for dim in coordinate_transform["dims"]], indexing="ij"
     )
+    trace("Raveling coordinates")
     meshed_coordinates = [meshed_coord.ravel() for meshed_coord in meshed_coordinates]
 
     if "eV" not in arr.dims:
@@ -560,16 +639,26 @@ def convert_coordinates(
     old_coordinate_transforms = [
         coordinate_transform["transforms"][dim] for dim in arr.dims if dim not in target_coordinates
     ]
-    old_dimensions = [
-        np.reshape(
-            tr(*meshed_coordinates),
-            [len(target_coordinates[d]) for d in coordinate_transform["dims"]],
+
+    trace(f"Calling coordinate transforms")
+    output_shape = [len(target_coordinates[d]) for d in coordinate_transform["dims"]]
+
+    def compute_coordinate(transform):
+        return np.reshape(
+            transform(*meshed_coordinates),
+            output_shape,
             order="C",
         )
-        for tr in old_coordinate_transforms
-    ]
+
+    old_dimensions = []
+    for tr in old_coordinate_transforms:
+        trace(f"Running transform {tr}")
+        old_dimensions.append(compute_coordinate(tr))
+
+    trace(f"Done running transforms.")
 
     ordered_transformations = [coordinate_transform["transforms"][dim] for dim in arr.dims]
+    trace("Calling grid interpolator")
     converted_volume = grid_interpolator(
         np.array([tr(*meshed_coordinates) for tr in ordered_transformations]).T
     )
@@ -586,6 +675,7 @@ def convert_coordinates(
         except:
             return True
 
+    trace("Bundling into DataArray")
     target_coordinates = {k: v for k, v in target_coordinates.items() if acceptable_coordinate(v)}
     data = xr.DataArray(
         np.reshape(
@@ -606,4 +696,5 @@ def convert_coordinates(
         vars.update(dict(zip(old_coord_names, old_mapped_coords)))
         return xr.Dataset(vars, attrs=arr.attrs)
 
+    trace("Finished")
     return data, old_mapped_coords
