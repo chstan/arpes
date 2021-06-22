@@ -21,6 +21,7 @@ from arpes.utilities import normalize_to_spectrum
 __all__ = (
     "stack_dispersion_plot",
     "flat_stack_plot",
+    "offset_scatter_plot",
 )
 
 
@@ -93,7 +94,6 @@ def offset_scatter_plot(
 
     # should be exactly two
     other_dim = [d for d in data.dims if d != stack_axis][0]
-    other_coord = data.coords[other_dim]
 
     if "eV" in data.dims and "eV" != stack_axis and fermi_level:
         ax.axhline(0, linestyle="--", color="red")
