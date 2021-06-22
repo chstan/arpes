@@ -1881,6 +1881,32 @@ NORMALIZED_DIM_NAMES = ["x", "y", "z", "w"]
 class GenericAccessorTools:
     _obj = None
 
+
+    def round_coordinates(self, coords, as_indices: bool = False):
+        data = self._obj
+        rounded = {
+        k: v.item()
+            for k, v in data.sel(**coords, method="nearest").coords.items()
+            if k in coords
+        }
+
+        if as_indices:
+            rounded = {k: data.coords[k].index(v) for k, v in rounded.items()}
+
+        return rounded
+
+
+    def argmax_coords(self):
+        data = self._obj
+        raveled_idx = data.argmax().item()
+        flat_indices = np.unravel_index(raveled_idx, data.values.shape)
+        max_coords = {
+            d: data.coords[d][flat_indices[i]].item() for i, d in enumerate(data.dims)
+        }
+        return max_coords
+
+
+
     def apply_over(self, fn, copy=True, **selections):
         data = self._obj
 
