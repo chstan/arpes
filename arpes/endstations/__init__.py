@@ -318,6 +318,12 @@ class EndstationBase:
             if "chi" in l.coords and "chi_offset" not in l.attrs:
                 l.attrs["chi_offset"] = l.coords["chi"].item()
 
+        # go and change endianness and datatypes to something reasonable
+        # this is done for performance reasons in momentum space conversion, primarily
+        for k, v in data.data_vars.items():
+            if not v.dtype.isnative:
+                v.values = v.values.byteswap().newbyteorder()
+
         return data
 
     def load_from_path(self, path: typing.Union[str, Path]):
