@@ -35,6 +35,7 @@ dependencies:
       - PyQt5==5.15
       - packaging
       - xlrd
+      - numba
       - colorama
       - imageio
       - titlecase
