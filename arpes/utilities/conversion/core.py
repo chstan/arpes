@@ -659,9 +659,18 @@ def convert_coordinates(
 
     ordered_transformations = [coordinate_transform["transforms"][dim] for dim in arr.dims]
     trace("Calling grid interpolator")
-    converted_volume = grid_interpolator(
-        np.array([tr(*meshed_coordinates) for tr in ordered_transformations]).T
-    )
+
+    trace("Pulling back coordinates")
+    transformed_coordinates = []
+    for tr in ordered_transformations:
+        trace(f"Running transform {tr}")
+        transformed_coordinates.append(tr(*meshed_coordinates))
+
+    if not isinstance(grid_interpolator, Interpolator):
+        transformed_coordinates = np.array(transformed_coordinates).T
+
+    trace("Calling grid interpolator")
+    converted_volume = grid_interpolator(transformed_coordinates)
 
     # Wrap it all up
     def acceptable_coordinate(c: Union[np.ndarray, xr.DataArray]) -> bool:

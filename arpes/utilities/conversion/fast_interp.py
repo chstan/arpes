@@ -1,6 +1,6 @@
 import numba
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 import math
 import numpy as np
 
@@ -172,11 +172,14 @@ class Interpolator:
         shape = [len(xi) for xi in xyz]
         return cls(lower_corner, delta, shape, data)
 
-    def __call__(self, xi: np.ndarray):
-        xi = xi.astype(np.float64, copy=False)
-        output = np.zeros(len(xi[:, 0]), dtype=np.float64)
-
-        xi = [xi[:, i] for i in range(self.data.ndim)]
+    def __call__(self, xi: Union[np.ndarray, List[np.ndarray]]):
+        if isinstance(xi, np.ndarray):
+            xi = xi.astype(np.float64, copy=False)
+            xi = [xi[:, i] for i in range(self.data.ndim)]
+        else:
+            xi = [xii.astype(np.float64, copy=False) for xii in xi]
+        
+        output = np.zeros_like(xi[0])
 
         interpolator = {
             3: interpolate_3d,

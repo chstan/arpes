@@ -73,6 +73,7 @@ class ConvertKp(CoordinateConverter):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.k_tot = None
+        self.phi = None
 
     def get_coordinates(
         self, resolution: dict = None, bounds: dict = None
@@ -114,6 +115,9 @@ class ConvertKp(CoordinateConverter):
     def kspace_to_phi(
         self, binding_energy: np.ndarray, kp: np.ndarray, *args: Any, **kwargs: Any
     ) -> np.ndarray:
+        if self.phi is not None:
+            return self.phi
+
         if self.is_slit_vertical:
             polar_angle = self.arr.S.lookup_offset_coord("theta") + self.arr.S.lookup_offset_coord(
                 "psi"
@@ -128,24 +132,24 @@ class ConvertKp(CoordinateConverter):
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
-        res = np.zeros_like(kp)
+        self.phi = np.zeros_like(kp)
         par_tot = isinstance(self.k_tot, np.ndarray) and len(self.k_tot) != 1
         assert len(self.k_tot) == len(kp) or len(self.k_tot) == 1
 
         _small_angle_arcsin(
             kp / np.cos(polar_angle),
             self.k_tot,
-            res,
+            self.phi,
             self.arr.S.phi_offset + parallel_angle,
             par_tot,
             False,
         )
 
         try:
-            res = self.calibration.correct_detector_angle(eV=binding_energy, phi=res)
+            self.phi = self.calibration.correct_detector_angle(eV=binding_energy, phi=self.phi)
         except:
             pass
-        return res
+        return self.phi
 
     def conversion_for(self, dim: str) -> Callable:
         def with_identity(*args, **kwargs):
