@@ -7,85 +7,80 @@ import os
 from setuptools import find_packages, setup
 from setuptools.command.install import install
 
-NAME = 'arpes'
-DESCRIPTION = 'Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)'
-URL = 'https://gitlab.com/lanzara-group/python-arpes'
-EMAIL = 'chstan@berkeley.edu'
-AUTHOR = 'Conrad Stansbury'
-REQUIRES_PYTHON = '>=3.8.0,<3.9' # we're being less permissive because of pyqtgraph
+NAME = "arpes"
+DESCRIPTION = "Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)"
+URL = "https://gitlab.com/lanzara-group/python-arpes"
+EMAIL = "chstan@berkeley.edu"
+AUTHOR = "Conrad Stansbury"
+REQUIRES_PYTHON = ">=3.8.0,<3.9"  # we're being less permissive because of pyqtgraph
 
 about = {}
-with open('./arpes/__init__.py') as fp:
+with open("./arpes/__init__.py") as fp:
     exec(fp.read(), about)
 
-VERSION = about['VERSION']
+VERSION = about["VERSION"]
 
 DEPENDENCY_GROUPS = {
-    'core': [
-        'astropy',
-
-        'xarray',
-
-        'h5py>=3.2.1',
-        'pyqtgraph==0.12',
-        'PyQt5==5.15',
-        'netCDF4',
-        'colorcet',
-
-        'pint',
-        'pandas',
-        'dask',
-        'numpy',
-        'scipy',
-        'lmfit==1.0',
-        'scikit-learn',
-
+    "core": [
+        "astropy",
+        "xarray",
+        "h5py>=3.2.1",
+        "pyqtgraph==0.12",
+        "PyQt5==5.15",
+        "netCDF4",
+        "colorcet",
+        "pint",
+        "pandas",
+        "dask",
+        "numpy",
+        "scipy",
+        "lmfit==1.0",
+        "scikit-learn",
         # plotting
-        'matplotlib>=3.0.3',
-        'seaborn',
-        'bokeh>=2.0.0',
-        'ipywidgets==7.0.1',
-
+        "matplotlib>=3.0.3",
+        "seaborn",
+        "bokeh>=2.0.0",
+        "ipywidgets==7.0.1",
         # Misc deps
-        'packaging',
-        'xlrd',
-        'colorama',
-        'imageio',
-        'titlecase',
-        'openpyxl',
-        'tqdm',
-        'rx',
-        'dill',
+        "packaging",
+        "xlrd",
+        "colorama",
+        "imageio",
+        "titlecase",
+        "openpyxl",
+        "tqdm",
+        "rx",
+        "dill",
     ],
-    'igor': ['igor==0.3.1'],
-    'ml': [
-        'scikit-learn',
-        'scikit-image',
-        'cvxpy',
-        'libgcc',
+    "igor": ["igor==0.3.1"],
+    "ml": [
+        "scikit-learn",
+        "scikit-image",
+        "cvxpy",
+        "libgcc",
     ],
 }
 
-requirements = [y for k, v in DEPENDENCY_GROUPS.items() for y in v if k not in {'igor', 'ml'}]
+requirements = [y for k, v in DEPENDENCY_GROUPS.items() for y in v if k not in {"igor", "ml"}]
 
 DEV_DEPENDENCIES = {
-    'jupyter': [
-        'jupyter',
-        'ipython',
-        'jupyter_contrib_nbextensions',
-        'notebook>=5.7.0',
+    "jupyter": [
+        "jupyter",
+        "ipython",
+        "jupyter_contrib_nbextensions",
+        "notebook>=5.7.0",
     ],
-    'test': [
-        'attrs==17.4.0',
-        'pluggy==0.6.0',
-        'py==1.5.2',
-        'pytest==3.3.2',
-        'setuptools==38.4.0',
-    ]
+    "test": [
+        "attrs==17.4.0",
+        "pluggy==0.6.0",
+        "py==1.5.2",
+        "pytest==3.3.2",
+        "setuptools==38.4.0",
+    ],
 }
 
 
-with open('pypi-readme.rst', 'r') as f_readme:
+with open("pypi-readme.rst", "r") as f_readme:
     long_description = f_readme.read()
 
 
@@ -107,15 +102,29 @@ additional heavy dependencies such as `scikit-learn` and `scikit-image`.
 
 For Jupyter integration, please have a look at the documentation (link above).
 For support issues, contact chstansbury@gmail.com or chstan@berkeley.edu.
-""".format(DOCUMENTATION_URL)
+""".format(
+    DOCUMENTATION_URL
+)
 
-packages = find_packages(exclude=('tests', 'source', 'info_session', 'docs', 'example_configuration',
-                                  'conda', 'figures', 'exp', 'datasets', 'resources',))
+packages = find_packages(
+    exclude=(
+        "tests",
+        "source",
+        "info_session",
+        "docs",
+        "example_configuration",
+        "conda",
+        "figures",
+        "exp",
+        "datasets",
+        "resources",
+    )
+)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-with io.open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
-    LONG_DESCRIPTION = '\n' + f.read()
+with io.open(os.path.join(here, "README.rst"), encoding="utf-8") as f:
+    LONG_DESCRIPTION = "\n" + f.read()
 
 
 class PostInstallCommand(install):
@@ -138,40 +147,36 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-
     packages=packages,
-
     dependency_links=[
-        'https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1',
+        "https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1",
     ],
     install_requires=requirements,
-
     include_package_data=True,
-
-    license='GPLv3',
+    license="GPLv3",
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Natural Language :: English',
-        'Intended Audience :: Science/Research',
-        'Intended Audience :: Developers',
-        'Operating System :: MacOS :: MacOS X',
-        'Operating System :: Microsoft :: Windows :: Windows 7',
-        'Operating System :: Microsoft :: Windows :: Windows 8',
-        'Operating System :: Microsoft :: Windows :: Windows 10',
-        'Operating System :: Unix',
-        'Operating System :: POSIX :: Linux',
-        'Topic :: Scientific/Engineering :: Physics',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Software Development :: Libraries :: Python Modules',
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Natural Language :: English",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Developers",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows :: Windows 7",
+        "Operating System :: Microsoft :: Windows :: Windows 8",
+        "Operating System :: Microsoft :: Windows :: Windows 10",
+        "Operating System :: Unix",
+        "Operating System :: POSIX :: Linux",
+        "Topic :: Scientific/Engineering :: Physics",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     # $ setup.py publish support.
     cmdclass={
-        'install': PostInstallCommand,
+        "install": PostInstallCommand,
     },
 )
