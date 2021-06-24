@@ -128,11 +128,19 @@ class ConvertKp(CoordinateConverter):
         if self.k_tot is None:
             self.compute_k_tot(binding_energy)
 
-        res = (
-            np.arcsin(kp / self.k_tot / np.cos(polar_angle))
-            + self.arr.S.phi_offset
-            + parallel_angle
+        res = np.zeros_like(kp)
+        par_tot = isinstance(self.k_tot, np.ndarray) and len(self.k_tot) != 1
+        assert len(self.k_tot) == len(kp) or len(self.k_tot) == 1
+
+        _small_angle_arcsin(
+            kp / np.cos(polar_angle),
+            self.k_tot,
+            res,
+            self.arr.S.phi_offset + parallel_angle,
+            par_tot,
+            False,
         )
+
         try:
             res = self.calibration.correct_detector_angle(eV=binding_energy, phi=res)
         except:
