@@ -49,31 +49,31 @@ def raw_lin_interpolate_3d(xd, yd, zd, c000, c001, c010, c100, c011, c101, c110,
 
 
 @numba.njit
-def lin_interpolate_3d(data, ix, iy, iz, xd, yd, zd):
+def lin_interpolate_3d(data, ix, iy, iz, ixp, iyp, izp, xd, yd, zd):
     return raw_lin_interpolate_3d(
         xd,
         yd,
         zd,
         data[ix][iy][iz],
-        data[ix][iy][iz + 1],
-        data[ix][iy + 1][iz],
-        data[ix + 1][iy][iz],
-        data[ix][iy + 1][iz + 1],
-        data[ix + 1][iy][iz + 1],
-        data[ix + 1][iy + 1][iz],
-        data[ix + 1][iy + 1][iz + 1],
+        data[ix][iy][izp],
+        data[ix][iyp][iz],
+        data[ixp][iy][iz],
+        data[ix][iyp][izp],
+        data[ixp][iy][izp],
+        data[ixp][iyp][iz],
+        data[ixp][iyp][izp],
     )
 
 
 @numba.njit
-def lin_interpolate_2d(data, ix, iy, xd, yd):
+def lin_interpolate_2d(data, ix, iy, ixp, iyp, xd, yd):
     return raw_lin_interpolate_2d(
         xd,
         yd,
         data[ix][iy],
-        data[ix][iy + 1],
-        data[ix + 1][iy],
-        data[ix + 1][iy + 1],
+        data[ix][iyp],
+        data[ixp][iy],
+        data[ixp][iyp],
     )
 
 
@@ -104,14 +104,19 @@ def interpolate_3d(
         iy = to_fractional_coordinate(y[i], lower_corner_y, delta_y)
         iz = to_fractional_coordinate(z[i], lower_corner_z, delta_z)
 
-        if ix <= 0 or iy <= 0 or iz <= 0 or ix >= shape_x or iy >= shape_y or iz >= shape_z:
+        if ix < 0 or iy < 0 or iz < 0 or ix >= shape_x or iy >= shape_y or iz >= shape_z:
             output[i] = fill_value
             continue
 
         iix, iiy, iiz = math.floor(ix), math.floor(iy), math.floor(iz)
+        iixp, iiyp, iizp = (
+            min(iix + 1, shape_x - 1),
+            min(iiy + 1, shape_y - 1),
+            min(iiz + 1, shape_z - 1),
+        )
         xd, yd, zd = ix - iix, iy - iiy, iz - iiz
 
-        output[i] = lin_interpolate_3d(data, iix, iiy, iiz, xd, yd, zd)
+        output[i] = lin_interpolate_3d(data, iix, iiy, iiz, iixp, iiyp, iizp, xd, yd, zd)
 
 
 @numba.njit(parallel=True)
@@ -136,14 +141,18 @@ def interpolate_2d(
         ix = to_fractional_coordinate(x[i], lower_corner_x, delta_x)
         iy = to_fractional_coordinate(y[i], lower_corner_y, delta_y)
 
-        if ix <= 0 or iy <= 0 or ix >= shape_x - 1 or iy >= shape_y - 1:
+        if ix < 0 or iy < 0 or ix >= shape_x - 1 or iy >= shape_y - 1:
             output[i] = fill_value
             continue
 
         iix, iiy = math.floor(ix), math.floor(iy)
+        iixp, iiyp = (
+            min(iix + 1, shape_x - 1),
+            min(iiy + 1, shape_y - 1),
+        )
         xd, yd = ix - iix, iy - iiy
 
-        output[i] = lin_interpolate_2d(data, iix, iiy, xd, yd)
+        output[i] = lin_interpolate_2d(data, iix, iiy, iixp, iiyp, xd, yd)
 
 
 @dataclass
