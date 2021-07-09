@@ -45,7 +45,6 @@ local_config.py
 !experiments/Misc
 
 examples/ # TODO add examples
-example_data/
 example_datasets/
 
 bin/
