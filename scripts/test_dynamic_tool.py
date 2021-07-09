@@ -17,4 +17,3 @@ def adjust_gamma(data, gamma: float = 1):
 
 
 make_dynamic(adjust_gamma, data)
-

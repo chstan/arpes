@@ -8,7 +8,6 @@ __all__ = (
     "rename_keys",
     "clean_keys",
     "rename_dataarray_attrs",
-    "rename_datavar_attrs",
     "clean_datavar_attribute_names",
     "clean_attribute_names",
     "case_insensitive_get",
@@ -76,5 +75,4 @@ def case_insensitive_get(d: dict, key: str, default=None, take_first=False):
 rename_dataarray_attrs = lift_dataarray_attrs(rename_keys)
 clean_attribute_names = lift_dataarray_attrs(clean_keys)
 
-rename_datavar_attrs = lift_datavar_attrs(rename_keys)
 clean_datavar_attribute_names = lift_datavar_attrs(clean_keys)

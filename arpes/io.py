@@ -4,60 +4,47 @@ data loading functions (simpe_load, fallback_load, load_without_dataset, load_ex
 pickling utilities, data stitching, and dataset manipulation functions.
 """
 
-import json
-import os.path
 import pickle
 import warnings
 
-import typing
-import uuid
+from typing import Any, List, Union, Optional
+from dataclasses import dataclass
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import xarray as xr
 
 import arpes.config
-from arpes.config import (
-    CLEAVE_RECORD,
-    CONFIG,
-    DATASET_CACHE_PATH,
-    DATASET_CACHE_RECORD,
-    WorkspaceManager,
-)
 from arpes.endstations import load_scan
-from arpes.exceptions import ConfigurationError
 from arpes.typing import DataType
-from arpes.utilities import (
-    FREEZE_PROPS,
-    WHITELIST_KEYS,
-    clean_xlsx_dataset,
-    unwrap_attrs_dict,
-    unwrap_datavar_attrs,
-    wrap_datavar_attrs,
-)
 
 __all__ = (
-    "simple_load",
-    "direct_load",
-    "fallback_load",
-    "load_dataset",
-    "save_dataset",
-    "delete_dataset",
+    "load_data",
     "load_without_dataset",
     "load_example_data",
-    "save_dataset_for_export",
-    "dataset_exists",
-    "is_a_dataset",
-    "load_dataset_attrs",
     "easy_pickle",
     "list_pickles",
     "stitch",
 )
 
 
-def load_without_dataset(file: typing.Union[str, Path, int], location=None, **kwargs):
+def load_data(file: Union[str, Path, int], location: Optional[str] = None, **kwargs) -> xr.Dataset:
+    """Loads a piece of data using available plugins. This the user facing API for data loading.
+
+    Args:
+        file: An identifier for the file which should be loaded. If this is a number or can be coerced to one,
+          data will be loaded from the workspace data folder if a matching unique file can be found for the number.
+          If the value is a relative path, locations relative to the cwd and the workspace data folder will be checked.
+          Absolute paths can also be used in a pinch.
+        location: The name of the endstation/plugin to use. You should try to provide one. If None is provided,
+          the loader will try to find an appropriate one based on the file extension and brute force. This will be slower
+          and can be error prone in certain circumstances. Defaults to None.
+
+    Returns:
+        The loaded data. Ideally, data which is loaded through the plugin system should be highly compliant with
+        the PyARPES data model and should work seamlessly with PyARPES analysis code.
+    """
     try:
         file = int(str(file))
     except ValueError:
@@ -80,32 +67,68 @@ def load_without_dataset(file: typing.Union[str, Path, int], location=None, **kw
     return load_scan(desc, **kwargs)
 
 
-def load_example_data() -> xr.Dataset:
-    file = Path(__file__).parent / "example_data" / "main_chamber_cut_0.fits"
-    return load_without_dataset(file=file, location="ALG-MC")
+load_without_dataset = load_data
+
+DATA_EXAMPLES = {
+    "cut": ("ALG-MC", "cut.fits"),
+    "fermi_surface": ("example_data", "fermi_surface.nc"),
+    "photon_energy": ("example_data", "photon_energy.nc"),
+}
 
 
-def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
+def load_example_data(example_name="cut") -> xr.Dataset:
+    """Provides sample data for executable documentation."""
+    if example_name not in DATA_EXAMPLES:
+        warnings.warn(
+            f"Could not find requested example_name: {example_name}. Please provide one of {list(DATA_EXAMPLES.keys())}"
+        )
+
+    location, example = DATA_EXAMPLES[example_name]
+    file = Path(__file__).parent / "example_data" / example
+    return load_data(file=file, location=location)
+
+
+@dataclass
+class ExampleData:
+    @property
+    def cut(self) -> xr.DataArray:
+        return load_example_data("cut")
+
+    @property
+    def fermi_surface(self) -> xr.DataArray:
+        return load_example_data("fermi_surface")
+
+    @property
+    def photon_energy(self) -> xr.DataArray:
+        return load_example_data("photon_energy")
+
+
+example_data = ExampleData()
+
+
+def stitch(
+    df_or_list: Union[List[str], pd.DataFrame],
+    attr_or_axis: str,
+    built_axis_name: Optional[str] = None,
+    sort: bool = True,
+) -> DataType:
+    """Stitches together a sequence of scans or a DataFrame.
+
+    Args:
+        df_or_list: The list of the files to load
+        attr_or_axis: Coordinate or attribute in order to promote to an index. I.e. if 't_a' is specified,
+                      we will create a new axis corresponding to the temperature and concatenate the data along this axis
+        built_axis_name: The name of the concatenated output dimensions
+        sort: Whether to sort inputs to the concatenation according to their `attr_or_axis` value.
+
+    Returns:
+        The concatenated data.
     """
-    Stitches together a sequence of scans or a DataFrame in order to provide a unified dataset along a specified axis
-
-    :param df_or_list: list of the files to load
-    :param attr_or_axis: coordinate or attribute in order to promote to an index. I.e. if 't_a' is specified,
-    we will create a new axis corresponding to the temperature and concatenate the data along this axis
-    :return:
-    """
-
     list_of_files = None
     if isinstance(df_or_list, (pd.DataFrame,)):
         list_of_files = list(df_or_list.index)
     else:
-        if not isinstance(
-            df_or_list,
-            (
-                list,
-                tuple,
-            ),
-        ):
+        if not isinstance(df_or_list, (list, tuple)):
             raise TypeError("Expected an interable for a list of the scans to stitch together")
 
         list_of_files = list(df_or_list)
@@ -117,7 +140,7 @@ def stitch(df_or_list, attr_or_axis, built_axis_name=None, sort=True):
         raise ValueError("Must supply at least one file to stitch")
 
     loaded = [
-        f if isinstance(f, (xr.DataArray, xr.Dataset)) else simple_load(f) for f in list_of_files
+        f if isinstance(f, (xr.DataArray, xr.Dataset)) else load_data(f) for f in list_of_files
     ]
 
     for i, loaded_file in enumerate(loaded):
@@ -166,7 +189,8 @@ def file_for_pickle(name):
     return str(path)
 
 
-def load_pickle(name):
+def load_pickle(name: str) -> Any:
+    """Loads a workspace local pickle. Inverse to `save_pickle`."""
     with open(file_for_pickle(name), "rb") as file:
         return pickle.load(file)
 
@@ -175,394 +199,46 @@ def save_pickle(data, name):
     pickle.dump(data, open(file_for_pickle(name), "wb"))
 
 
-def easy_pickle(data_or_str, name=None):
+def easy_pickle(data_or_str: Any, name=None) -> Any:
+    """A convenience function around pickling.
+
+    Provides a workspace scoped associative set of named pickles which
+    can be used for
+
+    Examples:
+        Retaining analysis results between sessions.
+
+
+        Cacheing expensive or interim work.
+
+    For reproducibility reasons, you should generally prefer to
+    duplicate anaysis results using common code to prevent stale data
+    dependencies, but there are good reasons to use pickling as well.
+
+    This function knows whether we are pickling or unpickling depending on
+    whether one or two arguments are provided.
+
+    Args:
+        data_or_str: If saving, the data to be pickled. If loading, the name of the pickle to load.
+        name: If saving (non-None value), the name to associate. Defaults to None.
+
+    Returns:
+        None if name is not None, which indicates that we are saving data.
+        Otherwise, returns the unpickled value associated to `name`.
+    """
+    # we are loading data
     if isinstance(data_or_str, str) or name is None:
         return load_pickle(data_or_str)
 
+    # we are saving data
     assert isinstance(name, str)
     save_pickle(data_or_str, name)
 
 
-def list_pickles():
+def list_pickles() -> List[str]:
+    """Generates a summary list of (workspace-local) pickled results and data.
+
+    Returns:
+        A list of the named pickles, suitable for passing to `easy_pickle`.
+    """
     return [str(s.stem) for s in Path(file_for_pickle("just-a-pickle")).parent.glob("*.pickle")]
-
-
-def _id_for(data):
-    if isinstance(data, (xr.DataArray, xr.Dataset)):
-        data = data.attrs["id"]
-
-    if isinstance(data, pd.Series):
-        data = data.id
-
-    if isinstance(data, uuid.UUID):
-        data = str(data)
-
-    return data
-
-
-def _filename_for(data):
-    return os.path.join(DATASET_CACHE_PATH, _id_for(data) + ".nc")
-
-
-def _filename_for_attrs(data):
-    return os.path.join(DATASET_CACHE_PATH, _id_for(data) + ".json")
-
-
-def delete_dataset(arr_or_uuid):
-    if isinstance(arr_or_uuid, xr.DataArray):
-        return delete_dataset(arr_or_uuid.attrs["id"])
-
-    assert isinstance(arr_or_uuid, str)
-
-    fname = _filename_for(arr_or_uuid)
-    if os.path.exists(fname):
-        os.remove(fname)
-
-
-def ensure_cache_exists():
-    if not Path(DATASET_CACHE_PATH).exists():
-        with open(DATASET_CACHE_PATH, "w+") as f:
-            json.dump({}, f)
-
-
-def save_dataset(arr: DataType, filename=None, force=False):
-    """
-    Persists a dataset to disk. In order to serialize some attributes, you may need to modify wrap and unwrap arrs above
-    in order to make sure a parameter is saved.
-
-    In some cases, such as when you would like to add information to the attributes,
-    it is nice to be able to force a write, since a write would not take place if the file is already on disk.
-    To do this you can set the ``force`` attribute.
-    :param arr:
-    :param force:
-    :return:
-    """
-    import arpes.xarray_extensions  # pylint: disable=unused-import, redefined-outer-name
-
-    ensure_cache_exists()
-    with open(DATASET_CACHE_RECORD, "r") as cache_record:
-        records = json.load(cache_record)
-
-    filename = filename or _filename_for(arr)
-    if filename is None:
-        filename = _filename_for(arr)
-        attrs_filename = _filename_for_attrs(arr)
-    else:
-        attrs_filename = filename + ".attrs.json"
-
-    if "id" in arr.attrs and arr.attrs["id"] in records:
-        if force:
-            if os.path.exists(filename):
-                os.replace(filename, filename + ".keep")
-            if os.path.exists(attrs_filename):
-                os.replace(attrs_filename, attrs_filename + ".keep")
-        else:
-            return
-
-    df = arr.attrs.pop("df", None)
-    arr.attrs.pop("", None)  # protect against totally stripped attribute names
-    arr = wrap_datavar_attrs(arr, original_data=arr)
-    ref_attrs = arr.attrs.pop("ref_attrs", None)
-
-    arr.to_netcdf(filename, engine="netcdf4")
-    with open(attrs_filename, "w") as file:
-        json.dump(arr.attrs, file)
-
-    if "id" in arr.attrs:
-        first_write = arr.attrs["id"] not in records
-        records[arr.attrs["id"]] = {
-            "file": filename,
-            **{k: v for k, v in arr.attrs.items() if k in WHITELIST_KEYS},
-        }
-    else:
-        first_write = False
-
-    # this was a first write
-    if first_write:
-        with open(DATASET_CACHE_RECORD, "w+") as cache_record:
-            json.dump(records, cache_record, sort_keys=True, indent=2)
-
-    if ref_attrs is not None:
-        arr.attrs["ref_attrs"] = ref_attrs
-
-    arr = unwrap_datavar_attrs(arr)
-    if df is not None:
-        arr.attrs["df"] = df
-
-
-def save_dataset_for_export(arr: DataType, index, **kwargs):
-    filename = Path("./export/{}.nc".format(index))
-    filename.parent.mkdir(exist_ok=True)
-
-    save_dataset(arr, str(filename), **kwargs)
-
-
-def is_a_dataset(dataset):
-    if isinstance(dataset, (xr.Dataset, xr.DataArray)):
-        return True
-
-    if isinstance(dataset, str):
-        try:
-            _ = uuid.UUID(dataset)
-            return True
-        except ValueError:
-            return False
-
-    return False
-
-
-def dataset_exists(dataset):
-    if isinstance(dataset, (xr.Dataset, xr.DataArray)):
-        return True
-
-    if isinstance(dataset, str):
-        filename = _filename_for(dataset)
-        return os.path.exists(filename)
-
-    return False
-
-
-def load_dataset_attrs(dataset_uuid):
-    filename = _filename_for_attrs(dataset_uuid)
-    if not os.path.exists(filename):
-        try:
-            dataset = load_dataset(dataset_uuid)
-            save_dataset(dataset, force=True)
-        except ValueError as e:
-            raise ConfigurationError("Could not load attributes for {}".format(dataset_uuid)) from e
-
-    with open(filename, "r") as file:
-        attrs = json.load(file)
-        return unwrap_attrs_dict(attrs)
-
-
-def simple_load(fragment, df: pd.DataFrame = None, workspace=None, basic_prep=True):
-    with WorkspaceManager(workspace):
-        if df is None:
-            from arpes.utilities import default_dataset  # break circular dependency
-
-            df = default_dataset()
-
-        def resolve_fragment(filename):
-            return str(filename).split("_")[-1]
-
-        # find a soft match
-        files = df.index
-
-        def strip_left_zeros(value):
-            if len(value) == 1:
-                return value
-
-            return value.lstrip("0")
-
-        if isinstance(
-            fragment,
-            (
-                int,
-                np.int32,
-                np.int64,
-            ),
-        ):
-            numbers = [
-                int(f)
-                for f in [
-                    strip_left_zeros("".join(c for c in resolve_fragment(f) if c.isdigit()))
-                    for f in files
-                ]
-                if len(f)
-            ]
-            index = numbers.index(fragment)
-        else:
-            fragment = str(fragment)
-            matches = [i for i, f in enumerate(files) if fragment in f]
-            if not matches:
-                raise ValueError("No match found for {}".format(fragment))
-            if len(matches) > 1:
-                raise ValueError(
-                    "Unique match not found for {}. Options are: {}".format(
-                        fragment, [files[i] for i in matches]
-                    )
-                )
-            index = matches[0]
-
-        data = load_dataset(dataset_uuid=df.loc[df.index[index]], df=df)
-
-        if basic_prep:
-            if "cycle" in data.indexes and len(data.coords["cycle"]) == 1:
-                data = data.sum("cycle", keep_attrs=True)
-
-        return data
-
-
-def direct_load(
-    fragment, df: pd.DataFrame = None, workspace=None, file=None, basic_prep=True, **kwargs
-):
-    """
-    Loads a dataset directly, in the same manner that prepare_raw_files does, from the denormalized source format.
-    This is useful for testing data loading procedures, and for quickly opening data at beamlines.
-
-    The structure of this is very similar to simple_load, and could be shared. The only differences are in selecting
-    the DataFrame with all the files at the beginning, and finally loading the data at the end.
-    :param fragment:
-    :param df:
-    :param workspace:
-    :param file:
-    :param basic_prep:
-    :return:
-    """
-
-    with WorkspaceManager(workspace):
-        # first get our hands on a dataframe that has a list of all the files, where to find them on disk, and metadata
-        if df is None:
-            arpes.config.attempt_determine_workspace(lazy=True)
-            if file is None:
-                from arpes.utilities import default_dataset  # break circular dependency
-
-                df = default_dataset(with_inferred_cols=False)
-            else:
-                if not os.path.isabs(file):
-                    file = os.path.join(CONFIG["WORKSPACE"]["path"], file)
-
-                df = clean_xlsx_dataset(file, with_inferred_cols=False, write=False)
-
-        def resolve_fragment(filename: int) -> str:
-            return str(filename).split("_")[-1]
-
-        # find a soft match
-        files = df.index
-
-        def strip_left_zeros(value: str) -> str:
-            if len(value) == 1:
-                return value
-
-            return value.lstrip("0")
-
-        if isinstance(
-            fragment,
-            (
-                int,
-                np.int32,
-                np.int64,
-            ),
-        ):
-            numbers = [
-                int(f)
-                for f in [
-                    strip_left_zeros("".join(c for c in resolve_fragment(f) if c.isdigit()))
-                    for f in files
-                ]
-                if len(f)
-            ]
-            index = numbers.index(fragment)
-        else:
-            fragment = str(fragment)
-            matches = [i for i, f in enumerate(files) if fragment in f]
-            if not matches:
-                raise ValueError("No match found for {}".format(fragment))
-            if len(matches) > 1:
-                raise ValueError(
-                    "Unique match not found for {}. Options are: {}".format(
-                        fragment, [files[i] for i in matches]
-                    )
-                )
-            index = matches[0]
-
-        scan = df.loc[df.index[index]]
-        data = load_scan(dict(scan), **kwargs)
-
-        if basic_prep:
-            if "cycle" in data.indexes and len(data.coords["cycle"]) == 1:
-                data = data.sum("cycle", keep_attrs=True)
-
-        return data
-
-
-def fallback_load(*args, **kwargs):
-    try:
-        return simple_load(*args, **kwargs)
-    except:  # pylint: disable=bare-except
-        try:
-            return fallback_load(*args, **kwargs)
-        except:  # pylint: disable=bare-except
-            return load_without_dataset(*args, **kwargs)
-
-
-def load_dataset(dataset_uuid=None, filename=None, df: pd.DataFrame = None):
-    """
-    You might want to prefer ``simple_load`` over calling this directly as it is more convenient.
-
-    :param dataset_uuid: UUID of dataset to load, typically you get this from ds.loc['...'].id. This actually also
-    accepts a dataframe slice so ds.loc['...'] also works.
-    :param df: dataframe to use to lookup the data in. If none is provided, the result of default_dataset is used.
-    :return:
-    """
-    if df is None:
-        try:
-            from arpes.utilities import default_dataset  # break circular dependency
-
-            df = default_dataset()
-        except Exception:  # pylint: disable=broad-except
-            pass
-
-    if filename is None:
-        filename = _filename_for(dataset_uuid)
-
-    if not os.path.exists(filename):
-        raise ValueError("%s is not cached on the FS. Did you run `prepare_raw_data`?")
-
-    try:
-        arr = xr.open_dataset(filename)
-    except ValueError:
-        arr = xr.open_dataarray(filename)
-    arr = unwrap_datavar_attrs(arr)
-
-    # If the sample is associated with a cleave, attach the information from that cleave
-    if "sample" in arr.attrs and "cleave" in arr.attrs:
-        full_cleave_name = "%s-%s" % (arr.attrs["sample"], arr.attrs["cleave"])
-
-        with open(CLEAVE_RECORD, "r") as file:
-            cleaves = json.load(file)
-
-        skip_keys = {"included_scans", "note"}
-        for k, v in cleaves.get(full_cleave_name, {}).items():
-            if k not in skip_keys and k not in arr.attrs:
-                arr.attrs[k] = v
-
-    if "ref_id" in arr.attrs:
-        arr.attrs["ref_attrs"] = load_dataset_attrs(arr.attrs["ref_id"])
-
-    for prop in FREEZE_PROPS:
-        if prop not in arr.attrs:
-            arr.attrs[prop] = getattr(arr.S, prop)
-
-    arr.attrs["df"] = df
-
-    return arr
-
-
-def available_datasets(**filters):
-    ensure_cache_exists()
-    with open(DATASET_CACHE_RECORD, "r") as cache_record:
-        records = json.load(cache_record)
-
-    for f, value in filters.items():
-        records = {k: v for k, v in records.items() if f in v and v[f] == value}
-
-    return records
-
-
-def flush_cache(ids, delete=True):
-    ensure_cache_exists()
-    with open(DATASET_CACHE_RECORD, "r") as cache_record:
-        records = json.load(cache_record)
-
-    for r_id in ids:
-        if r_id in records:
-            del records[r_id]
-
-        filename = os.path.join(DATASET_CACHE_PATH, r_id + ".nc")
-        if os.path.exists(filename) and delete:
-            os.remove(filename)
-
-    with open(DATASET_CACHE_RECORD, "w+") as cache_record:
-        json.dump(records, cache_record, sort_keys=True, indent=2)

@@ -193,22 +193,6 @@ class ARPESAccessorBase:
 
         return obj.rename(collected_renamings)
 
-    def with_physical_motors(self):
-        """
-        For systems with hierarchical motors, resets the coordinate motor values
-        back to physical instead of logical
-        :return:
-        """
-        raise NotImplementedError("TODO Implement me, for now you can just get" "the motor offsets")
-
-    def with_logical_motors(self):
-        """
-        For systems with hierarchical motors, resets the coordinate motor values
-        back to logical (this is the default setting)
-        :return:
-        """
-        raise NotImplementedError("TODO Implement me, for now you can just get" "the motor offsets")
-
     @property
     def logical_offsets(self):
         if "long_x" not in self._obj.coords:
@@ -248,15 +232,8 @@ class ARPESAccessorBase:
     def fetch_ref_attrs(self):
         if "ref_attrs" in self._obj.attrs:
             return self._obj.attrs
-        if "ref_id" in self._obj.attrs:
-            self._obj.attrs["ref_attrs"] = load_dataset_attrs(self._obj.attrs["ref_id"])
 
-        try:
-            df = self._obj.attrs["df"]
-            ref_id = df[df.id == self.original_id].iloc[0].ref_id
-            return load_dataset_attrs(ref_id)
-        except Exception:
-            return {}
+        raise NotImplementedError
 
     @property
     def scan_type(self):
@@ -1267,20 +1244,6 @@ class ARPESAccessorBase:
         return (do_float(x), do_float(y), do_float(z))
 
     @property
-    def chi(self):
-        """
-        This angle is always the puck rotation angle, i.e. the angle that spins the puck about its center while keeping
-        the manipulator body fixed. Other code sometimes refers to this angle as ``phi`` or ``sample_phi``
-        :return:
-        """
-        options = ["chi", "Azimuth"]
-        for option in options:
-            if option in self._obj.attrs:
-                return float(self._obj.attrs[option])
-
-        return None
-
-    @property
     def sample_angles(self):
         return (
             # manipulator
@@ -1747,36 +1710,8 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
             kwargs["out"] = out
         return plotting.labeled_fermi_surface(self._obj, **kwargs)
 
-    def cut_dispersion_plot(self, pattern="{}.png", **kwargs):
-        out = kwargs.get("out")
-        if out is not None and isinstance(out, bool):
-            out = pattern.format("{}_cut_dispersion".format(self.label))
-            kwargs["out"] = out
-        return plotting.cut_dispersion_plot(self._obj, **kwargs)
-
-    def dispersion_plot(self, pattern="{}.png", **kwargs):
-        out = kwargs.get("out")
-        if out is not None and isinstance(out, bool):
-            out = pattern.format("{}_dispersion".format(self.label))
-            kwargs["out"] = out
-        return plotting.fancy_dispersion(self._obj, **kwargs)
-
-    def isosurface_plot(self, pattern="{}.png", **kwargs):
-        out = kwargs.get("out")
-        if out is not None and isinstance(out, bool):
-            out = pattern.format("{}_isosurface".format(self.label))
-            kwargs["out"] = out
-        return plotting.plot_isosurface(self._obj, **kwargs)
-
-    def subtraction_reference_plot(self, pattern="{}.png", **kwargs):
-        out = kwargs.get("out")
-        if out is not None and isinstance(out, bool):
-            out = pattern.format("{}_subtraction_reference".format(self.label))
-            kwargs["out"] = out
-
-        return plotting.tarpes.plot_subtraction_reference(self._obj, **kwargs)
-
-    def fermi_edge_reference_plot(self, pattern="{}.png", **kwargs):
+    def fermi_edge_reference_plot(self, pattern="{}.png", **kwargs) -> plt.Axes:
+        """Provides a reference plot for a Fermi edge reference."""
         out = kwargs.get("out")
         if out is not None and isinstance(out, bool):
             out = pattern.format("{}_fermi_edge_reference".format(self.label))
@@ -1833,12 +1768,14 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 
         return self._obj.isel(**slices)
 
-    def nan_to_num(self, x=0):
-        """
-        xarray version of numpy.nan_to_num
-        :param x:
-        :return:
-        """
+    @deprecation.deprecated(
+        deprecated_in="3.0",
+        removed_in="4.0",
+        current_version=arpes.__version__,
+        details="Prefer xr.DataArray.fillna instead.",
+    )
+    def nan_to_num(self, x: Any = 0) -> xr.DataArray:
+        """Provides an `xarray` version of `numpy.nan_to_num`.
 
         data = self._obj.copy(deep=True)
         assert isinstance(data, xr.DataArray)
@@ -1854,23 +1791,8 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
             return self._simple_spectrum_reference_plot(**kwargs)
         elif self.spectrum_type in {"ucut", "spem"}:
             return self._referenced_scans_for_spatial_plot(**kwargs)
-        elif self.spectrum_type in {"cut"}:
-            return None
         else:
-            import pdb
-
-            pdb.set_trace()
-
-    @property
-    def eV(self):
-        eV = None
-        if "eV" in self._obj.dims:
-            eV = self._obj.eV
-        else:
-            for dof in set(self._obj.dims):
-                if "eV" in dof:
-                    eV = self._obj[dof]
-        return eV
+            raise NotImplementedError
 
 
 NORMALIZED_DIM_NAMES = ["x", "y", "z", "w"]
@@ -1881,11 +1803,10 @@ NORMALIZED_DIM_NAMES = ["x", "y", "z", "w"]
 class GenericAccessorTools:
     _obj = None
 
-
     def round_coordinates(self, coords, as_indices: bool = False):
         data = self._obj
         rounded = {
-        k: v.item()
+            k: v.item()
             for k, v in data.sel(**coords, method="nearest").coords.items()
             if k in coords
         }
@@ -1900,9 +1821,7 @@ class GenericAccessorTools:
         data = self._obj
         raveled_idx = data.argmax().item()
         flat_indices = np.unravel_index(raveled_idx, data.values.shape)
-        max_coords = {
-            d: data.coords[d][flat_indices[i]].item() for i, d in enumerate(data.dims)
-        }
+        max_coords = {d: data.coords[d][flat_indices[i]].item() for i, d in enumerate(data.dims)}
         return max_coords
 
 
@@ -2019,26 +1938,29 @@ class GenericAccessorTools:
             attrs=self._obj.attrs,
         )
 
-    def var_startswith(self, fragment):
-        return self.filter_vars(lambda _, k: k.startswith(fragment))
+    def coordinatize(self, as_coordinate_name: Optional[str] = None) -> xr.DataArray:
+        """Copies data into a coordinate's data, with an optional renaming.
 
-    def var_contains(self, fragment):
-        """
-        Filters a dataset's variables based on whether the name contains the fragment
-        :param fragment:
-        :return:
-        """
-        return self.filter_vars(lambda _, k: fragment in k)
+        If you think of an array as a function c => f(c) from coordinates to values at
+        those coordinates, this function replaces f by the identity to give c => c
 
-    def coordinatize(self, as_coordinate_name):
-        """
-        Remarkably, `coordinatize` is a word
+        Remarkably, `coordinatize` is a word.
 
-        :return:
+        For the most part, this is only useful when converting coordinate values into
+        k-space "forward".
+
+        Args:
+            as_coordinate_name: A new coordinate name for the only dimension. Defaults to None.
+
+        Returns:
+            An array which consists of the mapping c => c.
         """
         assert len(self._obj.dims) == 1
 
         d = self._obj.dims[0]
+        if as_coordinate_name is None:
+            as_coordinate_name = d
+
         o = self._obj.rename(dict([[d, as_coordinate_name]])).copy(deep=True)
         o.coords[as_coordinate_name] = o.values
 

@@ -255,40 +255,25 @@ def read_single_pxt(reference_path: typing.Union[Path, str], byte_order=None):
     return wave_to_xarray(children[0])
 
 
-def read_single_pxt_old(reference_path: Path, separator=None):
-    bytes_for_file = reference_path.read_bytes()
+def find_ses_files_associated(reference_path: Path, separator: str = "S") -> List[Path]:
+    """Finds all .pxt files created by in an SES scan, posfixed like "_S[0-9][0-9][0-9].pxt".
 
-    fallbacks = [
-        b"[BCS]",
-        b"[SES]",
-    ]
+    SES Software creates a series of .pxt files. To load one of these scans we need to collect
+    all the relevant files before loading them together. Typically, they are all sequenced
+    with _S[0-9][0-9][0-9].pxt.
 
-    if separator is None:
-        for fallback in fallbacks:
-            if fallback in bytes_for_file:
-                separator = fallback
+    This convention may or may not have been set at the MERLIN beamline of the ALS and may need
+    to be changed accordingly in the future.
 
-        if separator is None:
-            raise ValueError("Could not find appropriate separator for file.")
-
-    all_sections = bytes_for_file.split(separator)
-    content, header = all_sections[0], separator.join(all_sections[1:])
-    header = read_header(header)
-
-    return content, header
-    # wave = read_igor_binary_wave(content[10:])
-    # wave.attrs.update(header)
-    # return wave
-
-
-def find_ses_files_associated(reference_path: Path, separator: str = "S"):
-    """
-    SES Software creates a series of PXT files they are all sequenced with _S[0-9][0-9][0-9].pxt
     `find_ses_files_associated` will collect all the files in the sequence
-    pointed to by `reference_path`
-    :param reference_path:
-    :param separator:
-    :return:
+    pointed to by `reference_path`.
+
+    Args:
+        reference_path: One path among the sequence of paths which should be used as the template.
+        separator: A separator between the scan number and frame number of each scan.
+
+    Returns:
+        The list of files which are associated to a given scan, including `reference_path`.
     """
     name_match = re.match(
         r"([\w+]+)[{}][0-9][0-9][0-9]\.pxt".format(separator), reference_path.name

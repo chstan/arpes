@@ -7,19 +7,7 @@ from arpes.typing import DataType
 __all__ = (
     "discretize_path",
     "select_along_path",
-    "path_from_points",
 )
-
-
-def path_from_points(data: DataType, symmetry_points_or_interpolation_points):
-    """
-    Acceepts a list of either tuples or point references. Point references can be string keys to `.attrs['symmetry_points']`
-    This is the same behavior as `analysis.slice_along_path` and underlies the logic there.
-    :param data:
-    :param symmetry_points_or_interpolation_points:
-    :return:
-    """
-    raise NotImplementedError("")
 
 
 @update_provenance("Discretize Path")

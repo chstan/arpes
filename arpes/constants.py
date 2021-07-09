@@ -8,44 +8,6 @@ bundling necessary information on endstation classes.
 
 from numpy import pi
 
-MODE_ARPES = "arpes"
-MODE_TRARPES = "trarpes"
-MODE_SARPES = "sarpes"
-MODE_STARPES = "starpes"
-
-EXPERIMENT_MODES = [
-    MODE_ARPES,
-    MODE_TRARPES,
-    MODE_SARPES,
-    MODE_STARPES,
-]
-
-TIME_RESOLVED_MODES = [
-    MODE_TRARPES,
-    MODE_STARPES,
-]
-
-SPIN_RESOLVED_MODES = [
-    MODE_SARPES,
-    MODE_STARPES,
-]
-
-
-def mode_has_spin_resolution(mode):
-    return mode in SPIN_RESOLVED_MODES
-
-
-def mode_has_time_resolution(mode):
-    return mode in TIME_RESOLVED_MODES
-
-
-LATTICE_CONSTANTS = {
-    "Bi-2212": 3.83,
-    "NCCO": 3.942,
-    "Hg-2201": 3.8797,
-    "BaFe2As2": 3.9625,
-}
-
 # eV, A reasonablish value if you aren't sure for the particular sample
 WORK_FUNCTION = 4.38
 
@@ -145,10 +107,3 @@ SPECTROMETER_KAINDL = {
     "type": "hemisphere",
     "dof": ["theta", "sample_phi"],
 }
-
-HV_CONVERSION = 3.81
-
-FINE_K_GRAINING = 0.01
-MEDIUM_FINE_K_GRAINING = 0.02
-MEDIUM_K_GRAINING = 0.05
-COARSE_K_GRAINING = 0.1

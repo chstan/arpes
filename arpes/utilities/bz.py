@@ -127,9 +127,7 @@ def special_point_to_vector(special_point, icell, special_points):
 
 
 def process_kpath(paths, cell, special_points=None):
-    promoted = False
     if len(cell) == 2:
-        promoted = True
         cell = [c + [0] for c in cell] + [0, 0, 0]
 
     icell = np.linalg.inv(cell).T
@@ -143,10 +141,6 @@ def process_kpath(paths, cell, special_points=None):
         [special_point_to_vector(elem, icell, special_points) for elem in p]
         for p in parse_path(paths)
     ]
-
-    if promoted:
-        print(points)
-        pass
 
     return points
 

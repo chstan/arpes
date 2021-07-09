@@ -10,7 +10,7 @@ from matplotlib import cm
 import matplotlib.patheffects as path_effects
 import matplotlib.gridspec as gridspec
 
-from arpes.io import simple_load
+from arpes.io import load_data
 from arpes.plotting.annotations import annotate_point
 from arpes.plotting.utils import (
     path_for_plot,
@@ -60,24 +60,12 @@ def plot_spatial_reference(
 
     n_references = len(data_list)
     if n_references == 1 and plot_refs:
-        fig, axes = plt.subplots(
-            1,
-            2,
-            figsize=(
-                12,
-                5,
-            ),
-        )
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
         ax = axes[0]
         ax_refs = [axes[1]]
     elif plot_refs:
         n_extra_axes = 1 + (n_references // 4)
-        fig = plt.figure(
-            figsize=(
-                6 * (1 + n_extra_axes),
-                5,
-            )
-        )
+        fig = plt.figure(figsize=(6 * (1 + n_extra_axes), 5))
         spec = gridspec.GridSpec(ncols=2 * (1 + n_extra_axes), nrows=2, figure=fig)
         ax = fig.add_subplot(spec[:2, :2])
 
@@ -87,14 +75,7 @@ def plot_spatial_reference(
         ]
     else:
         ax_refs = []
-        fig, ax = plt.subplots(
-            1,
-            1,
-            figsize=(
-                6,
-                5,
-            ),
-        )
+        fig, ax = plt.subplots(1, 1, figsize=(6, 5))
 
     try:
         reference_map = reference_map.S.spectra[0]
@@ -260,8 +241,8 @@ def reference_scan_spatial(data, out=None, **kwargs):
     # only plot one annotation
     condensed = []
     cutoff = 3  # 3 percent
-    for index, row in referenced.iterrows():
-        ff = simple_load(index)
+    for index, _ in referenced.iterrows():
+        ff = load_data(index)
 
         x, y, _ = ff.S.sample_pos
         found = False

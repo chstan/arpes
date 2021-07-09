@@ -2,15 +2,13 @@ import pytest
 import warnings
 
 import arpes.config
+from arpes.io import load_example_data
+
+__all__ = ["load_test_scan"]
 
 
-def load_test_scan(dataset_name, file_number):
-    from arpes.utilities.dataset import default_dataset
-    from arpes.io import direct_load
-
+def load_test_scan(example_name):
     with warnings.catch_warnings():
-
         warnings.simplefilter("ignore")
 
-        df = default_dataset(match=dataset_name, write=False)
-        return direct_load(file_number, df=df)
+        return load_example_data(example_name)

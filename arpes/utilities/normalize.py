@@ -8,7 +8,8 @@ __all__ = (
 
 
 def normalize_to_spectrum(data: DataType):
-    from arpes.io import load_dataset
+    """Tries to extract the actual ARPES spectrum from a dataset containing other variables."""
+    from arpes.io import load_data
 
     if isinstance(data, xr.Dataset):
         if "up" in data.data_vars:
@@ -17,17 +18,18 @@ def normalize_to_spectrum(data: DataType):
         return data.S.spectrum
 
     if isinstance(data, str):
-        return normalize_to_spectrum(load_dataset(dataset_uuid=data))
+        return normalize_to_spectrum(load_data(data))
 
     # not guaranteed to be a spectrum, but close enough
     return data
 
 
 def normalize_to_dataset(data: DataType):
-    from arpes.io import load_dataset
+    """Loads data if we were given a path instead of a loaded data sample."""
+    from arpes.io import load_data
 
     if isinstance(data, xr.Dataset):
         return data
 
-    if isinstance(data, str):
-        return load_dataset(dataset_uuid=data)
+    if isinstance(data, (str, int)):
+        return load_data(data)

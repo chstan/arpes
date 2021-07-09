@@ -10,8 +10,6 @@ __all__ = [
     "MultifitBand",
     "VoigtBand",
     "BackgroundBand",
-    "FermiEdgeBand",
-    "AffineBackgroundBand",
 ]
 
 
@@ -135,18 +133,9 @@ class VoigtBand(Band):
 
 
 class BackgroundBand(Band):
+    """Uses a Gaussian lineshape."""
+
     @property
     def fit_cls(self):
+        """Fit using `arpes.fits.GaussianModel`."""
         return arpes.fits.GaussianModel
-
-
-class FermiEdgeBand(Band):
-    @property
-    def fit_cls(self):
-        return arpes.fits.GStepBStandardModel
-
-
-class AffineBackgroundBand(Band):
-    @property
-    def fit_cls(self):
-        return arpes.fits.AffineBackgroundModel

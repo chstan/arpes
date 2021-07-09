@@ -1,6 +1,5 @@
 from PyQt5 import QtWidgets
 import numpy as np
-from pyqtgraph import PlotItem
 
 from arpes.utilities import normalize_to_spectrum, group_by
 from arpes.typing import DataType

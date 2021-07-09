@@ -9,18 +9,14 @@ between different projects.
 
 import json
 import logging
-from os import getcwd
 import os.path
 import pint
 
 from pathlib import Path
 from typing import Any, Optional
 
-from arpes.exceptions import ConfigurationError
-
 ureg = pint.UnitRegistry()
 
-# ARPES_ROOT SHOULD BE PROVIDED THROUGH ENVIRONMENT VARIABLES, or via `setup`
 DATA_PATH = None
 SOURCE_ROOT = str(Path(__file__).parent)
 
@@ -39,30 +35,19 @@ HAS_LOADED = False
 FIGURE_PATH = None
 DATASET_PATH = None
 
-DATASET_CACHE_PATH = None
-DATASET_CACHE_RECORD = None  # .json file that holds normalized files
-
-# .json file that records which files are linked to the same physical sample, currently unused
-CLEAVE_RECORD = None
 
 
-def generate_cache_files() -> None:
-    global DATASET_CACHE_RECORD
-    global CLEAVE_RECORD
+    This is kind of Django/flask style but is somewhat gross. Probably
+    I should refactor this at some point to use a settings management library.
+    The best thing might be to look at what other projects use.
 
-    for record_file in [DATASET_CACHE_RECORD, CLEAVE_RECORD]:
-        if not Path(record_file).exists():
-            with open(record_file, "w+") as f:
-                json.dump({}, f)
-
-
-def update_configuration(user_path: Optional[str] = None) -> None:
+    Args:
+        user_path: The path to the user configuration module. Defaults to None.
+                   If None is provided then this is a noop.
+    """
     global HAS_LOADED
     global FIGURE_PATH
     global DATASET_PATH
-    global DATASET_CACHE_PATH
-    global DATASET_CACHE_RECORD
-    global CLEAVE_RECORD
 
     if HAS_LOADED and user_path is None:
         return
@@ -72,13 +57,6 @@ def update_configuration(user_path: Optional[str] = None) -> None:
     try:
         FIGURE_PATH = os.path.join(user_path, "figures")
         DATASET_PATH = os.path.join(user_path, "datasets")
-
-        DATASET_CACHE_PATH = os.path.join(user_path, "cache")
-
-        DATASET_CACHE_RECORD = os.path.join(user_path, "datasets", "cache.json")
-        CLEAVE_RECORD = os.path.join(user_path, "datasets", "cleaves.json")
-
-        generate_cache_files()
     except TypeError:
         pass
 
@@ -170,11 +148,6 @@ def override_settings(new_settings):
     deep_update(SETTINGS, new_settings)
 
 
-# try to generate cache files if they do not exist
-try:
-    generate_cache_files()
-except TypeError:
-    pass
 
 
 # load plugins

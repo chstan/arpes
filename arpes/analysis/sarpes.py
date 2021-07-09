@@ -9,22 +9,9 @@ __all__ = (
     "to_intensity_polarization",
     "to_up_down",
     "normalize_sarpes_photocurrent",
-    "sarpes_smooth",
 )
 
 
-@update_provenance("Smooth SARPES data")
-def sarpes_smooth(data: xr.Dataset, *args, **kwargs):
-    """
-    Smooths the up and down channels.
-    :param data:
-    :param args:
-    :param kwargs:
-    :return:
-    """
-    up = savitzky_golay(data.up, *args, **kwargs)
-    down = savitzky_golay(data.down, *args, **kwargs)
-    return data.copy(deep=True).assign(up=up, down=down)
 
 
 @update_provenance("Normalize SARPES by photocurrent")

@@ -475,7 +475,7 @@ class TestBasicDataLoading(object):
         # assert basic spectrum attributes
         for attr in ['hv', 'location']:
             if attr == 'hv' and (data.S.spectrum.attrs.get('spectrum_type') == 'hv_map' or
-                                 data.S.is_multi_region):
+                                 len(data.S.spectra) > 1):
                 continue
             assert attr in data.S.spectrum.attrs
 

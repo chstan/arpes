@@ -42,6 +42,7 @@ DEPENDENCY_GROUPS = {
         "bokeh>=2.0.0",
         "ipywidgets==7.0.1",
         # Misc deps
+        "deprecation",
         "packaging",
         "xlrd",
         "colorama",

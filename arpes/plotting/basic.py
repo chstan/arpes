@@ -3,7 +3,7 @@ import warnings
 import pandas as pd
 
 import xarray as xr
-from arpes.io import simple_load
+from arpes.io import load_data
 from arpes.preparation import normalize_dim
 from arpes.utilities import default_dataset
 from arpes.utilities.conversion import convert_to_kspace
@@ -23,7 +23,7 @@ def make_reference_plots(df: pd.DataFrame = None, with_kspace=False):
     # Make scans indicating cut locations
     for index, row in df.iterrows():
         try:
-            scan = simple_load(index)
+            scan = load_data(index)
 
             if isinstance(scan, xr.Dataset):
                 # make plot series normalized by current:

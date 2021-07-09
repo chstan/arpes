@@ -5,8 +5,6 @@ import numpy as np
 import xarray as xr
 from arpes.fits import GStepBModel, LinearModel, QuadraticModel, broadcast_model
 from arpes.provenance import provenance, update_provenance
-from arpes.typing import DataType
-from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.math import shift_by
 
 
@@ -26,8 +24,6 @@ __all__ = (
     "build_photon_energy_fermi_edge_correction",
     "apply_photon_energy_fermi_edge_correction",
     "apply_quadratic_fermi_edge_correction",
-    "apply_copper_fermi_edge_correction",
-    "apply_direct_copper_fermi_edge_correction",
     "build_direct_fermi_edge_correction",
     "apply_direct_fermi_edge_correction",
     "find_e_fermi_linear_dos",
@@ -62,25 +58,6 @@ def find_e_fermi_linear_dos(edc, guess=None, plot=False, ax=None):
         ax.axvline(guess, linestyle="--", color="gray")
 
     return chemical_potential
-
-
-@update_provenance("Apply direct Fermi edge correction from metal reference")
-def apply_direct_copper_fermi_edge_correction(arr: DataType, copper_ref: DataType, *args, **kwargs):
-    """
-    Applies a *direct* fermi edge correction.
-    :param arr:
-    :param copper_ref:
-    :param args:
-    :param kwargs:
-    :return:
-    """
-    arr = normalize_to_spectrum(arr)
-    copper_ref = normalize_to_spectrum(copper_ref)
-    direct_corr = build_direct_fermi_edge_correction(copper_ref, *args, **kwargs)
-    shift = np.interp(
-        arr.coords["phi"].values, direct_corr.coords["phi"].values, direct_corr.values
-    )
-    return apply_direct_fermi_edge_correction(arr, shift)
 
 
 def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args, **kwargs):
@@ -153,16 +130,6 @@ def build_direct_fermi_edge_correction(
         corrections.plot()
 
     return corrections
-
-
-@update_provenance("Apply quadratic Fermi edge correction from metal reference")
-def apply_copper_fermi_edge_correction(arr: DataType, copper_ref: DataType, *args, **kwargs):
-    # this maybe isn't best because we don't correct anything other than the spectrum,
-    # but that's the only thing with an energy axis in ARPES datasets so whatever
-    arr = normalize_to_spectrum(arr)
-    copper_ref = normalize_to_spectrum(copper_ref)
-    quadratic_corr = build_quadratic_fermi_edge_correction(copper_ref, *args, **kwargs)
-    return apply_quadratic_fermi_edge_correction(arr, quadratic_corr)
 
 
 def build_quadratic_fermi_edge_correction(

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import xarray as xr
-from arpes.io import load_dataset
+from arpes.io import load_data
 from arpes.preparation import normalize_dim
 from arpes.provenance import save_plot_provenance
 from arpes.utilities import bz
@@ -22,12 +22,6 @@ __all__ = [
     "hv_reference_scan",
     "scan_var_reference_plot",
 ]
-
-
-def band_path(band):
-    import holoviews as hv  # pylint: disable=import-error
-
-    return hv.Path([band.center.values, band.coords[band.dims[0]].values])
 
 
 @save_plot_provenance
@@ -284,7 +278,7 @@ def hv_reference_scan(data, out=None, e_cut=-0.05, bkg_subtraction=0.8, **kwargs
 
     scans_by_hv = defaultdict(list)
     for _, row in all_scans.iterrows():
-        scan = load_dataset(row.id)
+        scan = load_data(row.id)
 
         scans_by_hv[round(scan.S.hv)].append(scan.S.label.replace("_", " "))
 
@@ -325,7 +319,7 @@ def reference_scan_fermi_surface(data, out=None, **kwargs):
     referenced_scans = data.S.referenced_scans
     handles = []
     for index, row in referenced_scans.iterrows():
-        scan = load_dataset(row.id)
+        scan = load_data(row.id)
         remapped_coords = remap_coords_to(scan, data)
         dim_order = ax.dim_order
         ls = ax.plot(

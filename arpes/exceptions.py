@@ -17,13 +17,6 @@ class AnalysisError(Exception):
     """
 
 
-class AnalysisWarning(UserWarning):
-    """
-    Non-fatal, but the user probably forgot something really significant that
-    invalidates any science that follows
-    """
-
-
 class DataPreparationError(AnalysisError):
     """
     Indicates that the user needs to perform some data preparation step

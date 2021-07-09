@@ -13,9 +13,7 @@ def test_predicates():
     2. is_spatial
     3. is_kspace
     4. is_slit_vertical
-    5. is_synchrotron
     6. is_differentiated
-    7. is_multi_region
 
 
     :return:
@@ -147,16 +145,6 @@ def test_scale_coords():
 
 
 def test_transform_coords():
-    pass
-
-
-def test_jupyter_usability_fns():
-    """
-    1. filter_vars
-    2. var_startswith
-    3. var_contains
-    :return:
-    """
     pass
 
 

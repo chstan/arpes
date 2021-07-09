@@ -19,14 +19,13 @@ import os.path
 
 from arpes.load_pxt import read_single_pxt, find_ses_files_associated
 from arpes.utilities.dict import case_insensitive_get, rename_dataarray_attrs
-from arpes.preparation import replace_coords
 from arpes.provenance import provenance_from_file
 from arpes.endstations.fits_utils import find_clean_coords
 from arpes.endstations.igor_utils import shim_wave_note
 from arpes.repair import negate_energy
 
 
-__all__ = (
+__all__ = [
     "endstation_name_from_alias",
     "endstation_from_alias",
     "add_endstation",
@@ -36,9 +35,8 @@ __all__ = (
     "HemisphericalEndstation",
     "SynchrotronEndstation",
     "SingleFileEndstation",
-    "load_scan_for_endstation",
     "resolve_endstation",
-)
+]
 
 _ENDSTATION_ALIASES = {}
 
@@ -746,16 +744,11 @@ class FITSEndstation(EndstationBase):
                 phi_axis = (
                     data.coords["pixel"].values * arpes.constants.SPECTROMETER_MC["rad_per_pixel"]
                 )
-                data = replace_coords(
-                    data,
-                    {"phi": phi_axis},
-                    [
-                        (
-                            "pixel",
-                            "phi",
-                        )
-                    ],
-                )
+
+                if "pixel" in data.coords:
+                    del data.coords["pixel"]
+
+                data = data.assign_coords(phi=phi_axis)
 
             # Always attach provenance
             provenance_from_file(
@@ -844,27 +837,9 @@ def add_endstation(endstation_cls: type) -> None:
 
         _ENDSTATION_ALIASES[alias] = endstation_cls
 
-    if (
-        endstation_cls.PRINCIPAL_NAME in _ENDSTATION_ALIASES
-        and endstation_cls.PRINCIPAL_NAME not in endstation_cls.ALIASES
-    ):
-        # indicates it was added earlier, so there's an alias conflict
-        if False:
-            warnings.warn(
-                "Endstation name or alias conflicts with existing {}".format(
-                    endstation_cls.PRINCIPAL_NAME
-                )
-            )
-
     _ENDSTATION_ALIASES[endstation_cls.PRINCIPAL_NAME] = endstation_cls
 
 
-def load_scan_for_endstation(scan_desc, endstation_cls, **kwargs):
-    note = scan_desc.get("note", scan_desc)
-    full_note = copy.deepcopy(scan_desc)
-    full_note.update(note)
-
-    return endstation_cls().load(scan_desc, **kwargs)
 
 
 def resolve_endstation(retry=True, **kwargs):

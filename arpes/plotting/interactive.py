@@ -5,7 +5,6 @@ import numpy as np
 
 import colorcet as cc
 from arpes.fits import ExponentialDecayCModel, GStepBModel
-from arpes.io import save_dataset
 
 from .interactive_utils import CursorTool, SaveableTool
 
@@ -398,10 +397,6 @@ class ImageTool(SaveableTool, CursorTool):
         )
 
         update_main_colormap = self.update_colormap_for("main")
-
-        def on_click_save(event):
-            save_dataset(arr)
-            print(event)
 
         def click_main_image(event):
             self.cursor = [event.x, event.y]
@@ -992,10 +987,6 @@ class ImageTool(SaveableTool, CursorTool):
         update_main_colormap = self.update_colormap_for("main")
         update_bottom_colormap = self.update_colormap_for("bottom")
         update_right_colormap = self.update_colormap_for("right")
-
-        def on_click_save(event):
-            save_dataset(arr)
-            print(event)
 
         def click_z_marginal(event):
             self.cursor = [self.cursor[0], self.cursor[1], event.x]

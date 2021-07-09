@@ -4,17 +4,7 @@ from PyQt5 import QtGui, QtCore
 
 import arpes.config
 from arpes.utilities.excepthook import patched_excepthook
-from arpes.utilities.ui import (
-    PRETTY_KEYS,
-    pretty_key_event,
-    KeyBinding,
-    horizontal,
-    vertical,
-    tabs,
-    CursorRegion,
-    CursorMode,
-)
-import weakref
+from arpes.utilities.ui import KeyBinding
 
 __all__ = ("SimpleWindow",)
 

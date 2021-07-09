@@ -11,15 +11,11 @@ from .data_array_image_view import DataArrayImageView, DataArrayPlot
 
 import arpes.config
 
-__all__ = ("SimpleApp",)
+__all__ = ["SimpleApp"]
 
 ReactivePlotRecord = namedtuple(
     "ReactivePlotRecord",
-    (
-        "dims",
-        "view",
-        "orientation",
-    ),
+    ("dims", "view", "orientation"),
 )
 
 
@@ -29,10 +25,7 @@ class SimpleApp:
     """
 
     WINDOW_CLS = None
-    WINDOW_SIZE = (
-        4,
-        4,
-    )
+    WINDOW_SIZE = (4, 4)
     TITLE = "Untitled Tool"
 
     DEFAULT_COLORMAP = "viridis"
@@ -139,16 +132,6 @@ class SimpleApp:
         )
         layout.addWidget(widget, column, row)
         return widget
-
-    def autorange_plot(self, widget):
-        if not isinstance(widget, DataArrayImageView) or widget._last_img is None:
-            return
-
-        print(type(widget._last_img))
-        return
-        # hist_range = np.percentile(widget_last_img.values, (98,))[0]
-        # widget.setHistogramRange(0, self.)
-        # widget.setLevels(0.05, 0.95)
 
     def before_show(self):
         pass

@@ -21,14 +21,6 @@ __all__ = (
 
 
 @save_plot_provenance
-def jitterplot(data: xr.Dataset, jitter_dimension=None):
-    if jitter_dimension is None:
-        jitter_dimension = "bootstrap"
-
-    assert jitter_dimension in data.coords
-
-
-@save_plot_provenance
 def plot_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs):
     if name_to_plot is None:
         var_names = [k for k in data.data_vars.keys() if "_std" not in k]
