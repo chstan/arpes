@@ -22,7 +22,7 @@ You'll need to install a patched copy of `igorpy` to get Igor support in PyARPES
 with
 
 ```pip
-pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1
+pip install https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor
 ```
 
 ## Importing Data from Igor
