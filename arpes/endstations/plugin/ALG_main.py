@@ -1,3 +1,4 @@
+"""Implements data loading for the Lanzara group "Main Chamber"."""
 import numpy as np
 
 import arpes.xarray_extensions  # pylint: disable=unused-import
@@ -8,6 +9,8 @@ __all__ = ("ALGMainChamber",)
 
 
 class ALGMainChamber(HemisphericalEndstation, FITSEndstation):
+    """Implements data loading for the Lanzara group "Main Chamber"."""
+
     PRINCIPAL_NAME = "ALG-Main"
     ALIASES = [
         "MC",
@@ -56,6 +59,15 @@ class ALGMainChamber(HemisphericalEndstation, FITSEndstation):
     }
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
+        """Performs final normalization of scan data.
+
+        For the Lanzaa group main chamber, this means:
+
+        1. Associating the fixex UV laser energy.
+        2. Adding missing coordinates.
+        3. Using a standard approximate set of coordinate offsets.
+        4. Converting relevant angular coordinates to radians.
+        """
         data.attrs["hv"] = 5.93
         data.attrs["alpha"] = 0
         data.attrs["psi"] = 0

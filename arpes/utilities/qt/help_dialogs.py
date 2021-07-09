@@ -1,3 +1,4 @@
+"""A help dialog showing keyboard shortcuts for Qt application."""
 # pylint: disable=import-error
 
 from PyQt5 import QtCore, QtWidgets
@@ -8,7 +9,10 @@ __all__ = ("BasicHelpDialog",)
 
 
 class BasicHelpDialog(QtWidgets.QDialog):
+    """A help dialog showing keyboard shortcuts for Qt application."""
+
     def __init__(self, shortcuts=None):
+        """Initialize the help window and build widgets for the registered shortcuts."""
         super().__init__()
 
         if shortcuts is None:
@@ -52,6 +56,7 @@ class BasicHelpDialog(QtWidgets.QDialog):
         self.setFixedSize(*qt_info.inches_to_px([2, 4]))
 
     def keyPressEvent(self, event):
+        """If the user presed H we should toggle the dialog, or close it if they pressed Esc."""
         if event.key() == QtCore.Qt.Key_H or event.key() == QtCore.Qt.Key_Escape:
             self._main_window._help_dialog = None  # pylint: disable=protected-access
             self.close()

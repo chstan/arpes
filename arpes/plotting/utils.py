@@ -1,7 +1,8 @@
+"""Contains many common utility functions for managing matplotlib."""
 import collections
 import pickle
 import contextlib
-from typing import Union
+from typing import List, Tuple, Union
 
 import datetime
 import errno
@@ -92,9 +93,7 @@ __all__ = (
 
 @contextlib.contextmanager
 def unchanged_limits(ax):
-    """
-    Context manager that retains axis limits
-    """
+    """Context manager that retains axis limits."""
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
 
     yield
@@ -104,10 +103,7 @@ def unchanged_limits(ax):
 
 
 def mod_plot_to_ax(data, ax, mod, **kwargs):
-    """
-    Plots a model onto an axis using the data range from the passed data
-    """
-
+    """Plots a model onto an axis using the data range from the passed data."""
     with unchanged_limits(ax):
         xs = data.coords[data.dims[0]].values
         ys = mod.eval(x=xs)
@@ -115,19 +111,23 @@ def mod_plot_to_ax(data, ax, mod, **kwargs):
 
 
 def h_gradient_fill(x1, x2, x_solid, fill_color=None, ax=None, zorder=None, alpha=None, **kwargs):
-    """
-    Fills a gradient between x1 and x2. If x_solid is not None, the gradient will be extended
+    """Fills a gradient between x1 and x2.
+
+    If x_solid is not None, the gradient will be extended
     at the maximum opacity from the closer limit towards x_solid.
 
-    :param x1:
-    :param x2:
-    :param x_solid:
-    :param fill_color:
-    :param ax:
-    :param zorder:
-    :param alpha:
-    :param kwargs:
-    :return:
+    Args:
+        x1
+        x2
+        x_solid
+        fill_color
+        ax
+        zorder
+        alpha
+        **kwargs
+
+    Returns:
+        The result of the inner imshow.
     """
     if ax is None:
         ax = plt.gca()
@@ -156,19 +156,23 @@ def h_gradient_fill(x1, x2, x_solid, fill_color=None, ax=None, zorder=None, alph
 
 
 def v_gradient_fill(y1, y2, y_solid, fill_color=None, ax=None, zorder=None, alpha=None, **kwargs):
-    """
-    Fills a gradient vertically between y1 and y2. If y_solid is not None, the gradient will be extended
+    """Fills a gradient vertically between y1 and y2.
+
+    If y_solid is not None, the gradient will be extended
     at the maximum opacity from the closer limit towards y_solid.
 
-    :param y1:
-    :param y2:
-    :param y_solid:
-    :param fill_color:
-    :param ax:
-    :param zorder:
-    :param alpha:
-    :param kwargs:
-    :return:
+    Args:
+        y1
+        y2
+        y_solid
+        fill_color
+        ax
+        zorder
+        alpha
+        **kwargs
+
+    Returns:
+        The result of the inner imshow call.
     """
     if ax is None:
         ax = plt.gca()
@@ -196,17 +200,21 @@ def v_gradient_fill(y1, y2, y_solid, fill_color=None, ax=None, zorder=None, alph
     return im
 
 
-def simple_ax_grid(n_axes, figsize=None, **kwargs):
-    """
-    Generates a square-ish set of axes and hides the extra ones
+def simple_ax_grid(
+    n_axes, figsize=None, **kwargs
+) -> Tuple[plt.Figure, List[plt.Axes], List[plt.Axes]]:
+    """Generates a square-ish set of axes and hides the extra ones.
 
     It would be nice to accept an "aspect ratio" item that will attempt to fix the
     grid dimensions to get an aspect ratio close to the desired one.
 
-    :param n_axes:
-    :param figsize:
-    :param kwargs:
-    :return:
+    Args:
+        n_axes
+        figsize
+        **kwargs
+
+    Returns:
+        The figure, the first n axis which are shown, and the remaining hidden axes.
     """
     width = int(np.ceil(np.sqrt(n_axes)))
     height = width - 1
@@ -232,6 +240,7 @@ def simple_ax_grid(n_axes, figsize=None, **kwargs):
 
 @contextlib.contextmanager
 def dark_background(overrides):
+    """Context manager for plotting "dark mode"."""
     defaults = {
         "axes.edgecolor": "white",
         "xtick.color": "white",
@@ -246,6 +255,7 @@ def dark_background(overrides):
 
 
 def data_to_axis_units(points, ax=None):
+    """Converts between data and axis units."""
     if ax is None:
         ax = plt.gca()
 
@@ -253,6 +263,7 @@ def data_to_axis_units(points, ax=None):
 
 
 def axis_to_data_units(points, ax=None):
+    """Converts between axis and data units."""
     if ax is None:
         ax = plt.gca()
 
@@ -260,6 +271,7 @@ def axis_to_data_units(points, ax=None):
 
 
 def ddata_daxis_units(ax=None):
+    """Gives the derivative of data units with respect to axis units."""
     if ax is None:
         ax = plt.gca()
 
@@ -269,6 +281,7 @@ def ddata_daxis_units(ax=None):
 
 
 def daxis_ddata_units(ax=None):
+    """Gives the derivative of axis units with respect to data units."""
     if ax is None:
         ax = plt.gca()
 
@@ -278,21 +291,25 @@ def daxis_ddata_units(ax=None):
 
 
 def swap_xaxis_side(ax):
+    """Swaps the x axis to the top of the figure."""
     ax.xaxis.tick_top()
     ax.xaxis.set_label_position("top")
 
 
 def swap_yaxis_side(ax):
+    """Swaps the y axis to the right of the figure."""
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
 
 
 def swap_axis_sides(ax):
+    """Swaps the y axis to the right of the figure and the x axis to the top."""
     swap_xaxis_side(ax)
     swap_yaxis_side(ax)
 
 
 def transform_labels(transform_fn, fig=None, include_titles=True):
+    """Apply a function to all axis labeled in a figure."""
     if fig is None:
         fig = plt.gcf()
 
@@ -311,6 +328,7 @@ def transform_labels(transform_fn, fig=None, include_titles=True):
 
 
 def summarize(data: DataType, axes=None):
+    """Makes a summary plot with different marginal plots represented."""
     data = normalize_to_spectrum(data)
 
     axes_shapes_for_dims = {
@@ -336,6 +354,7 @@ def summarize(data: DataType, axes=None):
 
 
 def sum_annotation(eV=None, phi=None):
+    """Annotates that a given axis was summed over by listing the integration range."""
     eV_annotation, phi_annotation = "", ""
 
     def to_str(bound):
@@ -359,6 +378,7 @@ def sum_annotation(eV=None, phi=None):
 
 
 def mean_annotation(eV=None, phi=None):
+    """Annotates that a given axis was meaned (summed) over by listing the integration range."""
     eV_annotation, phi_annotation = "", ""
 
     def to_str(bound):
@@ -384,19 +404,27 @@ def mean_annotation(eV=None, phi=None):
 
 
 def frame_with(ax, color="red", linewidth=2):
+    """Makes thick, visually striking borders on a matplotlib plot.
+
+    Very useful for color coding results in a slideshow.
+    """
     for spine in ["left", "right", "top", "bottom"]:
         ax.spines[spine].set_color(color)
         ax.spines[spine].set_linewidth(linewidth)
 
 
-def quick_tex(latex_fragment, ax=None, fontsize=30):
-    """
-    Sometimes you just need to render some latex and getting a latex session
-    running is far too much effort.
-    :param latex_fragment:
-    :return:
-    """
+def quick_tex(latex_fragment: str, ax=None, fontsize=30) -> plt.Axes:
+    """Sometimes you just need to render some latex.
 
+    Getting a latex session running is far too much effort.
+    Also just go to the KaTeX website and can work well.
+
+    Args:
+        latex_fragment: The fragment to render
+
+    Returns:
+        The axes generated.
+    """
     if ax is None:
         fig, ax = plt.subplots()
 
@@ -406,6 +434,7 @@ def quick_tex(latex_fragment, ax=None, fontsize=30):
 
 
 def lineplot_arr(arr, ax=None, method="plot", mask=None, mask_kwargs=None, **kwargs):
+    """Convenience method to plot an array with a mask over some other data."""
     if mask_kwargs is None:
         mask_kwargs = dict()
 
@@ -434,6 +463,7 @@ def lineplot_arr(arr, ax=None, method="plot", mask=None, mask_kwargs=None, **kwa
 
 
 def plot_arr(arr=None, ax=None, over=None, mask=None, **kwargs):
+    """Convenience method to plot an array with a mask over some other data."""
     to_plot = arr if mask is None else mask
     try:
         n_dims = len(to_plot.dims)
@@ -454,6 +484,7 @@ def plot_arr(arr=None, ax=None, over=None, mask=None, **kwargs):
 
 
 def imshow_mask(mask, ax=None, over=None, cmap=None, **kwargs):
+    """Plots a mask by using a fixed color and transparency."""
     assert over is not None
 
     if ax is None:
@@ -492,14 +523,15 @@ def imshow_arr(
     cmap=None,
     **kwargs,
 ):
-    """
-    Similar to plt.imshow but users different default origin, and sets appropriate
-    extent on the plotted data.
-    :param arr:
-    :param ax:
-    :return:
-    """
+    """Similar to plt.imshow but users different default origin, and sets appropriate extents.
 
+    Args:
+        arr
+        ax
+
+    Returns:
+        The axes and quadmesh instance.
+    """
     if ax is None:
         fig, ax = plt.subplots()
 
@@ -536,24 +568,22 @@ def imshow_arr(
     return ax, quad
 
 
-def dos_axes(orientation="horiz", figsize=None, with_cbar=True):
-    """
-    Orientation option should be 'horiz' or 'vert'
+def dos_axes(orientation="horiz", figsize=None, with_cbar=True) -> Tuple[plt.Figure, plt.Axes]:
+    """Makes axes corresponding to density of states data.
 
-    :param orientation:
-    :param figsize:
-    :param with_cbar:
-    :return:
+    This has one image like region and one small marginal for an EDC.
+    Orientation option should be 'horiz' or 'vert'.
+
+    Args:
+        orientation
+        figsize
+        with_cbar
+
+    Returns:
+        The generated figure and axes as a tuple.
     """
     if figsize is None:
-        figsize = (
-            (
-                12,
-                9,
-            )
-            if orientation == "vert"
-            else (9, 9)
-        )
+        figsize = (12, 9) if orientation == "vert" else (9, 9)
 
     fig = plt.figure(figsize=figsize)
 
@@ -578,14 +608,18 @@ def dos_axes(orientation="horiz", figsize=None, with_cbar=True):
 
 
 def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=None, **kwargs):
-    """
-    Plots a reference cut location
-    :param data:
-    :param reference_data:
-    :param ax:
-    :param location:
-    :param kwargs:
-    :return:
+    """Plots a reference cut location over a figure.
+
+    Another approach is to separately plot the locator and add it in Illustrator or
+    another tool.
+
+    Args:
+        data: The data you are plotting
+        reference_data: The reference data containing the location of the cut
+        ax: The axes to plot on
+        location: The location in the cut
+        color: The color to use for the indicator line
+        kwargs: Passed to ax.plot when making the indicator lines
     """
     quad = data.plot(ax=ax)
     ax.set_xlabel("")
@@ -638,14 +672,13 @@ def inset_cut_locator(data, reference_data=None, ax=None, location=None, color=N
     if n_cut_dims == 1:
         # a line cut, illustrate with a line
         ax.plot(*ordered_selector[::-1], color=color, **kwargs)
-        pass
     elif n_cut_dims == 0:
         # a single point cut, illustrate with a marker
-
         pass
 
 
 def generic_colormap(low, high):
+    """Generates a colormap from the cm.Blues palette, suitable for most purposes."""
     delta = high - low
     low = low - delta / 6
     high = high + delta / 6
@@ -657,6 +690,8 @@ def generic_colormap(low, high):
 
 
 def phase_angle_colormap(low=0, high=np.pi * 2):
+    """Generates a colormap suitable for angular data or data on a unit circle like a phase."""
+
     def get_color(value):
         return cm.twilight_shifted(float((value - low) / (high - low)))
 
@@ -664,6 +699,8 @@ def phase_angle_colormap(low=0, high=np.pi * 2):
 
 
 def delay_colormap(low=-1, high=1):
+    """Generates a colormap suitable for pump-probe delay data."""
+
     def get_color(value):
         return cm.coolwarm(float((value - low) / (high - low)))
 
@@ -671,6 +708,7 @@ def delay_colormap(low=-1, high=1):
 
 
 def temperature_colormap(high=300, low=0, cmap=None):
+    """Generates a colormap suitable for temperature data with fixed extent."""
     if cmap is None:
         cmap = cm.Blues_r
 
@@ -681,6 +719,8 @@ def temperature_colormap(high=300, low=0, cmap=None):
 
 
 def temperature_colormap_around(central, range=50):
+    """Generates a colormap suitable for temperature data around a central value."""
+
     def get_color(value):
         return cm.RdBu_r(float((value - central) / range))
 
@@ -710,6 +750,7 @@ def generic_colorbar(low, high, label="", cmap=None, ax=None, ticks=None, **kwar
 
 
 def phase_angle_colorbar(high=np.pi * 2, low=0, ax=None, **kwargs):
+    """Generates a colorbar suitable for plotting an angle or value on a unit circle."""
     extra_kwargs = {
         "orientation": "horizontal",
         "label": "Angle",
@@ -730,6 +771,7 @@ def phase_angle_colorbar(high=np.pi * 2, low=0, ax=None, **kwargs):
 
 
 def temperature_colorbar(high=300, low=0, ax=None, cmap=None, **kwargs):
+    """Generates a colorbar suitable for temperature data with fixed extent."""
     if cmap is None:
         cmap = "Blues_r"
 
@@ -746,8 +788,11 @@ def temperature_colorbar(high=300, low=0, ax=None, cmap=None, **kwargs):
 
 
 def delay_colorbar(low=-1, high=1, ax=None, **kwargs):
-    # TODO make this nonsequential for use in case where you want to have a long time period after the
-    # delay or before
+    """Generates a colorbar suitable for delay data.
+
+    TODO make this nonsequential for use in case where you want to have a long time period after the
+    delay or before.
+    """
     extra_kwargs = {
         "orientation": "horizontal",
         "label": "Probe Pulse Delay (ps)",
@@ -761,6 +806,7 @@ def delay_colorbar(low=-1, high=1, ax=None, **kwargs):
 
 
 def temperature_colorbar_around(central, range=50, ax=None, **kwargs):
+    """Generates a colorbar suitable for temperature axes around a central value."""
     extra_kwargs = {
         "orientation": "horizontal",
         "label": "Temperature (K)",
@@ -796,7 +842,8 @@ colorbarmaps_for_axis = {
 }
 
 
-def get_colorbars(fig=None):
+def get_colorbars(fig=None) -> List[plt.Axes]:
+    """Collects likely colorbars in a figure."""
     if fig is None:
         fig = plt.gcf()
 
@@ -811,9 +858,9 @@ def get_colorbars(fig=None):
 def remove_colorbars(fig=None):
     """Removes colorbars from given (or, if no given figure, current) matplotlib figure.
 
-    :param fig (default plt.gcf()):
+    Args:
+        fig: The figure to modify, by default uses the current figure (`plt.gcf()`)
     """
-
     # TODO after colorbar removal, plots should be relaxed/rescaled to occupy space previously allocated to colorbars
     # for now, can follow this with plt.tight_layout()
     try:
@@ -834,6 +881,7 @@ generic_colorbarmap = (
 
 
 def generic_colorbarmap_for_data(data: xr.DataArray, keep_ticks=True, ax=None, **kwargs):
+    """Generates a colorbar and colormap which is useful in general context."""
     low, high = data.min().item(), data.max().item()
     ticks = None
     if keep_ticks:
@@ -845,6 +893,7 @@ def generic_colorbarmap_for_data(data: xr.DataArray, keep_ticks=True, ax=None, *
 
 
 def polarization_colorbar(ax=None):
+    """Makes a colorbar which is appropriate for "polarization" (e.g. spin) data."""
     cb = colorbar.ColorbarBase(
         ax,
         cmap="RdBu",
@@ -857,6 +906,7 @@ def polarization_colorbar(ax=None):
 
 
 def calculate_aspect_ratio(data: DataType):
+    """Calculate the aspect ratio which should be used for plotting some data based on extent."""
     data = normalize_to_spectrum(data)
 
     assert len(data.dims) == 2
@@ -868,12 +918,10 @@ def calculate_aspect_ratio(data: DataType):
 
 
 class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
-    """
-    Modified from `this StackOverflow question <https://stackoverflow.com/questions/43258638/>`_
-    as alternate to the one provided through matplotlib
+    """Provides an anchored scale bar on the X axis.
 
-    size: length of bar in data units
-    extent : height of bar ends in axes units
+    Modified from `this StackOverflow question <https://stackoverflow.com/questions/43258638/>`_
+    as alternate to the one provided through matplotlib.
     """
 
     def __init__(
@@ -892,6 +940,7 @@ class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
         frameon=True,
         **kwargs,
     ):
+        """Setup the scale bar and coordinate transforms to the parent axis."""
         if not ax:
             ax = plt.gca()
         trans = ax.get_xaxis_transform()
@@ -919,6 +968,7 @@ class AnchoredHScaleBar(matplotlib.offsetbox.AnchoredOffsetbox):
 
 
 def load_data_for_figure(p: Union[str, pathlib.Path]):
+    """Tries to load the data associated with a given figure by unpickling the saved data."""
     path = str(p)
     stem = os.path.splitext(path)[0]
     if stem.endswith("-PAPER"):
@@ -936,6 +986,17 @@ def load_data_for_figure(p: Union[str, pathlib.Path]):
 
 
 def savefig(desired_path, dpi=400, data=None, save_data=None, paper=False, **kwargs):
+    """The PyARPES preferred figure saving routine.
+
+    Provides a number of conveniences over matplotlib's `savefig`:
+
+    1. Output is scoped per project and per day, which aids organization
+    2. The dpi is set to a reasonable value for the year 2021.
+    3. By omitting a file extension you will get high and low res formats in .png and .pdf
+      which is useful for figure drafting in external software (Adobe Illustrator)
+    4. Data and plot provenenace is tracked, which makes it easier to find your analysis
+      after the fact if you have many many plots.
+    """
     if not os.path.splitext(desired_path)[1]:
         paper = True
 
@@ -1009,6 +1070,14 @@ def savefig(desired_path, dpi=400, data=None, save_data=None, paper=False, **kwa
 
 
 def path_for_plot(desired_path):
+    """Provides workspace and date scoped path generation for plots.
+
+    This is used to ensure that analysis products are grouped together
+    and organized in a reasonable way (by each day, together).
+
+    This will be used automatically if you use `arpes.plotting.utils.savefig`
+    instead of the one from matplotlib.
+    """
     if not CONFIG["WORKSPACE"]:
         attempt_determine_workspace()
 
@@ -1044,6 +1113,7 @@ def path_for_plot(desired_path):
 
 
 def path_for_holoviews(desired_path):
+    """Determines an appropriate output path for a holoviews save."""
     skip_paths = [".svg", ".png", ".jpeg", ".jpg", ".gif"]
 
     prefix, ext = os.path.splitext(desired_path)
@@ -1055,6 +1125,7 @@ def path_for_holoviews(desired_path):
 
 
 def name_for_dim(dim_name, escaped=True):
+    """Alternate variant of `label_for_dim`."""
     if SETTINGS["use_tex"]:
         name = {
             "beta": r"$\beta$",
@@ -1093,6 +1164,7 @@ def name_for_dim(dim_name, escaped=True):
 
 
 def unit_for_dim(dim_name, escaped=True):
+    """Calculate LaTeX or fancy display label for the unit associated to a dimension."""
     if SETTINGS["use_tex"]:
         unit = {
             "theta": r"rad",
@@ -1131,6 +1203,7 @@ def unit_for_dim(dim_name, escaped=True):
 
 
 def label_for_colorbar(data):
+    """Returns an appropriate label for an ARPES intensity colorbar."""
     if not data.S.is_differentiated:
         return r"Spectrum Intensity (arb.)"
 
@@ -1166,6 +1239,7 @@ def label_for_colorbar(data):
 
 
 def label_for_dim(data=None, dim_name=None, escaped=True):
+    """Generates a fancy label (LaTeX, if available) for a dimension according to standard conventions."""
     if SETTINGS["use_tex"]:
         raw_dim_names = {
             "theta": r"$\theta$",
@@ -1219,11 +1293,14 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
     except ImportError:
         warnings.warn("Using alternative titlecase, for better results `pip install titlecase`.")
 
-        def titlecase(s):
-            """
-            Poor man's titlecase
-            :param s:
-            :return:
+        def titlecase(s: str) -> str:
+            """Poor man's titlecase.
+
+            Args:
+                s: The input string
+
+            Returns:
+                The titlecased string.
             """
             return s.title()
 
@@ -1231,13 +1308,13 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
 
 
 def fancy_labels(ax_or_ax_set, data=None):
-    """
-    Attaches better display axis labels for all axes that can be traversed in the
-    passed figure or axes.
+    """Attaches better display axis labels for all axes.
 
-    :param ax_or_ax_set:
-    :param data:
-    :return:
+    Axes are determined by those that can be traversed in the passed figure or axes.
+
+    Args:
+        ax_or_ax_set: The axis to search for subaxes
+        data: The source data, used to calculate names, typically you can leave this empty
     """
     if isinstance(ax_or_ax_set, (list, tuple, set, np.ndarray)):
         for ax in ax_or_ax_set:
@@ -1256,7 +1333,8 @@ def fancy_labels(ax_or_ax_set, data=None):
         pass
 
 
-def label_for_symmetry_point(point_name):
+def label_for_symmetry_point(point_name: str) -> str:
+    """Determines the LaTeX label for a symmetry point shortcode."""
     if SETTINGS["use_tex"]:
         proper_names = {
             "G": r"$\Gamma$",
@@ -1274,11 +1352,12 @@ def label_for_symmetry_point(point_name):
 
 
 class CoincidentLinesPlot:
-    """
-    Helper to allow drawing lines at the same location. Will draw n lines offset so that their
-    center appears at the data center, and the lines will end up nonoverlapping.
+    """Helper to allow drawing lines at the same location.
 
-    Only works for straight lines
+    Will draw n lines offset so that their center appears at the data center,
+    and the lines will end up nonoverlapping.
+
+    Only works for straight lines.
 
     Technique adapted from `StackOverflow
     <https://stackoverflow.com/questions/19394505/matplotlib-expand-the-line-with-specified-width-in-data-unit>`_.
@@ -1306,6 +1385,7 @@ class CoincidentLinesPlot:
         self.lines = []  # saved args and kwargs for plotting, does not verify coincidence
 
     def add_line(self, *args, **kwargs):
+        """Adds an additional line into the collection to be drawn."""
         assert not self.has_drawn
         self.lines.append(
             (
@@ -1315,6 +1395,7 @@ class CoincidentLinesPlot:
         )
 
     def draw(self):
+        """Draw all of the lines after offsetting them slightly."""
         self.has_drawn = True
 
         offset_in_data_units = self.data_units_per_pixel * self.linewidth
@@ -1330,6 +1411,7 @@ class CoincidentLinesPlot:
 
     @property
     def data_units_per_pixel(self):
+        """Gets the data/pixel conversion ratio."""
         trans = self.ax.transData.transform
         inverse = (trans((1, 1)) - trans((0, 0))) * self.ppd
         return (1 / inverse[0], 1 / inverse[1])
@@ -1360,11 +1442,13 @@ class CoincidentLinesPlot:
 
 
 def invisible_axes(ax):
+    """Make a Axes instance completely invisible."""
     ax.grid(False)
     ax.set_axis_off()
     ax.patch.set_alpha(0)
 
 
 def no_ticks(ax):
+    """Remove all axis ticks."""
     ax.get_xaxis().set_ticks([])
     ax.get_yaxis().set_ticks([])

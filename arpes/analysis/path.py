@@ -1,3 +1,4 @@
+"""Contains routines used to do path selections and manipulations on a dataset."""
 import numpy as np
 
 import xarray as xr
@@ -11,14 +12,21 @@ __all__ = (
 
 
 @update_provenance("Discretize Path")
-def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
-    """
-    Shares logic with slice_along_path
-    :param path:
-    :param n_points:
-    :return:
-    """
+def discretize_path(path: xr.Dataset, n_points=None, scaling=None) -> xr.Dataset:
+    """Discretizes a path into a set of points spaced along the path.
 
+    Shares logic with slice_along_path
+
+    Args:
+        path: The path specification.
+        n_points: The number of points to space along the path.
+        scaling: A metric allowing calculating a distance from mixed coordinates. This
+          is needed because we disperse points equidistantly along the path. Typically
+          you can leave this unset.
+
+    Returns:
+        An xr.Dataset of the points along the path.
+    """
     if scaling is None:
         scaling = 1
     elif isinstance(scaling, xr.Dataset):
@@ -81,21 +89,26 @@ def discretize_path(path: xr.Dataset, n_points=None, scaling=None):
 @update_provenance("Select from data along a path")
 def select_along_path(
     path: xr.Dataset, data: DataType, radius=None, n_points=None, fast=True, scaling=None, **kwargs
-):
-    """
-    Performs integration along a path. This functionally allows for performing a finite width
+) -> DataType:
+    """Performs integration along a path.
+
+    This functionally allows for performing a finite width
     cut (with finite width perpendicular to the local path direction) along some path,
     and integrating along this perpendicular selection. This allows for better statistics in
     oversampled data.
 
-    :param path:
-    :param data:
-    :param radius: A number or dictionary of radii to use for the selection along different dimensions, if none is provided
-    reasonable values will be chosen. Alternatively, you can pass radii via `{dim}_r` kwargs as well, i.e. 'eV_r' or 'kp_r'
-    :param n_points: The number of points to interpolate along the path, by default we will infer a reasonable number
-    from the radius parameter, if provided or inferred
-    :param fast: If fast is true, will use rectangular selections rather than ellipsoid ones
-    :return:
+    Args:
+        path: The path to select along.
+        data: The data to select/interpolate from.
+        radius: A number or dictionary of radii to use for the selection along different dimensions,
+          if none is provided reasonable values will be chosen. Alternatively, you can pass radii
+          via `{dim}_r` kwargs as well, i.e. 'eV_r' or 'kp_r'
+        n_points: The number of points to interpolate along the path, by default we will infer a
+          reasonable number from the radius parameter, if provided or inferred
+        fast: If fast is true, will use rectangular selections rather than ellipsoid ones
+
+    Returns:
+        The data selected along the path.
     """
     new_path = discretize_path(path, n_points, scaling)
 

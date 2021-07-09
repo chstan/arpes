@@ -1,3 +1,11 @@
+"""Provides extremely fast 2D and 3D linear interpolation.
+
+This is used for momentum conversion in place of the scipy
+GridInterpolator where it is possible to do so. It is many many 
+times faster than the grid interpolator and together with other optimizations
+resulted in a 50x improvement in the momentum conversion time for
+ARPES data in PyARPES.
+"""
 import numba
 from dataclasses import dataclass
 from typing import List, Union
@@ -157,28 +165,58 @@ def interpolate_2d(
 
 @dataclass
 class Interpolator:
+    """Provides a Pythonic interface to fast gridded linear interpolation.
+
+    More or less a drop-in replacement for scipy's RegularGridInterpolator,
+    but much faster at the expense of not supporting any extrapolation.
+    """
+
     lower_corner: List[float]
     delta: List[float]
     shape: List[int]
     data: np.ndarray
 
     def __post_init__(self):
+        """Convert data to floating point representation.
+
+        Because we do linear not nearest neighbor interpolation this should be safe
+        always.
+        """
         self.data = self.data.astype(np.float64, copy=False)
 
     @classmethod
-    def from_arrays(cls, xyz, data):
+    def from_arrays(cls, xyz: List[np.ndarray], data: np.ndarray):
+        """Initializes the interpreter from a coordinate and data array.
+
+        Args:
+            xyz: A list of the coordinate arrays. Should be length 2 or 3
+              because we provide 2D and 3D coordinate interpolation.
+            data: The value of the interpolated function at the coordinate in `xyz`
+        """
         lower_corner = [xi[0] for xi in xyz]
         delta = [xi[1] - xi[0] for xi in xyz]
         shape = [len(xi) for xi in xyz]
         return cls(lower_corner, delta, shape, data)
 
-    def __call__(self, xi: Union[np.ndarray, List[np.ndarray]]):
+    def __call__(self, xi: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
+        """Performs linear interpolation at the coordinates given by `xi`.
+
+        Whether 2D or 3D interpolation is used depends on the dimensionality of `xi` and
+        `self.data` but of course they must match one another.
+
+        Args:
+            xi: A list or stacked array of the coordinates. Provides a [d, k] array
+              of k points each with d dimensions/indices.
+
+        Returns:
+            The interpolated values f(x_i) at each point x_i, as a length k scalar array.
+        """
         if isinstance(xi, np.ndarray):
             xi = xi.astype(np.float64, copy=False)
             xi = [xi[:, i] for i in range(self.data.ndim)]
         else:
             xi = [xii.astype(np.float64, copy=False) for xii in xi]
-        
+
         output = np.zeros_like(xi[0])
 
         interpolator = {

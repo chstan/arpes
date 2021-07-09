@@ -1,3 +1,4 @@
+"""Utilities used in broadcast fitting."""
 from typing import Dict, Union
 import lmfit
 import xarray as xr
@@ -8,13 +9,7 @@ from string import ascii_lowercase
 
 
 def unwrap_params(params, iter_coordinate):
-    """
-    Inspects parameters to see if any are array like and extracts the appropriate value to use for the current
-    iteration point.
-    :param params:
-    :param iter_coordinate:
-    :return:
-    """
+    """Inspects array-like parameters and extracts the appropriate value to use for the current fit."""
 
     def transform_or_walk(v):
         if isinstance(v, dict):
@@ -29,6 +24,13 @@ def unwrap_params(params, iter_coordinate):
 
 
 def apply_window(data: xr.DataArray, cut_coords: Dict[str, Union[float, slice]], window):
+    """Cuts data inside a specified window.
+
+    Because we allow passing an array of windows, we need to first try to find
+    the right one for the current fit before application.
+
+    If there's no window, this acts as the identity function on the data.
+    """
     cut_data = data.sel(**cut_coords)
     original_cut_data = cut_data
 
@@ -41,12 +43,7 @@ def apply_window(data: xr.DataArray, cut_coords: Dict[str, Union[float, slice]],
 
 
 def _parens_to_nested(items):
-    """
-    Turns a flat list with parentheses tokens into a nested list
-    :param items:
-    :return:
-    """
-
+    """Turns a flat list with parentheses tokens into a nested list."""
     parens = [
         (
             token,
@@ -70,6 +67,7 @@ def _parens_to_nested(items):
 
 
 def reduce_model_with_operators(model):
+    """Combine models according to mathematical operators."""
     if isinstance(model, tuple):
         return model[0](prefix="{}_".format(model[1]), nan_policy="omit")
 
@@ -90,11 +88,10 @@ def reduce_model_with_operators(model):
 
 
 def compile_model(model, params=None, prefixes=None):
-    """
+    """Generates an lmfit model instance from specification.
+
     Takes a model sequence, i.e. a Model class, a list of such classes, or a list
     of such classes with operators and instantiates an appropriate model.
-    :param model:
-    :return:
     """
     if params is None:
         params = {}

@@ -1,3 +1,4 @@
+"""Provides data loading for the Lanzara group experimental ARToF."""
 import copy
 import os.path
 import warnings
@@ -14,18 +15,20 @@ __all__ = ("SToFDLDEndstation",)
 
 
 class SToFDLDEndstation(EndstationBase):
+    """Provides data loading for the Lanzara group experimental ARToF."""
+
     PRINCIPAL_NAME = "ALG-SToF-DLD"
 
     def load(self, scan_desc: dict = None, **kwargs):
-        """
-        Imports a FITS file that contains all of the information from a run of Ping
-        and Anton's delay line detector ARToF
+        """Load a FITS file containing run data from Ping and Anton's delay line detector ARToF.
 
-        :param scan_desc: Dictionary with extra information to attach to the xarray.Dataset, must contain the location
-        of the file
-        :return: xarray.Dataset
-        """
+        Params:
+            scan_desc: Dictionary with extra information to attach to the xarray.Dataset, must contain the location
+              of the file
 
+        Returns:
+            The loaded spectrum.
+        """
         if scan_desc is None:
             warnings.warn("Attempting to make due without user associated metadata for the file")
             raise TypeError("Expected a dictionary of metadata with the location of the file")

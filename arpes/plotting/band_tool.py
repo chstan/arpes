@@ -1,3 +1,4 @@
+"""An interactive band selection tool used to initialize curve fits."""
 import numpy as np
 from bokeh import events
 
@@ -12,14 +13,13 @@ __all__ = ("BandTool",)
 
 
 class BandTool(SaveableTool, CursorTool):
-    """
-    Two dimensional fitting band tool
-    """
+    """Two dimensional fitting band tool."""
 
     auto_zero_nans = False
     auto_rebin = False
 
     def __init__(self, **kwargs):
+        """Load plot sizes and standard settings from user overrides."""
         super().__init__(kwargs.pop("name", None))
 
         self.load_settings(**kwargs)
@@ -30,6 +30,7 @@ class BandTool(SaveableTool, CursorTool):
         self.pointer_mode = "band"
 
     def tool_handler(self, doc):
+        """Sets up widgets for the Bokeh application."""
         from bokeh.layouts import row, column, widgetbox
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models import widgets
@@ -120,48 +121,24 @@ class BandTool(SaveableTool, CursorTool):
         update_main_colormap = self.update_colormap_for("main")
 
         POINTER_MODES = [
-            (
-                "Cursor",
-                "cursor",
-            ),
-            (
-                "Band",
-                "band",
-            ),
+            ("Cursor", "cursor"),
+            ("Band", "band"),
         ]
 
         FIT_MODES = [
-            (
-                "EDC",
-                "edc",
-            ),
-            (
-                "MDC",
-                "mdc",
-            ),
+            ("EDC", "edc"),
+            ("MDC", "mdc"),
         ]
 
         DIRECTIONS = [
-            (
-                "From Bottom/Left",
-                "forward",
-            ),
+            ("From Bottom/Left", "forward"),
             ("From Top/Right", "reverse"),
         ]
 
         BAND_TYPES = [
-            (
-                "Lorentzian",
-                "Lorentzian",
-            ),
-            (
-                "Voigt",
-                "Voigt",
-            ),
-            (
-                "Gaussian",
-                "Gaussian",
-            ),
+            ("Lorentzian", "Lorentzian"),
+            ("Voigt", "Voigt"),
+            ("Gaussian", "Gaussian"),
         ]
 
         band_classes = {
@@ -387,6 +364,10 @@ class BandTool(SaveableTool, CursorTool):
         self.save_app()
 
     def serialize(self):
+        """Saves application state so it can be recovered later.
+
+        See `.deserialize` for information on what is retained.
+        """
         return {
             "active_band": self.active_band,
             "band_options": self.band_options,
@@ -398,6 +379,13 @@ class BandTool(SaveableTool, CursorTool):
         }
 
     def deserialize(self, json_data):
+        """Loads a variety of application state so it can be recovered later.
+
+        Mostly we load:
+        * Band definitions
+        * Modes for fitting
+        * The cursor location
+        """
         self.cursor = json_data.get("cursor", [0, 0])
 
         # self.active_band = json_data.get('active_band', None)

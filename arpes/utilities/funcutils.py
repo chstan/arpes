@@ -1,3 +1,4 @@
+"""Some functional and UI functional programming utilities."""
 import functools
 import time
 from collections import defaultdict
@@ -18,12 +19,14 @@ __all__ = [
 
 
 def cycle(sequence):
+    """Infinitely cycles a sequence."""
     while True:
         for s in sequence:
             yield s
 
 
 def group_by(grouping, sequence):
+    """Permits partitining a sequence into sets of items, for instance by taking two at a time."""
     if isinstance(grouping, int):
         base_seq = [False] * grouping
         base_seq[-1] = True
@@ -46,17 +49,20 @@ def group_by(grouping, sequence):
 
 
 def collect_leaves(tree: Dict[str, Any], is_leaf: Optional[Any] = None) -> Dict:
-    """
-    Produces a flat representation of the leaves, leaves with the same key are
-    collected into a list in the order of appearance, but this depends on the
-    dictionary iteration order.
+    """Produces a flat representation of the leaves.
+
+    Leaves with the same key are collected into a list in the order of appearance,
+    but this depends on the dictionary iteration order.
 
     Example:
     collect_leaves({'a': 1, 'b': 2, 'c': {'a': 3, 'b': 4}}) -> {'a': [1, 3], 'b': [2, 4]}
 
-    :param tree:
-    :param is_leaf:
-    :return:
+    Args:
+        tree: The nested dictionary structured tree
+        is_leaf: A condition to determine whether the current node is a leaf
+
+    Returns:
+        A dictionary with the leaves and their direct parent key.
     """
 
     def reducer(dd: Dict, item: Tuple[str, ndarray]) -> Dict:
@@ -69,8 +75,9 @@ def collect_leaves(tree: Dict[str, Any], is_leaf: Optional[Any] = None) -> Dict:
 def iter_leaves(
     tree: Dict[str, Any], is_leaf: Optional[Callable] = None
 ) -> Iterator[Tuple[str, ndarray]]:
-    """
-    Iterates across the leaves of a nested dictionary. Whether a particular piece
+    """Iterates across the leaves of a nested dictionary.
+
+    Whether a particular piece
     of data counts as a leaf is controlled by the predicate `is_leaf`. By default,
     all nested dictionaries are considered not leaves, i.e. an item is a leaf if and
     only if it is not a dictionary.
@@ -79,10 +86,6 @@ def iter_leaves(
 
     As an example, you can easily flatten a nested structure with
     `dict(leaves(data))`
-
-    :param tree:
-    :param is_leaf:
-    :return:
     """
     if is_leaf is None:
         is_leaf = lambda x: not isinstance(x, dict)
@@ -96,8 +99,7 @@ def iter_leaves(
 
 
 def lift_dataarray_to_generic(f):
-    """
-    A functorial decorator that lifts functions with the signature
+    """A functorial decorator that lifts functions to operate over xarray types.
 
     (xr.DataArray, *args, **kwargs) -> xr.DataArray
 
@@ -107,8 +109,6 @@ def lift_dataarray_to_generic(f):
     (A, *args, **kwargs) -> A
 
     i.e. one that will operate either over xr.DataArrays or xr.Datasets.
-    :param f:
-    :return:
     """
 
     @functools.wraps(f)
@@ -130,17 +130,27 @@ def lift_dataarray_to_generic(f):
 
 
 class Debounce:
+    """Wraps a function so that it can only be called periodically.
+
+    Very useful for preventing expensive recomputation of some UI state when a user
+    is performing a continuous action like a mouse pan or scroll or manipulating a
+    slider.
+    """
+
     def __init__(self, period):
+        """Sets up the internal state for debounce tracking."""
         self.period = period  # never call the wrapped function more often than this (in seconds)
         self.count = 0  # how many times have we successfully called the function
         self.count_rejected = 0  # how many times have we rejected the call
         self.last = None  # the last time it was called
 
-    # force a reset of the timer, aka the next call will always work
     def reset(self):
+        """Force a reset of the timer, aka the next call will always work."""
         self.last = None
 
     def __call__(self, f):
+        """The wrapper call which defers execution if the function was actually called recently."""
+
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             now = time.time()

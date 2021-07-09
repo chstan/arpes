@@ -1,3 +1,4 @@
+"""For estimating the above Fermi level incoherent background."""
 import numpy as np
 
 from arpes.provenance import update_provenance
@@ -9,14 +10,19 @@ __all__ = ("remove_incoherent_background",)
 
 @update_provenance("Remove incoherent background from above Fermi level")
 def remove_incoherent_background(data: DataType, set_zero=True):
-    """
+    """Removes counts above the Fermi level.
+
     Sometimes spectra are contaminated by data above the Fermi level for
     various reasons (such as broad core levels from 2nd harmonic light,
     or slow enough electrons in ToF experiments to be counted in subsequent
     pulses).
-    :param data:
-    :param set_zero:
-    :return:
+
+    Args:
+        data:
+        set_zero:
+
+    Returns:
+        Data with a background subtracted.
     """
     data = normalize_to_spectrum(data)
 

@@ -1,3 +1,4 @@
+"""Interactive curvature analysis."""
 from arpes.analysis.derivative import curvature, d1_along_axis, d2_along_axis
 from arpes.analysis.filters import boxcar_filter, gaussian_filter
 import numpy as np
@@ -9,17 +10,21 @@ __all__ = ["CurvatureTool"]
 
 
 class CurvatureTool(BokehInteractiveTool):
+    """An interactive Bokeh utility for selecting curvature analysis parameters."""
+
     # do not remove nans because they are used for masking in taking derivatives and smoothing
     auto_zero_nans = False
     auto_rebin = False
 
     def __init__(self, **kwargs):
+        """Loads image plot sizes from user settings."""
         super().__init__()
 
         self.load_settings(**kwargs)
         self.app_main_size = self.settings.get("app_main_size", 400)
 
     def tool_handler(self, doc):
+        """Configures the Bokeh widgets for the curvature tool."""
         from bokeh.layouts import row, column, widgetbox
         from bokeh.models import widgets, Spacer
         from bokeh.models.mappers import LinearColorMapper

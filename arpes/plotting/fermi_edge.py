@@ -1,3 +1,4 @@
+"""Simple plotting routines related to Fermi edges and Fermi edge fits."""
 import math
 import warnings
 
@@ -14,21 +15,19 @@ __all__ = ["fermi_edge_reference", "plot_fit"]
 
 
 @save_plot_provenance
-def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
-    """
-    Plots the results of a fit of some lmfit model to some data.
+def plot_fit(data, title=None, axes=None, out=None, **kwargs):
+    """Plots the results of a fit of some lmfit model to some data.
 
     We introspect the model to determine which attributes we should plot,
     as well as their uncertainties
-    :param data: The data, this should be of type DataArray<lmfit.model.ModelResult>
-    :param title:
-    :param ax:
-    :param out:
-    :param norm:
-    :param kwargs:
-    :return:
-    """
 
+    Args:
+        data: The data, this should be of type DataArray<lmfit.model.ModelResult>
+        title: A title to attach to the plot
+        axes: The axes to plot to, if not specified will be generated
+        out: Where to save the plot
+        kwargs
+    """
     # get any of the elements
     reference_fit = data.values.ravel()[0]
     model = reference_fit.model
@@ -91,6 +90,7 @@ def plot_fit(data, title=None, axes=None, out=None, norm=None, **kwargs):
 
 @save_plot_provenance
 def fermi_edge_reference(data, title=None, ax=None, out=None, norm=None, **kwargs):
+    """Fits for and plots results for the Fermi edge on a piece of data."""
     warnings.warn("Not automatically correcting for slit shape distortions to the Fermi edge")
 
     sum_dimensions = {"cycle", "phi", "kp", "kx"}

@@ -1,3 +1,4 @@
+"""Reference plots, for preliminary analysis."""
 import warnings
 
 import pandas as pd
@@ -12,6 +13,7 @@ __all__ = ["make_reference_plots"]
 
 
 def make_reference_plots(df: pd.DataFrame = None, with_kspace=False):
+    """Makes standard reference plots for orienting oneself."""
     if df is None:
         df = default_dataset()
 

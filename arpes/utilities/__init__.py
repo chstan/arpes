@@ -1,6 +1,4 @@
-"""
-Provides general utility methods that get used during the course of analysis.
-"""
+"""Provides general utility methods that get used during the course of analysis."""
 
 import itertools
 from operator import itemgetter
@@ -17,34 +15,32 @@ from .collections import *
 
 
 def enumerate_dataarray(arr: xr.DataArray):
+    """Iterates through each coordinate location on n dataarray. Should merge to xarray_extensions."""
     for coordinate in itertools.product(*[arr.coords[d] for d in arr.dims]):
         zip_location = dict(zip(arr.dims, (float(f) for f in coordinate)))
         yield zip_location, arr.loc[zip_location].values.item()
 
 
 def arrange_by_indices(items, indices):
-    """
-    This function is best illustrated by the example below. It arranges the
-    items in the input according to the new indices that each item should occupy.
+    """Arranges `items` according to the new `indices` that each item should occupy.
 
+    This function is best illustrated by the example below.
     It also has an inverse available in 'unarrange_by_indices'.
 
-    Ex:
-    arrange_by_indices(['a', 'b', 'c'], [1, 2, 0])
-     => ['b', 'c', 'a']
+    Example:
+        >>> arrange_by_indices(['a', 'b', 'c'], [1, 2, 0])
+        ['b', 'c', 'a']
     """
     return [items[i] for i in indices]
 
 
 def unarrange_by_indices(items, indices):
-    """
-    The inverse function to 'arrange_by_indices'.
+    """The inverse function to 'arrange_by_indices'.
 
     Ex:
     unarrange_by_indices(['b', 'c', 'a'], [1, 2, 0])
      => ['a', 'b', 'c']
     """
-
     return [x for x, _ in sorted(zip(indices, items), key=itemgetter(0))]
 
 

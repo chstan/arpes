@@ -1,3 +1,7 @@
+"""Implements 2D and 3D angle scan momentum conversion for Fermi surfaces.
+
+Broadly, this covers cases where we are not performing photon energy scans.
+"""
 import numpy as np
 
 import numba
@@ -15,6 +19,7 @@ __all__ = ["ConvertKp", "ConvertKxKy"]
 
 @numba.njit(parallel=True)
 def _exact_arcsin(k_par, k_perp, k_tot, phi, offset, par_tot, negate):
+    """A efficient arcsin with total momentum scaling."""
     mul_idx = 1 if par_tot else 0
     for i in numba.prange(len(k_par)):
         result = np.arcsin(k_par[i] / np.sqrt(k_tot[i * mul_idx] ** 2 - k_perp[i] ** 2))
@@ -26,7 +31,8 @@ def _exact_arcsin(k_par, k_perp, k_tot, phi, offset, par_tot, negate):
 
 @numba.njit(parallel=True)
 def _small_angle_arcsin(k_par, k_tot, phi, offset, par_tot, negate):
-    """
+    """A efficient small angle arcsin with total momentum scaling.
+
     np.arcsin(k_par / k_tot, phi)
     phi += offset
     mul_idx = 0
@@ -70,7 +76,10 @@ def _safe_compute_k_tot(hv, work_function, binding_energy):
 
 
 class ConvertKp(CoordinateConverter):
+    """A momentum converter for single ARPES (kp) cuts."""
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize cached coordinates."""
         super().__init__(*args, **kwargs)
         self.k_tot = None
         self.phi = None
@@ -78,6 +87,7 @@ class ConvertKp(CoordinateConverter):
     def get_coordinates(
         self, resolution: dict = None, bounds: dict = None
     ) -> Dict[str, np.ndarray]:
+        """Calculates appropriate coordinate bounds."""
         if resolution is None:
             resolution = {}
         if bounds is None:
@@ -110,11 +120,13 @@ class ConvertKp(CoordinateConverter):
         return coordinates
 
     def compute_k_tot(self, binding_energy: np.ndarray) -> None:
+        """Compute the total momentum (inclusive of kz) at different binding energies."""
         self.k_tot = _safe_compute_k_tot(self.arr.S.hv, self.arr.S.work_function, binding_energy)
 
     def kspace_to_phi(
         self, binding_energy: np.ndarray, kp: np.ndarray, *args: Any, **kwargs: Any
     ) -> np.ndarray:
+        """Converts from momentum back to the analyzer angular axis."""
         if self.phi is not None:
             return self.phi
 
@@ -152,6 +164,8 @@ class ConvertKp(CoordinateConverter):
         return self.phi
 
     def conversion_for(self, dim: str) -> Callable:
+        """Looks up the appropriate momentum-to-angle conversion routine by dimension name."""
+
         def with_identity(*args, **kwargs):
             return self.identity_transform(dim, *args, **kwargs)
 
@@ -159,12 +173,14 @@ class ConvertKp(CoordinateConverter):
 
 
 class ConvertKxKy(CoordinateConverter):
-    """
+    """Implements volumetric momentum conversion for kx-ky scans.
+
     Please note that currently we assume that psi = 0 when you are not using an
-    electrostatic deflector
+    electrostatic deflector.
     """
 
     def __init__(self, arr: xr.DataArray, *args: List[str], **kwargs: Any) -> None:
+        """Initialize the kx-ky momentum converter and cached coordinate values."""
         super().__init__(arr, *args, **kwargs)
         self.k_tot = None
         self.phi = None
@@ -206,6 +222,7 @@ class ConvertKxKy(CoordinateConverter):
     def get_coordinates(
         self, resolution: dict = None, bounds: dict = None
     ) -> Dict[str, np.ndarray]:
+        """Calculates appropriate coordinate bounds."""
         if resolution is None:
             resolution = {}
         if bounds is None:
@@ -262,9 +279,12 @@ class ConvertKxKy(CoordinateConverter):
         return coordinates
 
     def compute_k_tot(self, binding_energy: np.ndarray) -> None:
+        """Compute the total momentum (inclusive of kz) at different binding energies."""
         self.k_tot = _safe_compute_k_tot(self.arr.S.hv, self.arr.S.work_function, binding_energy)
 
     def conversion_for(self, dim: str) -> Callable:
+        """Looks up the appropriate momentum-to-angle conversion routine by dimension name."""
+
         def with_identity(*args, **kwargs):
             return self.identity_transform(dim, *args, **kwargs)
 
@@ -278,15 +298,12 @@ class ConvertKxKy(CoordinateConverter):
 
     @property
     def needs_rotation(self) -> bool:
+        """Whether we need to rotate the momentum coordinates when converting to angle."""
         # force rotation when greater than 0.5 deg
         return np.abs(self.arr.S.lookup_offset_coord("chi")) > (0.5 * np.pi / 180)
 
     def rkx_rky(self, kx, ky):
-        """
-        Returns the rotated kx and ky values when we are rotating by nonzero chi
-        :return:
-        """
-
+        """Returns the rotated kx and ky values when we are rotating by nonzero chi."""
         if self.rkx is not None:
             return self.rkx, self.rky
 
@@ -301,6 +318,7 @@ class ConvertKxKy(CoordinateConverter):
     def kspace_to_phi(
         self, binding_energy: np.ndarray, kx: np.ndarray, ky: np.ndarray, *args: Any, **kwargs: Any
     ) -> np.ndarray:
+        """Converts from momentum back to the analyzer angular axis."""
         if self.phi is not None:
             return self.phi
 
@@ -346,6 +364,7 @@ class ConvertKxKy(CoordinateConverter):
     def kspace_to_perp_angle(
         self, binding_energy: np.ndarray, kx: np.ndarray, ky: np.ndarray, *args: Any, **kwargs: Any
     ) -> np.ndarray:
+        """Converts from momentum back to the scan angle perpendicular to the analyzer."""
         if self.perp_angle is not None:
             return self.perp_angle
 

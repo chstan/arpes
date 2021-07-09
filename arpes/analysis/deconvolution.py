@@ -1,3 +1,4 @@
+"""Provides deconvolution implementations, especially for 2D Richardson-Lucy."""
 import numpy as np
 import scipy
 import scipy.ndimage
@@ -17,16 +18,18 @@ __all__ = (
 
 
 @update_provenance("Approximate Iterative Deconvolution")
-def deconvolve_ice(data: DataType, psf, n_iterations=5, deg=None):
-    """
-    Deconvolves data by a given point spread function using the iterative convolution extrapolation method.
-    :param data:
-    :param psf:
-    :param n_iterations -- the number of convolutions to use for the fit (default 5):
-    :param deg -- the degree of the fitting polynominal (default n_iterations-3):
-    :return DataArray or numpy.ndarray -- based on input type:
-    """
+def deconvolve_ice(data: DataType, psf, n_iterations=5, deg=None) -> DataType:
+    """Deconvolves data by a given point spread function using the iterative convolution extrapolation method.
 
+    Args:
+        data
+        psf
+        n_iterations: the number of convolutions to use for the fit
+        deg: the degree of the fitting polynominial
+
+    Returns:
+        The deconvoled data in the same format.
+    """
     arr = normalize_to_spectrum(data)
     if type(data) is np.ndarray:
         pass
@@ -60,19 +63,21 @@ def deconvolve_ice(data: DataType, psf, n_iterations=5, deg=None):
 @update_provenance("Lucy Richardson Deconvolution")
 def deconvolve_rl(
     data: DataType, psf=None, n_iterations=10, axis=None, sigma=None, mode="reflect", progress=True
-):
+) -> DataType:
     """Deconvolves data by a given point spread function using the Richardson-Lucy method.
 
-    :param data:
-    :param psf -- for 1d, if not specified, must specify axis and sigma:
-    :param n_iterations -- the number of convolutions to use for the fit (default 50):
-    :param axis:
-    :param sigma:
-    :param mode:
-    :param progress:
-    :return DataArray or numpy.ndarray -- based on input type:
-    """
+    Args:
+        data
+        axis
+        sigma
+        mode
+        progress
+        psf: for 1d, if not specified, must specify axis and sigma
+        n_iterations: the number of convolutions to use for the fit
 
+    Returns:
+        The Richardson-Lucy deconvolved data.
+    """
     arr = normalize_to_spectrum(data)
 
     if psf is None and axis is not None and sigma is not None:
@@ -197,12 +202,14 @@ def deconvolve_rl(
 def make_psf1d(data: DataType, dim, sigma):
     """Produces a 1-dimensional gaussian point spread function for use in deconvolve_rl.
 
-    :param data:
-    :param dim:
-    :param sigma:
-    :return DataArray:
-    """
+    Args:
+        data
+        dim
+        sigma
 
+    Returns:
+        A one dimensional point spread array.
+    """
     arr = normalize_to_spectrum(data)
     dims = arr.dims
 
@@ -223,13 +230,15 @@ def make_psf1d(data: DataType, dim, sigma):
 def make_psf(data: DataType, sigmas):
     """Not yet operational; produces an n-dimensional gaussian point spread function for use in deconvolve_rl.
 
-    :param data:
-    :param dim:
-    :param sigma:
-    :return DataArray:
-    """
+    Args:
+        data
+        dim
+        sigma
 
-    raise NotImplementedError()
+    Returns:
+        The PSF to use.
+    """
+    raise NotImplementedError
 
     arr = normalize_to_spectrum(data)
     dims = arr.dims

@@ -1,3 +1,4 @@
+"""Data prep routines for hemisphere data."""
 
 import xarray as xr
 from arpes.provenance import update_provenance
@@ -7,16 +8,18 @@ __all__ = ["stitch_maps"]
 
 @update_provenance("Stitch maps together")
 def stitch_maps(arr: xr.DataArray, arr2: xr.DataArray, dimension="beta"):
-    """
-    Stitches together two maps by appending and potentially dropping frames in the first dataset.
+    """Stitches together two maps by appending and potentially dropping frames in the first dataset.
 
     This is useful for beamline work when the beam is lost or in L-ARPES if laser output is blocked for part
     of a scan and a subsequent scan was taken to repair the problem.
-    :param arr: Incomplete map
-    :param arr2: completion of first map
-    :return:
-    """
 
+    Args:
+        arr: Incomplete map
+        arr2: completion of first map
+
+    Returns:
+        The stitched map.
+    """
     # as a first step we need to align the coords of map2 onto those of map1
     coord2 = arr2.coords[dimension].data.copy()
     coord1 = arr.coords[dimension].data.copy()

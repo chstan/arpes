@@ -1,3 +1,4 @@
+"""Annotations onto plots for experimental conditions or locations."""
 import numpy as np
 
 from arpes.plotting.utils import name_for_dim, unit_for_dim
@@ -11,9 +12,9 @@ __all__ = (
 
 
 def annotate_experimental_conditions(ax, data, desc, show=False, orientation="top", **kwargs):
-    """
-    Renders information about the experimental conditions onto a set of axes,
-    also adjust the axes limits and hides the axes.
+    """Renders information about the experimental conditions onto a set of axes.
+
+    Also adjust the axes limits and hides the axes.
 
     data should be the dataset described, and desc should be one of
 
@@ -21,16 +22,11 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation="to
     'photon',
     'photon polarization',
     'polarization',
+
     or a number to act as a spacer in units of the axis coordinates
 
-    or a list of such items
-
-    :param ax:
-    :param data:
-    :param desc:
-    :return:
+    or a list of such items.
     """
-
     if isinstance(
         desc,
         (
@@ -103,28 +99,23 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation="to
 
 
 def annotate_cuts(ax, data, plotted_axes, include_text_labels=False, **kwargs):
-    """
-    Example: annotate_cuts(ax, conv, ['kz', 'ky'], hv=80)
+    """Annotates a cut location onto a plot.
 
-    :param ax:
-    :param data:
-    :param plotted_axes:
-    :param include_text_labels:
-    :param kwargs:
-    :return:
+    Example:
+        >>> annotate_cuts(ax, conv, ['kz', 'ky'], hv=80)
+
+    Args:
+        ax: The axes to plot onto
+        data: The original data
+        plotted_axes: The dimension names which were plotted
+        include_text_labels: Whether to include text labels
+        kwargs: Defines the coordinates of the cut location
     """
     converted_coordinates = convert_coordinates_to_kspace_forward(data)
     assert len(plotted_axes) == 2
 
     for k, v in kwargs.items():
-        if not isinstance(
-            v,
-            (
-                tuple,
-                list,
-                np.ndarray,
-            ),
-        ):
+        if not isinstance(v, (tuple, list, np.ndarray)):
             v = [v]
 
         selected = converted_coordinates.sel(**dict([[k, v]]), method="nearest")
@@ -146,6 +137,7 @@ def annotate_cuts(ax, data, plotted_axes, include_text_labels=False, **kwargs):
 
 
 def annotate_point(ax, location, label, delta=None, **kwargs):
+    """Annotates a point or high symmetry location into a plot."""
     label = {
         "G": "$\\Gamma$",
         "X": r"\textbf{X}",

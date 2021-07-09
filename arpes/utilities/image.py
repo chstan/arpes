@@ -1,3 +1,4 @@
+"""Image reading methods with different library fallbacks."""
 import warnings
 
 import numpy as np
@@ -9,16 +10,20 @@ __all__ = (
 )
 
 
-def imread(str_or_path):
-    """
-    A wrapper around `opencv.imread` and `imageio.imread` that
+def imread(str_or_path) -> np.ndarray:
+    """A wrapper around `opencv.imread` and `imageio.imread`.
+
+    As compared to those, this method
 
     1. Falls back to the first available option on the system
     2. Normalizes OpenCV images to RGB format
     3. Removes the alpha channel from imageio.imread data
 
-    :param str_or_path: pathlib.Path or str containing the image to be read
-    :return:
+    Args:
+        str_or_path: pathlib.Path or str containing the image to be read
+
+    Returns:
+        The image as an np.ndarray.
     """
     try:
         import cv2
@@ -41,13 +46,16 @@ def imread(str_or_path):
         return arr[:, :, :3]
 
 
-def imread_to_xarray(str_or_path):
-    """
-    Like `imread`, except that this function wraps the result into a xr.DataArray
-    that has x (pixel), y (pixel), and color (['R', 'G', 'B']) dimensions.
+def imread_to_xarray(str_or_path) -> xr.DataArray:
+    """Like `imread`, except that this function wraps the result into a xr.DataArray instance.
 
-    :param str_or_path:
-    :return:
+    The read instance has x (pixel), y (pixel), and color (['R', 'G', 'B']) dimensions.
+
+    Args:
+        str_or_path
+
+    Returns:
+        The data read to an `xr.DataArray` instance.
     """
     raw_arr = imread(str_or_path)
     sx, sy, _ = raw_arr.shape

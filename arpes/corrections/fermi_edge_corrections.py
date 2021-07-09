@@ -1,3 +1,4 @@
+"""Automated utilities for calculating Fermi edge corrections."""
 import lmfit as lf
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,15 +32,20 @@ __all__ = (
 
 
 def find_e_fermi_linear_dos(edc, guess=None, plot=False, ax=None):
-    """
+    """Estimate the Fermi level under the assumption of a linear density of states.
+
     Does a reasonable job of finding E_Fermi in-situ for graphene/graphite or other materials with a linear DOS near
     the chemical potential. You can provide an initial guess via guess, or one will be chosen half way through the EDC.
 
     The Fermi level is estimated as the location where the DoS crosses below an estimated background level
-    :param edc:
-    :param guess:
-    :param plot:
-    :return:
+
+    Args:
+        edc: Input data
+        guess: Approximate location
+        plot: Whether to plot the fit, useful for debugging.
+
+    Returns:
+        The Fermi edge position.
     """
     if guess is None:
         guess = edc.eV.values[len(edc.eV) // 2]
@@ -61,6 +67,7 @@ def find_e_fermi_linear_dos(edc, guess=None, plot=False, ax=None):
 
 
 def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args, **kwargs):
+    """Applies a direct fermi edge correction stencil."""
     if correction is None:
         correction = build_direct_fermi_edge_correction(arr, *args, **kwargs)
 
@@ -100,20 +107,23 @@ def apply_direct_fermi_edge_correction(arr: xr.DataArray, correction=None, *args
 def build_direct_fermi_edge_correction(
     arr: xr.DataArray, fit_limit=0.001, energy_range=None, plot=False, along="phi"
 ):
-    """
-    Builds a direct fermi edge correction stencil.
+    """Builds a direct fermi edge correction stencil.
 
     This means that fits are performed at each value of the 'phi' coordinate
     to get a list of fits. Bad fits are thrown out to form a stencil.
 
     This can be used to shift coordinates by the nearest value in the stencil.
 
-    :param copper_ref:
-    :param args:
-    :param kwargs:
-    :return:
-    """
+    Args:
+        arr
+        fit_limit
+        energy_range
+        plot
+        along
 
+    Returns:
+        The array of fitted edge coordinates.
+    """
     if energy_range is None:
         energy_range = slice(-0.1, 0.1)
 
@@ -135,6 +145,7 @@ def build_direct_fermi_edge_correction(
 def build_quadratic_fermi_edge_correction(
     arr: xr.DataArray, fit_limit=0.001, eV_slice=None, plot=False
 ) -> lf.model.ModelResult:
+    """Calculates a quadratic Fermi edge correction by edge fitting and then quadratic fitting of edges."""
     # TODO improve robustness here by allowing passing in the location of the fermi edge guess
     # We could also do this automatically by using the same method we use for step detection to find the edge of the
     # spectrometer image
@@ -166,6 +177,7 @@ def build_quadratic_fermi_edge_correction(
 
 @update_provenance("Build photon energy Fermi edge correction")
 def build_photon_energy_fermi_edge_correction(arr: xr.DataArray, plot=False, energy_window=0.2):
+    """Builds Fermi edge corrections across photon energy (corrects monochromator miscalibration)."""
     edge_fit = broadcast_model(
         GStepBModel,
         arr.sum(exclude_hv_axes(arr.dims)).sel(eV=slice(-energy_window, energy_window)),
@@ -176,6 +188,7 @@ def build_photon_energy_fermi_edge_correction(arr: xr.DataArray, plot=False, ene
 
 
 def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None, **kwargs):
+    """Applies Fermi edge corrections across photon energy (corrects monochromator miscalibration)."""
     if correction is None:
         correction = build_photon_energy_fermi_edge_correction(arr, **kwargs)
 
@@ -215,6 +228,7 @@ def apply_photon_energy_fermi_edge_correction(arr: xr.DataArray, correction=None
 def apply_quadratic_fermi_edge_correction(
     arr: xr.DataArray, correction: lf.model.ModelResult = None, offset=None
 ):
+    """Applies a Fermi edge correction using a quadratic fit for the edge."""
     assert isinstance(arr, xr.DataArray)
     if correction is None:
         correction = build_quadratic_fermi_edge_correction(arr)

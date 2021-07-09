@@ -1,3 +1,4 @@
+"""Allows for making any function of a spectrum into a dynamic tool."""
 import inspect
 
 from PyQt5 import QtWidgets
@@ -16,10 +17,7 @@ from arpes.utilities.ui import (
     vertical,
 )
 
-__all__ = (
-    "DynamicTool",
-    "make_dynamic",
-)
+__all__ = ("make_dynamic",)
 
 qt_info.setup_pyqtgraph()
 
@@ -156,6 +154,7 @@ class DynamicTool(SimpleApp):
 
 
 def make_dynamic(fn, data):
+    """Starts a tool which makes any analysis function dynamic."""
     tool = DynamicTool(fn)
     tool.set_data(data)
     tool.start()

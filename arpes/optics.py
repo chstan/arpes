@@ -1,6 +1,6 @@
-"""
-Some utilities for optics and optical design. This and the utilities in arpes.laser
-should maybe be grouped into a separate place.
+"""Some utilities for optics and optical design.
+
+This and the utilities in arpes.laser should maybe be grouped into a separate place.
 
 We don't do any astigmatism aware calculations here, which might be of practical utility.
 
@@ -28,47 +28,58 @@ __all__ = (
 )
 
 
-def waist(wavelength, z, z_R):
-    raise NotImplementedError("waist not implemented")
+def waist(wavelength: float, z: float, z_R: float) -> float:
+    """Calculates the waist size from the measurements at a distance from the waist."""
+    raise NotImplementedError
 
 
-def waist_R(waist_0, m_squared=1):
-    return np.sqrt(m_squared) * waist()
+def waist_R(waist_0: float, m_squared: float = 1.0) -> float:
+    """Calculates the width of t he beam a distance from the waist."""
+    raise NotImplementedError
+    # return np.sqrt(m_squared) * waist()
 
 
-def waist_from_rr(wavelength, rayleigh_rng):
+def waist_from_rr(wavelength: float, rayleigh_rng: float) -> float:
+    """Calculates the waist parameters from the Rayleigh range."""
     return np.sqrt((wavelength * rayleigh_rng) / np.pi)
 
 
-def rayleigh_range(wavelength, beam_waist, m_squared=1):
+def rayleigh_range(wavelength: float, beam_waist: float, m_squared: float = 1.0) -> float:
+    """Calculates the Rayleigh range from beam parameters at the waist."""
     return np.pi * (beam_waist ** 2) / (m_squared * wavelength)
 
 
-def lens_transfer(s, f, beam_rayleigh_range, m_squared=1):
-    """
-    Produces s''
-    :param s:
-    :param f:
-    :param beam_rayleigh_range:
-    :param m_squared:
-    :return:
-    """
+def lens_transfer(s: float, f: float, beam_rayleigh_range: float, m_squared: float = 1.0) -> float:
+    """Lens transfer calculation. Calculates the location of the image.
 
+    Args:
+        s: The object distance.
+        f: The focal length of the lens.
+        beam_rayleigh_range: The Rayleigh range for the beam, uncorrected for the beam quality factor.
+        m_squared: The beam quality factor.
+
+    Returns:
+        The distance to the image.
+    """
     t = 1 / f - 1 / (s + (beam_rayleigh_range / m_squared) ** 2 / (s - f))
     return 1 / t
 
 
-def waist_from_divergence(wavelength, half_angle_divergence):
+def waist_from_divergence(wavelength: float, half_angle_divergence: float) -> float:
+    """Calculates the waist from the beam's half angle divergence and wavelength."""
     return wavelength / (np.pi * half_angle_divergence)
 
 
-def magnification(s, f, beam_rayleigh_range, m_squared=1):
-    """
-    Calculates the magnification offered by a lens system.
-    :param s:
-    :param f:
-    :param beam_rayleigh_range:
-    :param m_squared:
-    :return:
+def magnification(s: float, f: float, beam_rayleigh_range: float, m_squared: float = 1.0) -> float:
+    """Calculates the magnification offered by a lens system.
+
+    Args:
+        s: The object distance.
+        f: The focal length of the lens.
+        beam_rayleigh_range: The Rayleigh range for the beam, uncorrected for the beam quality factor.
+        m_squared: The beam quality factor.
+
+    Returns:
+        The magnificiation of a lens.
     """
     return 1 / np.sqrt((1 - s / f) ** 2 + (beam_rayleigh_range / f / m_squared) ** 2)

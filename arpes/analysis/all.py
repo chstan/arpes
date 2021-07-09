@@ -1,3 +1,4 @@
+"""Convenience import module for analysis tools."""
 from .band_analysis import *
 from .decomposition import *
 from .deconvolution import *

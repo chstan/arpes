@@ -1,3 +1,4 @@
+"""Data prep routines for time-of-flight data."""
 import math
 
 import numpy as np
@@ -17,8 +18,7 @@ __all__ = [
 
 @update_provenance("Convert ToF data from timing signal to kinetic energy")
 def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
-    """
-    Convert the ToF timing information into an energy histogram
+    """Convert the ToF timing information into an energy histogram.
 
     The core of these routines come from the Igor procedures in
     ``LoadTOF7_3.51.ipf``.
@@ -32,7 +32,6 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
        spectral weight, this requires a modicum of care around splitting
        counts at the edges of the new bins.
     """
-
     # This should be simplified
     # c = (0.5) * (9.11e-31) * self.mstar * (self.length ** 2) / (1.6e-19) * (1e18)
     # Removed factors of ten and substituted mstar = 0.5
@@ -97,6 +96,7 @@ def convert_to_kinetic_energy(dataarray, kinetic_energy_axis):
 
 
 def build_KE_coords_to_time_pixel_coords(dataset: xr.Dataset, interpolation_axis):
+    """Constructs a coordinate conversion function from kinetic energy to time pixels."""
     conv = (
         dataset.S.spectrometer["mstar"]
         * (9.11e6)
@@ -107,11 +107,17 @@ def build_KE_coords_to_time_pixel_coords(dataset: xr.Dataset, interpolation_axis
     time_res = 0.17  # this is only approximate
 
     def KE_coords_to_time_pixel_coords(coords, axis=None):
-        """
-        Like ``KE_coords_to_time_coords`` but it converts to the raw timing pixels off of
-        a DLD instead to the unitful values that we receive from the Spin-ToF DAQ
-        :param coords: tuple of coordinates
-        :return: new tuple of converted coordinates
+        """Like ``KE_coords_to_time_coords`` but it converts to the raw timing pixels.
+
+        These typically come off of a DLD.
+        This is instead to the unitful values that we receive from the Spin-ToF DAQ.
+
+        Args:
+            coords: tuple of coordinates
+            axis: Which axis to use for the kinetic energy
+
+        Returns:
+            New tuple of converted coordinates
         """
         kinetic_energy_pixel = coords[axis]
         kinetic_energy = interpolation_axis[kinetic_energy_pixel]
@@ -126,12 +132,10 @@ def build_KE_coords_to_time_pixel_coords(dataset: xr.Dataset, interpolation_axis
 
 
 def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
-    """
-    Geometric transform assumes pixel -> pixel transformations, so we need to get the index associated
-    to the appropriate timing value
-    :param dataset:
-    :param interpolation_axis:
-    :return:
+    """Constructs a coordinate conversion function from kinetic energy to time coords.
+
+    Geometric transform assumes pixel -> pixel transformations so we need to get
+    the index associated to the appropriate timing value
     """
     conv = (
         dataset.S.spectrometer["mstar"]
@@ -146,8 +150,8 @@ def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
     d_timing = timing[1] - timing[0]
 
     def KE_coords_to_time_coords(coords, axis=None):
-        """
-        Used to convert the timing coordinates off of the spin-ToF to kinetic energy coordinates.
+        """Used to convert the timing coordinates off of the spin-ToF to kinetic energy coordinates.
+
         As the name suggests, because of how scipy.ndimage interpolates, we require the inverse
         coordinate transform.
 
@@ -157,8 +161,12 @@ def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
         coordinate less than the nominal t0. This is necessary because the recorded times are the time between electron
         events and laser pulses, rather than the other way around.
 
-        :param coords: tuple of coordinates
-        :return: new tuple of converted coordinates
+        Args:
+            coords: tuple of coordinates
+            axis: Energy axis name
+
+        Return:
+            new tuple of converted coordinates
         """
         kinetic_energy = interpolation_axis[coords[axis]]
         real_timing = math.sqrt(conv / kinetic_energy)
@@ -172,10 +180,13 @@ def build_KE_coords_to_time_coords(dataset: xr.Dataset, interpolation_axis):
 
 @update_provenance("Convert ToF data from timing signal to kinetic energy ALT")
 def convert_SToF_to_energy(dataset: xr.Dataset):
-    """
-    Achieves the same computation as timeProcessX and t2energyProcessX in LoadTOF_3.51.ipf
-    :param dataset:
-    :return:
+    """Achieves the same computation as timeProcessX and t2energyProcessX in LoadTOF_3.51.ipf.
+
+    Args:
+        dataset
+
+    Returns:
+        The energy converted data.
     """
     e_min, e_max = 0.1, 10.0
 
@@ -195,14 +206,12 @@ def convert_SToF_to_energy(dataset: xr.Dataset):
 
 @update_provenance("Preliminary data processing Spin-ToF")
 def process_SToF(dataset: xr.Dataset):
-    """
+    """Converts spin-ToF data to energy units.
+
     This isn't the best unit conversion function because it doesn't properly
     take into account the Jacobian of the coordinate conversion. This can
     be fixed by multiplying each channel by the appropriate ammount, but it might still
     be best to use the alternative method.
-
-    :param dataset:
-    :return:
     """
     e_min = dataset.attrs.get("E_min", 1)
     e_max = dataset.attrs.get("E_max", 10)
@@ -233,6 +242,7 @@ def process_SToF(dataset: xr.Dataset):
 
 @update_provenance("Preliminary data processing prototype DLD")
 def process_DLD(dataset: xr.Dataset):
+    """Converts delay line data to kinetic energy coordinates."""
     e_min = 1
     ke_axis = np.linspace(
         e_min, dataset.attrs["E_max"], (dataset.attrs["E_max"] - e_min) / dataset.attrs["dE"]

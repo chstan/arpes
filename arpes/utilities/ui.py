@@ -1,10 +1,11 @@
-"""
-Easily composable and reactive UI utilities using RxPy and PyQt5. This makes UI prototyping *MUCH* faster.
-In order to log IDs so that you can attach subscriptions after the fact, you will need to use the CollectUI
+"""Easily composable and reactive UI utilities using RxPy and PyQt5.
+
+This makes UI prototyping *MUCH* faster. In order to log IDs so that you can 
+attach subscriptions after the fact, you will need to use the CollectUI
 context manager.
 
-An example is as follows, showing the currently available widgets. If you don't need to attach callbacks,
-you can get away without using the context manager.
+An example is as follows, showing the currently available widgets. If you don't 
+need to attach callbacks, you can get away without using the context manager.
 
 ```
 ui = {}
@@ -25,16 +26,16 @@ with CollectUI(ui):
     )
 ```
 
-"Forms" can effectively be built by building an observable out of the subjects in the UI. We have a `submit`
-function that makes creating such an observable simple.
+"Forms" can effectively be built by building an observable out of the subjects in the UI. 
+We have a `submit` function that makes creating such an observable simple.
 
 ```
 submit('submit', ['check', 'slider', 'file'], ui).subscribe(lambda item: print(item))
 ```
 
-With the line above, whenever the button with id='submit' is pressed, we will log a dictionary with
-the most recent values of the inputs {'check','slider','file'} as a dictionary with these keys. This
-allows building PyQt5 "forms" without effort.
+With the line above, whenever the button with id='submit' is pressed, we will log a dictionary 
+with the most recent values of the inputs {'check','slider','file'} as a dictionary with these 
+keys. This allows building PyQt5 "forms" without effort.
 """
 from enum import Enum
 from typing import Type
@@ -110,11 +111,14 @@ for key, value in vars(QtCore.Qt).items():
         PRETTY_KEYS[value] = key.partition("_")[2]
 
 
-def pretty_key_event(event):
-    """
-    Key Event -> List[str] in order to be able to prettily print keys
-    :param event:
-    :return:
+def pretty_key_event(event) -> List[str]:
+    """Key Event -> List[str] in order to be able to prettily print keys.
+
+    Args:
+        event
+
+    Returns:
+        The key sequence as a human readable string.
     """
     key_sequence = []
 
@@ -129,6 +133,8 @@ ACTIVE_UI = None
 
 
 def ui_builder(f):
+    """Decorator synergistic with CollectUI to make widgets which register themselves automatically."""
+
     @functools.wraps(f)
     def wrapped_ui_builder(*args, id=None, **kwargs):
         global ACTIVE_UI
@@ -149,7 +155,14 @@ def ui_builder(f):
 
 
 class CollectUI:
+    """Allows for collecing UI elements into a dictionary with IDs automatically.
+
+    This makes it very easy to keep track of relevant widgets in a dynamically generated
+    layout as they are just entries in a dict.
+    """
+
     def __init__(self, target_ui=None):
+        """We don't allow hierarchical UIs here, so ensure there's none active and make one."""
         global ACTIVE_UI
         assert ACTIVE_UI is None
 
@@ -157,15 +170,18 @@ class CollectUI:
         ACTIVE_UI = self.ui
 
     def __enter__(self):
+        """Pass my UI tree to the caller so they can write to it."""
         return self.ui
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Reset the active UI."""
         global ACTIVE_UI
         ACTIVE_UI = None
 
 
 @ui_builder
-def layout(*children, layout_cls=None, widget=None):
+def layout(*children, layout_cls=None, widget=None) -> QWidget:
+    """A convenience method for constructing a layout and a parent widget."""
     if layout_cls is None:
         layout_cls = QGridLayout
 
@@ -188,7 +204,8 @@ horizontal = functools.partial(layout, layout_cls=QHBoxLayout)
 
 
 @ui_builder
-def splitter(first, second, direction=Qt.Vertical, size=None):
+def splitter(first, second, direction=Qt.Vertical, size=None) -> QWidget:
+    """A convenience method for making a splitter."""
     split_widget = QSplitter(direction)
 
     split_widget.addWidget(first)
@@ -205,7 +222,8 @@ splitter.Horizontal = Qt.Horizontal
 
 
 @ui_builder
-def group(*args, label=None, layout_cls=None):
+def group(*args, label=None, layout_cls=None) -> QWidget:
+    """A convenience method for making a GroupBox container."""
     if args:
         if isinstance(args[0], str):
             label = args[0]
@@ -226,12 +244,14 @@ def group(*args, label=None, layout_cls=None):
 
 
 @ui_builder
-def label(text, *args, **kwargs):
+def label(text, *args, **kwargs) -> QWidget:
+    """A convenience method for making a text label."""
     return QLabel(text, *args, **kwargs)
 
 
 @ui_builder
-def tabs(*children):
+def tabs(*children) -> QWidget:
+    """A convenience method for making a tabs control."""
     widget = QTabWidget()
     for name, child in children:
         widget.addTab(child, name)
@@ -240,17 +260,20 @@ def tabs(*children):
 
 
 @ui_builder
-def button(text, *args):
+def button(text, *args) -> QWidget:
+    """A convenience method for making a Button."""
     return SubjectivePushButton(text, *args)
 
 
 @ui_builder
-def check_box(text, *args):
+def check_box(text, *args) -> QWidget:
+    """A convenience method for making a checkbox."""
     return SubjectiveCheckBox(text, *args)
 
 
 @ui_builder
-def combo_box(items, *args, name=None):
+def combo_box(items, *args, name=None) -> QWidget:
+    """A convenience method for making a select/ComboBox."""
     widget = SubjectiveComboBox(*args)
     widget.addItems(items)
 
@@ -261,22 +284,26 @@ def combo_box(items, *args, name=None):
 
 
 @ui_builder
-def file_dialog(*args):
+def file_dialog(*args) -> QWidget:
+    """A convenience method for making a button which opens a file dialog."""
     return SubjectiveFileDialog(*args)
 
 
 @ui_builder
-def line_edit(*args):
+def line_edit(*args) -> QWidget:
+    """A convenience method for making a single line text input."""
     return SubjectiveLineEdit(*args)
 
 
 @ui_builder
-def radio_button(text, *args):
+def radio_button(text, *args) -> QWidget:
+    """A convenience method for making a RadioButton."""
     return SubjectiveRadioButton(text, *args)
 
 
 @ui_builder
-def slider(minimum=0, maximum=10, interval=None, horizontal=True):
+def slider(minimum=0, maximum=10, interval=None, horizontal=True) -> QWidget:
+    """A convenience method for making a Slider."""
     widget = SubjectiveSlider(orientation=Qt.Horizontal if horizontal else Qt.Vertical)
     widget.setMinimum(minimum)
     widget.setMaximum(maximum)
@@ -288,7 +315,8 @@ def slider(minimum=0, maximum=10, interval=None, horizontal=True):
 
 
 @ui_builder
-def spin_box(minimum=0, maximum=10, step=1, adaptive=True, value=None):
+def spin_box(minimum=0, maximum=10, step=1, adaptive=True, value=None) -> QWidget:
+    """A convenience method for making a SpinBox."""
     widget = SubjectiveSpinBox()
 
     widget.setRange(minimum, maximum)
@@ -305,12 +333,14 @@ def spin_box(minimum=0, maximum=10, step=1, adaptive=True, value=None):
 
 
 @ui_builder
-def text_edit(text="", *args):
+def text_edit(text="", *args) -> QWidget:
+    """A convenience method for making multiline TextEdit."""
     return SubjectiveTextEdit(text, *args)
 
 
 @ui_builder
-def numeric_input(value=0, input_type: type = float, *args, validator_settings=None):
+def numeric_input(value=0, input_type: type = float, *args, validator_settings=None) -> QWidget:
+    """A numeric input with input validation."""
     validators = {
         int: QtGui.QIntValidator,
         float: QtGui.QDoubleValidator,
@@ -348,6 +378,10 @@ def _unwrap_subject(subject_or_widget):
 
 
 def submit(gate: str, keys: List[str], ui: Dict[str, QWidget]) -> rx.Observable:
+    """Builds an observable with provides the values of `keys` as a dictionary when `gate` changes.
+
+    Essentially models form submission in HTML.
+    """
     if isinstance(gate, str):
         gate = ui[gate]
 
@@ -410,13 +444,17 @@ def _layout_dataclass_field(dataclass_cls, field_name: str, prefix: str):
     )
 
 
-def layout_dataclass(dataclass_cls, prefix: Optional[str] = None):
-    """
-    Renders a dataclass instance to QtWidgets. See also `bind_dataclass` below
-    to get one way data binding to the instance
-    :param dataclass_cls:
-    :param prefix:
-    :return:
+def layout_dataclass(dataclass_cls, prefix: Optional[str] = None) -> QWidget:
+    """Renders a dataclass instance to QtWidgets.
+
+    See also `bind_dataclass` below to get one way data binding to the instance.
+
+    Args:
+        dataclass_cls
+        prefix
+
+    Returns:
+        The widget containing the layout for the dataclass.
     """
     if prefix is None:
         prefix = dataclass_cls.__name__
@@ -430,17 +468,16 @@ def layout_dataclass(dataclass_cls, prefix: Optional[str] = None):
 
 
 def bind_dataclass(dataclass_instance, prefix: str, ui: Dict[str, QWidget]):
-    """
-    One-way data binding between a dataclass instance and a collection of widgets in the UI.
+    """One-way data binding between a dataclass instance and a collection of widgets in the UI.
 
     Sets the current UI state to the value of the Python dataclass instance, and sets up
     subscriptions to value changes on the UI so that any future changes are propagated to
     the dataclass instance.
 
-    :param dataclass_instance: Instance to link
-    :param prefix: Prefix for widget IDs in the UI
-    :param ui: Collected UI elements
-    :return:
+    Args:
+        dataclass_instance: Instance to link
+        prefix: Prefix for widget IDs in the UI
+        ui: Collected UI elements
     """
     relevant_widgets = {k.split(prefix)[1]: v for k, v in ui.items() if k.startswith(prefix)}
     for field_name, field in dataclass_instance.__dataclass_fields__.items():
@@ -486,16 +523,21 @@ def bind_dataclass(dataclass_instance, prefix: str, ui: Dict[str, QWidget]):
 
 
 class CursorRegion(pg.LinearRegionItem):
+    """A wide cursor to support an indication of the binning width in image marginals."""
+
     def __init__(self, *args, **kwargs):
+        """Start with a width of one pixel."""
         super().__init__(*args, **kwargs)
         self._region_width = 1
         self.lines[1].setMovable(False)
 
     def set_width(self, value):
+        """Adjusts the region by moving the right boundary to a distance `value` from the left."""
         self._region_width = value
         self.lineMoved(0)
 
     def lineMoved(self, i):
+        """Issues that the region for the cursor changed when one line on the boundary moves."""
         if self.blockLineSignal:
             return
 
@@ -504,6 +546,10 @@ class CursorRegion(pg.LinearRegionItem):
         self.sigRegionChanged.emit(self)
 
     def set_location(self, value):
+        """Sets the location of the cursor without issuing signals.
+
+        Retains the width of the region so that you can just drag the wide cursor around.
+        """
         old = self.blockLineSignal
         self.blockLineSignal = True
         self.lines[1].setValue(value + self._region_width)

@@ -1,3 +1,4 @@
+"""Implements loading the text file format for MB Scientific analyzers."""
 import warnings
 from pathlib import Path
 
@@ -11,8 +12,7 @@ __all__ = ("MBSEndstation",)
 
 
 class MBSEndstation(HemisphericalEndstation):
-    """
-    Implements loading text files from the MB Scientific text file format.
+    """Implements loading text files from the MB Scientific text file format.
 
     There's not too much metadata here except what comes with the analyzer settings.
     """
@@ -30,9 +30,16 @@ class MBSEndstation(HemisphericalEndstation):
     }
 
     def resolve_frame_locations(self, scan_desc: dict = None):
+        """There is only a single file for the MBS loader, so this is simple."""
         return [scan_desc.get("path", scan_desc.get("file"))]
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
+        """Performs final data normalization.
+
+        Because the MBS format does not come from a proper ARPES DAQ setup,
+        we have to attach a bunch of missing coordinates with blank values
+        in order to fit the data model.
+        """
         warnings.warn(
             "Loading from text format misses metadata. You will need to supply "
             "missing coordinates as appropriate."
@@ -59,6 +66,12 @@ class MBSEndstation(HemisphericalEndstation):
         return super().postprocess_final(data, scan_desc)
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
+        """Load a single frame from an MBS spectrometer.
+
+        Most of the complexity here is in header handling and building
+        the resultant coordinates. Namely, coordinates are stored in an indirect
+        format using start/stop/step whch needs to be hydrated.
+        """
         p = Path(frame_path)
 
         with open(str(p)) as f:

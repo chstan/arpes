@@ -1,3 +1,4 @@
+"""Import many useful standard tools."""
 from .annotations import *
 
 from .bands import *

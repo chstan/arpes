@@ -1,3 +1,4 @@
+"""A utility excepthook for Qt applications which ensures errors are visible in Jupyter."""
 import traceback
 import sys
 from collections import namedtuple
@@ -6,6 +7,7 @@ __all__ = ("patched_excepthook",)
 
 
 def patched_excepthook(exc_type, exc_value, exc_tb):
+    """Prints the traceback instead of dying silently. Useful for debugging Qt apps in Jupyter."""
     enriched_tb = _add_missing_frames(exc_tb) if exc_tb else exc_tb
     traceback.print_exception(exc_type, exc_value, enriched_tb)
 

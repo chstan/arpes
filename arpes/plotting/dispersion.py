@@ -1,3 +1,4 @@
+"""Plotting routines related to 2D ARPES cuts and dispersions."""
 import warnings
 from collections import defaultdict
 
@@ -26,6 +27,7 @@ __all__ = [
 
 @save_plot_provenance
 def plot_dispersion(spectrum: xr.DataArray, bands, out=None):
+    """Plots an ARPES cut with bands over it."""
     ax = spectrum.plot()
 
     for band in bands:
@@ -50,17 +52,20 @@ def cut_dispersion_plot(
     quality="high",
     **kwargs
 ):
-    """
-    Makes a 3D cut dispersion plot. At the moment this only supports rectangular BZs.
-    :param data:
-    :param e_floor:
-    :param title:
-    :param ax:
-    :param out:
-    :param kwargs:
-    :return:
-    """
+    """Makes a 3D cut dispersion plot.
 
+    At the moment this only supports rectangular BZs.
+
+    Args:
+        data: The 3D data to plot
+        e_floor: The energy of the bottom cut "floor"
+        title: A title for the plot
+        ax: The axes to plot to
+        include_symmetry_points: Whether to include annotated symmetry points
+        out: Where to save the file, optionall
+        quality: Controls output figure DPI
+        kwargs: Fed to the image plotting calls
+    """
     # to get nice labeled edges you could use shapely
     sampling = {
         "paper": 400,
@@ -263,6 +268,7 @@ def cut_dispersion_plot(
 
 @save_plot_provenance
 def hv_reference_scan(data, out=None, e_cut=-0.05, bkg_subtraction=0.8, **kwargs):
+    """A reference plot for photon energy scans. Used internally by other code."""
     fs = data.S.fat_sel(eV=e_cut)
     fs = normalize_dim(fs, "hv", keep_id=True)
     fs.data -= bkg_subtraction * np.mean(fs.data)
@@ -313,6 +319,7 @@ def hv_reference_scan(data, out=None, e_cut=-0.05, bkg_subtraction=0.8, **kwargs
 
 @save_plot_provenance
 def reference_scan_fermi_surface(data, out=None, **kwargs):
+    """A reference plot for Fermi surfaces. Used internally by other code."""
     fs = data.S.fermi_surface
     _, ax = labeled_fermi_surface(fs, hold=True, **kwargs)
 
@@ -350,6 +357,7 @@ def labeled_fermi_surface(
     fermi_energy=0,
     **kwargs
 ):
+    """Plots a Fermi surface with high symmetry points annotated onto it."""
     fig = None
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 7))
@@ -412,6 +420,10 @@ def labeled_fermi_surface(
 def fancy_dispersion(
     data, title=None, ax=None, out=None, include_symmetry_points=True, norm=None, **kwargs
 ):
+    """Generates a 2D ARPES cut with some fancy annotations for throwing plots together.
+
+    Useful for brief slides/quick presentations.
+    """
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 5))
 
@@ -464,6 +476,7 @@ def fancy_dispersion(
 
 @save_plot_provenance
 def scan_var_reference_plot(data, title=None, ax=None, norm=None, out=None, **kwargs):
+    """Makes a straightforward plot of a DataArray with resonable axes. Used internally by other scripts."""
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 5))
 

@@ -1,3 +1,4 @@
+"""Scrollable interactive comparison between DataArrays."""
 import numpy as np
 import scipy.ndimage.interpolation
 
@@ -8,7 +9,7 @@ from arpes.typing import DataType
 from arpes.utilities.funcutils import Debounce
 from arpes.utilities.normalize import normalize_to_spectrum
 
-__all__ = ["ComparisonTool", "compare"]
+__all__ = ["compare"]
 
 
 class ComparisonTool(BokehInteractiveTool):
@@ -183,6 +184,7 @@ class ComparisonTool(BokehInteractiveTool):
 
 
 def compare(A: DataType, B: DataType):
+    """Opens an interactive tool with a scrollable diff between arrays."""
     A = normalize_to_spectrum(A)
     attrs = A.attrs
     B = normalize_to_spectrum(B)

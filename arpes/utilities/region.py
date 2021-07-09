@@ -1,3 +1,4 @@
+"""Defines common region selections which are used elsewhere programmatically."""
 from enum import Enum
 
 from typing import Union
@@ -6,6 +7,8 @@ __all__ = ["REGIONS", "normalize_region", "DesignatedRegions"]
 
 
 class DesignatedRegions(Enum):
+    """Commonly used regions which can be used to select data programmatically."""
+
     # angular windows
     NARROW_ANGLE = 0  # trim to a narrow central region in the spectrometer
     WIDE_ANGLE = 1  # trim to just inside edges of spectrometer data
@@ -40,6 +43,7 @@ REGIONS = {
 
 
 def normalize_region(region: Union[str, dict]):
+    """Converts named regions to an actual region."""
     if isinstance(region, str):
         return REGIONS[region]
 

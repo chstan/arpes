@@ -1,8 +1,8 @@
-"""
-Contains tools pertaining to statistical boostraps. It can sometimes be difficult
-to assess when bootstraps are appropriate, so make sure to consider this before you
-just stick a bootstrap around your code and stuff the resultant error bar
-into your papers.
+"""Utilities related to statistical bootstraps.
+
+It can sometimes be difficult to assess when bootstraps are appropriate, 
+so make sure to consider this before you just stick a bootstrap around 
+your code and stuff the resultant error bar into your papers.
 
 This is most useful on data coming from ToF experiments, where individual electron
 arrivals are counted, but even here you must be aware of tricky aspects of
@@ -18,7 +18,7 @@ import functools
 import random
 
 import scipy.stats
-from typing import Union
+from typing import Any, Callable, Dict, List, Optional, Set, Union
 import numpy as np
 from tqdm import tqdm_notebook
 
@@ -42,10 +42,10 @@ __all__ = (
 
 
 @update_provenance("Estimate prior")
-def estimate_prior_adjustment(data: DataType, region: Union[dict, str] = None) -> float:
-    r"""
-    Estimates the parameters of a distribution generating the intensity
-    histogram of pixels in a spectrum. In a perfectly linear, single-electron
+def estimate_prior_adjustment(data: DataType, region: Union[Dict[str, Any], str] = None) -> float:
+    r"""Estimates the parameters of a distribution generating the intensity histogram of pixels in a spectrum.
+
+    In a perfectly linear, single-electron
     single-count detector, this would be a poisson distribution with
     \lambda=mean(counts) over the window. Despite this, we can estimate \lambda
     phenomenologically and verify that a Poisson distribution provides a good
@@ -54,8 +54,12 @@ def estimate_prior_adjustment(data: DataType, region: Union[dict, str] = None) -
     You should use this with a spectrum that has uniform intensity, i.e. with a
     copper reference or similar.
 
-    :param data:
-    :return: returns sigma / mu, adjustment factor for the Poisson distribution
+    Args:
+        data: The input spectrum.
+        region: The region which should be used for the estimate.
+
+    Returns:
+        sigma / mu, the adjustment factor for the Poisson distribution
     """
     data = normalize_to_spectrum(data)
 
@@ -75,14 +79,16 @@ def estimate_prior_adjustment(data: DataType, region: Union[dict, str] = None) -
 
 @update_provenance("Resample cycle dimension")
 @lift_dataarray_to_generic
-def resample_cycle(data: xr.DataArray, **kwargs):
-    """
-    Perform a non-parametric bootstrap using a cycle coordinate for statistically independent observations.
-    :param data:
-    :param kwargs:
-    :return:
-    """
+def resample_cycle(data: xr.DataArray, **kwargs) -> xr.DataArray:
+    """Perform a non-parametric bootstrap using a cycle coordinate for statistically independent observations.
 
+    Args:
+        data: The input data.
+        kwargs: Unused
+
+    Returns:
+        Resampled data with selections from the cycle axis.
+    """
     n_cycles = len(data.cycle)
     which = [random.randint(0, n_cycles - 1) for _ in range(n_cycles)]
 
@@ -113,12 +119,15 @@ def resample(data: xr.DataArray, prior_adjustment=1, **kwargs):
 @update_provenance("Resample electron-counted data")
 @lift_dataarray_to_generic
 def resample_true_counts(data: xr.DataArray) -> xr.DataArray:
-    """
-    Resamples histogrammed data where each count represents an actual electron.
-    :param data:
-    :return:
-    """
+    """Resamples histogrammed data where each count represents an actual electron.
 
+    Args:
+        data: Input data representing actual electron counts from a time of flight
+              system or delay line.
+
+    Returns:
+        Poisson resampled data.
+    """
     resampled = xr.DataArray(
         np.random.poisson(lam=data.values, size=data.values.shape),
         coords=data.coords,
@@ -135,7 +144,8 @@ def resample_true_counts(data: xr.DataArray) -> xr.DataArray:
 @update_provenance("Bootstrap true electron counts")
 @lift_dataarray_to_generic
 def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
-    """
+    """Performs a parametric bootstrap assuming recorded data are electron counts.
+
     Parametric bootstrap for the number of counts in each detector channel for a
     time of flight/DLD detector, where each count represents an actual particle.
 
@@ -143,10 +153,15 @@ def bootstrap_counts(data: DataType, N=1000, name=None) -> xr.Dataset:
     spin degree of freedom, and will bootstrap appropriately.
 
     Currently we build all the samples at once instead of using a rolling algorithm.
-    :param data:
-    :return:
-    """
 
+    Arguments:
+        data: The input spectrum.
+        N: The number of samples to draw.
+        name: The name of the subarray which represents counts to resample. E.g. "up_spectrum"
+
+    Returns:
+        A `xr.Dataset` which has the mean and standard error for the resampled named array.
+    """
     assert data.name is not None or name is not None
     name = data.name if data.name is not None else name
 
@@ -173,23 +188,48 @@ class Distribution:
     DEFAULT_N_SAMPLES = 1000
 
     def draw_samples(self, n_samples=DEFAULT_N_SAMPLES):
-        raise NotImplementedError()
+        """Draws samples from this distribution."""
+        raise NotImplementedError
 
 
 @dataclass
 class Normal(Distribution):
+    """Represents a Gaussian distribution.
+
+    Attributes:
+        center: The center/mu parameter for the distribution.
+        stderr: The standard error for the distribution.
+    """
+
     center: float
     stderr: float
 
     def draw_samples(self, n_samples=Distribution.DEFAULT_N_SAMPLES):
+        """Draws samples from this distribution."""
         return scipy.stats.norm.rvs(self.center, scale=self.stderr, size=n_samples)
 
     @classmethod
     def from_param(cls, model_param):
+        """Generates a Normal from an `lmfit.Parameter`."""
         return cls(center=model_param.value, stderr=model_param.stderr)
 
 
-def propagate_errors(f):
+def propagate_errors(f) -> Callable:
+    """A decorator which provides transparent propagation of statistical errors.
+
+    The way that this is accomodated is that the inner function is turned into one which
+    operates over distributions. Errors are calculated empirically by sampling
+    over trials drawn from these distributions.
+
+    CAVEAT EMPTOR: Arguments are assumed to be uncorrelated.
+
+    Args:
+        f: The inner function
+
+    Returns:
+        The wrapped function.
+    """
+
     @functools.wraps(f)
     def operates_on_distributions(*args, **kwargs):
         exclude = set(
@@ -218,18 +258,40 @@ def propagate_errors(f):
 
 
 @update_provenance("Bootstrap spin detector polarization and intensity")
-def bootstrap_intensity_polarization(data, N=100):
-    """
-    Uses the parametric bootstrap to get uncertainties on the intensity and polarization of ToF-SARPES data.
-    :param data:
-    :return:
-    """
+def bootstrap_intensity_polarization(data: xr.Dataset, N: int = 100) -> xr.Dataset:
+    """Builds an estimate of the intensity and polarization from spin-data.
 
+    Uses the parametric bootstrap to get uncertainties on the intensity and polarization of ToF-SARPES data.
+
+    Args:
+        data: Input spectrum for resampling.
+        N: The number of samples to draw.
+
+    Returns:
+        Resampled data after conversion to intensity and polarization.
+    """
     bootstrapped_polarization = bootstrap(to_intensity_polarization)
     return bootstrapped_polarization(data, N=N)
 
 
-def bootstrap(fn, skip=None, resample_method=None):
+def bootstrap(
+    fn: Callable,
+    skip: Optional[Union[Set[int], List[int]]] = None,
+    resample_method: Optional[str] = None,
+) -> Callable:
+    """Produces function which performs a bootstrap of an arbitrary function by sampling.
+
+    This is a functor which takes a function operating on plain data and produces one which
+    internally bootstraps over counts on the input data.
+
+    Args:
+        fn: The function to be bootstrapped.
+        skip: Which arguments to leave alone. Defaults to None.
+        resample_method: How the resampling should be performed. See `resample` and `resample_cycle`. Defaults to None.
+
+    Returns:
+        A function which vectorizes the ouptut of the input function `fn` over samples.
+    """
     if skip is None:
         skip = []
 

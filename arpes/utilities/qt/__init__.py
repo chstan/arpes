@@ -1,3 +1,4 @@
+"""Infrastructure code for Qt based analysis tools."""
 import pyqtgraph as pg
 from pyqtgraph import ViewBox
 
@@ -17,7 +18,8 @@ __all__ = (
 
 
 def remove_dangling_viewboxes():
-    """
+    """Removes ViewBoxes that don't get garbage collected on app close.
+
     If you construct a view hierarchy which has circular references
     then it can happen that Python will retain the references to Qt
     objects after they have been freed. This has manifested as
@@ -86,11 +88,7 @@ class QtInfo:
         return map(lambda x: x * self.screen_dpi, arg)
 
     def setup_pyqtgraph(self):
-        """
-        Does any patching required on PyQtGraph and configures options.
-        :return:
-        """
-
+        """Does any patching required on PyQtGraph and configures options."""
         if self._pg_patched:
             return
 
@@ -99,7 +97,8 @@ class QtInfo:
         pg.setConfigOptions(antialias=True, foreground=(0, 0, 0), background=(255, 255, 255))
 
         def patchedLinkedViewChanged(self, view, axis):
-            """
+            """Patches linkedViewChanged to fix a pixel scaling bug.
+
             This still isn't quite right but it is much better than before. For some reason
             the screen coordinates of the PlotWidget are not being computed correctly, so
             we will just lock them as though they were perfectly aligned.
@@ -108,10 +107,6 @@ class QtInfo:
             different parts of the layout, but this will work for now.
 
             We also don't handle inverted axes for now.
-            :param self:
-            :param view:
-            :param axis:
-            :return:
             """
             if self.linksBlocked or view is None:
                 return

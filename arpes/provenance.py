@@ -1,6 +1,7 @@
-"""
-Provides data provenance for PyARPES. Most analysis routines built
-into PyARPES support provenance. Of course, Python is a dynamic language and nothing can be
+"""Provides data provenance for PyARPES.
+
+Most analysis routines built into PyARPES support provenance. 
+Of course, Python is a dynamic language and nothing can be
 done to prevent the experimenter from circumventing the provenance scheme.
 
 All the same, between analysis notebooks and the data provenenace provided by PyARPES,
@@ -21,11 +22,10 @@ import datetime
 import functools
 import json
 import os.path
-import typing
 import uuid
 import warnings
 
-from typing import Any
+from typing import Any, Callable, Union, List, Optional
 
 import xarray as xr
 
@@ -34,25 +34,27 @@ from arpes.typing import xr_types, DataType
 
 
 def attach_id(data: xr.DataArray) -> None:
-    """
-    Ensures that an ID is attached to a piece of data, if it does not already exist.
+    """Ensures that an ID is attached to a piece of data, if it does not already exist.
+
     IDs are generated at the time of identification in an analysis notebook. Sometimes a piece of
     data is created from nothing, and we might need to generate one for it on the spot.
-    :param data:
-    :return:
+
+    Args:
+        data: The data to attach an ID to.
     """
     if "id" not in data.attrs:
         data.attrs["id"] = str(uuid.uuid1())
 
 
-def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file, record):
-    """
-    Builds a provenance entry for a dataset corresponding to loading data from a file. This is used
-    by data loaders at the start of an analysis.
-    :param child_arr:
-    :param file:
-    :param record:
-    :return:
+def provenance_from_file(child_arr: DataType, file: Any, record: str):
+    """Builds a provenance entry for a dataset corresponding to loading data from a file.
+
+    This is used by data loaders at the start of an analysis.
+
+    Args:
+        child_arr: The array to update. This argument is modified.
+        file: The file which provided the data. Should be a path or collection thereof.
+        record: An annotation to add.
     """
     from arpes.utilities.jupyter import get_recent_history
 
@@ -69,14 +71,18 @@ def provenance_from_file(child_arr: typing.Union[xr.DataArray, xr.Dataset], file
     }
 
 
-def update_provenance(what, record_args=None, keep_parent_ref=False):
-    """
-    Provides a decorator that promotes a function to one that records data provenance.
+def update_provenance(
+    what: str, record_args: Optional[List[str]] = None, keep_parent_ref: bool = False
+):
+    """A decorator that promotes a function to one that records data provenance.
 
-    :param what: Description of what transpired, to put into the record.
-    :param record_args: Unused presently, will allow recording args into record.
-    :param keep_parent_ref: Whether to keep a pointer to the parents in the hierarchy or not.
-    :return: decorator
+    Args:
+        what: Description of what transpired, to put into the record.
+        record_args: Unused presently, will allow recording args into record.
+        keep_parent_ref: Whether to keep a pointer to the parents in the hierarchy or not.
+
+    Returns:
+        A decorator which can be applied to a function.
     """
 
     def update_provenance_decorator(fn):
@@ -123,9 +129,9 @@ def update_provenance(what, record_args=None, keep_parent_ref=False):
     return update_provenance_decorator
 
 
-def save_plot_provenance(plot_fn):
-    """
-    A decorator that automates saving the provenance information for a particular plot.
+def save_plot_provenance(plot_fn: Callable) -> Callable:
+    """A decorator that automates saving the provenance information for a particular plot.
+
     A plotting function creates an image or movie resource at some location on the
     filesystem.
 
@@ -133,8 +139,11 @@ def save_plot_provenance(plot_fn):
     of of temporarily overriding the behavior of the open builtin in order to monitor
     for a write.
 
-    :param plot_fn: A plotting function to decorate
-    :return:
+    Args:
+        plot_fn: A plotting function to decorate.
+
+    Returns:
+        A decorated copy of the input function which additionally saves provenance information.
     """
     from arpes.utilities.jupyter import get_recent_history
 
@@ -184,19 +193,18 @@ def save_plot_provenance(plot_fn):
 
 
 def provenance(
-    child_arr: xr.DataArray,
-    parent_arr: typing.Union[DataType, typing.List[DataType]],
+    child_arr: DataType,
+    parent_arr: Union[DataType, List[DataType]],
     record,
-    keep_parent_ref=False,
+    keep_parent_ref: bool = False,
 ):
-    """
-    Function that updates the provenance for a piece of data with a single parent.
+    """Updates the provenance in place for a piece of data with a single parent.
 
-    :param child_arr:
-    :param parent_arr:
-    :param record:
-    :param keep_parent_ref:
-    :return:
+    Args:
+        child_arr: The array to update. This argument is modified.
+        parent_arr: The parent array.
+        record: An annotation to add.
+        keep_parent_ref: Whether we should keep a reference to the parents.
     """
     from arpes.utilities.jupyter import get_recent_history
 
@@ -227,17 +235,20 @@ def provenance(
         child_arr.attrs["provenance"]["parent"] = parent_arr
 
 
-def provenance_multiple_parents(child_arr: xr_types, parents, record, keep_parent_ref=False):
-    """
+def provenance_multiple_parents(
+    child_arr: DataType, parents, record, keep_parent_ref: bool = False
+):
+    """Updates provenance in place when there are multiple array-like data inputs.
+
     Similar to `provenance` updates the data provenance information for data with
     multiple sources or "parents". For instance, if you normalize a piece of data "X" by a metal
     reference "Y", then the returned data would list both "X" and "Y" in its history.
 
-    :param child_arr:
-    :param parents:
-    :param record:
-    :param keep_parent_ref:
-    :return:
+    Args:
+        child_arr: The array to update. This argument is modified.
+        parents: The collection of parents.
+        record: An annotation to add.
+        keep_parent_ref: Whether we should keep a reference to the parents.
     """
     from arpes.utilities.jupyter import get_recent_history
 

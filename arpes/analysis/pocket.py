@@ -1,3 +1,4 @@
+"""Contains electron/hole pocket analysis routines."""
 import numpy as np
 from sklearn.decomposition import PCA
 
@@ -8,6 +9,8 @@ from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.conversion import slice_along_path
 
+from typing import List, Tuple
+
 __all__ = (
     "curves_along_pocket",
     "edcs_along_pocket",
@@ -17,16 +20,20 @@ __all__ = (
 
 
 def pocket_parameters(data: DataType, kf_method=None, sel=None, method_kwargs=None, **kwargs):
-    """
-    Estimates pocket center, anisotropy, principal vectors, and extent in either
-    angle or k-space. Since data can be converted forward it is generally advised to do
-    this analysis in angle space before conversion.
-    :param data:
-    :param kf_method:
-    :param sel:
-    :param method_kwargs:
-    :param kwargs:
-    :return:
+    """Estimates pocket center, anisotropy, principal vectors, and extent in either angle or k-space.
+
+    Since data can be converted forward it is generally advised to do
+    this analysis in angle space before conversion if the pocket is not very large.
+
+    Args:
+        data: The input kx-ky or 2D angle map.
+        kf_method: How to determine k_F for each slice.
+        sel: An energy selection window near the Fermi surface.
+        method_kwargs: Passed to the kf determination method
+        kwargs: Passed to the radial selection method.
+
+    Returns:
+        Extracted asymmetry parameters.
     """
     slices, _ = curves_along_pocket(data, **kwargs)  # slices, angles =
 
@@ -70,21 +77,28 @@ def radial_edcs_along_pocket(
     n_points=None,
     select_radius=None,
     **kwargs
-):
+) -> xr.Dataset:
+    """Produces EDCs distributed radially along a vector from the pocket center.
+
+    The pocket center should be passed through kwargs via `{dim}={value}`.
+
+    Example:
+        I.e. an appropriate call would be
+
+        >>> radial_edcs_along_pocket(spectrum, np.pi / 4, inner_radius=1, outer_radius=4, phi=0.1, beta=0)
+
+    Args:
+        data: ARPES Spectrum.
+        angle: Angle along the FS to cut against.
+        inner_radius: The min for the angle/momentum equivalent radial coordinate.
+        outer_radius: The max for the angle/momentum equivalent radial coordinate.
+        n_points: Number of EDCs, can be automatically inferred.
+        select_radius: The radius used for selections along the radial curve.
+        kwargs: Used to define the central point.
+
+    Return:
+        A 2D array which has an angular coordinate around the pocket center.
     """
-    Produces EDCs distributed radially along a vector from the pocket center. The pocket center
-    should be passed through kwargs via `{dim}={value}`. I.e. an appropriate call would be
-
-    radial_edcs_along_pocket(spectrum, np.pi / 4, inner_radius=1, outer_radius=4, phi=0.1, beta=0)
-
-    :param data: ARPES Spectrum
-    :param angle: Angle along the FS to cut against
-    :param n_points: Number of EDCs, can be automatically inferred
-    :param select_radius:
-    :param kwargs:
-    :return:
-    """
-
     data = normalize_to_spectrum(data)
     fermi_surface_dims = list(data.dims)
 
@@ -134,19 +148,27 @@ def radial_edcs_along_pocket(
 
 def curves_along_pocket(
     data: DataType, n_points=None, inner_radius=0, outer_radius=5, shape=None, **kwargs
-):
-    """
-    Produces radial slices along a Fermi surface through a pocket. Evenly distributes perpendicular cuts along an
-    ellipsoid. The major axes of the ellipsoid can be specified by `shape` but must be axis aligned.
+) -> Tuple[List[xr.DataArray], List[float]]:
+    """Produces radial slices along a Fermi surface through a pocket.
 
-    The inner and outer radius parameters control the endpoints of the resultant slices along the Fermi surface
-    :param data:
-    :param n_points:
-    :param inner_radius:
-    :param outer_radius:
-    :param shape:
-    :param kwargs:
-    :return:
+    Evenly distributes perpendicular cuts along an
+    ellipsoid. The major axes of the ellipsoid can be specified by `shape`
+    but must be axis aligned.
+
+    The inner and outer radius parameters control the endpoints of the
+    resultant slices along the Fermi surface.
+
+    Args:
+        data:
+        n_points:
+        inner_radius:
+        outer_radius:
+        shape:
+        kwargs:
+
+    Returns:
+        A tuple of two lists. The first list contains the slices and the second
+        the coordinates of each slice around the pocket center.
     """
     data = normalize_to_spectrum(data)
 
@@ -196,14 +218,19 @@ def curves_along_pocket(
     return slices, angles
 
 
-def find_kf_by_mdc(slice: DataType, offset=0, **kwargs):
-    """
+def find_kf_by_mdc(slice: DataType, offset=0, **kwargs) -> float:
+    """Finds the Fermi momentum by curve fitting an MDC.
+
     Offset is used to control the radial offset from the pocket for studies where
-    you want to go slightly off the Fermi momentum
-    :param slice:
-    :param offset:
-    :param kwargs:
-    :return:
+    you want to go slightly off the Fermi momentum.
+
+    Args:
+        slice: Input fit data.
+        offset: Offset to add to the result
+        kwargs: Passed as parameters to the fit routine.
+
+    Returns:
+        The fitting Fermi momentum.
     """
     if isinstance(slice, xr.Dataset):
         slice = slice.data
@@ -224,17 +251,21 @@ def find_kf_by_mdc(slice: DataType, offset=0, **kwargs):
 def edcs_along_pocket(
     data: DataType, kf_method=None, select_radius=None, sel=None, method_kwargs=None, **kwargs
 ):
-    """
-    Collects EDCs around a pocket. This consists first in identifying the momenta
+    """Collects EDCs around a pocket.
+
+    This consists first in identifying the momenta
     around the pocket, and then integrating small windows around each of these points.
 
-    :param data:
-    :param kf_method:
-    :param select_radius:
-    :param sel:
-    :param method_kwargs:
-    :param kwargs:
-    :return:
+    Args:
+        data: The input kx-ky or 2D angle map.
+        kf_method: How to determine k_F for each slice.
+        select_radius: The radius used for selections along the radial curve.
+        sel: An energy selection window near the Fermi surface.
+        method_kwargs: Passed to the kf determination method
+        kwargs: Passed to the radial selection method.
+
+    Returns:
+        EDCs at the fermi momentum around a pocket.
     """
     slices, angles = curves_along_pocket(data, **kwargs)
 

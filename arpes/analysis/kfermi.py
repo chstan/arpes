@@ -1,3 +1,4 @@
+"""Tools related to finding the Fermi momentum in a cut."""
 import numpy as np
 
 from arpes.fits import LinearModel
@@ -7,17 +8,19 @@ __all__ = ("kfermi_from_mdcs",)
 
 
 def kfermi_from_mdcs(mdc_results: DataType, param=None):
-    """
-    Calculates a Fermi momentum using a series of MDCs and the known
-    Fermi level (eV=0). This is especially useful to
-    isolate an area for analysis.
+    """Calculates a Fermi momentum using a series of MDCs and the known Fermi level (eV=0).
+
+    This is especially useful to isolate an area for analysis.
 
     This method tolerates data that came from a prefixed model fit,
     but will always attempt to look for an attribute containing "center".
 
-    :param mdc_results: A DataArray or Dataset containing `lmfit.ModelResult`s.
-    :param param:
-    :return:
+    Args:
+        mdc_results: A DataArray or Dataset containing `lmfit.ModelResult`s.
+        param:
+
+    Returns:
+        The k_fermi values for the input data.
     """
     real_param_name = None
 

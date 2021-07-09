@@ -1,3 +1,4 @@
+"""Provides some simple analysis tools in Qt format. Useful for selecting regions and points."""
 import pyqtgraph as pg
 import numpy as np
 import xarray as xr

@@ -1,6 +1,4 @@
-"""
-Plugin facility to read and normalize information from different sources to a common format
-"""
+"""Plugin facility to read and normalize information from different sources to a common format."""
 import warnings
 import re
 
@@ -10,8 +8,7 @@ import xarray as xr
 from astropy.io import fits
 
 from pathlib import Path
-import typing
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 import copy
 import arpes.config
 import arpes.constants
@@ -42,8 +39,9 @@ _ENDSTATION_ALIASES = {}
 
 
 class EndstationBase:
-    """
-    Implements the core features of ARPES data loading. A thorough documentation
+    """Implements the core features of ARPES data loading.
+
+    A thorough documentation
     is available at `the plugin documentation <https://arpes.netlify.com/#/writing-plugins>`_.
 
     To summarize, a plugin has a few core jobs:
@@ -105,6 +103,7 @@ class EndstationBase:
 
     @classmethod
     def is_file_accepted(cls, file, scan_desc) -> bool:
+        """Determines whether this loader can load this file."""
         if os.path.exists(str(file)) and len(str(file).split(os.path.sep)) > 1:
             # looks like an actual file, we are going to just check that the extension is kosher
             # and that the filename matches something reasonable.
@@ -126,15 +125,27 @@ class EndstationBase:
             return False
 
     @classmethod
-    def files_for_search(cls, directory):
-        return list(
-            filter(
-                lambda f: os.path.splitext(f)[1] in cls._TOLERATED_EXTENSIONS, os.listdir(directory)
-            )
-        )
+    def files_for_search(cls, directory) -> List[str]:
+        """Filters files in a directory for candidate scans.
+
+        Here, this just means collecting the ones with extensions acceptable to the loader.
+        """
+        return [
+            f for f in os.listdir(directory) if os.path.splitext(f)[1] in cls._TOLERATED_EXTENSIONS
+        ]
 
     @classmethod
     def find_first_file(cls, file, scan_desc, allow_soft_match=False):
+        """Attempts to find a file associated to the scan given the user provided path or scan number.
+
+        This is mostly done by regex matching over available options.
+        Endstations which do not require further control here can just provide class attributes:
+
+        * `._SEARCH_DIRECTORIES`: Defining which paths should be checked for scans
+        * `._SEARCH_PATTERNS`: Defining acceptable filenames
+        * `._USE_REGEX`: Controlling literal or regex filename checking
+        * `._TOLERATED_EXTENSIONS`: Controlling whether files should be rejected based on their extension.
+        """
         workspace = arpes.config.CONFIG["WORKSPACE"]
         workspace_path = os.path.join(workspace["path"], "data")
         workspace = workspace["name"]
@@ -178,7 +189,13 @@ class EndstationBase:
 
         raise ValueError("Could not find file associated to {}".format(file))
 
-    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
+    def concatenate_frames(self, frames=List[xr.Dataset], scan_desc: dict = None):
+        """Performs concatenation of frames in multi-frame scans.
+
+        The way this happens is that we look for an axis on which the frames are changing uniformly
+        among a set of candidates (`.CONCAT_COORDS`). Then we delegate to xarray to perform the concatenation
+        and clean up the merged coordinate.
+        """
         if not frames:
             raise ValueError("Could not read any frames.")
 
@@ -203,17 +220,33 @@ class EndstationBase:
         frames.sort(key=lambda x: x.coords[scan_coord])
         return xr.concat(frames, scan_coord)
 
-    def resolve_frame_locations(self, scan_desc: dict = None) -> typing.List[str]:
+    def resolve_frame_locations(self, scan_desc: dict = None) -> List[str]:
+        """Determine all files and frames associated to this piece of data.
+
+        This always needs to be overridden in subclasses to handle data appropriately.
+        """
         raise NotImplementedError(
             "You need to define resolve_frame_locations or subclass SingleFileEndstation."
         )
-        return []
 
-    def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
+    def load_single_frame(
+        self, frame_path: str = None, scan_desc: dict = None, **kwargs
+    ) -> xr.Dataset:
+        """Hook for loading a single frame of data.
+
+        This always needs to be overridden in subclasses to handle data appropriately.
+        """
         print(frame_path)
         return xr.Dataset()
 
     def postprocess(self, frame: xr.Dataset):
+        """Performs frame level normalization of scan data.
+
+        Here, we currently:
+        1. Remove dimensions if they only have a single point, i.e. if the scan has shape [1,N] it
+          gets squeezed to have size [N]
+        2. Rename attributes
+        """
         from arpes.utilities import rename_keys
 
         frame = xr.Dataset(
@@ -232,6 +265,16 @@ class EndstationBase:
         return frame
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
+        """Perform final normalization of scan data.
+
+        This defines the common codepaths for attaching extra information to scans at load time.
+        Currently this means we:
+
+        1. Attach a normalized "type" or "kind" of the spectrum indicating what sort of scan it is
+        2. Ensure standard coordinates are represented
+        3. Apply attribute renaming and attribute transformations defined by class attrs
+        4. Ensure the scan endianness matches the system for performance reasons down the line
+        """
         # attach the 'spectrum_type'
         # TODO move this logic into xarray extensions and customize here
         # only as necessary
@@ -242,35 +285,16 @@ class EndstationBase:
             coord_names = tuple(c for c in coord_names if c not in {"x", "y", "z"})
             spectrum_types = {
                 ("eV",): "spem",
-                (
-                    "eV",
-                    "phi",
-                ): "ucut",
+                ("eV", "phi"): "ucut",
             }
             spectrum_type = spectrum_types.get(coord_names)
         else:
             spectrum_types = {
                 ("eV",): "xps",
-                (
-                    "eV",
-                    "phi",
-                    "theta",
-                ): "map",
-                (
-                    "eV",
-                    "phi",
-                    "psi",
-                ): "map",
-                (
-                    "beta",
-                    "eV",
-                    "phi",
-                ): "map",
-                (
-                    "eV",
-                    "hv",
-                    "phi",
-                ): "hv_map",
+                ("eV", "phi", "theta"): "map",
+                ("eV", "phi", "psi"): "map",
+                ("beta", "eV", "phi"): "map",
+                ("eV", "hv", "phi"): "hv_map",
                 ("eV", "phi"): "cut",
             }
             spectrum_type = spectrum_types.get(coord_names)
@@ -324,7 +348,8 @@ class EndstationBase:
 
         return data
 
-    def load_from_path(self, path: typing.Union[str, Path]):
+    def load_from_path(self, path: Union[str, Path]) -> xr.Dataset:
+        """Convenience wrapper around `.load` which references an explicit path."""
         path = str(path)
         return self.load(
             {
@@ -333,13 +358,19 @@ class EndstationBase:
             }
         )
 
-    def load(self, scan_desc: dict = None, **kwargs):
-        """
-        Loads a scan from a single file or a sequence of files.
+    def load(self, scan_desc: dict = None, **kwargs) -> xr.Dataset:
+        """Loads a scan from a single file or a sequence of files.
 
-        :param scan_desc:
-        :param kwargs:
-        :return:
+        This defines the contract and structure for standard data loading plugins:
+        1. Search for files (`.resolve_frame_locations`)
+        2. Load them sequentially (`.load_single_frame`)
+        3. Apply cleaning code to each frame (`.postprocess`)
+        4. Concatenate these loaded files  (`.concatenate_frames`)
+        5. Apply postprocessing code to the concatenated dataset
+
+        You can read more about the plugin system in the detailed documentation,
+        but for the most part loaders just specializing one or more of these different steps
+        as appropriate for a beamline.
         """
         resolved_frame_locations = self.resolve_frame_locations(scan_desc)
         resolved_frame_locations = [
@@ -360,15 +391,16 @@ class EndstationBase:
 
 
 class SingleFileEndstation(EndstationBase):
-    """
-    Abstract endstation which loads data from a single file. This just specializes
-    the routine used to determine the location of files on disk.
+    """Abstract endstation which loads data from a single file.
+
+    This just specializes the routine used to determine the location of files on disk.
 
     Unlike general endstations, if your data comes in a single file you can trust that the
     file given to you in the spreadsheet or direct load calls is all there is.
     """
 
     def resolve_frame_locations(self, scan_desc: dict = None):
+        """Single file endstations just use the referenced file from the scan description."""
         if scan_desc is None:
             raise ValueError(
                 "Must pass dictionary as file scan_desc to all endstation loading code."
@@ -384,9 +416,7 @@ class SingleFileEndstation(EndstationBase):
 
 
 class SESEndstation(EndstationBase):
-    """
-    Provides collation and data loading for files produced by Scienta's SESWrapper
-    and endstations that use the SESWrapper.
+    """Provides collation and loading for Scienta's SESWrapper and endstations using it.
 
     These files have special frame names, at least at the beamlines Conrad has encountered.
     """
@@ -425,17 +455,19 @@ class SESEndstation(EndstationBase):
         return frame.assign_attrs(frame.S.spectrum.attrs)
 
     def load_SES_nc(self, scan_desc: dict = None, robust_dimension_labels=False, **kwargs):
-        """
-        Imports an hdf5 dataset exported from Igor that was originally generated by a Scienta spectrometer
-        in the SESb format. In order to understand the structure of these files have a look at Conrad's
-        saveSESDataset in Igor Pro.
+        """Imports an hdf5 dataset exported from Igor that was originally generated in SESb format.
 
-        :param scan_desc: Dictionary with extra information to attach to the xr.Dataset, must contain the location
-        of the file
-        :param robust_dimension_labels: safety control, used to load despite possibly malformed dimension names
-        :return:
-        """
+        In order to understand the structure of these files have a look at Conrad's saveSESDataset in
+        Igor Pro.
 
+        Args:
+            scan_desc: Dictionary with extra information to attach to the xr.Dataset, must contain the location
+              of the file
+            robust_dimension_labels: safety control, used to load despite possibly malformed dimension names
+
+        Returns:
+            Loaded data.
+        """
         scan_desc = copy.deepcopy(scan_desc)
 
         data_loc = scan_desc.get("path", scan_desc.get("file"))
@@ -514,8 +546,7 @@ class SESEndstation(EndstationBase):
 
 
 class FITSEndstation(EndstationBase):
-    """
-    Loads data from the .fits format produced by the MAESTRO software and derivatives.
+    """Loads data from the .fits format produced by the MAESTRO software and derivatives.
 
     This ends up being somewhat complicated, because the FITS export is written in LabView and
     does not conform to the standard specification for the FITS archive format.
@@ -571,6 +602,7 @@ class FITSEndstation(EndstationBase):
     }
 
     def resolve_frame_locations(self, scan_desc: dict = None):
+        """These are stored as single files, so just use the one from the description."""
         if scan_desc is None:
             raise ValueError(
                 "Must pass dictionary as file scan_desc to all endstation loading code."
@@ -584,6 +616,19 @@ class FITSEndstation(EndstationBase):
         return [original_data_loc]
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
+        """Loads a scan from a single .fits file.
+
+        This assumes the DAQ storage convention set by E. Rotenberg (possibly earlier authors)
+        for the storage of ARPES data in FITS tables.
+
+        This involves several complications:
+
+        1. Hydrating/extracting coordinates from start/delta/n formats
+        2. Extracting multiple scan regions
+        3. Gracefully handling missing values
+        4. Unwinding different scan conventions to common formats
+        5. Handling early scan termination
+        """
         # Use dimension labels instead of
         hdulist = fits.open(frame_path, ignore_missing_end=True)
         primary_dataset_name = None
@@ -780,7 +825,8 @@ class FITSEndstation(EndstationBase):
 
 
 class SynchrotronEndstation(EndstationBase):
-    """
+    """Base class code for ARPES setups at synchrotrons.
+
     Synchrotron endstations have somewhat complicated light source metadata.
     This stub exists to attach commonalities, such as a resolution table which
     can be interpolated into to retrieve the x-ray linewidth at the
@@ -792,7 +838,8 @@ class SynchrotronEndstation(EndstationBase):
 
 
 class HemisphericalEndstation(EndstationBase):
-    """
+    """Base class code for ARPES setups using hemispheres.
+
     An endstation definition for a hemispherical analyzer should include
     everything needed to determine energy + k resolution, angle conversion,
     and ideally correction databases for dead pixels + detector nonlinearity
@@ -805,30 +852,20 @@ class HemisphericalEndstation(EndstationBase):
 
 
 def endstation_from_alias(alias: str) -> type:
-    """
-    Lookup the data loading class from an alias.
-    :param alias:
-    :return:
-    """
+    """Lookup the data loading class from an alias."""
     return _ENDSTATION_ALIASES[alias]
 
 
-def endstation_name_from_alias(alias):
-    """
-    Lookup the data loading principal location from an alias.
-    :param alias:
-    :return:
-    """
+def endstation_name_from_alias(alias) -> str:
+    """Lookup the data loading principal location from an alias."""
     return endstation_from_alias(alias).PRINCIPAL_NAME
 
 
 def add_endstation(endstation_cls: type) -> None:
-    """
-    Registers a data loading plugin (Endstation class) together with
-    its aliases.
+    """Registers a data loading plugin (Endstation class) together with its aliases.
 
-    :param endstation_cls:
-    :return:
+    You can use this to add a plugin after the original search if it is defined in another
+    module or in a notebook.
     """
     assert endstation_cls.PRINCIPAL_NAME is not None
     for alias in endstation_cls.ALIASES:
@@ -840,9 +877,18 @@ def add_endstation(endstation_cls: type) -> None:
     _ENDSTATION_ALIASES[endstation_cls.PRINCIPAL_NAME] = endstation_cls
 
 
+def resolve_endstation(retry=True, **kwargs) -> type:
+    """Tries to determine which plugin to use for loading a piece of data.
 
+    Args:
+        retry: Whether to attempt to reload plugins and try again after failure.
+          This is used as an import guard basiscally in case the user imported things
+          very strangely to ensure plugins are loaded.
+        kwargs: Contains the actual information required to identify the scan.
 
-def resolve_endstation(retry=True, **kwargs):
+    Returns:
+        The loading plugin that should be used for the data.
+    """
     endstation_name = case_insensitive_get(
         kwargs, "location", case_insensitive_get(kwargs, "endstation")
     )
@@ -867,14 +913,19 @@ def resolve_endstation(retry=True, **kwargs):
 
 
 def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Dataset:
-    """
+    """Resolves a plugin and delegates loading a scan.
+
     Determines which data loading class is appropriate for the data,
     shuffles a bit of metadata, and calls the .load function on the
     retrieved class to start the data loading process.
-    :param scan_desc:
-    :param retry: Used to attempt a reload of plugins and subsequent data load attempt.
-    :param kwargs:
-    :return:
+
+    Args:
+        scan_desc: Information identifying the scan, typically a scan number or full path.
+        retry: Used to attempt a reload of plugins and subsequent data load attempt.
+        kwargs:
+
+    Returns:
+        Loaded and normalized ARPES scan data.
     """
     note = scan_desc.get("note", scan_desc)
     full_note = copy.deepcopy(scan_desc)

@@ -1,5 +1,6 @@
-"""
-Contains specifications and paths to BZs for some common materials. These are
+"""Contains specifications and paths to BZs for some common materials.
+
+These are
 useful if you know them ahead of hand, either from a picture, from a DFT
 calculation, tight binding calculation, or explicit specification.
 
@@ -26,6 +27,7 @@ A_WSe2 = 3.297 / (2 * np.pi)
 
 
 def bz_points_for_hexagonal_lattice(a=1):
+    """Calculates the Brillouin zone corners for a triangular (colloq. hexagona) lattice."""
     from ase.dft.bz import bz_vertices
 
     cell = hex_cell_2d(a)
@@ -39,6 +41,7 @@ def bz_points_for_hexagonal_lattice(a=1):
 
 
 def image_for(file):
+    """Loads a preview image showing the Brillouin zone shape."""
     f = pathlib.Path(__file__).parent / ".." / "example_data" / "brillouin_zones" / file
     return str(f.absolute())
 

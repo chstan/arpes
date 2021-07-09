@@ -1,3 +1,8 @@
+"""Takes the difference of attributes between xr instances.
+
+This is useful for comparing two pieces of data, or working on 
+implementing a data loading plugin.
+"""
 from pprint import pprint
 
 import numpy as np
@@ -9,6 +14,7 @@ __all__ = ("diff_attrs",)
 
 
 def diff_attrs(a: DataType, b: DataType, should_print=True, skip_nan=False, skip_composite=True):
+    """Returns the dictionary difference of the attributes between two xr instances."""
     attrs_a = a.attrs
     attrs_b = b.attrs
 

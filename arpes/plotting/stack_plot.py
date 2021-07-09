@@ -1,3 +1,7 @@
+"""Plotting routines for making the classic stacked line plots.
+
+Think the album art for "Unknown Pleasures".
+"""
 import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,6 +43,7 @@ def offset_scatter_plot(
     aux_errorbars=True,
     **kwargs
 ):
+    """Makes a stack plot but which uses scatters rather than a lineplot for each curve in the set."""
     assert isinstance(data, xr.Dataset)
 
     if name_to_plot is None:
@@ -154,6 +159,7 @@ def flat_stack_plot(
     transpose=False,
     **kwargs
 ):
+    """Generates a stack plot with all the lines distinguished by color rather than offset."""
     data = normalize_to_spectrum(data)
     if len(data.dims) != 2:
         raise ValueError(
@@ -276,6 +282,7 @@ def stack_dispersion_plot(
     uniform=False,
     **kwargs
 ):
+    """Generates a stack plot with all the lines distinguished by offset rather than color."""
     data = normalize_to_spectrum(data)
 
     if stack_axis is None:

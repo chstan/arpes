@@ -1,3 +1,4 @@
+"""Contains self-energy analysis routines."""
 import xarray as xr
 import lmfit as lf
 import numpy as np
@@ -22,12 +23,16 @@ DispersionType = Union[xr.DataArray, xr.Dataset]
 
 
 def get_peak_parameter(data: xr.DataArray, parameter_name: str) -> xr.DataArray:
-    """
-    Extracts a parameter from a potentially prefixed peak-like component in a simple model or composite model
+    """Extracts a parameter from a potentially prefixed peak-like component.
 
-    :param data:
-    :param parameter_name:
-    :return:
+    Works so long as there is only a single peak defined in the model.
+
+    Args:
+        data: The input data containing the peak fitting results.
+        parameter_name: The name of the parameter which should be extracted.
+
+    Returns:
+        The array of parameters corresponding to a peak in a single-peak curve fit.
     """
     first_item = data.values.ravel()[0]
     peak_like = (
@@ -54,10 +59,7 @@ def get_peak_parameter(data: xr.DataArray, parameter_name: str) -> xr.DataArray:
 
 
 def local_fermi_velocity(bare_band: xr.DataArray):
-    """
-    Calculates the band velocity under assumptions of a linear bare band.
-    """
-
+    """Calculates the band velocity under assumptions of a linear bare band."""
     fitted_model = LinearModel().guess_fit(bare_band)
     raw_velocity = fitted_model.params["slope"].value
 
@@ -70,18 +72,22 @@ def local_fermi_velocity(bare_band: xr.DataArray):
 
 
 def estimate_bare_band(dispersion: xr.DataArray, bare_band_specification: Optional[str] = None):
-    """
-    Estimates the bare band from a fitted dispersion. This can be done in a few ways:
+    """Estimates the bare band from a fitted dispersion.
 
+    This can be done in a few ways:
     1. None: Equivalent to 'baseline_linear' below
     2. 'linear': A linear fit to the dispersion is used, and this also provides the fermi_velocity
     3. 'ransac_linear': A linear fit with random sample consensus (RANSAC) region will be used and this
        also provides the fermi_velocity
     4. 'hough': Hough transform based method
 
-    :param dispersion:
-    :param bare_band_specification:
-    :return:
+    Args:
+        dispersion: The array of the fitted peak locations.
+        bare_band_specification: What kind of bare band to assume. One of "linear",
+          "ransac_linear", and "hough".
+
+    Returns:
+        An estimate of the bare band dispersion.
     """
     try:
         centers = get_peak_parameter(dispersion, "center")
@@ -130,13 +136,17 @@ def estimate_bare_band(dispersion: xr.DataArray, bare_band_specification: Option
 
 
 def quasiparticle_lifetime(self_energy: xr.DataArray, bare_band: xr.DataArray) -> xr.DataArray:
-    """
-    Calculates the quasiparticle mean free path in meters (meters!). The bare band is used to calculate
-    the band/Fermi velocity and internally the procedure to calculate the quasiparticle lifetime is used
+    """Calculates the quasiparticle mean free path in meters (meters!).
 
-    :param self_energy:
-    :param bare_band:
-    :return:
+    The bare band is used to calculate the band/Fermi velocity
+    and internally the procedure to calculate the quasiparticle lifetime is used.
+
+    Args:
+        self_energy: The measured or estimated self-energy.
+        bare_band: The bare band defining the band velocity.
+
+    Returns:
+        An estimate of the quasiparticle lifetime along the band.
     """
     imaginary_part = np.abs(np.imag(self_energy)) / 2
     return HBAR_PER_EV / imaginary_part
@@ -155,13 +165,13 @@ def to_self_energy(
     k_independent=True,
     fermi_velocity=None,
 ) -> xr.Dataset:
-    """
-    Converts MDC fit results into the self energy. This largely consists of extracting
+    r"""Converts MDC fit results into the self energy.
+
+    This largely consists of extracting
     out the linewidth and the difference between the dispersion and the bare band value.
 
     lorentzian(x, amplitude, center, sigma) =
         (amplitude / pi) * sigma/(sigma^2 + ((x-center))**2)
-
 
     Once we have the curve-fitted dispersion we can calculate the self energy if we also
     know the bare-band dispersion. If the bare band is not known, then at least the imaginary
@@ -174,11 +184,14 @@ def to_self_energy(
     To future readers of the code, please note that the half-width half-max of a Lorentzian is equal to the
     $\gamma$ parameter, which defines the imaginary part of the self energy.
 
-    :param dispersion:
-    :param bare_band:
-    :param k_independent:
-    :param fermi_velocity:
-    :return:
+    Args:
+        dispersion
+        bare_band
+        k_independent
+        fermi_velocity
+
+    Returns:
+        The equivalent self energy from the bare band and the measured dispersion.
     """
     if not k_independent:
         raise NotImplementedError(
@@ -213,42 +226,28 @@ def to_self_energy(
         dims=dispersion.dims,
     )
 
-    return xr.Dataset(
-        {
-            "self_energy": self_energy,
-            "bare_band": estimated_bare_band,
-        }
-    )
+    return xr.Dataset({"self_energy": self_energy, "bare_band": estimated_bare_band})
 
 
 def fit_for_self_energy(
     data: xr.DataArray, method="mdc", bare_band: Optional[BareBandType] = None, **kwargs
 ) -> xr.Dataset:
-    """
-    Fits for the self energy of a dataset containing a single band.
+    """Fits for the self energy of a dataset containing a single band.
 
-    The bare band shape
-    :param data:
-    :param method: one of 'mdc' and 'edc'
-    :param bare_band:
-    :return:
-    """
+    Args:
+        data: The input data.
+        method: one of 'mdc' and 'edc'
+        bare_band: Optionally, the bare band. If None is provided the bare band will be estimated.
 
+    Returns:
+        The self energy resulting from curve-fitting.
+    """
     if method == "mdc":
         fit_results = broadcast_model(
             [LorentzianModel, AffineBackgroundModel], data, "eV", **kwargs
         )
     else:
-        possible_mometum_dims = (
-            "phi",
-            "theta",
-            "psi",
-            "beta",
-            "kp",
-            "kx",
-            "ky",
-            "kz",
-        )
+        possible_mometum_dims = ("phi", "theta", "psi", "beta", "kp", "kx", "ky", "kz")
         mom_axes = set(data.dims).intersection(possible_mometum_dims)
 
         if len(mom_axes) > 1:

@@ -1,4 +1,5 @@
-"""
+"""Utilities related to computing Brillouin zones, masks, and selecting data.
+
 TODO: Standardize this module around support for some other library that has proper
 Brillouin zone plotting, like in ASE.
 
@@ -46,24 +47,17 @@ SpecialPoint = namedtuple("SpecialPoint", ("name", "negate", "bz_coord"))
 
 
 def as_3d(points):
-    """
-    Takes a 2D points list and zero pads to convert to a 3D representation
-    :param points:
-    :return:
-    """
+    """Takes a 2D points list and zero pads to convert to a 3D representation."""
     return np.concatenate([points, points[:, 0][:, None] * 0], axis=1)
 
 
 def as_2d(points):
-    """
-    Takes a 3D points and converts to a 2D representation by dropping the z coordinates.
-    :param points:
-    :return:
-    """
+    """Takes a 3D points and converts to a 2D representation by dropping the z coordinates."""
     return points[:, :2]
 
 
 def parse_single_path(path):
+    """Converts a path given by high symmetry point names to numerical coordinate arrays."""
     # first tokenize
     tokens = [name for name in re.split(r"([A-Z][a-z0-9]*(?:\([0-9,\s]+\))?)", path) if name]
 
@@ -96,6 +90,7 @@ def parse_single_path(path):
 
 
 def parse_path(paths):
+    """Converts paths to arrays with the coordinate locations for those paths."""
     if isinstance(paths, str):
 
         # some manual string work in order to make sure we do not split on commas inside BZ indices
@@ -117,6 +112,7 @@ def parse_path(paths):
 
 
 def special_point_to_vector(special_point, icell, special_points):
+    """Converts a single special point to its coordinate vector."""
     base = np.dot(icell.T, special_points[special_point.name])
 
     if special_point.negate:
@@ -127,6 +123,7 @@ def special_point_to_vector(special_point, icell, special_points):
 
 
 def process_kpath(paths, cell, special_points=None):
+    """Converts paths consistign of point definitions to raw coordinates."""
     if len(cell) == 2:
         cell = [c + [0] for c in cell] + [0, 0, 0]
 
@@ -147,21 +144,24 @@ def process_kpath(paths, cell, special_points=None):
 
 # Some common Brillouin zone formats
 def orthorhombic_cell(a=1, b=1, c=1):
+    """Lattice constants for an orthorhombic unit cell."""
     return [[a, 0, 0], [0, b, 0], [0, 0, c]]
 
 
 def hex_cell(a=1, c=1):
+    """Calculates lattice vectors for a triangular lattice with lattice constants `a` and `c`."""
     return [[a, 0, 0], [-0.5 * a, 3 ** 0.5 / 2 * a, 0], [0, 0, c]]
 
 
 def hex_cell_2d(a=1):
+    """Calculates lattice vectors for a triangular lattice with lattice constant `a`."""
     return [[a, 0], [-0.5 * a, 3 ** 0.5 / 2 * a]]
 
 
 def flat_bz_indices_list(bz_indices_list=None):
-    """
-    Calculate a flat representation of a repeated Brillouin zone specification,
-    useful for plotting extra Brillouin zones or generating high symmetry points,
+    """Calculate a flat representation of a repeated Brillouin zone specification.
+
+    This is useful for plotting extra Brillouin zones or generating high symmetry points,
     lines, and planes.
 
     If None is provided, the first BZ is assumed.
@@ -182,11 +182,7 @@ def flat_bz_indices_list(bz_indices_list=None):
     ```
     [((-2, 1), 1)] -> [(-2, 1), (-1, 1), (0, 1)]
     ```
-
-    :param bz_indices_list:
-    :return:
     """
-
     if bz_indices_list is None:
         bz_indices_list = [(0, 0)]
 
@@ -221,14 +217,7 @@ def flat_bz_indices_list(bz_indices_list=None):
 
 
 def generate_2d_equivalent_points(points, icell, bz_indices_list=None):
-    """
-    Generates the equivalent points in higher order Brillouin zones.
-
-    :param points:
-    :param icell:
-    :param bz_indices_list:
-    :return:
-    """
+    """Generates the equivalent points in higher order Brillouin zones."""
     points_list = []
     for x, y in flat_bz_indices_list(bz_indices_list):
         points_list.append(
@@ -249,13 +238,9 @@ def generate_2d_equivalent_points(points, icell, bz_indices_list=None):
 
 
 def build_2dbz_poly(vertices=None, icell=None, cell=None):
-    """
-    Converts brillouin zone or equivalent information to a polygon mask
-    that can be used to mask away data outside the zone boundary.
-    :param vertices:
-    :param icell:
-    :param cell:
-    :return:
+    """Converts brillouin zone or equivalent information to a polygon mask.
+
+    This mask can be used to mask away data outside the zone boundary.
     """
     from arpes.analysis.mask import raw_poly_to_mask
     from ase.dft.bz import bz_vertices  # pylint: disable=import-error
@@ -275,6 +260,7 @@ def build_2dbz_poly(vertices=None, icell=None, cell=None):
 
 
 def bz_symmetry(flat_symmetry_points):
+    """Determines symmetry from a list of the symmetry points."""
     if isinstance(flat_symmetry_points, dict):
         flat_symmetry_points = flat_symmetry_points.items()
 
@@ -293,6 +279,7 @@ def bz_symmetry(flat_symmetry_points):
 
 
 def reduced_bz_axis_to(data, S, include_E=False):
+    """Calculates a displacement vector to a modded high symmetry point."""
     symmetry = bz_symmetry(data.S.iter_own_symmetry_points)
     point_names = _POINT_NAMES_FOR_SYMMETRY[symmetry]
 
@@ -319,6 +306,7 @@ def reduced_bz_axis_to(data, S, include_E=False):
 
 
 def reduced_bz_axes(data):
+    """Calculates displacement vectors to high symmetry points in the first Brillouin zone."""
     symmetry = bz_symmetry(data.S.iter_own_symmetry_points)
     point_names = _POINT_NAMES_FOR_SYMMETRY[symmetry]
 
@@ -345,12 +333,7 @@ def reduced_bz_axes(data):
 
 
 def axis_along(data, S):
-    """
-    Determines which axis lies principally along the direction G->S.
-    :param data:
-    :param S:
-    :return:
-    """
+    """Determines which axis lies principally along the direction G->S."""
     symmetry = bz_symmetry(data.S.iter_own_symmetry_points)
     point_names = _POINT_NAMES_FOR_SYMMETRY[symmetry]
 
@@ -374,6 +357,7 @@ def axis_along(data, S):
 
 
 def reduced_bz_poly(data, scale_zone=False):
+    """Returns a polynomial representing the reduce first Brillouin zone."""
     symmetry = bz_symmetry(data.S.iter_own_symmetry_points)
     point_names = _POINT_NAMES_FOR_SYMMETRY[symmetry]
     dx, dy = reduced_bz_axes(data)
@@ -408,6 +392,7 @@ def reduced_bz_poly(data, scale_zone=False):
 
 
 def reduced_bz_E_mask(data, S, e_cut, scale_zone=False):
+    """Calculates a mask for data which contains points below an energy cutoff."""
     symmetry_points, _ = data.S.symmetry_points()
     symmetry = bz_symmetry(data.S.iter_own_symmetry_points)
     point_names = _POINT_NAMES_FOR_SYMMETRY[symmetry]
@@ -459,6 +444,7 @@ def reduced_bz_E_mask(data, S, e_cut, scale_zone=False):
 
 
 def reduced_bz_mask(data, **kwargs):
+    """Calculates a mask for the first Brillouin zone of a piece of data."""
     symmetry_points, _ = data.S.symmetry_points()
     bz_dims = tuple(d for d in data.dims if d in list(symmetry_points.values())[0][0].keys())
 
@@ -476,6 +462,7 @@ def reduced_bz_mask(data, **kwargs):
 
 
 def reduced_bz_selection(data):
+    """Sets data outisde the Brillouin zone mask for a piece of data to be nan."""
     mask = reduced_bz_mask(data)
 
     data = data.copy()
@@ -485,11 +472,9 @@ def reduced_bz_selection(data):
 
 
 def bz_cutter(symmetry_points, reduced=True):
-    """
-    TODO UNFINISHED
-    :param symmetry_points:
-    :param reduced:
-    :return:
+    """Cuts data so that it areas outside the Brillouin zone are masked away.
+
+    TODO: UNFINISHED.
     """
 
     def build_bz_mask(data):

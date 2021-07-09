@@ -1,18 +1,22 @@
-"""
-Provides a jumping off point for defining data loading plugins using the NeXuS file format.
+"""Provides a jumping off point for defining data loading plugins using the NeXuS file format.
+
 Currently we assume that the raw file format is actually HDF.
 """
 
-__all__ = ("read_data_attributes_from",)
+from typing import Dict, Any
+
+__all__ = ["read_data_attributes_from"]
 
 
-def read_data_attributes_from(group, paths):
-    """
-    Reads simple (float, string, int, etc) leaves from
-    a nested description of paths out of a NeXuS file.
-    :param group:
-    :param paths:
-    :return:
+def read_data_attributes_from(group, paths) -> Dict[str, Any]:
+    """Reads simple (float, string, etc.) leaves from nested paths out of a NeXuS file.
+
+    Args:
+        group: The NeXuS/HDF group object to read from
+        paths: The paths to collect leaves from
+
+    Returns:
+        Flat collection of attributes
     """
     read_attrs = {}
     original_group = group

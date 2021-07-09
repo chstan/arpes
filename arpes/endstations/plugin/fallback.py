@@ -1,3 +1,4 @@
+"""Implements dynamic plugin selection when users do not specify the location for their data."""
 import warnings
 
 from arpes.endstations import EndstationBase, resolve_endstation
@@ -12,7 +13,8 @@ AUTOLOAD_WARNING = (
 
 
 class FallbackEndstation(EndstationBase):
-    """
+    """Sequentially tries different loading plugins.
+
     Different from the rest of the data loaders. This one is used when there is no location specified
     and attempts sequentially to call a variety of standard plugins until one is found that works.
     """
@@ -33,6 +35,11 @@ class FallbackEndstation(EndstationBase):
 
     @classmethod
     def determine_associated_loader(cls, file, scan_desc):
+        """Determines which loading plugin to use for a given piece of data.
+
+        This is done by looping through loaders in a predetermined priority order,
+        and asking each whether it is capable of loading the file.
+        """
         import arpes.config  # pylint: disable=redefined-outer-name
 
         arpes.config.load_plugins()
@@ -48,6 +55,7 @@ class FallbackEndstation(EndstationBase):
         raise ValueError(f"PyARPES failed to find a plugin acceptable for {file}, \n\n{scan_desc}.")
 
     def load(self, scan_desc: dict = None, file=None, **kwargs):
+        """Delegates to a dynamically chosen plugin for loading."""
         if file is None:
             file = scan_desc["file"]
 
@@ -65,6 +73,12 @@ class FallbackEndstation(EndstationBase):
 
     @classmethod
     def find_first_file(cls, file, scan_desc, allow_soft_match=False):
+        """Finds any file associated to this scan.
+
+        Instead actually using the superclass code here, we first try to determine
+        which loading pluging should be used. Then, we delegate to that class to
+        find the first associated file.
+        """
         associated_loader = cls.determine_associated_loader(file, scan_desc)
         warnings.warn(AUTOLOAD_WARNING.format(associated_loader))
         return associated_loader.find_first_file(file, scan_desc, allow_soft_match)

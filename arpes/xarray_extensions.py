@@ -1,4 +1,5 @@
-"""
+"""Establishes the PyARPES data model by extending the `xarray` types.
+
 This is another core part of PyARPES. It provides a lot of extensions to
 what comes out of the box in xarray. Some of these are useful generics,
 generally on the .T extension, others collect and manipulate metadata,
@@ -7,15 +8,44 @@ etc.
 
 If `f` is an ARPES spectrum, then `f.S` should provide a nice representation of your data
 in a Jupyter cell. This is a complement to the text based approach that merely printing `f`
-offers.
+offers. Note, as of PyARPES v3.x.y, the xarray version has been bumped and this representation
+is no longer necessary as one is provided upstream.
+
+The main accessors are .S, .G, .X. and .F.
+
+The `.S` accessor:
+    The `.S` accessor contains functionality related to spectroscopy. Utilities 
+    which only make sense in this context should be placed here, while more generic
+    tools should be placed elsewhere.
+
+The `.G.` accessor:
+    This a general purpose collection of tools which exists to provide conveniences
+    over what already exists in the xarray data model. As an example, there are 
+    various tools for simultaneous iteration of data and coordinates here, as well as 
+    for vectorized application of functions to data or coordinates.
+
+The `.X` accessor: 
+    This is an accessor which contains tools related to selecting and subselecting 
+    data. The two most notable tools here are `.X.first_exceeding` which is very useful
+    for initializing curve fits and `.X.max_in_window` which is useful for refining 
+    these initial parameter choices.
+
+The `.F.` accessor:
+    This is an accessor which contains tools related to interpreting curve fitting
+    results. In particular there are utilities for vectorized extraction of parameters,
+    for plotting several curve fits, or for selecting "worst" or "best" fits according
+    to some measure.
 """
 
+import pandas as pd
+import arpes
+import deprecation
 import collections
 import copy
 import itertools
 import warnings
 from collections import OrderedDict
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,11 +58,10 @@ import arpes.plotting as plotting
 
 from arpes.analysis.general import rebin
 from arpes.analysis.band_analysis_utils import param_getter, param_stderr_getter
-from arpes.io import load_dataset_attrs
 from arpes.models.band import MultifitBand
 from arpes.plotting.all import BandTool, CurvatureTool, FitCheckTool, ImageTool
 from arpes.plotting.utils import fancy_labels, remove_colorbars
-from arpes.typing import DataType
+from arpes.typing import DataType, DTypeLike
 from arpes.utilities import apply_dataarray
 from arpes.utilities.collections import MappableDict
 from arpes.utilities.conversion import slice_along_path
@@ -44,11 +73,14 @@ from arpes.utilities.xarray import unwrap_xarray_item, unwrap_xarray_dict
 __all__ = ["ARPESDataArrayAccessor", "ARPESDatasetAccessor", "ARPESFitToolsAccessor"]
 
 
-def _iter_groups(grouped):
-    """
-    Iterates through a flattened sequence
-    :param grouped:
-    :return:
+def _iter_groups(grouped: Dict[str, Any]) -> Iterator[Any]:
+    """Iterates through a flattened sequence.
+
+    Sequentially yields keys and values from each sequence associated with a key.
+    If a key "k" is associated to a value "v0" which is not iterable, it will be emitted as a
+    single pair [k, v0].
+
+    Otherwise, one pair is yielded for every item in the associated value.
     """
     for k, value_or_list in grouped.items():
         try:
@@ -59,10 +91,7 @@ def _iter_groups(grouped):
 
 
 class ARPESAccessorBase:
-    """
-    Base class for the xarray extensions that we put onto our datasets to make working with ARPES data a
-    little cleaner. This allows you to access common attributes
-    """
+    """Base class for the xarray extensions in PyARPES."""
 
     def along(self, directions, **kwargs):
         return slice_along_path(self._obj, directions, **kwargs)
@@ -72,13 +101,11 @@ class ARPESAccessorBase:
 
     @property
     def sherman_function(self):
-        # TODO Need to improve spin-metadata
+        for option in ["sherman", "sherman_function", "SHERMAN"]:
+            if option in self._obj.attrs:
+                return self._obj.attrs[option]
 
-        # for option in ['sherman', 'sherman_function', 'SHERMAN']:
-        #     if option in self._obj.attrs:
-        #         return self._obj.attrs[option]
-
-        return 0.2
+        raise ValueError("No Sherman function could be found on the data. Is this a spin dataset?")
 
     @property
     def experimental_conditions(self):
@@ -120,11 +147,12 @@ class ARPESAccessorBase:
             return (((self._obj < 0) * 1).mean() > 0.05).item()
 
     @property
-    def is_spatial(self):
-        """
-        Infers whether a given scan has real-space dimensions and corresponds to
-        SPEM or u/nARPES.
-        :return:
+    def is_spatial(self) -> bool:
+        """Infers whether a given scan has real-space dimensions (SPEM or u/nARPES).
+
+        Returns:
+            True if the data is explicltly a "ucut" or "spem" or contains "X", "Y", or "Z", dimensions.
+            False otherwise.
         """
         if self.spectrum_type in {"ucut", "spem"}:
             return True
@@ -132,42 +160,51 @@ class ARPESAccessorBase:
         return any(d in {"X", "Y", "Z"} for d in self._obj.dims)
 
     @property
-    def is_kspace(self):
-        """
-        Infers whether the scan is k-space converted or not. Because of the way this is defined, it will return
+    def is_kspace(self) -> bool:
+        """Infers whether the scan is k-space converted or not.
+
+        Because of the way this is defined, it will return
         true for XPS spectra, which I suppose is true but trivially.
-        :return:
+
+        Returns:
+            True if the data is k-space converted.
+            False otherwise.
         """
         return not any(d in {"phi", "theta", "beta", "angle"} for d in self._obj.dims)
 
     @property
-    def is_slit_vertical(self):
+    def is_slit_vertical(self) -> bool:
+        """Whether the data was taken on an analyzer with vertical slit.
+
+        Caveat emptor: this assumes that the alpha coordinate is not some intermediate value.
+
+        Returns:
+            True if the alpha value is consistent with a vertical slit analyzer.
+            False otherwise.
+        """
         return np.abs(self.lookup_offset_coord("alpha") - np.pi / 2) < (np.pi / 180)
 
     @property
-    def endstation(self):
+    def endstation(self) -> str:
+        """Alias for the location attribute used to load the data.
+
+        Returns:
+            The name of loader/location which was used to load data.
+        """
         return self._obj.attrs["location"]
 
-    @property
-    def is_synchrotron(self):
-        endstation = self.endstation
-
-        synchrotron_endstations = {
-            "BL403",
-            "BL702",
-        }
-
-        return endstation in synchrotron_endstations
-
     def with_values(self, new_values: np.ndarray) -> xr.DataArray:
-        """
+        """Copy with new array values.
+
         Easy way of creating a DataArray that has the same shape as the calling object but data populated
         from the array `new_values`
 
-        :param new_values:
-        :return:
-        """
+        Args:
+            new_values: The new values which should be used for the data.
 
+        Returns:
+            A copy of the data with new values but identical dimensions, coordinates, and attrs.
+        """
         return xr.DataArray(
             new_values.reshape(self._obj.values.shape),
             coords=self._obj.coords,
@@ -278,27 +315,43 @@ class ARPESAccessorBase:
         dims.remove(dim)
         return self._obj.transpose(*(dims + [dim]))
 
-    def select_around_data(self, points, radius=None, fast=False, safe=True, mode="sum", **kwargs):
-        """
+    def select_around_data(
+        self,
+        points: Union[Dict[str, Any], xr.Dataset],
+        radius: Dict[str, float] = None,
+        fast: bool = False,
+        safe: bool = True,
+        mode: str = "sum",
+        **kwargs,
+    ):
+        """Performs a binned selection around a point or points.
+
         Can be used to perform a selection along one axis as a function of another, integrating a region
-        in the other dimensions. As an example, suppose we have a dataset with dimensions ('eV', 'kp', 'T',)
-        and we also by fitting determined the Fermi momentum as a function of T, kp_F('T'), stored in the
-        dataarray kFs. Then we could select momentum integrated EDCs in a small window around the fermi momentum
-        for each temperature by using
+        in the other dimensions.
 
-        ```python
-        edcs_at_fermi_momentum = full_data.S.select_around_data({'kp': kFs}, radius={'kp': 0.04}, fast=True)
-        ```
+        Example:
+            As an example, suppose we have a dataset with dimensions ('eV', 'kp', 'T',)
+            and we also by fitting determined the Fermi momentum as a function of T, kp_F('T'), stored in the
+            dataarray kFs. Then we could select momentum integrated EDCs in a small window around the fermi momentum
+            for each temperature by using
 
-        The resulting data will be EDCs for each T, in a region of radius 0.04 inverse angstroms around the
-        Fermi momentum.
+            >>> edcs_at_fermi_momentum = full_data.S.select_around_data({'kp': kFs}, radius={'kp': 0.04}, fast=True)
 
-        :param points:
-        :param radius:
-        :param fast:
-        :param safe:
-        :param kwargs:
-        :return:
+            The resulting data will be EDCs for each T, in a region of radius 0.04 inverse angstroms around the
+            Fermi momentum.
+
+        Args:
+            points: The set of points where the selection should be performed.
+            radius: The radius of the selection in each coordinate. If dimensions are omitted, a standard sized
+                    selection will be made as a compromise.
+            fast: If true, uses a rectangular rather than a circular region for selectioIf true, uses a
+                  rectangular rather than a circular region for selection.
+            safe: If true, infills radii with default values. Defaults to `True`.
+            mode: How the reduction should be performed, one of "sum" or "mean". Defaults to "sum"
+            kwargs: Can be used to pass radii parameters by keyword with `_r` postfix.
+
+        Returns:
+            The binned selection around the desired point or points.
         """
         if isinstance(self._obj, xr.Dataset):
             raise TypeError("Cannot use select_around on Datasets only DataArrays!")
@@ -394,20 +447,38 @@ class ARPESAccessorBase:
 
         return new_data
 
-    def select_around(self, point, radius=None, fast=False, safe=True, mode="sum", **kwargs):
-        """
-        Selects and integrates a region around a one dimensional point, useful to do a small
-        region integration, especially around points on a path of a k-point of interest.
+    def select_around(
+        self,
+        point: Union[Dict[str, Any], xr.Dataset],
+        radius: Dict[str, float] = None,
+        fast: bool = False,
+        safe: bool = True,
+        mode: str = "sum",
+        **kwargs,
+    ) -> xr.DataArray:
+        """Selects and integrates a region around a one dimensional point.
+
+        This method is useful to do a small region integration, especially around
+        points on a path of a k-point of interest. See also the companion method `select_around_data`.
 
         If the fast flag is set, we will use the Manhattan norm, i.e. sum over square regions
         rather than ellipsoids, as this is less costly.
 
         If radii are not set, or provided through kwargs as 'eV_r' or 'phi_r' for instance,
         then we will try to use reasonable default values; buyer beware.
-        :param point:
-        :param radius:
-        :param fast:
-        :return:
+
+        Args:
+            point: The points where the selection should be performed.
+            radius: The radius of the selection in each coordinate. If dimensions are omitted, a standard sized
+                    selection will be made as a compromise.
+            fast: If true, uses a rectangular rather than a circular region for selectioIf true, uses a
+                  rectangular rather than a circular region for selection.
+            safe: If true, infills radii with default values. Defaults to `True`.
+            mode: How the reduction should be performed, one of "sum" or "mean". Defaults to "sum"
+            kwargs: Can be used to pass radii parameters by keyword with `_r` postfix.
+
+        Returns:
+            The binned selection around the desired point or points.
         """
         if isinstance(self._obj, xr.Dataset):
             raise TypeError("Cannot use select_around on Datasets only DataArrays!")
@@ -543,7 +614,10 @@ class ARPESAccessorBase:
         return points, projected_points
 
     def symmetry_points(self, raw=False, **kwargs):
-        symmetry_points = self.fetch_ref_attrs().get("symmetry_points", {})
+        try:
+            symmetry_points = self.fetch_ref_attrs().get("symmetry_points", {})
+        except:
+            symmetry_points = {}
         our_symmetry_points = self._obj.attrs.get("symmetry_points", {})
 
         symmetry_points = copy.deepcopy(symmetry_points)
@@ -798,22 +872,21 @@ class ARPESAccessorBase:
         return self.lookup_offset("psi")
 
     @property
-    def work_function(self):
-        """
-        We should try to improve this.
-        :return:
-        """
+    def work_function(self) -> float:
+        """Provides the work function, if present in metadata.
 
+        Otherwise, uses something approximate.
+        """
         if "sample_workfunction" in self._obj.attrs:
             return self._obj.attrs["sample_workfunction"]
 
-        return 4.32
+        return 4.3
 
     @property
-    def inner_potential(self):
-        """
-        We should improve this as well.
-        :return:
+    def inner_potential(self) -> float:
+        """Provides the inner potential, if present in metadata.
+
+        Otherwise, 10eV is assumed.
         """
         if "inner_potential" in self._obj.attrs:
             return self._obj.attrs["inner_potential"]
@@ -906,17 +979,7 @@ class ARPESAccessorBase:
 
         return low_edges, high_edges, rebinned.coords["eV"]
 
-    def zero_spectrometer_edges(
-        self, edge_type="hard", cut_margin=None, interp_range=None, low=None, high=None
-    ):
-        """
-        At the moment we only provide hard edges. Soft edges would be smoothed
-        with a logistic function or similar.
-        :param edge_type:
-        :param inter_range: Range over which to extrapolate fit
-        :return:
-        """
-
+    def zero_spectrometer_edges(self, cut_margin=None, interp_range=None, low=None, high=None):
         if low is not None:
             assert high is not None
             assert len(low) == len(high) == 2
@@ -1106,16 +1169,21 @@ class ARPESAccessorBase:
 
         return obj
 
-    def fat_sel(self, widths=None, **kwargs):
-        """
-        Allows integrating a selection over a given width. The produced dataset
-        will be normalized by dividing by the number of single slices integrated over.
+    def fat_sel(self, widths: Optional[Dict[str, Any]] = None, **kwargs) -> xr.DataArray:
+        """Allows integrating a selection over a small region.
+
+        The produced dataset will be normalized by dividing by the number
+        of slices integrated over.
 
         This can be used to produce temporary datasets that have reduced
         uncorrelated noise.
-        :param widths: Override the widths for the slices. Resonable defaults are used otherwise
-        :param kwargs: slice dict. Has the same function as xarray.DataArray.sel
-        :return:
+
+        Args:
+            widths: Override the widths for the slices. Resonable defaults are used otherwise. Defaults to None.
+            kwargs: slice dict. Has the same function as xarray.DataArray.sel
+
+        Returns:
+            The data after selection.
         """
         if widths is None:
             widths = {}
@@ -1361,7 +1429,8 @@ class ARPESAccessorBase:
         }
 
     @property
-    def analyzer_info(self):
+    def analyzer_info(self) -> Dict[str, Any]:
+        """General information about the photoelectron analyzer used."""
         return unwrap_xarray_dict(
             {
                 "lens_mode": self._obj.attrs.get("lens_mode"),
@@ -1378,7 +1447,8 @@ class ARPESAccessorBase:
         )
 
     @property
-    def daq_info(self):
+    def daq_info(self) -> Dict[str, Any]:
+        """General information about the acquisition settings for an ARPES experiment."""
         return unwrap_xarray_dict(
             {
                 "daq_type": self._obj.attrs.get("daq_type"),
@@ -1397,7 +1467,8 @@ class ARPESAccessorBase:
         )
 
     @property
-    def beamline_info(self):
+    def beamline_info(self) -> Dict[str, Any]:
+        """Information about the beamline or light source used for a measurement."""
         return unwrap_xarray_dict(
             {
                 "hv": self._obj.coords["hv"],
@@ -1413,7 +1484,8 @@ class ARPESAccessorBase:
         )
 
     @property
-    def sweep_settings(self):
+    def sweep_settings(self) -> Dict[str, Any]:
+        """For datasets acquired with swept acquisition settings, provides those settings."""
         return {
             "high_energy": self._obj.attrs.get("sweep_high_energy"),
             "low_energy": self._obj.attrs.get("sweep_low_energy"),
@@ -1422,21 +1494,24 @@ class ARPESAccessorBase:
         }
 
     @property
-    def probe_polarization(self):
+    def probe_polarization(self) -> Tuple[float, float]:
+        """Provides the probe polarization of the UV/x-ray source."""
         return (
             self._obj.attrs.get("probe_polarization_theta"),
             self._obj.attrs.get("probe_polarization_alpha"),
         )
 
     @property
-    def pump_polarization(self):
+    def pump_polarization(self) -> Tuple[float, float]:
+        """For Tr-ARPES experiments, provides the pump polarization."""
         return (
             self._obj.attrs.get("pump_polarization_theta"),
             self._obj.attrs.get("pump_polarization_alpha"),
         )
 
     @property
-    def prebinning(self):
+    def prebinning(self) -> Dict[str, Any]:
+        """Information about the prebinning performed during scan acquisition."""
         prebinning = {}
         for d in self._obj.indexes:
             if "{}_prebinning".format(d) in self._obj.attrs:
@@ -1445,13 +1520,15 @@ class ARPESAccessorBase:
         return prebinning
 
     @property
-    def monochromator_info(self):
+    def monochromator_info(self) -> Dict[str, Any]:
+        """Details about the monochromator used on the UV/x-ray source."""
         return {
             "grating_lines_per_mm": self._obj.attrs.get("grating_lines_per_mm"),
         }
 
     @property
-    def undulator_info(self):
+    def undulator_info(self) -> Dict[str, Any]:
+        """Details about the undulator for data performed at an undulator source."""
         return {
             "gap": self._obj.attrs.get("undulator_gap"),
             "z": self._obj.attrs.get("undulator_z"),
@@ -1461,7 +1538,8 @@ class ARPESAccessorBase:
         }
 
     @property
-    def analyzer_detail(self):
+    def analyzer_detail(self) -> Dict[str, Any]:
+        """Details about the analyzer, its capabilities, and metadata."""
         return {
             "name": self._obj.attrs.get("analyzer_name"),
             "parallel_deflectors": self._obj.attrs.get("parallel_deflectors"),
@@ -1471,11 +1549,8 @@ class ARPESAccessorBase:
         }
 
     @property
-    def temp(self):
-        """
-        TODO, agressively normalize attributes across different spectrometers
-        :return:
-        """
+    def temp(self) -> Union[float, xr.DataArray]:
+        """The temperature at which an experiment was performed."""
         prefered_attrs = [
             "TA",
             "ta",
@@ -1498,21 +1573,16 @@ class ARPESAccessorBase:
         raise AttributeError("Could not read temperature off any standard attr")
 
     @property
-    def condensed_attrs(self):
-        """
+    def condensed_attrs(self) -> Dict[str, Any]:
+        """An attributes shortlist.
+
         Since we enforce camelcase on attributes, this is a reasonable filter that catches
         the ones we don't use very often.
-        :return:
         """
         return {k: v for k, v in self._obj.attrs.items() if k[0].islower()}
 
     @property
-    def referenced_scans(self):
-        """
-        Produces a dataframe which has all the scans which reference this one. This only makes sense for maps.
-        :return:
-        """
-
+    def referenced_scans(self) -> pd.DataFrame:
         if self.spectrum_type == "map":
             df = self._obj.attrs["df"]
             return df[(df.spectrum_type != "map") & (df.ref_id == self._obj.id)]
@@ -1684,7 +1754,10 @@ class ARPESAccessorBase:
 
 @xr.register_dataarray_accessor("S")
 class ARPESDataArrayAccessor(ARPESAccessorBase):
+    """Spectrum related accessor for `xr.DataArray`."""
+
     def plot(self, *args, rasterized=True, **kwargs):
+        """Utility delegate to `xr.DataArray.plot` which rasterizes."""
         if len(self._obj.dims) == 2:
             kwargs["rasterized"] = rasterized
 
@@ -1692,18 +1765,22 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
             self._obj.plot(*args, **kwargs)
 
     def show(self, **kwargs):
+        """Opens the Bokeh based image tool."""
         image_tool = ImageTool(**kwargs)
         return image_tool.make_tool(self._obj)
 
     def show_d2(self, **kwargs):
+        """Opens the Bokeh based second derivative image tool."""
         curve_tool = CurvatureTool(**kwargs)
         return curve_tool.make_tool(self._obj)
 
     def show_band_tool(self, **kwargs):
+        """Opens the Bokeh based band placement tool."""
         band_tool = BandTool(**kwargs)
         return band_tool.make_tool(self._obj)
 
     def fs_plot(self, pattern="{}.png", **kwargs):
+        """Provides a reference plot of the approximate Fermi surface."""
         out = kwargs.get("out")
         if out is not None and isinstance(out, bool):
             out = pattern.format("{}_fs".format(self.label))
@@ -1756,7 +1833,12 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 
         return plotting.fancy_dispersion(self._obj, **kwargs)
 
-    def cut_nan_coords(self):
+    def cut_nan_coords(self) -> xr.DataArray:
+        """Selects data where coordinates are not `nan`.
+
+        Returns:
+            The subset of the data where coordinates are not `nan`.
+        """
         slices = dict()
         for cname, cvalue in self._obj.coords.items():
             try:
@@ -1777,12 +1859,26 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
     def nan_to_num(self, x: Any = 0) -> xr.DataArray:
         """Provides an `xarray` version of `numpy.nan_to_num`.
 
+        Args:
+            x: The fill value
+
+        Returns:
+            A copy of the data with nans filled in.
+        """
         data = self._obj.copy(deep=True)
         assert isinstance(data, xr.DataArray)
         data.values[np.isnan(data.values)] = x
         return data
 
-    def reference_plot(self, **kwargs):
+    def reference_plot(self, **kwargs) -> plt.Axes:
+        """Generates a reference plot for this piece of data according to its spectrum type.
+
+        Raises:
+            NotImplementedError: If there is no standard approach for plotting this data.
+
+        Returns:
+            The axes which were used for plotting.
+        """
         if self.spectrum_type == "map":
             return self._referenced_scans_for_map_plot(**kwargs)
         elif self.spectrum_type == "hv_map":
@@ -1816,15 +1912,12 @@ class GenericAccessorTools:
 
         return rounded
 
-
     def argmax_coords(self):
         data = self._obj
         raveled_idx = data.argmax().item()
         flat_indices = np.unravel_index(raveled_idx, data.values.shape)
         max_coords = {d: data.coords[d][flat_indices[i]].item() for i, d in enumerate(data.dims)}
         return max_coords
-
-
 
     def apply_over(self, fn, copy=True, **selections):
         data = self._obj
@@ -1859,12 +1952,8 @@ class GenericAccessorTools:
         norm = self._obj - low
         return norm / (high - low)
 
-    def extent(self, *args, dims=None):
-        """
-        Returns an "extent" array that can be used to draw with plt.imshow
-        :return:
-        """
-
+    def extent(self, *args, dims=None) -> Tuple[float, float, float, float]:
+        """Returns an "extent" array that can be used to draw with plt.imshow."""
         if dims is None:
             if not args:
                 dims = self._obj.dims
@@ -1909,14 +1998,21 @@ class GenericAccessorTools:
 
         return self.transform_coords(dims, scale)
 
-    def transform_coords(self, dims, transform):
-        """
-        Transforms the given coordinate values according to transform, should either be a function
+    def transform_coords(
+        self, dims: List[str], transform: Union[np.ndarray, Callable]
+    ) -> xr.DataArray:
+        """Transforms the given coordinate values according to an arbitrary function.
+
+        The transformation should either be a function
         from a len(dims) x size of raveled coordinate array to len(dims) x size of raveled_coordinate
         array or a linear transformation as a matrix which is multiplied into such an array.
-        :param dims: List of dimensions that should be transformed
-        :param transform: The transformation to apply, can either be a function, or a matrix
-        :return:
+
+        Params:
+            dims: A List of dimensions that should be transformed
+            transform: The transformation to apply, can either be a function, or a matrix
+
+        Returns:
+            An identical valued array over new coordinates.
         """
         as_array = np.stack([self._obj.data_vars[d].values for d in dims], axis=-1)
 
@@ -1966,17 +2062,18 @@ class GenericAccessorTools:
 
         return o
 
-    def ravel(self, as_dataset=False):
-        """
-        Converts to a flat representation where the coordinate values are also present.
+    def ravel(self) -> Dict[str, xr.DataArray]:
+        """Converts to a flat representation where the coordinate values are also present.
+
         Extremely valuable for plotting a dataset with coordinates, X, Y and values Z(X,Y)
         on a scatter plot in 3D.
 
         By default the data is listed under the key 'data'.
 
-        :return:
+        Returns:
+            A dictionary mapping between coordinate names and their coordinate arrays.
+            Additionally, there is a key "data" which maps to the `.values` attribute of the array.
         """
-
         assert isinstance(self._obj, xr.DataArray)
 
         dims = self._obj.dims
@@ -2007,19 +2104,23 @@ class GenericAccessorTools:
 
         return meshed_coordinates
 
-    def to_arrays(self):
-        """
+    def to_arrays(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Converts a (1D) `xr.DataArray` into two plain `ndarray`s of their coordinate and data.
+
         Useful for rapidly converting into a format than can be `plt.scatter`ed
         or similar.
 
-        Ex:
+        Example:
+            We can use this to quickly scatter a 1D dataset where one axis is the coordinate value.
 
-        plt.scatter(*data.G.as_arrays(), marker='s')
-        :return:
+            >>> plt.scatter(*data.G.as_arrays(), marker='s')
+
+        Returns:
+            A tuple of the coordinate array (first index) and the data array (second index)
         """
         assert len(self._obj.dims) == 1
 
-        return [self._obj.coords[self._obj.dims[0]].values, self._obj.values]
+        return (self._obj.coords[self._obj.dims[0]].values, self._obj.values)
 
     def clean_outliers(self, clip=0.5):
         low, high = np.percentile(self._obj.values, [clip, 100 - clip])
@@ -2038,16 +2139,25 @@ class GenericAccessorTools:
             kwargs["out"] = out
         return plotting.plot_movie(self._obj, time_dim, **kwargs)
 
-    def filter_coord(self, coordinate_name, sieve):
-        """
-        Filters a dataset along a coordinate.
+    def filter_coord(
+        self, coordinate_name: str, sieve: Callable[[Any, xr.DataArray], bool]
+    ) -> xr.DataArray:
+        """Filters a dataset along a coordinate.
 
         Sieve should be a function which accepts a coordinate value and the slice
         of the data along that dimension.
 
-        :param coordinate_name:
-        :param sieve:
-        :return:
+        Internally, the predicate function `sieve` is applied to the coordinate and slice to generate
+        a mask. The mask is used to select from the data after iteration.
+
+        An improvement here would support filtering over several coordinates.
+
+        Args:
+            coordinate_name: The coordinate which should be filtered.
+            sieve: A predicate to be applied to the coordinate and data at that coordinate.
+
+        Returns:
+            A subset of the data composed of the slices which make the `sieve` predicate `True`.
         """
         mask = np.array(
             [
@@ -2101,29 +2211,29 @@ class GenericAccessorTools:
         self,
         axes: Union[str, List[str]],
         transform_fn: Callable,
-        dtype=None,
+        dtype: DTypeLike = None,
         *args,
         **kwargs,
     ):
-        """
+        """Applies a vectorized operation across a subset of array axes.
+
         Transform has similar semantics to matrix multiplication, the dimensions of the
         output can grow or shrink depending on whether the transformation is size preserving,
         grows the data, shinks the data, or leaves in place.
 
-        As an example, let us suppose we have a function which takes the mean and
-        variance of the data:
+        Examples:
+            As an example, let us suppose we have a function which takes the mean and
+            variance of the data:
 
-        f: [dimension], coordinate_value -> [{'mean', 'variance'}]
+                [dimension], coordinate_value -> [{'mean', 'variance'}]
 
-        And a dataset with dimensions [X, Y]
+            And a dataset with dimensions [X, Y]. Then calling transform
+            maps to a dataset with the same dimension X but where Y has been replaced by
+            the length 2 label {'mean', 'variance'}. The full dimensions in this case are
+            ['X', {'mean', 'variance'}].
 
-        Then calling
-
-        data.G.transform('X', f)
-
-        maps to a dataset with the same dimension X but where Y has been replaced by
-        the length 2 label {'mean', 'variance'}. The full dimensions in this case are
-        ['X', {'mean', 'variance'}].
+            >>> data.G.transform('X', f).dims
+            ["X", "mean", "variance"]
 
         Please note that the transformed axes always remain in the data because they
         are iterated over and cannot therefore be modified.
@@ -2131,12 +2241,21 @@ class GenericAccessorTools:
         The transform function `transform_fn` must accept the coordinate of the
         marginal at the currently iterated point.
 
-        :param axes: Dimension/axis or set of dimensions to iterate over
-        :param transform_fn: Transformation function that takes a DataArray into a new DataArray
-        :param dtype: optionally, a type hint for the transformed data.
-        :param args: args to pass into transform_fn
-        :param kwargs: kwargs to pass into transform_fn
-        :return:
+         Args:
+            axes: Dimension/axis or set of dimensions to iterate over
+            transform_fn: Transformation function that takes a DataArray into a new DataArray
+            dtype: An optional type hint for the transformed data. Defaults to None.
+            args: args to pass into transform_fn
+            kwargs: kwargs to pass into transform_fn
+
+        Raises:
+            TypeError: When the underying object is an `xr.Dataset` instead of an `xr.DataArray`.
+            This is due to a constraint related to type inference with a single passed dtype.
+
+
+        Returns:
+            The data consisting of applying `transform_fn` across the specified axes.
+
         """
         if isinstance(self._obj, xr.Dataset):
             raise TypeError(
@@ -2346,27 +2465,92 @@ class ARPESDatasetFitToolAccessor:
         fit_diagnostic_tool = FitCheckTool()
         return fit_diagnostic_tool.make_tool(self._obj)
 
-    def p(self, param_name):
+    def p(self, param_name: str) -> xr.DataArray:
+        """Alias for `ARPESFitToolsAccessor.p`.
+
+        Collects the value of a parameter from curve fitting.
+
+        Across an array of fits, walks parameters to collect the value
+        assigned by the fitting routine.
+
+        Args:
+            param_name: The parameter name we are trying to collect
+
+        Returns:
+            An `xr.DataArray` containing the value found by the fitting routine.
+
+            The output array is infilled with `np.nan` if the fit did not converge/
+            the fit result is `None`.
+        """
         return self._obj.results.F.p(param_name)
 
-    def s(self, param_name):
+    def s(self, param_name: str) -> xr.DataArray:
+        """Alias for `ARPESFitToolsAccessor.s`.
+
+        Collects the standard deviation of a parameter from fitting.
+
+        Across an array of fits, walks parameters to collect the standard error
+        assigned by the fitting routine.
+
+        Args:
+            param_name: The parameter name we are trying to collect
+
+        Returns:
+            An `xr.DataArray` containing the floating point value for the fits.
+
+            The output array is infilled with `np.nan` if the fit did not converge/
+            the fit result is `None`.
+        """
         return self._obj.results.F.s(param_name)
 
-    def plot_param(self, param_name, **kwargs):
+    def plot_param(self, param_name: str, **kwargs):
+        """Alias for `ARPESFitToolsAccessor.plot_param`.
+
+        Creates a scatter plot of a parameter from a multidimensional curve fit.
+
+        Args:
+            param_name: The name of the parameter which should be plotted
+            kwargs: Passed to plotting routines to provide user control
+        """
         return self._obj.results.F.plot_param(param_name, **kwargs)
 
 
 @xr.register_dataarray_accessor("F")
 class ARPESFitToolsAccessor:
+    """Utilities related to examining curve fits."""
+
     _obj = None
 
     def __init__(self, xarray_obj: DataType):
+        """Initialization hook for xarray.
+
+        This should never need to be called directly.
+
+        Args:
+            xarray_obj: The parent object which this is an accessor for
+        """
         self._obj = xarray_obj
 
-    def plot_param(self, param_name, **kwargs):
+    def plot_param(self, param_name: str, **kwargs):
+        """Creates a scatter plot of a parameter from a multidimensional curve fit.
+
+        Args:
+            param_name: The name of the parameter which should be plotted
+            kwargs: Passed to plotting routines to provide user control
+        """
         plotting.plot_parameter(self._obj, param_name, **kwargs)
 
-    def param_as_dataset(self, param_name):
+    def param_as_dataset(self, param_name: str) -> xr.Dataset:
+        """Maps from `lmfit.ModelResult` to a Dict parameter summary.
+
+        Args:
+            param_name: The parameter which should be summarized.
+
+        Returns:
+            A dataset consisting of two arrays: "value" and "error"
+            which are the fit value and standard error on the parameter
+            requested.
+        """
         return xr.Dataset(
             {
                 "value": self.p(param_name),
@@ -2375,20 +2559,50 @@ class ARPESFitToolsAccessor:
         )
 
     def show(self):
+        """Opens a Bokeh based interactive fit inspection tool."""
         fit_diagnostic_tool = FitCheckTool()
         return fit_diagnostic_tool.make_tool(self._obj)
 
-    def p(self, param_name):
+    def p(self, param_name: str) -> xr.DataArray:
+        """Collects the value of a parameter from curve fitting.
+
+        Across an array of fits, walks parameters to collect the value
+        assigned by the fitting routine.
+
+        Args:
+            param_name: The parameter name we are trying to collect
+
+        Returns:
+            An `xr.DataArray` containing the value found by the fitting routine.
+
+            The output array is infilled with `np.nan` if the fit did not converge/
+            the fit result is `None`.
+        """
         return self._obj.G.map(param_getter(param_name), otypes=[np.float])
 
-    def s(self, param_name):
+    def s(self, param_name: str) -> xr.DataArray:
+        """Collects the standard deviation of a parameter from fitting.
+
+        Across an array of fits, walks parameters to collect the standard error
+        assigned by the fitting routine.
+
+        Args:
+            param_name: The parameter name we are trying to collect
+
+        Returns:
+            An `xr.DataArray` containing the floating point value for the fits.
+
+            The output array is infilled with `np.nan` if the fit did not converge/
+            the fit result is `None`.
+        """
         return self._obj.G.map(param_stderr_getter(param_name), otypes=[np.float])
 
     @property
-    def bands(self):
-        """
-        This should probably instantiate appropriate types
-        :return:
+    def bands(self) -> Dict[str, MultifitBand]:
+        """Collects bands after a multiband fit.
+
+        Returns:
+            The collected bands.
         """
         band_names = self.band_names
 
@@ -2397,7 +2611,19 @@ class ARPESFitToolsAccessor:
         return bands
 
     @property
-    def band_names(self):
+    def band_names(self) -> Set[str]:
+        """Collects the names of the bands from a multiband fit.
+
+        Heuristically, a band is defined as a dispersive peak so we look for
+        prefixes corresponding to parameter names which contain "center".
+
+        Returns:
+            The collected prefix names for the bands.
+
+            For instance, if the param name "a_center", the return value
+            would contain "a_".
+
+        """
         collected_band_names = set()
 
         for item in self._obj.values.ravel():
@@ -2410,7 +2636,16 @@ class ARPESFitToolsAccessor:
         return collected_band_names
 
     @property
-    def parameter_names(self):
+    def parameter_names(self) -> Set[str]:
+        """Collects the parameter names for a multidimensional fit.
+
+        Assumes that the model used is the same for all `lmfit.ModelResult`s
+        so that we can merely extract the parameter names from a single non-null
+        result.
+
+        Returns:
+            A set of all the parameter names used in a curve fit.
+        """
         collected_parameter_names = set()
 
         for item in self._obj.values.ravel():
@@ -2423,19 +2658,31 @@ class ARPESFitToolsAccessor:
         return collected_parameter_names
 
     def show_fit_diagnostic(self):
-        """
-        alias for ``.show``
-        :return:
-        """
+        """Alias for `.show`."""
         return self.show()
 
 
 @xr.register_dataset_accessor("S")
 class ARPESDatasetAccessor(ARPESAccessorBase):
-    def __getattr__(self, item):
+    """Spectrum related accessor for `xr.Dataset`."""
+
+    def __getattr__(self, item: str) -> Any:
+        """Forward attribute access to the spectrum, if necessary.
+
+        Args:
+            item: Attribute name
+
+        Returns:
+            The attribute after lookup on the default spectrum
+        """
         return getattr(self._obj.S.spectrum.S, item)
 
-    def polarization_plot(self, **kwargs):
+    def polarization_plot(self, **kwargs) -> plt.Axes:
+        """Creates a spin polarization plot.
+
+        Returns:
+            The axes which were plotted onto for customization.
+        """
         out = kwargs.get("out")
         if out is not None and isinstance(out, bool):
             out = "{}_spin_polarization.png".format(self.label)
@@ -2443,14 +2690,43 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
         return plotting.spin_polarized_spectrum(self._obj, **kwargs)
 
     @property
-    def is_spatial(self):
+    def is_spatial(self) -> bool:
+        """Predicate indicating whether the dataset is a spatial scanning dataset.
+
+        Returns:
+            True if the dataset has dimensions indicating it is a spatial scan.
+            False otherwise
+        """
         try:
             return self.spectrum.S.is_spatial
-        except Exception as e:
+        except Exception:
+            # self.spectrum may be None, in which case it is not a spatial scan
             return False
 
     @property
     def spectrum(self) -> Optional[xr.DataArray]:
+        """Isolates a single spectrum from a dataset.
+
+        This is a convenience method which is typically used in startup for
+        tools and analysis routines which need to operate on a single
+        piece of data. As an example, the image browser `qt_tool` needs
+        an `xr.DataArray` to operate but will accept an `xr.Dataset`
+        which it will attempt to resolve to a single spectrum.
+
+        In practice, we filter data variables by whether they contain "spectrum"
+        in the name before selecting the one with the largest pixel volume.
+        This is a heuristic which tries to guarantee we select ARPES data
+        above XPS data, if they were collected together.
+
+        Returns:
+            A spectrum found in the dataset, if one can be isolated.
+
+            In the case that several candidates are found, a single spectrum
+            is selected among the candidates.
+
+            Attributes from the parent dataset are assigned onto the selected
+            array as a convenience.
+        """
         spectrum = None
         if "spectrum" in self._obj.data_vars:
             spectrum = self._obj.spectrum
@@ -2475,7 +2751,13 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
         return spectrum
 
     @property
-    def spectra(self):
+    def spectra(self) -> List[xr.DataArray]:
+        """Collects the variables which are likely spectra.
+
+        Returns:
+            The subset of the data_vars which have dimensions indicating
+            that they are spectra.
+        """
         spectra = []
         for dv in list(self._obj.data_vars):
             if "spectrum" in dv:
@@ -2484,11 +2766,12 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
         return spectra
 
     @property
-    def is_multi_region(self):
-        return len(self.spectra) > 1
+    def spectrum_type(self) -> str:
+        """Gives a heuristic estimate of what kind of data is contained by the spectrum.
 
-    @property
-    def spectrum_type(self):
+        Returns:
+            The kind of data, coarsely
+        """
         try:
             # this isn't the smartest thing in the world,
             # but it should allow some old code to keep working on datasets transparently
@@ -2497,27 +2780,53 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             return "dataset"
 
     @property
-    def degrees_of_freedom(self):
+    def degrees_of_freedom(self) -> Set[str]:
+        """The collection of all degrees of freedom.
+
+        Equivalently, dimensions on a piece of data.
+
+        Returns:
+            All degrees of freedom as a set.
+        """
         return set(self.spectrum.dims)
 
     @property
-    def spectrum_degrees_of_freedom(self):
-        return self.degrees_of_freedom.intersection({"eV", "phi", "pixel", "kx", "kp"})
+    def spectrum_degrees_of_freedom(self) -> Set[str]:
+        """Collects the spectrometer degrees of freedom.
+
+        Spectrometer degrees of freedom are any which would be collected by an ARToF
+        and their momentum equivalents.
+
+        Returns:
+            The collection of spectrum degrees of freedom.
+        """
+        return self.degrees_of_freedom.intersection({"eV", "phi", "pixel", "kx", "kp", "ky"})
 
     @property
-    def scan_degrees_of_freedom(self):
+    def scan_degrees_of_freedom(self) -> Set[str]:
+        """Collects the scan degrees of freedom.
+
+        Scan degrees of freedom are all of the degrees of freedom which are not recorded
+        by the spectrometer but are "scanned over". This includes spatial axes,
+        temperature, etc.
+
+        Returns:
+            The collection of scan degrees of freedom represented in the array.
+        """
         return self.degrees_of_freedom.difference(self.spectrum_degrees_of_freedom)
 
     def reference_plot(self, **kwargs):
-        """
-        A bit of a misnomer because this actually makes many plots. For full datasets, the relevant components
-        are:
+        """Creates reference plots for a dataset.
+
+        A bit of a misnomer because this actually makes many plots. For full datasets,
+        the relevant components are:
 
         1. Temperature as function of scan DOF
         2. Photocurrent as a function of scan DOF
         3. Photocurrent normalized + unnormalized figures, in particular
            i. The reference plots for the photocurrent normalized spectrum
-           ii. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF integrated over E, phi
+           ii. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF
+               integrated over E, phi
            iii. For delay scans:
              1. Fermi location as a function of scan DoF, integrated over phi
              2. Subtraction scans
@@ -2525,8 +2834,8 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
            i. energy/angle integrated spatial maps with subsequent measurements indicated
            2. energy/angle integrated FS spatial maps with subsequent measurements indicated
 
-        :param kwargs:
-        :return:
+        Args:
+            kwargs: Passed to plotting routines to provide user control
         """
         scan_dofs_integrated = self._obj.sum(*list(self.scan_degrees_of_freedom))
         original_out = kwargs.get("out")
@@ -2546,9 +2855,7 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             name = name_normalization.get(figure_item, figure_item)
             data_var = self._obj[figure_item]
             out = "{}_{}_spec_integrated_reference.png".format(self.label, name)
-            return plotting.scan_var_reference_plot(
-                data_var, title="Reference {}".format(name), out=out
-            )
+            plotting.scan_var_reference_plot(data_var, title="Reference {}".format(name), out=out)
 
         # may also want to make reference figures summing over cycle, or summing over beta
 
@@ -2561,15 +2868,20 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
 
         self.make_spectrum_reference_plots(out=True)
 
-    def make_spectrum_reference_plots(self, prefix="", **kwargs):
-        """
-        Photocurrent normalized + unnormalized figures, in particular:
+    def make_spectrum_reference_plots(self, prefix: str = "", **kwargs):
+        """Creates photocurrent normalized + unnormalized figures.
 
+        Creates:
         i. The reference plots for the photocurrent normalized spectrum
         ii. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF integrated over E, phi
         iii. For delay scans:
           1. Fermi location as a function of scan DoF, integrated over phi
           2. Subtraction scans
+
+        Args:
+            prefix: A prefix inserted into filenames to make them unique.
+            kwargs: Passed to plotting routines to provide user control over plotting
+                    behavior
         """
         self.spectrum.S.reference_plot(pattern=prefix + "{}.png", **kwargs)
 
@@ -2591,6 +2903,13 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             self.spectrum.S.subtraction_reference_plots(pattern=prefix + "{}.png", **kwargs)
             angle_integrated.S.fermi_edge_reference_plots(pattern=prefix + "{}.png", **kwargs)
 
-    def __init__(self, xarray_obj):
+    def __init__(self, xarray_obj: xr.Dataset):
+        """Initialization hook for xarray.
+
+        This should never need to be called directly.
+
+        Args:
+            xarray_obj: The parent object which this is an accessor for
+        """
         super().__init__(xarray_obj)
         self._spectrum = None

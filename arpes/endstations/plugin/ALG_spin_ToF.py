@@ -1,3 +1,4 @@
+"""Implements data loading for the Lanzara group Spin-ToF."""
 # pylint: disable=no-member
 
 import copy
@@ -19,6 +20,8 @@ __all__ = ("SpinToFEndstation",)
 
 
 class SpinToFEndstation(EndstationBase):
+    """Implements data loading for the Lanzara group Spin-ToF."""
+
     PRINCIPAL_NAME = "ALG-SToF"
     ALIASES = ["ALG-SToF", "SToF", "Spin-ToF", "ALG-SpinToF"]
     SKIP_ATTR_FRAGMENTS = {
@@ -69,15 +72,16 @@ class SpinToFEndstation(EndstationBase):
         "Phi": "phi",
     }
 
-    def load_SToF_hdf5(self, scan_desc: dict = None, **kwargs):
-        """
-        Imports a FITS file that contains ToF spectra.
+    def load_SToF_hdf5(self, scan_desc: dict = None, **kwargs) -> xr.Dataset:
+        """Imports a FITS file that contains ToF spectra.
 
-        :param scan_desc: Dictionary with extra information to attach to the xr.Dataset, must contain the location
-        of the file
-        :return: xr.Dataset
-        """
+        Args:
+            scan_desc: Dictionary with extra information to attach to the xr.Dataset, must contain the location
+              of the file
 
+        Returns:
+            The loaded data.
+        """
         scan_desc = copy.deepcopy(scan_desc)
 
         data_loc = scan_desc.get("path", scan_desc.get("file"))
@@ -109,6 +113,12 @@ class SpinToFEndstation(EndstationBase):
         return xr.Dataset(dataset_contents, attrs=scan_desc)
 
     def load_SToF_fits(self, scan_desc: dict = None, **kwargs):
+        """Loads FITS convention SToF data.
+
+        The data acquisition software is rather old, so this has to handle data formats
+        from early versions of the E. Rotenberg software. Some similarities exist with the
+        main chamber loading code.
+        """
         scan_desc = dict(copy.deepcopy(scan_desc))
 
         data_loc = scan_desc.get("path", scan_desc.get("file"))
@@ -255,6 +265,7 @@ class SpinToFEndstation(EndstationBase):
         return dataset
 
     def load(self, scan_desc: dict = None, **kwargs):
+        """Loads Lanzara group Spin-ToF data."""
         if scan_desc is None:
             warnings.warn("Attempting to make due without user associated scan_desc for the file")
             raise TypeError("Expected a dictionary of scan_desc with the location of the file")

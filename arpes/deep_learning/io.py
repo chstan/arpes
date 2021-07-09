@@ -1,3 +1,4 @@
+"""Facilitates saving intermediate data using a portable binary format for numpy."""
 import json
 from pathlib import Path
 
@@ -17,7 +18,8 @@ DTYPES = {
 
 
 def from_portable_bin(path: Path) -> np.ndarray:
-    """
+    """Reads data from a relatively portable binary format.
+
     A "portable" binary file is a directory containing
     a binary file and a very small json file which contains
 
@@ -40,13 +42,13 @@ def from_portable_bin(path: Path) -> np.ndarray:
 
 
 def to_portable_bin(arr: np.ndarray, path: Path) -> None:
-    """
+    """Converts data to a relatively portable binary format.
+
     See also `read_portable_bin`.
 
     Writes array as a binary format with an associated json description
     of necessary portability info.
     """
-
     path.mkdir(parents=True, exist_ok=True)
     json_path, arr_path = path / "portability.json", path / "arr.bin"
     assert not (json_path.exists() or arr_path.exists())

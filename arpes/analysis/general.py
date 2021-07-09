@@ -1,3 +1,4 @@
+"""Some general purpose analysis routines otherwise defying categorization."""
 import itertools
 from collections import defaultdict
 
@@ -28,12 +29,17 @@ __all__ = (
 
 @update_provenance("Fit Fermi Edge")
 def fit_fermi_edge(data, energy_range=None):
-    """
-    Fits a Fermi edge. Not much easier than doing it manually, but this can be
+    """Fits a Fermi edge.
+
+    Not much easier than doing it manually, but this can be
     useful sometimes inside procedures where you don't want to reimplement this logic.
-    :param data:
-    :param energy_range:
-    :return:
+
+    Args:
+        data:
+        energy_range:
+
+    Returns:
+        The Fermi edge location.
     """
     if energy_range is None:
         energy_range = slice(-0.1, 0.1)
@@ -54,18 +60,24 @@ def normalize_by_fermi_distribution(
     instrumental_broadening=None,
     total_broadening=None,
 ):
-    """
-    Normalizes a scan by 1/the fermi dirac distribution. You can control the maximum gain with ``clamp``, and whether
+    """Normalizes a scan by 1/the fermi dirac distribution.
+
+    You can control the maximum gain with ``clamp``, and whether
     the Fermi edge needs to be shifted (this is for those desperate situations where you want something that
     "just works") via ``rigid_shift``.
 
-    :param data: Input
-    :param max_gain: Maximum value for the gain. By default the value used is the mean of the spectrum.
-    :param rigid_shift: How much to shift the spectrum chemical potential.
+    Args:
+        data: Input
+        max_gain: Maximum value for the gain. By default the value used
+            is the mean of the spectrum.
+        rigid_shift: How much to shift the spectrum chemical potential.
+        instrumental_broadening: Instrumental broadening to use for
+            convolving the distribution
     Pass the nominal value for the chemical potential in the scan. I.e. if the chemical potential is at BE=0.1, pass
     rigid_shift=0.1.
-    :param instrumental_broadening: Instrumental broadening to use for convolving the distribution
-    :return: Normalized DataArray
+
+    Returns:
+        Normalized DataArray
     """
     data = normalize_to_spectrum(data)
 
@@ -92,16 +104,20 @@ def normalize_by_fermi_distribution(
 
 @update_provenance("Symmetrize about axis")
 def symmetrize_axis(data, axis_name, flip_axes=None, shift_axis=True):
-    """
-    Symmetrizes data across an axis. It would be better ultimately to be able
+    """Symmetrizes data across an axis.
+
+    It would be better ultimately to be able
     to implement an arbitrary symmetry (such as a mirror or rotational symmetry
     about a line or point) and to symmetrize data by that method.
 
-    :param data:
-    :param axis_name:
-    :param flip_axes:
-    :param shift_axis:
-    :return:
+    Args:
+        data
+        axis_name
+        flip_axes
+        shift_axis
+
+    Returns:
+        Data after symmetrization procedure.
     """
     data = data.copy(deep=True)  # slow but make sure we don't bork axis on original
     data.coords[axis_name].values = data.coords[axis_name].values - data.coords[axis_name].values[0]
@@ -126,13 +142,16 @@ def symmetrize_axis(data, axis_name, flip_axes=None, shift_axis=True):
 
 @update_provenance("Condensed array")
 def condense(data: xr.DataArray):
-    """
-    Clips the data so that only regions where there is substantial weight are included. In
-    practice this usually means selecting along the ``eV`` axis, although other selections
+    """Clips the data so that only regions where there is substantial weight are included.
+
+    In practice this usually means selecting along the ``eV`` axis, although other selections
     might be made.
 
-    :param data: xarray.DataArray
-    :return:
+    Args:
+        data: xarray.DataArray
+
+    Returns:
+        The clipped data.
     """
     if "eV" in data.dims:
         data = data.sel(eV=slice(None, 0.05))
@@ -148,8 +167,9 @@ def rebin(
     interpolate=False,
     **kwargs
 ):
-    """
-    Rebins the data onto a different (smaller) shape. By default the behavior is to
+    """Rebins the data onto a different (smaller) shape.
+
+    By default the behavior is to
     split the data into chunks that are integrated over. An interpolation option is also
     available.
 
@@ -158,13 +178,15 @@ def rebin(
     Dimensions corresponding to missing entries in ``shape`` or ``reduction`` will not
     be changed.
 
-    :param data:
-    :param interpolate: Use interpolation instead of integration
-    :param shape: Target shape
-    :param reduction: Factor to reduce each dimension by
-    :return:
-    """
+    Args:
+        data
+        interpolate: Use interpolation instead of integration
+        shape: Target shape
+        reduction: Factor to reduce each dimension by
 
+    Returns:
+        The rebinned data.
+    """
     if isinstance(data, xr.Dataset):
         new_vars = {
             datavar: rebin(

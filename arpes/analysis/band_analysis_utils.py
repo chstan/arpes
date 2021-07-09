@@ -1,3 +1,4 @@
+"""Provides utilities used internally by `arpes.analysis.band_analysis`."""
 from collections import namedtuple
 
 import numpy as np
@@ -6,15 +7,19 @@ ParamType = namedtuple("ParamType", ["value", "stderr"])
 
 
 def param_getter(param_name, safe=True):
-    """
-    Constructs a function to extract a parameter value by name. Useful to extract data from inside an array of
-    `lmfit.ModelResult` instances.
+    """Constructs a function to extract a parameter value by name.
 
-    :param param_name: Parameter name to retrieve. If you performed a composite model fit,
-    make sure to include the prefix.
-    :param safe: Guards against NaN values. This is typically desirable but sometimes it is advantageous
-    to have NaNs fail an analysis quickly.
-    :return:
+    Useful to extract data from inside an array of `lmfit.ModelResult` instances.
+
+    Args:
+        param_name: Parameter name to retrieve. If you performed a
+          composite model fit, make sure to include the prefix.
+        safe: Guards against NaN values. This is typically desirable but
+          sometimes it is advantageous make sure to include the prefix.
+          to have NaNs fail an analysis quickly.
+
+    Returns:
+        A function which fetches the fitted value for this named parameter.
     """
     if safe:
         safe_param = ParamType(value=np.nan, stderr=np.nan)
@@ -31,17 +36,20 @@ def param_getter(param_name, safe=True):
 
 
 def param_stderr_getter(param_name, safe=True):
-    """
-    Constructs a function to extract a parameter value by name. Useful to extract data from inside an array of
-    `lmfit.ModelResult` instances.
+    """Constructs a function to extract a parameter value by name.
 
-    :param param_name: Parameter name to retrieve. If you performed a composite model fit,
-    make sure to include the prefix.
-    :param safe: Guards against NaN values. This is typically desirable but sometimes it is advantageous
-    to have NaNs fail an analysis quickly.
-    :return:
-    """
+    Useful to extract data from inside an array of `lmfit.ModelResult` instances.
 
+    Args:
+        param_name: Parameter name to retrieve. If you performed a
+          composite model fit, make sure to include the prefix.
+        safe: Guards against NaN values. This is typically desirable but
+          sometimes it is advantageous make sure to include the prefix.
+          to have NaNs fail an analysis quickly.
+
+    Returns:
+        A function which fetches the standard error for this named parameter.
+    """
     if safe:
         safe_param = ParamType(value=np.nan, stderr=np.nan)
 

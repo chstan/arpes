@@ -1,3 +1,4 @@
+"""Utilities related to curve-fitting of ARPES data and xarray format data."""
 from .fit_models import *
 from .utilities import *
 

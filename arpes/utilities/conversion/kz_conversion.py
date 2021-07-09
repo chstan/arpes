@@ -1,3 +1,4 @@
+"""Coordinate conversion classes for photon energy scans."""
 import numpy as np
 
 import arpes.constants
@@ -10,25 +11,36 @@ __all__ = ["ConvertKpKzV0", "ConvertKxKyKz", "ConvertKpKz"]
 
 
 class ConvertKpKzV0(CoordinateConverter):
+    """Implements inner potential broadcasted hv Fermi surfaces."""
+
     # TODO implement
     def __init__(self, *args, **kwargs):
+        """TODO, implement this."""
         super(ConvertKpKzV0, self).__init__(*args, **kwargs)
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class ConvertKxKyKz(CoordinateConverter):
+    """Implements 4D data volume conversion."""
+
     def __init__(self, *args, **kwargs):
+        """TODO, implement this."""
         super(ConvertKxKyKz, self).__init__(*args, **kwargs)
+        raise NotImplementedError
 
 
 class ConvertKpKz(CoordinateConverter):
+    """Implements single angle photon energy scans."""
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Cache the photon energy coordinate we calculate backwards from kz."""
         super(ConvertKpKz, self).__init__(*args, **kwargs)
         self.hv = None
 
     def get_coordinates(
         self, resolution: dict = None, bounds: dict = None
     ) -> Dict[str, np.ndarray]:
+        """Calculates appropriate coordinate bounds."""
         if resolution is None:
             resolution = {}
         if bounds is None:
@@ -66,6 +78,7 @@ class ConvertKpKz(CoordinateConverter):
     def kspace_to_hv(
         self, binding_energy: np.ndarray, kp: np.ndarray, kz: np.ndarray, *args: Any, **kwargs: Any
     ) -> np.ndarray:
+        """Converts from momentum back to the raw photon energy."""
         # x = kp, y = kz, z = BE
         if self.hv is None:
             inner_v = self.arr.S.inner_potential
@@ -79,6 +92,7 @@ class ConvertKpKz(CoordinateConverter):
     def kspace_to_phi(
         self, binding_energy: np.ndarray, kp: np.ndarray, kz: np.ndarray, *args: Any, **kwargs: Any
     ) -> np.ndarray:
+        """Converts from momentum back to the hemisphere angle axis."""
         if self.hv is None:
             self.kspace_to_hv(binding_energy, kp, kz, *args, **kwargs)
 
@@ -95,6 +109,8 @@ class ConvertKpKz(CoordinateConverter):
         return phi
 
     def conversion_for(self, dim: str) -> Callable:
+        """Looks up the appropriate momentum-to-angle conversion routine by dimension name."""
+
         def with_identity(*args, **kwargs):
             return self.identity_transform(dim, *args, **kwargs)
 

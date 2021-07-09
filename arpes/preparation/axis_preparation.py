@@ -1,5 +1,7 @@
+"""Utilities related to treatment of coordinate axes."""
 import copy
 import functools
+from typing import List, Union
 
 import numpy as np
 from scipy.ndimage import geometric_transform
@@ -22,6 +24,7 @@ __all__ = (
 
 @update_provenance("Sort Axis")
 def sort_axis(data: xr.DataArray, axis_name):
+    """Sorts slices of `data` along `axis_name` so that they lie in order."""
     assert isinstance(data, xr.DataArray)
     copied = data.copy(deep=True)
     coord = data.coords[axis_name].values
@@ -34,6 +37,7 @@ def sort_axis(data: xr.DataArray, axis_name):
 
 @update_provenance("Flip data along axis")
 def flip_axis(arr: xr.DataArray, axis_name, flip_data=True):
+    """Flips the coordinate values along an axis without changing the data as well."""
     coords = copy.deepcopy(arr.coords)
     coords[axis_name] = coords[axis_name][::-1]
 
@@ -72,15 +76,19 @@ def soft_normalize_dim(arr: xr.DataArray, dim_or_dims, keep_id=False, amp_limit=
 
 
 @lift_dataarray_to_generic
-def normalize_dim(arr: DataType, dim_or_dims, keep_id=False):
-    """
-    Normalizes the intensity so that all values along arr.sum(dims other than those in ``dim_or_dims``)
-    have the same value. The function normalizes so that the average value of cells in
-    the output is 1.
-    :param dim_name:
-    :return:
-    """
+def normalize_dim(arr: DataType, dim_or_dims: Union[str, List[str]], keep_id=False):
+    """Normalizes the intensity so that all values along axes other than `dim_or_dims` have the same value.
 
+    The function normalizes so that the average value of cells in the output is 1.
+
+    Args:
+        arr: Input data which should be normalized
+        dim_or_dims: The set of dimensions which should be normalized
+        keep_id: Whether to reset the data's id after normalization
+
+    Returns:
+        The normalized data.
+    """
     dims = dim_or_dims
     if isinstance(dim_or_dims, str):
         dims = [dims]
@@ -108,12 +116,15 @@ def normalize_dim(arr: DataType, dim_or_dims, keep_id=False):
 
 @update_provenance("Normalize total spectrum intensity")
 def normalize_total(data: DataType):
+    """Normalizes data so that the total intensity is 1000000 (a bit arbitrary)."""
     data = normalize_to_spectrum(data)
 
     return data / (data.sum(data.dims) / 1000000)
 
 
 def dim_normalizer(dim_name):
+    """Safe partial application of dimension normalization."""
+
     def normalize(arr: xr.DataArray):
         if dim_name not in arr.dims:
             return arr
@@ -132,7 +143,7 @@ def transform_dataarray_axis(
     transform_spectra=None,
     remove_old=True,
 ):
-
+    """Applies a function onto a DataArray axis."""
     ds = dataset.copy()
     if transform_spectra is None:
         # transform *all* DataArrays in the dataset that have old_axis_name in their dimensions

@@ -1,3 +1,4 @@
+"""Implements support for the Lanzara/Kaindl HHG lab."""
 import re
 import os
 from pathlib import Path
@@ -31,7 +32,8 @@ def find_kaindl_files_associated(reference_path: Path):
 
 
 def read_ai_file(path: Path) -> pd.DataFrame:
-    """
+    """Reads metadata from the Kaindl _AI.txt files.
+
     Kayla and Conrad discovered that Scienta does not record these files in a standardized format,
     but instead puts an arbitrarily long header at the top of the file and sometimes omits the
     column names.
@@ -74,14 +76,8 @@ def read_ai_file(path: Path) -> pd.DataFrame:
     return pd.read_csv(str(path), sep="\t", skiprows=first_line_no, names=column_names)
 
 
-def read_auxillary_text_file(path: Path):
-    pass
-
-
 class KaindlEndstation(HemisphericalEndstation, SESEndstation):
-    """
-    The Robert Kaindl Endstation For HHG ARPES
-    """
+    """The Kaindl Tr-ARPES high harmonic generation setup."""
 
     PRINCIPAL_NAME = "Kaindl"
     ALIASES = []
@@ -99,6 +95,12 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
     }
 
     def resolve_frame_locations(self, scan_desc: dict = None):
+        """Fines .pxt files associated to a potentially multi-cut scan.
+
+        This is very similar to what happens on BL4 at the ALS. You can look
+        at the code for MERLIN to see more about how this works, or in
+        `find_kaindl_files_associated`.
+        """
         if scan_desc is None:
             raise ValueError(
                 "Must pass dictionary as file scan_desc to all endstation loading code."
@@ -113,6 +115,12 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
         return find_kaindl_files_associated(p)
 
     def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
+        """Concenates frames from individual .pxt files on the Kaindl setup.
+
+        The unique challenge here is to look for and parse the motor positions file (if
+        they exist) and add this as a coordinate. As in Beamline 4 at the ALS, these Motor_Pos
+        file gives the scan coordinate which we need to concatenate along.
+        """
         if len(frames) < 2:
             return super().concatenate_frames(frames)
 
@@ -144,6 +152,11 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
                 pass
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
+        """Peforms final data preprocessing for the Kaindl lab Tr-ARPES setup.
+
+        This is very similar to what happens at BL4/MERLIN because the code was adopted
+        from an old version of the DAQ on that beamline.
+        """
         original_filename = scan_desc.get("path", scan_desc.get("file"))
         internal_match = re.match(
             r"([a-zA-Z0-9\w+_]+_[0-9][0-9][0-9])\.pxt", Path(original_filename).name

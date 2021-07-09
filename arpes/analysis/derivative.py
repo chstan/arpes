@@ -1,3 +1,4 @@
+"""Derivative, curvature, and minimum gradient analysis."""
 import functools
 import warnings
 
@@ -18,17 +19,19 @@ __all__ = (
 )
 
 
-def vector_diff(arr, delta, n=1):
-    """
-    Computes finite differences along the vector delta, given as a tuple
+def vector_diff(arr: np.ndarray, delta, n=1):
+    """Computes finite differences along the vector delta, given as a tuple.
 
     Using delta = (0, 1) is equivalent to np.diff(..., axis=1), while
     using delta = (1, 0) is equivalent to np.diff(..., axis=0).
-    :param arr: np.ndarray
-    :param delta: iterable containing vector to take difference along
-    :return:
-    """
 
+    Args:
+        arr: The input array
+        delta: iterable containing vector to take difference along
+
+    Returns:
+        The finite differences along the translation vector provided.
+    """
     if n == 0:
         return arr
     if n < 0:
@@ -55,6 +58,7 @@ def vector_diff(arr, delta, n=1):
 
 @update_provenance("Minimum Gradient")
 def minimum_gradient(data: DataType, delta=1):
+    """Implements the minimum gradient approach to defining the band in a diffuse spectrum."""
     arr = normalize_to_spectrum(data)
     new = arr / gradient_modulus(arr, delta=delta)
     new.values[np.isnan(new.values)] = 0
@@ -130,7 +134,8 @@ def gradient_modulus(data: DataType, delta=1):
 
 
 def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
-    """
+    r"""Provides "curvature" analysis for band locations.
+
     Defined via
         C(x,y) = ([C_0 + (df/dx)^2]d^2f/dy^2 - 2 * df/dx df/dy d^2f/dxdy + [C_0 + (df/dy)^2]d^2f/dx^2) /
                  (C_0 (df/dx)^2 + (df/dy)^2)^(3/2)
@@ -150,9 +155,14 @@ def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
         C_y = (dy / dx) * (|df/dx|_max^2 + |df/dy|_max^2) * \alpha
 
         for some dimensionless parameter alpha
-    :param arr:
-    :param alpha: regulation parameter, chosen semi-universally, but with no particular justification
-    :return:
+
+    Args:
+        arr
+        alpha: regulation parameter, chosen semi-universally, but with
+            no particular justification
+
+    Returns:
+        The curvature of the intensity of the original data.
     """
     if beta is not None:
         alpha = np.power(10.0, beta)
@@ -200,9 +210,10 @@ def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
     return curv
 
 
-def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
-    """
-    Like curvature, performs a second derivative. You can pass a function to use for smoothing through
+def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2) -> xr.DataArray:
+    """Like curvature, performs a second derivative.
+
+    You can pass a function to use for smoothing through
     the parameter smooth_fn, otherwise no smoothing will be performed.
 
     You can specify the axis to take the derivative along with the axis param, which expects a string.
@@ -210,11 +221,15 @@ def dn_along_axis(arr: xr.DataArray, axis=None, smooth_fn=None, order=2):
     for axes here, the first available being taken:
 
     ['eV', 'kp', 'kx', 'kz', 'ky', 'phi', 'beta', 'theta]
-    :param arr:
-    :param axis:
-    :param smooth_fn:
-    :param order: Specifies how many derivatives to take
-    :return:
+
+    Args:
+        arr
+        axis
+        smooth_fn
+        order: Specifies how many derivatives to take
+
+    Returns:
+        The nth derivative data.
     """
     axis_order = ["eV", "kp", "kx", "kz", "ky", "phi", "beta", "theta"]
     if axis is None:

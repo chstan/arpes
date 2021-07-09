@@ -1,3 +1,4 @@
+"""Geometry and intersection utilities."""
 import numpy as np
 from scipy.spatial import ConvexHull
 
@@ -9,18 +10,21 @@ __all__ = (
 
 
 def point_plane_intersection(plane_normal, plane_point, line_a, line_b, epsilon=1e-6):
-    """
-    Determines the intersection point of a plane defined by a point and a normal vector and the line
-    defined by line_a and line_b. All should be numpy arrays.
+    """Determines the point plane intersection.
 
-    :param plane_normal:
-    :param plane_point:
-    :param line_a:
-    :param line_b:
-    :param epsilon:
-    :return:
-    """
+    The plane is defined by a point and a normal vector while the line is defined by line_a
+    and line_b. All should be numpy arrays.
 
+    Args:
+        plane_normal
+        plane_point
+        line_a
+        line_b
+        epsilon
+
+    Returns:
+        The intersection point of the point and plane.
+    """
     line_direction = line_b - line_a
     if abs(plane_normal.dot(line_direction)) < epsilon:
         return None
@@ -32,16 +36,9 @@ def point_plane_intersection(plane_normal, plane_point, line_a, line_b, epsilon=
 
 
 def segment_contains_point(line_a, line_b, point_along_line, check=False, epsilon=1e-6):
-    """
-    Determines whether a segment contains a point that also lies along the line.
-    If asked to check, it will also return false if the point does not lie along the line.
+    """Determines whether a segment contains a point that also lies along the line.
 
-    :param line_a:
-    :param line_b:
-    :param point_along_line:
-    :param check:
-    :param epsilon:
-    :return:
+    If asked to check, it will also return false if the point does not lie along the line.
     """
     if point_along_line is None:
         return False
@@ -57,23 +54,23 @@ def segment_contains_point(line_a, line_b, point_along_line, check=False, epsilo
 
 
 def polyhedron_intersect_plane(poly_faces, plane_normal, plane_point, epsilon=1e-6):
-    """
-    Determines the intersection of a convex polyhedron intersecting a plane. The polyhedron
-    faces should be given by a list of np.arrays, where each np.array at index `i` is the vertices of
-    face `i`.
+    """Determines the intersection of a convex polyhedron intersecting a plane.
+
+    The polyhedron faces should be given by a list of np.arrays, where each np.array at
+    index `i` is the vertices of face `i`.
 
     As an example, running [p[0] for p in ase.dft.bz.bz_vertices(np.linalg.inv(cell).T)]
     should provide acceptable input for a unit cell `cell`.
 
     The polyhedron should be convex because we construct the convex hull in order to order the points.
 
-    :param poly_faces:
-    :param plane_normal:
-    :param plane_point:
-    :param epsilon:
-    :return:
+    Args:
+        poly_faces: The faces of the polyhedron as a list of arrays with with the polygonal
+          facial vertices
+        plane_normal: Normal vector to the plan
+        plane_point: Any point on the plane
+        epsilon: Used to determine precision for non-intersection
     """
-
     collected_points = []
 
     def add_point(c):

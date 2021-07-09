@@ -1,3 +1,4 @@
+"""Utilities related to plotting Brillouin zones and data onto them."""
 # pylint: disable=import-error
 
 import itertools
@@ -53,6 +54,7 @@ def segments_standard(name="graphene", rotate=0):
 
 
 def overplot_standard(name="graphene", repeat=None, rotate=0):
+    """A higher order function to plot a Brillouin zone over a plot."""
     specification = overplot_library[name]()
     transformations = []
 
@@ -77,9 +79,9 @@ def overplot_standard(name="graphene", repeat=None, rotate=0):
 
 
 class Translation:
-    """
-    Base translation class, meant to provide some extension over the Rotation that is
-    available from `scipy.spatial.transform.Rotation`.
+    """Base translation class, meant to provide some extension over rotations.
+
+    Rotations are available from `scipy.spatial.transform.Rotation`.
     """
 
     translation_vector = None
@@ -89,8 +91,7 @@ class Translation:
         self.translation_vector = np.asarray(translation_vector)
 
     def apply(self, vectors, inverse=False):
-        """
-        Applies the translation to a set of vectors.
+        """Applies the translation to a set of vectors.
 
         If this transform is D-dimensional (for D=2,3) and is applied to a different
         dimensional set of vectors, a ValueError will be thrown due to the dimension
@@ -103,9 +104,9 @@ class Translation:
         self.apply(self.apply(vectors), inverse=True) == vectors
         ```
 
-        :param vectors: array_like with shape (2 or 3,) or (N, 2 or 3)
-        :param inverse:
-        :return:
+        Args:
+            vectors: array_like with shape (2 or 3,) or (N, 2 or 3)
+            inverse: Applies the inverse coordinate transform instead
         """
         vectors = np.asarray(vectors)
 
@@ -134,13 +135,15 @@ Transformation = Union[Translation, Rotation]
 def apply_transformations(
     points: np.ndarray, transformations: List[Transformation] = None, inverse=False
 ) -> np.ndarray:
-    """
-    Applies a series of transformations to a sequence of vectors or a single vector.
+    """Applies a series of transformations to a sequence of vectors or a single vector.
 
-    :param points:
-    :param translations:
-    :param inverse:
-    :return:
+    Args:
+        points
+        translations
+        inverse
+
+    Returns:
+        The collection of transformed points.
     """
     if transformations is None:
         transformations = []
@@ -152,6 +155,7 @@ def apply_transformations(
 
 
 def plot_plane_to_bz(cell, plane, ax, special_points=None, facecolor="red"):
+    """Plots a 2D cut plane onto a Brillouin zone."""
     from ase.dft.bz import bz_vertices
 
     if isinstance(plane, str):
@@ -170,6 +174,7 @@ def plot_plane_to_bz(cell, plane, ax, special_points=None, facecolor="red"):
 
 
 def plot_data_to_bz(data: DataType, cell, **kwargs):
+    """A dimension agnostic tool used to plot ARPES data onto a Brillouin zone."""
     if len(data) == 3:
         return plot_data_to_bz3d(data, cell, **kwargs)
 
@@ -188,6 +193,7 @@ def plot_data_to_bz2d(
     bz_number=None,
     **kwargs
 ):
+    """Plots data onto a 2D Brillouin zone."""
     data = normalize_to_spectrum(data)
 
     assert "You must k-space convert data before plotting to BZs" and data.S.is_kspace
@@ -250,10 +256,12 @@ def plot_data_to_bz2d(
 
 
 def plot_data_to_bz3d(data: DataType, cell, **kwargs):
+    """Plots ARPES data onto a 3D Brillouin zone."""
     raise NotImplementedError("plot_data_to_bz3d is not implemented yet.")
 
 
 def bz_plot(cell, *args, **kwargs):
+    """Dimension generic BZ plot which uses the cell dimension to delegate."""
     if len(cell) > 2:
         return bz3d_plot(cell, *args, **kwargs)
 
@@ -273,18 +281,10 @@ def bz3d_plot(
     hide_ax=True,
     **kwargs
 ):
-    """
-    For now this is lifted from ase.dft.bz.bz3d_plot with some modifications. All copyright and
-    licensing terms for this and bz2d_plot are those of the current release of ASE
-    (Atomic Simulation Environment).
+    """For now this is lifted from ase.dft.bz.bz3d_plot with some modifications.
 
-    :param cell:
-    :param vectors:
-    :param paths:
-    :param points:
-    :param elev:
-    :param scale:
-    :return:
+    All copyright and licensing terms for this and bz2d_plot are those of the current release of ASE
+    (Atomic Simulation Environment).
     """
     try:
         from ase.dft.bz import bz_vertices  # dynamic because we do not require ase
@@ -470,6 +470,7 @@ def annotate_special_paths(
     labels=None,
     **kwargs
 ):
+    """Annotates user indicated paths in k-space by plotting lines (or points) over the BZ."""
     if paths == "":
         raise ValueError("Must provide a proper path.")
 
@@ -551,6 +552,7 @@ def annotate_special_paths(
 
 
 def bz2d_segments(cell, transformations=None):
+    """Calculates the line segments corresponding to a 2D BZ."""
     segments_x = []
     segments_y = []
 
@@ -592,15 +594,9 @@ def bz2d_plot(
     set_equal_aspect=True,
     **kwargs
 ):
-    """
-    This piece of code modified from ase.ase.dft.bz.py:bz2d_plot and follows copyright and license for ASE.
+    """This piece of code modified from ase.ase.dft.bz.py:bz2d_plot and follows copyright and license for ASE.
 
     Plots a Brillouin zone corresponding to a given unit cell
-    :param cell:
-    :param vectors:
-    :param paths:
-    :param points:
-    :return:
     """
     kpoints = points
     bz1, icell, cell = twocell_to_bz1(cell)

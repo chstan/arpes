@@ -1,3 +1,4 @@
+"""A live momentun conversion tool, useful for finding and setting offsets."""
 from PyQt5 import QtWidgets
 import numpy as np
 
@@ -19,30 +20,26 @@ qt_info.setup_pyqtgraph()
 
 
 class KTool(SimpleApp):
-    """
-    QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5 for now we retain a number of the
-    metaphors from BokehTool, including a "context" that stores the state, and can be used to programmatically interface
-    with the tool
+    """Provides a live momentum converting tool.
+
+    QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5 for now we retain
+    a number of the metaphors from BokehTool, including a "context" that stores the state, and can
+    be used to programmatically interface with the tool.
     """
 
     TITLE = "KSpace-Tool"
-    WINDOW_SIZE = (
-        5,
-        6,
-    )
+    WINDOW_SIZE = (5, 6)
     WINDOW_CLS = SimpleWindow
 
     DEFAULT_COLORMAP = "viridis"
 
     def __init__(self, apply_offsets=True, zone=None, **kwargs):
+        """Set attributes to safe defaults and unwrap the Brillouin zone definition."""
         super().__init__()
 
         if isinstance(
             zone,
-            (
-                tuple,
-                list,
-            ),
+            (tuple, list),
         ):
             self.segments_x, self.segments_y = zone
         elif zone:
@@ -57,10 +54,12 @@ class KTool(SimpleApp):
         self.apply_offsets = apply_offsets
 
     def configure_image_widgets(self):
+        """We have two marginals because we deal with Fermi surfaces, they get configured here."""
         self.generate_marginal_for((), 0, 0, "xy", cursors=False, layout=self.content_layout)
         self.generate_marginal_for((), 1, 0, "kxy", cursors=False, layout=self.content_layout)
 
     def add_contextual_widgets(self):
+        """The main UI layout for controls and tools."""
         convert_dims = ["theta", "beta", "phi", "psi"]
         if "eV" not in self.data.dims:
             convert_dims += ["chi"]
@@ -108,17 +107,26 @@ class KTool(SimpleApp):
         self.main_layout.addWidget(controls, 1, 0)
 
     def update_offsets(self, offsets):
+        """Pushes offsets to the display data and optionally, the original data."""
         self.data.S.apply_offsets(offsets)
         if self.apply_offsets:
             self.original_data.S.apply_offsets(offsets)
         self.update_data()
 
     def layout(self):
+        """Initialize the layout components."""
         self.main_layout = QtWidgets.QGridLayout()
         self.content_layout = QtWidgets.QGridLayout()
         return self.main_layout
 
     def update_data(self):
+        """The main redraw method for this tool.
+
+        Converts data into momentum space and populates both the angle-space and momentum
+        space views.
+
+        If a Brillouin zone was requestd, plots that over the data as well.
+        """
         self.views["xy"].setImage(self.data)
 
         kdata = convert_to_kspace(self.data, **self.conversion_kwargs)
@@ -136,15 +144,22 @@ class KTool(SimpleApp):
                 bz_plot.plot((segx - kx[0]) / (kx[1] - kx[0]), (segy - ky[0]) / (ky[1] - ky[0]))
 
     def before_show(self):
+        """Lifecycle hook for configuration before app show."""
         self.configure_image_widgets()
         self.add_contextual_widgets()
         if self.DEFAULT_COLORMAP is not None:
             self.set_colormap(self.DEFAULT_COLORMAP)
 
     def after_show(self):
+        """Initialize application state after app show. Just redraw."""
         self.update_data()
 
     def set_data(self, data: DataType):
+        """Sets the current data to a new value and resets binning.
+
+        Above what happens in QtTool, we try to extract a Fermi surface, and
+        repopulate the conversion.
+        """
         original_data = normalize_to_spectrum(data)
         self.original_data = original_data
 
@@ -179,6 +194,7 @@ class KTool(SimpleApp):
 
 
 def ktool(data: DataType, **kwargs):
+    """Start the momentum conversion tool."""
     tool = KTool(**kwargs)
     tool.set_data(data)
     tool.start()

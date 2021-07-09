@@ -1,8 +1,7 @@
-"""
-Helper functions for coordinate transformations. All the functions here
-assume standard polar angles, as given in the
-`data model documentation <https://arpes.netlify.com/#/spectra>`_.
+"""Helper functions for coordinate transformations and user/analysis API.
 
+All the functions here assume standard polar angles, as given in the
+`data model documentation <https://arpes.netlify.com/#/spectra>`_.
 
 Functions here must accept constants or numpy arrays as valid inputs,
 so all standard math functions have been replaced by their equivalents out
@@ -20,18 +19,21 @@ Photon energy -> 'hv'
 Better facilities should be added for ToFs to do simultaneous (timing, angle) to (binding energy, k-space).
 """
 
+from arpes.utilities.conversion.grids import (
+    determine_axis_type,
+    determine_momentum_axes_from_measurement_axes,
+    is_dimension_unconvertible,
+)
 from .fast_interp import Interpolator
 
 from arpes.trace import traceable
 import collections
 import warnings
-from copy import deepcopy
 
 import numpy as np
 import scipy.interpolate
 
 import xarray as xr
-from arpes.exceptions import AnalysisError
 from arpes.provenance import provenance, update_provenance
 from arpes.utilities import normalize_to_spectrum
 from typing import Callable, Union
@@ -42,69 +44,6 @@ from .kz_conversion import ConvertKpKz
 __all__ = ["convert_to_kspace", "slice_along_path"]
 
 
-def infer_kspace_coordinate_transform(arr: xr.DataArray):
-    """
-    Infers appropriate coordinate transform for arr to momentum space.
-
-    This takes into account the extra metadata attached to arr that might be
-    useful in inferring the requirements of the coordinate transform, like the
-    orientation of the spectrometer slit, and other experimental concerns
-    :param arr:
-    :return: dict with keys ``target_coordinates``, and a map of the appropriate
-    conversion functions
-    """
-    old_coords = deepcopy(list(arr.coords))
-    assert "eV" in old_coords
-    old_coords.remove("eV")
-    old_coords.sort()
-
-    new_coords = {
-        ("phi",): ["kp"],
-        (
-            "beta",
-            "phi",
-        ): ["kx", "ky"],
-        (
-            "phi",
-            "theta",
-        ): ["kx", "ky"],
-        (
-            "phi",
-            "psi",
-        ): ["kx", "ky"],
-        (
-            "hv",
-            "phi",
-        ): ["kp", "kz"],
-        (
-            "beta",
-            "hv",
-            "phi",
-        ): ["kx", "ky", "kz"],
-        (
-            "hv",
-            "phi",
-            "theta",
-        ): ["kx", "ky", "kz"],
-        (
-            "hv",
-            "phi",
-            "psi",
-        ): ["kx", "ky", "kz"],
-    }.get(tuple(old_coords))
-
-    # At this point we need to do a bit of work in order to determine the functions
-    # that interpolate from k-space back into the recorded variable space
-
-    # TODO Also provide the Jacobian of the coordinate transform to properly
-    return {
-        "dims": new_coords,
-        "transforms": {},
-        "calculate_bounds": None,
-        "jacobian": None,
-    }
-
-
 @traceable
 def grid_interpolator_from_dataarray(
     arr: xr.DataArray,
@@ -113,8 +52,7 @@ def grid_interpolator_from_dataarray(
     bounds_error=False,
     trace: Callable = None,
 ):
-    """
-    Translates the contents of an xarray.DataArray into a scipy.interpolate.RegularGridInterpolator.
+    """Translates an xarray.DataArray contents into a scipy.interpolate.RegularGridInterpolator.
 
     This is principally used for coordinate translations.
     """
@@ -157,7 +95,8 @@ def slice_along_path(
     extend_to_edge=False,
     **kwargs,
 ):
-    """
+    """Gets a cut along a path specified by waypoints in an array.
+
     TODO: There might be a little bug here where the last coordinate has a value of 0, causing the interpolation to loop
     back to the start point. For now I will just deal with this in client code where I see it until I understand if it is
     universal.
@@ -183,19 +122,24 @@ def slice_along_path(
     interpolated coordinate will be shifted so that its value at the Gamma point is 0. You can opt out of this with the
     parameter 'shift_gamma'
 
-    :param arr: Source data
-    :param interpolation_points: Path vertices
-    :param axis_name: Label for the interpolated axis. Under special circumstances a reasonable name will be chosen,
+    Args:
+        arr: Source data
+        interpolation_points: Path vertices
+        axis_name: Label for the interpolated axis. Under special
+            circumstances a reasonable name will be chosen,
+        resolution: Requested resolution along the interpolated axis.
+        shift_gamma: Controls whether the interpolated axis is shifted
+            to a value of 0 at Gamma.
+        extend_to_edge: Controls whether or not to scale the vector S -
+            G for symmetry point S so that you interpolate
+        **kwargs
     such as when the interpolation dimensions are kx and ky: in this case the interpolated dimension will be labeled kp.
     In mixed or ambiguous situations the axis will be labeled by the default value 'inter'.
-    :param resolution: Requested resolution along the interpolated axis.
-    :param shift_gamma: Controls whether the interpolated axis is shifted to a value of 0 at Gamma.
-    :param extend_to_edge: Controls whether or not to scale the vector S - G for symmetry point S so that you interpolate
     to the edge of the available data
-    :param kwargs:
-    :return: xr.DataArray containing the interpolated data.
-    """
 
+    Returns:
+        xr.DataArray containing the interpolated data.
+    """
     if interpolation_points is None:
         raise ValueError("You must provide points specifying an interpolation path")
 
@@ -256,41 +200,10 @@ def slice_along_path(
                     point[coord] = list(values)[0]
 
     if axis_name is None:
-        axis_name = {
-            (
-                "beta",
-                "phi",
-            ): "angle",
-            (
-                "chi",
-                "phi",
-            ): "angle",
-            (
-                "phi",
-                "psi",
-            ): "angle",
-            (
-                "phi",
-                "theta",
-            ): "angle",
-            (
-                "kx",
-                "ky",
-            ): "kp",
-            (
-                "kx",
-                "kz",
-            ): "k",
-            (
-                "ky",
-                "kz",
-            ): "k",
-            (
-                "kx",
-                "ky",
-                "kz",
-            ): "k",
-        }.get(tuple(sorted(seen_coordinates.keys())), "inter")
+        try:
+            axis_name = determine_axis_type(seen_coordinates.keys())
+        except KeyError:
+            axis_name = "inter"
 
         if axis_name == "angle" or axis_name == "inter":
             warnings.warn(
@@ -400,7 +313,6 @@ def slice_along_path(
 @traceable
 def convert_to_kspace(
     arr: xr.DataArray,
-    forward=False,
     bounds=None,
     resolution=None,
     calibration=None,
@@ -409,54 +321,59 @@ def convert_to_kspace(
     trace: Callable = None,
     **kwargs,
 ):
-    """
-    "Forward" or "backward" converts the data to momentum space.
+    """Converts volumetric the data to momentum space ("backwards"). Typically what you want.
 
-    "Backward"
-    The standard method. Works in generality by regridding the data into the new coordinate space and then
+    Works in general by regridding the data into the new coordinate space and then
     interpolating back into the original data.
 
-    "Forward"
-    By converting the coordinates, rather than by interpolating the data. As a result, the data will be totally
-    unchanged by the conversion (if we do not apply a Jacobian correction), but the coordinates will no
+    For forward conversion, see sibling methods. Forward conversion works by
+    converting the coordinates, rather than by interpolating
+    the data. As a result, the data will be totally unchanged by the conversion
+    (if we do not apply a Jacobian correction), but the coordinates will no
     longer have equal spacing.
 
-    This is only really useful for zero and one dimensional data because for two dimensional data, the coordinates
-    must become two dimensional in order to fully specify every data point (this is true in generality, in 3D the
-    coordinates must become 3D as well).
+    This is only really useful for zero and one dimensional data because for two dimensional data,
+    the coordinates must become two dimensional in order to fully specify every data point
+    (this is true in generality, in 3D the coordinates must become 3D as well).
 
-    The only exception to this is if the extra axes do not need to be k-space converted. As is the case where one
-    of the dimensions is `cycle` or `delay`, for instance.
+    The only exception to this is if the extra axes do not need to be k-space converted. As is the
+    case where one of the dimensions is `cycle` or `delay`, for instance.
 
     You can request a particular resolution for the new data with the `resolution=` parameter,
     or a specific set of bounds with the `bounds=`
 
-    ```
-    from arpes.io import load_example_data
-    f = load_example_data()
+    Examples:
+        Convert a 2D cut with automatically inferred range and resolution.
 
-    # most standard method
-    convert_to_kspace(f)
+        >>> convert_to_kspace(arpes.io.load_example_data())
+        xr.DataArray(...)
 
-    # get a higher resolution (up-sampled) momentum image
-    convert_to_kspace(f, resolution={'kp': 0.001})
+        Convert a 3D map with a specified momentum window
 
-    # get an image only for the positive momentum region
-    convert_to_kspace(f, bounds={'kp': [0, 1]})
+        >>> convert_to_kspace(
+                fermi_surface_map,
+                kx=np.linspace(-1, 1, 200),
+                ky=np.linspace(-1, 1, 350),
+            )
+        xr.DataArray(...)
 
-    # get an image manually specifying the `kp` coordinate
-    convert_to_kspace(f, kp=np.linspace(0, 1, 1001))
+    Args:
+        arr (xr.DataArray): [description]
+        #bounds ([type], optional): [description]. Defaults to None.
+        resolution ([type], optional): [description]. Defaults to None.
+        calibration ([type], optional): [description]. Defaults to None.
+        coords ([type], optional): [description]. Defaults to None.
+        allow_chunks (bool, optional): [description]. Defaults to False.
+        trace (Callable, optional): Controls whether to use execution tracing. Defaults to None.
+          Pass `True` to enable.
 
-    # or
-    convert_to_kspace(f, coords={'kp': np.linspace(0, 1, 1001)})
-    ```
+    Raises:
+        NotImplementedError: [description]
+        AnalysisError: [description]
+        ValueError: [description]
 
-
-    :param arr:
-    :param forward:
-    :param bounds:
-    :param resolution:
-    :return:
+    Returns:
+        [type]: [description]
     """
     if coords is None:
         coords = {}
@@ -465,19 +382,16 @@ def convert_to_kspace(
 
     trace("Normalizing to spectrum")
     if isinstance(arr, xr.Dataset):
-        warnings.warn("Remember to use a DataArray not a Dataset, attempting to extract spectrum")
+        warnings.warn(
+            "Remember to use a DataArray not a Dataset, attempting to extract spectrum and copy attributes."
+        )
         attrs = arr.attrs.copy()
         arr = normalize_to_spectrum(arr)
         arr.attrs.update(attrs)
 
-    if forward:
-        raise NotImplementedError(
-            "Forward conversion of datasets not supported. Coordinate conversion is. "
-            "See `arpes.utilities.conversion.forward.convert_coordinates_to_kspace_forward`"
-        )
-
     has_eV = "eV" in arr.dims
 
+    # Chunking logic
     if allow_chunks and has_eV and len(arr.eV) > 50:
         DESIRED_CHUNK_SIZE = 1000 * 1000 * 20
         n_chunks = np.prod(arr.shape) // DESIRED_CHUNK_SIZE
@@ -500,7 +414,6 @@ def convert_to_kspace(
 
             kchunk = convert_to_kspace(
                 chunk,
-                forward=forward,
                 bounds=bounds,
                 resolution=resolution,
                 calibration=calibration,
@@ -520,31 +433,16 @@ def convert_to_kspace(
 
         return xr.concat(finished, dim="eV")
 
+    # Chunking is finished here
+
     # TODO be smarter about the resolution inference
     trace("Determining dimensions and resolution")
-    old_dims = list(deepcopy(arr.dims))
-    remove_dims = ["eV", "delay", "cycle", "temp", "x", "y", "optics_insertion"]
+    removed = [d for d in arr.dims if is_dimension_unconvertible(d)]
+    old_dims = [d for d in arr.dims if not is_dimension_unconvertible(d)]
 
-    def unconvertible(dimension: str) -> bool:
-        if dimension in remove_dims:
-            return True
-
-        if "volt" in dimension:
-            return True
-
-        return False
-
-    removed = []
-
-    for to_remove in arr.dims:
-        if unconvertible(to_remove):
-            removed.append(to_remove)
-            old_dims.remove(to_remove)
-
-    # This should always be true because otherwise we have no hope of carrying
-    # through with the conversion
+    # Energy gets put at the front as a standardization
     if "eV" in removed:
-        removed.remove("eV")  # This is put at the front as a standardization
+        removed.remove("eV")
 
     old_dims.sort()
 
@@ -553,16 +451,7 @@ def convert_to_kspace(
 
     converted_dims = (
         (["eV"] if has_eV else [])
-        + {
-            ("phi",): ["kp"],
-            ("phi", "theta"): ["kx", "ky"],
-            ("beta", "phi"): ["kx", "ky"],
-            ("phi", "psi"): ["kx", "ky"],
-            ("hv", "phi"): ["kp", "kz"],
-            ("hv", "phi", "theta"): ["kx", "ky", "kz"],
-            ("beta", "hv", "phi"): ["kx", "ky", "kz"],
-            ("hv", "phi", "psi"): ["kx", "ky", "kz"],
-        }.get(tuple(old_dims))
+        + determine_momentum_axes_from_measurement_axes(old_dims)
         + removed
     )
 
@@ -575,10 +464,6 @@ def convert_to_kspace(
         ("hv", "phi"): ConvertKpKz,
     }.get(tuple(old_dims))
     converter = convert_cls(arr, converted_dims, calibration=calibration)
-
-    n_kspace_coordinates = len(set(converted_dims).intersection({"kp", "kx", "ky", "kz"}))
-    if n_kspace_coordinates > 1 and forward:
-        raise AnalysisError("You cannot forward convert more than one momentum to k-space.")
 
     trace("Converting coordinates")
     converted_coordinates = converter.get_coordinates(resolution=resolution, bounds=bounds)
@@ -598,7 +483,7 @@ def convert_to_kspace(
             "transforms": dict(zip(arr.dims, [converter.conversion_for(d) for d in arr.dims])),
         },
         trace=trace,
-    )[0]
+    )
     trace("Finished.")
     return result
 
@@ -706,4 +591,4 @@ def convert_coordinates(
         return xr.Dataset(vars, attrs=arr.attrs)
 
     trace("Finished")
-    return data, old_mapped_coords
+    return data

@@ -1,5 +1,5 @@
-"""
-Provides interactive tools based on matplotlib Qt interactive elements.
+"""Provides interactive tools based on matplotlib Qt interactive elements.
+
 This are generally primitive one offs that are useful for accomplishing
 something quick. As examples:
 
@@ -64,8 +64,7 @@ __all__ = (
 
 
 class SelectFromCollection:
-    """
-    Select indices from a matplotlib collection using `LassoSelector`.
+    """Select indices from a matplotlib collection using `LassoSelector`.
 
     Modified from https://matplotlib.org/gallery/widgets/lasso_selector_demo_sgskip.html
 
@@ -119,13 +118,17 @@ class SelectFromCollection:
         self.canvas.draw_idle()
 
 
-def popout(plotting_function):
-    """
+def popout(plotting_function: Callable) -> Callable:
+    """A decorator which applies the "%matplotlib qt" magic so that interactive plots are enabled.
+
     Sets and subsequently unsets the matplotlib backend for one function call, to allow use of
     'widgets' in Jupyter inline use.
 
-    :param plotting_function:
-    :return:
+    Args:
+        plotting_function: The plotting function which should be decorated.
+
+    Returns:
+        The decorated function.
     """
 
     @wraps(plotting_function)
@@ -146,7 +149,8 @@ def popout(plotting_function):
 
 
 class DataArrayView:
-    """
+    """A model (in the sense of view models) for a DataArray in matplotlib plots.
+
     Offers support for 1D and 2D DataArrays with masks, selection tools, and a simpler interface
     than the matplotlib primitives.
 
@@ -325,6 +329,7 @@ class DataArrayView:
 
 @popout
 def fit_initializer(data, peak_type=LorentzianModel, **kwargs):
+    """A tool for initializing lineshape fitting."""
     ctx = {}
     gs = gridspec.GridSpec(2, 2)
     ax_initial = plt.subplot(gs[0, 0])
@@ -418,6 +423,16 @@ def fit_initializer(data, peak_type=LorentzianModel, **kwargs):
 def pca_explorer(
     pca, data, component_dim="components", initial_values=None, transpose_mask=False, **kwargs
 ):
+    """A tool providing PCA decomposition exploration of a dataset.
+
+    Args:
+        pca: The decomposition of the data, the output of an sklearn PCA decomp.
+        data: The original data.
+        component_dim: The variable name or identifier associated to the PCA component projection
+          in the input data. Defaults to "components" which is what is produced by `pca_along`.
+        initial_values: Which of the PCA components to use for the 2D embedding. Defaults to None.
+        transpose_mask: Controls whether the PCA masks should be transposed before application. Defaults to False.
+    """
     if initial_values is None:
         initial_values = [0, 1]
 
@@ -547,6 +562,7 @@ def kspace_tool(
     coords=None,
     **kwargs
 ):
+    """A utility for assigning coordinate offsets using a live momentum conversion."""
     original_data = data
     data = normalize_to_spectrum(data)
     if len(data.dims) > 2:
@@ -666,6 +682,7 @@ def kspace_tool(
 
 @popout
 def pick_rectangles(data, **kwargs):
+    """A utility allowing for selection of rectangular regions."""
     ctx = {"points": [], "rect_next": False}
     arpes.config.CONFIG["CURRENT_CONTEXT"] = ctx
 
@@ -733,6 +750,7 @@ def pick_gamma(data, **kwargs):
 
 @popout
 def pick_points(data_or_str, **kwargs):
+    """A utility allowing for selection of points in a dataset."""
     using_image_data = isinstance(data_or_str, (str, pathlib.Path))
 
     ctx = {"points": []}

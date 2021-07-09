@@ -1,12 +1,14 @@
+"""Some very simple string manipulation utilities."""
 import re
 
-__all__ = (
+__all__ = [
     "snake_case",
     "safe_decode",
-)
+]
 
 
 def snake_case(input: str):
+    """Approximately converts a string to python_case."""
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", input)
     s2 = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
     return (
@@ -15,6 +17,7 @@ def snake_case(input: str):
 
 
 def safe_decode(input: bytes, prefer: str = None) -> str:
+    """Tries different byte interpretations for decoding... very lazy."""
     codecs = ["utf-8", "latin-1", "ascii"]
 
     if prefer:

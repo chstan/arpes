@@ -1,9 +1,4 @@
-"""
-.. module:: gap
-   :synopsis: Utilities for gap fitting in ARPES, contains tools to normalize by Fermi-Dirac occupation
-
-.. moduleauthor:: Conrad Stansbury <chstan@berkeley.edu>
-"""
+"""Utilities for gap fitting in ARPES, contains tools to normalize by Fermi-Dirac occupation."""
 import warnings
 
 import numpy as np
@@ -19,9 +14,7 @@ __all__ = ("normalize_by_fermi_dirac", "determine_broadened_fermi_distribution",
 
 
 def determine_broadened_fermi_distribution(reference_data: DataType, fixed_temperature=True):
-    """
-    Determine the parameters for broadening by temperature and instrumental resolution
-    for a piece of data.
+    """Determine the parameters for broadening by temperature and instrumental resolution.
 
     As a general rule, we first try to estimate the instrumental broadening and linewidth broadening
     according to calibrations provided for the beamline + instrument, as a starting point.
@@ -32,9 +25,12 @@ def determine_broadened_fermi_distribution(reference_data: DataType, fixed_tempe
 
     These parameters can be used to bootstrap a fit to actual data or used directly in ``normalize_by_fermi_dirac``.
 
+    Args:
+        reference_data: The data we want to estimate from.
+        fixed_temperature: Whether we should force the temperature to the recorded value.
 
-    :param reference_data:
-    :return:
+    Return:
+        The estimated fit result for the Fermi distribution.
     """
     params = {}
 
@@ -62,24 +58,29 @@ def normalize_by_fermi_dirac(
     temp_offset=0,
     **kwargs
 ):
-    """
-    Normalizes data according to a Fermi level reference on separate data or using the same source spectrum.
+    """Normalizes data according to a Fermi level reference on separate data or using the same source spectrum.
 
     To do this, a linear density of states is multiplied against a resolution broadened Fermi-Dirac
     distribution (`arpes.fits.fit_models.AffineBroadenedFD`). We then set the density of states to 1 and
     evaluate this model to obtain a reference that the desired spectrum is normalized by.
 
-    :param data: Data to be normalized.
-    :param reference_data: A reference spectrum, typically a metal reference. If not provided the
-                           integrated data is used. Beware: this is inappropriate if your data is gapped.
-    :param plot: A debug flag, allowing you to view the normalization spectrum and relevant curve-fits.
-    :param broadening: Detector broadening.
-    :param temperature_axis: Temperature coordinate, used to adjust the quality
-                             of the reference for temperature dependent data.
-    :param temp_offset: Temperature calibration in the case of low temperature data. Useful if the
-                        temperature at the sample is known to be hotter than the value recorded off of a diode.
-    :param kwargs:
-    :return:
+    Args:
+        data: Data to be normalized.
+        reference_data: A reference spectrum, typically a metal
+            reference. If not provided the integrated data is used.
+            Beware: this is inappropriate if your data is gapped.
+        plot: A debug flag, allowing you to view the normalization
+            spectrum and relevant curve-fits.
+        broadening: Detector broadening.
+        temperature_axis: Temperature coordinate, used to adjust the
+            quality of the reference for temperature dependent data.
+        temp_offset: Temperature calibration in the case of low
+            temperature data. Useful if the temperature at the sample is
+            known to be hotter than the value recorded off of a diode.
+        **kwargs
+
+    Returns:
+        Data after normalization by the Fermi occupation factor.
     """
     reference_data = data if reference_data is None else reference_data
     broadening_fit = determine_broadened_fermi_distribution(reference_data, **kwargs)
@@ -193,17 +194,22 @@ def _shift_energy_interpolate(data: DataType, shift=None):
 
 @update_provenance("Symmetrize")
 def symmetrize(data: DataType, subpixel=False, full_spectrum=False):
-    """
-    Symmetrizes data across the chemical potential. This provides a crude tool by which
+    """Symmetrizes data across the chemical potential.
+
+    This provides a crude tool by which
     gap analysis can be performed. In this implementation, subpixel accuracy is achieved by
     interpolating data.
 
-    :param data: Input array.
-    :param subpixel: Enable subpixel correction
-    :param full_spectrum: Returns data above and below the chemical potential. By default, only
-           the bound part of the spectrum (below the chemical potential) is returned, because
-           the other half is identical.
-    :return:
+    Args:
+        data: Input array.
+        subpixel: Enable subpixel correction
+        full_spectrum: Returns data above and below the chemical
+            potential. By default, only the bound part of the spectrum
+            (below the chemical potential) is returned, because the
+            other half is identical.
+
+    Returns:
+        The symmetrized data.
     """
     data = normalize_to_spectrum(data).S.transpose_to_front("eV")
 

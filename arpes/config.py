@@ -1,7 +1,15 @@
-"""
-Store experiment level configuration here, this module also provides functions
-for loading configuration in via external files, to allow better modularity
-between different projects.
+"""Runtime level configuration for PyARPES.
+
+For the most part, this contains state related to:
+
+1. UI settings
+2. TeX and plotting
+3. Data loading
+4. Workspaces
+
+This module also provides functions for loading configuration 
+in via external files, to allow better modularity between 
+different projects.
 """
 
 # pylint: disable=global-statement
@@ -36,6 +44,8 @@ FIGURE_PATH = None
 DATASET_PATH = None
 
 
+def update_configuration(user_path: Optional[str] = None) -> None:
+    """Performs an update of PyARPES configuration from a module.
 
     This is kind of Django/flask style but is somewhat gross. Probably
     I should refactor this at some point to use a settings management library.
@@ -71,11 +81,33 @@ CONFIG = {
 
 
 class WorkspaceManager:
+    """A context manager for swapping workspaces temporarily.
+
+    This is extremely useful for loading data between separate projects
+    or saving figures to different projects.
+
+    Example:
+        You can use this to load data from another named workspace:
+
+        >>> with WorkspaceManager("another_project"):
+        >>>    file_5_from_another_project = load_data(5)
+    """
+
     def __init__(self, workspace: Optional[Any] = None) -> None:
+        """Context manager for changing workspaces temporarily. Do not instantiate directly.
+
+        Args:
+            workspace: The name of the workspace to enter temporarily. Defaults to None.
+        """
         self._cached_workspace = None
         self._workspace = workspace
 
     def __enter__(self) -> None:
+        """Caches the current workspace and enters a new one.
+
+        Raises:
+            ValueError: If a workspace cannot be identified with the requested name.
+        """
         global CONFIG
         self._cached_workspace = CONFIG["WORKSPACE"]
 
@@ -95,15 +127,41 @@ class WorkspaceManager:
             raise ValueError("Could not find workspace: {}".format(self._workspace))
 
     def __exit__(self, *args: Any) -> None:
+        """Clean up by resetting the PyARPES workspace."""
         global CONFIG
         CONFIG["WORKSPACE"] = self._cached_workspace
 
 
-def workspace_matches(path):
-    return "data" in os.listdir(path)
+def workspace_matches(path: str) -> bool:
+    """Determines whether a given path should be treated as a workspace.
+
+    In the past, we used to define a workspace by several conditions together, including
+    the presence of an anaysis spreadsheet containing extra metadata.
+
+    This is much simpler now: a workspace just has a data folder in it.
+
+    Args:
+        path: The path we are chekcking.
+
+    Returns:
+        True if the path is a workspace and False otherwise.
+    """
+    contents = os.listdir(path)
+    return any(sentinel in contents for sentinel in ["data", "Data"])
 
 
-def attempt_determine_workspace(value=None, current_path=None):
+def attempt_determine_workspace(current_path=None):
+    """Determines the current workspace, if working inside a workspace.
+
+    Looks rootwards (upwards in the folder tree) for a workspace. When one is found,
+    this sets the relevant configuration variables so that they are available.
+
+    The logic for determining whether the current directory is a workspace
+    has been simplified: see `workspace_matches` for more details.
+
+    Args:
+        current_path: Override for "os.getcwd". Defaults to None.
+    """
     pdataset = os.getcwd() if DATASET_PATH is None else DATASET_PATH
 
     try:
@@ -123,10 +181,15 @@ def attempt_determine_workspace(value=None, current_path=None):
     }
 
 
-def load_json_configuration(filename):
-    """
-    Flat updates the configuration. Beware that this doesn't update nested data.
-    I will adjust if it turns out that there is a use case for nested configuration
+def load_json_configuration(filename: str):
+    """Updates PyARPES configuration from a JSON file.
+
+    Beware, this function performs a shallow update of the configuration.
+    This can be adjusted if it turns out that there is a use case for
+    nested configuration.
+
+    Args:
+        filename: A filename or path containing the settings.
     """
     with open(filename) as config_file:
         CONFIG.update(json.load(config_file))
@@ -142,16 +205,22 @@ except ImportError:
 
 
 def override_settings(new_settings):
+    """Deep updates/overrides PyARPES settings."""
     from arpes.utilities.collections import deep_update
 
     global SETTINGS
     deep_update(SETTINGS, new_settings)
 
 
-
-
-# load plugins
 def load_plugins() -> None:
+    """Registers plugins/data-sources in the endstations.plugin module.
+
+    Finds all classes which represents data loading plugins in the endstations.plugin
+    module and registers them.
+
+    If you need to register a custom plugin you should just call
+    `arpes.endstations.add_endstation` directly.
+    """
     import arpes.endstations.plugin as plugin
     from arpes.endstations import add_endstation
     import importlib
@@ -174,14 +243,34 @@ def load_plugins() -> None:
             pass
 
 
-def use_tex(rc_text_should_use=False):
+def use_tex(rc_text_should_use: bool = False):
+    """Configures Matplotlib to use TeX.
+
+    Does not attempt to perform any detection of an existing LaTeX
+    installation and as a result, using this inappropriately can cause
+    matplotlib to generate errors when you try to run standard plots.
+
+    Args:
+        rc_text_should_use: Whether to enable TeX. Defaults to False.
+    """
     import matplotlib
 
+    # in matplotlib v3 we do not need to change other settings unless
+    # the preamble needs customization
     matplotlib.rcParams["text.usetex"] = rc_text_should_use
     SETTINGS["use_tex"] = rc_text_should_use
 
 
 def setup_logging():
+    """Configures IPython to log commands to a local folder.
+
+    This is handled by default so that there is reproducibiity
+    even in the case where the analyst has very poor Jupyter hygiene.
+
+    This is by no means perfect. In particular, it could be improved
+    substantively if anaysis products better referred to the logged record
+    and not merely where they came from in the notebooks.
+    """
     global CONFIG
     global HAS_LOADED
     if HAS_LOADED:

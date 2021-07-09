@@ -1,3 +1,4 @@
+"""Provides xarray aware pyqtgraph plotting widgets."""
 # pylint: disable=import-error
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
@@ -32,7 +33,10 @@ class CoordAxis(pg.AxisItem):
 
 
 class DataArrayPlot(pg.PlotWidget):
+    """A plot for 1D xr.DataArray instances with a coordinate aware axis."""
+
     def __init__(self, root, orientation, *args, **kwargs):
+        """Use custom axes so that we can provide coordinate-ful rather than pixel based values."""
         self.orientation = orientation
 
         axis_or = "bottom" if orientation == "horiz" else "left"
@@ -41,6 +45,11 @@ class DataArrayPlot(pg.PlotWidget):
         super().__init__(axisItems=dict([[axis_or, self._coord_axis]]), *args, **kwargs)
 
     def plot(self, data, *args, **kwargs):
+        """Updates the UI with new data.
+
+        Data also needs to be forwarded to the coordinate axis in case of transpose
+        or changed range of data.
+        """
         y = data.values
         self._coord_axis.setImage(data)
 
@@ -51,13 +60,13 @@ class DataArrayPlot(pg.PlotWidget):
 
 
 class DataArrayImageView(pg.ImageView):
-    """
-    ImageView that transparently handles xarray data, including setting axis and coordinate information.
+    """ImageView that transparently handles xarray data, including setting axis and coordinate information.
 
     This makes it easier to build interactive applications around realistic scientific datasets.
     """
 
     def __init__(self, root, *args, **kwargs):
+        """Use custom axes so that we can provide coordinate-ful rather than pixel based values."""
         self._coord_axes = {
             "left": CoordAxis(dim_index=1, orientation="left"),
             "bottom": CoordAxis(dim_index=0, orientation="bottom"),
@@ -68,13 +77,7 @@ class DataArrayImageView(pg.ImageView):
         self.view.invertY(False)
 
     def setImage(self, img, keep_levels=False, *args, **kwargs):
-        """
-        Accepts an xarray.DataArray instead of a numpy array
-        :param img:
-        :param args:
-        :param kwargs:
-        :return:
-        """
+        """Accepts an xarray.DataArray instead of a numpy array."""
         if keep_levels:
             levels = self.getLevels()
 
@@ -87,4 +90,5 @@ class DataArrayImageView(pg.ImageView):
             self.setLevels(*levels)
 
     def recompute(self):
+        """A hook to recompute UI state, not used by this widget."""
         pass

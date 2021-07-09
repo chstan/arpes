@@ -1,3 +1,4 @@
+"""Provides Bokeh based utilities for inspecting fits and fit quality."""
 import numpy as np
 from bokeh import events
 
@@ -8,14 +9,13 @@ __all__ = ("FitCheckTool",)
 
 
 class FitCheckTool(BokehInteractiveTool, CursorTool):
-    """
-    Verification of fits
-    """
+    """Interactive verification of fit quality for broadcast fits."""
 
     auto_zero_nans = False
     auto_rebin = False
 
     def __init__(self, **kwargs):
+        """Loads marginal sizes and configures initial application settings."""
         super().__init__()
 
         self.load_settings(**kwargs)
@@ -27,6 +27,7 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
         self.outlier_clip = 1
 
     def tool_handler(self, doc):
+        """Defines the application widgets and UI interactions."""
         from bokeh.layouts import row, column, widgetbox, Spacer
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models import widgets

@@ -1,3 +1,4 @@
+"""Preliminary implementation of data loading at the ALS HERS beamline."""
 import copy
 import itertools
 import os.path
@@ -16,7 +17,8 @@ __all__ = ("HERSEndstation",)
 
 
 class HERSEndstation(SynchrotronEndstation, HemisphericalEndstation):
-    """
+    """Implements data loading at the ALS HERS beamline.
+
     This should be unified with the FITs endstation code, but I don't have any projects at BL10
     at the moment so I will defer the complexity of unifying them for now
     """
@@ -25,6 +27,7 @@ class HERSEndstation(SynchrotronEndstation, HemisphericalEndstation):
     ALIASES = ["ALS-BL1001", "HERS", "ALS-HERS", "BL1001"]
 
     def load(self, scan_desc: dict = None, **kwargs):
+        """Loads HERS data from FITS files. Shares a lot in common with the Lanzara group formats."""
         if scan_desc is None:
             warnings.warn("Attempting to make due without user associated scan_desc for the file")
             raise TypeError("Expected a dictionary of scan_desc with the location of the file")
@@ -39,7 +42,7 @@ class HERSEndstation(SynchrotronEndstation, HemisphericalEndstation):
         hdulist = fits.open(data_loc)
 
         hdulist[0].verify("fix+warn")
-        header_hdu, hdu = hdulist[0], hdulist[1]
+        _header_hdu, hdu = hdulist[0], hdulist[1]
 
         coords, dimensions, spectrum_shape = find_clean_coords(hdu, scan_desc)
         columns = hdu.columns  # pylint: disable=no-member

@@ -1,3 +1,4 @@
+"""Infrastructure code for interactive Bokeh based analysis tools."""
 import json
 import os
 import warnings
@@ -10,9 +11,9 @@ import arpes.config
 import colorcet as cc
 import xarray as xr
 from arpes.analysis.general import rebin
-from arpes.io import load_dataset
+from arpes.io import load_data
 from arpes.utilities import deep_equals
-from typing import Union
+from typing import List, Union
 
 __all__ = (
     "BokehInteractiveTool",
@@ -21,6 +22,8 @@ __all__ = (
 
 
 class CursorTool:
+    """A base class for a Bokeh based analysis application which using a cursor into a data volume."""
+
     _cursor = None
     _cursor_info = None
     _horiz_cursor_x = None
@@ -31,12 +34,14 @@ class CursorTool:
     _cursor_dims = None
 
     def __init__(self):
+        """Initializes application context and not much else."""
         self.data_range = {}
         self.arr = None
         self.app_context = {}
 
     @property
-    def cursor_dims(self):
+    def cursor_dims(self) -> List[str]:
+        """The dimesnion names for the current cursor order."""
         return self._cursor_dims
 
     @cursor_dims.setter
@@ -45,6 +50,7 @@ class CursorTool:
 
     @property
     def cursor_dict(self):
+        """The location of the cursor in the data volume, as a dim=value dict."""
         if self._cursor_dims is None:
             return None
 
@@ -52,9 +58,11 @@ class CursorTool:
 
     @property
     def cursor(self):
+        """The location of the cursor in the data volume."""
         return self._cursor
 
     def add_cursor_lines(self, figure):
+        """Adds the standard X and Y cursors to a figure."""
         cursor_lines = figure.multi_line(
             xs=[self._horiz_cursor_x, self._vert_cursor_x],
             ys=[self._horiz_cursor_y, self._vert_cursor_y],
@@ -104,6 +112,14 @@ class CursorTool:
 
 
 class BokehInteractiveTool(ABC):
+    """Base class for Bokeh based analysis applications.
+
+    You should view this as deprecated in light of newer variants based on Qt
+    which are much much more performant. There is no way of doing array memory sharing
+    with Jupyter so high performance browser based applications for PyARPES are probably
+    not going to happen anytime soon.
+    """
+
     auto_rebin = True
     auto_zero_nans = True
     rebin_size = 800
@@ -112,6 +128,7 @@ class BokehInteractiveTool(ABC):
 
     @property
     def debug_div(self):
+        """A debug element which makes developing tools with Bokeh more straightforward."""
         from bokeh.models.widgets.markups import Div
 
         if self._debug_div is None:
@@ -120,12 +137,15 @@ class BokehInteractiveTool(ABC):
         return self._debug_div
 
     def __setattr__(self, name, value):
+        """Overrides __setattr__ to handle setting debug info into a div so it's visible."""
         if name == "debug_text":
             self._debug_div.text = value
 
         super().__setattr__(name, value)
 
     def update_colormap_for(self, plot_name):
+        """Sets the colormap on the plot `plot_name` to have an appropriate range."""
+
         def update_plot_colormap(attr, old, new):
             plot_data = self.plots[plot_name].data_source.data["image"]
             low, high = np.min(plot_data), np.max(plot_data)
@@ -137,6 +157,11 @@ class BokehInteractiveTool(ABC):
         return update_plot_colormap
 
     def init_bokeh_server(self):
+        """Tells Bokeh to send output to Jupyter with a relatively long timeout.
+
+        The long timeout is allows for slowish tool startup and transport of large arrays
+        over HTTP to the running JS application.
+        """
         from bokeh.io import output_notebook
 
         if "bokeh_configured" not in arpes.config.CONFIG:
@@ -151,6 +176,11 @@ class BokehInteractiveTool(ABC):
             # https://github.com/bokeh/bokeh/blob/0.12.10/examples/howto/server_embed/notebook_embed.ipynb
 
     def load_settings(self, **kwargs):
+        """Loads a user's settings for interactive tools into the tool.
+
+        Various settings, like the sizes of widgets and panels can be set in user
+        settings overrides, and are read here.
+        """
         self.settings = arpes.config.SETTINGS.get("interactive", {}).copy()
         for k, v in kwargs.items():
             if k not in self.settings:
@@ -158,6 +188,7 @@ class BokehInteractiveTool(ABC):
 
     @property
     def default_palette(self):
+        """Resolves user settings for a color palette to an actual matplotlib palette."""
         from bokeh import palettes
 
         palette_options = {
@@ -169,6 +200,7 @@ class BokehInteractiveTool(ABC):
         return palette_options[self.settings.get("palette", "viridis")]
 
     def __init__(self):
+        """Sets the initial context and initializes the Bokeh server."""
         self.settings = None
         self.app_context = {
             "data": None,
@@ -181,10 +213,13 @@ class BokehInteractiveTool(ABC):
         self.init_bokeh_server()
 
     def __getattribute__(self, item):
-        """
-        Allow more convenient use of attributes from self.app_context. This is a bit strange.
-        :param item:
-        :return:
+        """Allow more convenient use of attributes from self.app_context. This is a bit strange.
+
+        Args:
+            item
+
+        Returns:
+            The resolved attribute if it is found in `self.app_context`.
         """
         try:
             return super().__getattribute__(item)
@@ -194,11 +229,16 @@ class BokehInteractiveTool(ABC):
 
     @abstractmethod
     def tool_handler(self, doc):
+        """Hook for the application configuration and widget definition, without boilerplate."""
         pass
 
     def make_tool(
         self, arr: Union[xr.DataArray, str], notebook_url=None, notebook_handle=True, **kwargs
     ):
+        """Starts the Bokeh application in accordance with the Bokeh app docs.
+
+        Attempts to just guess the correct URL for Jupyter which is very error prone.
+        """
         from bokeh.application import Application
         from bokeh.application.handlers import FunctionHandler
         from bokeh.io import show
@@ -216,7 +256,7 @@ class BokehInteractiveTool(ABC):
                 notebook_url = "localhost:8888"
 
         if isinstance(arr, str):
-            arr = load_dataset(arr)
+            arr = load_data(arr)
             if "cycle" in arr.dims and len(arr.dims) > 3:
                 warnings.warn("Summing over cycle")
                 arr = arr.sum("cycle", keep_attrs=True)

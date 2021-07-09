@@ -1,6 +1,8 @@
-from typing import Dict, Any
-
+"""Utilities related to function application on xr types."""
+import numpy as np
 import xarray as xr
+
+from typing import Callable, Dict, Any
 
 from arpes.typing import DataType
 
@@ -15,15 +17,16 @@ __all__ = (
 
 
 def unwrap_xarray_item(item):
-    """
-    Unwraps something that might or might not be an xarray like with .item()
-    attribute.
+    """Unwraps something that might or might not be an xarray like with .item() attribute.
 
     This is especially helpful for dealing with unwrapping coordinates which might
     be floating point-like or might be array-like.
 
-    :param item:
-    :return:
+    Args:
+        item: The value to unwrap.
+
+    Returns:
+        The safely unwrapped item
     """
     try:
         return item.item()
@@ -32,27 +35,34 @@ def unwrap_xarray_item(item):
 
 
 def unwrap_xarray_dict(d: Dict[str, Any]) -> Dict[str, Any]:
-    """
+    """Returns the attributes as unwrapped values rather than item() instances.
+
     Useful for unwrapping coordinate dicts where the values might be a bare type:
     like a float or an int, but might also be a wrapped array-like for instance
     xr.DataArray. Even worse, we might have wrapped bare values!
 
-    :param d:
-    :return:
+    Args:
+        d
+
+    Returns:
+        The unwrapped attributes as a dict.
     """
     return {k: unwrap_xarray_item(v) for k, v in d.items()}
 
 
 def apply_dataarray(arr: xr.DataArray, f, *args, **kwargs):
+    """Applies a function onto the values of a DataArray."""
     return xr.DataArray(f(arr.values, *args, **kwargs), arr.coords, arr.dims, attrs=arr.attrs)
 
 
-def lift_dataarray(f):
-    """
-    Lifts a function that operates on an np.ndarray's values to one that
-    acts on the values of an xr.DataArray
-    :param f:
-    :return: g: Function operating on an xr.DataArray
+def lift_dataarray(f: Callable[[np.ndarray], np.ndarray]) -> Callable[[xr.DataArray], xr.DataArray]:
+    """Lifts a function that operates on an np.ndarray's values to act on an xr.DataArray.
+
+    Args:
+        f
+
+    Returns:
+        g: Function operating on an xr.DataArray
     """
 
     def g(arr: xr.DataArray, *args, **kwargs):
@@ -61,13 +71,16 @@ def lift_dataarray(f):
     return g
 
 
-def lift_dataarray_attrs(f):
-    """
-    Lifts a function that operates on a dictionary to a function that acts on the
-    attributes of an xr.DataArray, producing a new xr.DataArray. Another option
-    if you don't need to create a new DataArray is to modify the attributes.
-    :param f:
-    :return: g: Function operating on the attributes of an xr.DataArray
+def lift_dataarray_attrs(f: Callable[[dict], dict]) -> Callable[[xr.DataArray], xr.DataArray]:
+    """Lifts a function that operates dicts to a function that acts on dataarray attrs.
+
+    Produces a new xr.DataArray.
+
+    Args:
+        f
+
+    Returns:
+        g: Function operating on the attributes of an xr.DataArray
     """
 
     def g(arr: xr.DataArray, *args, **kwargs):
@@ -76,13 +89,17 @@ def lift_dataarray_attrs(f):
     return g
 
 
-def lift_datavar_attrs(f):
-    """
-    Lifts a function that operates on a dictionary to a function that acts on the
-    attributes of all the datavars in a xr.Dataset, as well as the Dataset attrs
-    themselves.
-    :param f: Function to apply
-    :return:
+def lift_datavar_attrs(f: Callable[[dict], dict]) -> Callable[[DataType], DataType]:
+    """Lifts a function that operates dicts to a function that acts on xr attrs.
+
+    Applies to all attributes of all the datavars in a xr.Dataset, as well as the Dataset
+    attrs themselves.
+
+    Args:
+        f: Function to apply
+
+    Returns:
+        The function modified to apply to xr instances.
     """
 
     def g(data: DataType, *args, **kwargs):

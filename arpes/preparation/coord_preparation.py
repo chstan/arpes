@@ -1,3 +1,4 @@
+"""Utilities related to treating coordinates during data prep."""
 import collections
 import functools
 
@@ -8,6 +9,11 @@ __all__ = ["disambiguate_coordinates"]
 
 
 def disambiguate_coordinates(datasets, possibly_clashing_coordinates):
+    """Finds and unifies duplicated coordinates or ambiguous coordinates.
+
+    This is useful if two regions claim to have an energy axis, but one is a core level
+    and so refers to a different energy range.
+    """
     coords_set = collections.defaultdict(list)
     for d in datasets:
         for c in possibly_clashing_coordinates:

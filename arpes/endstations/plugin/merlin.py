@@ -1,3 +1,4 @@
+"""The MERLIN ARPES Endstation at the Advanced Light Source."""
 import re
 from pathlib import Path
 
@@ -7,13 +8,11 @@ import typing
 import xarray as xr
 from arpes.endstations import HemisphericalEndstation, SESEndstation, SynchrotronEndstation
 
-__all__ = ("BL403ARPESEndstation",)
+__all__ = ["BL403ARPESEndstation"]
 
 
 class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEndstation):
-    """
-    The MERLIN ARPES Endstation at the Advanced Light Source
-    """
+    """The MERLIN ARPES Endstation at the Advanced Light Source."""
 
     PRINCIPAL_NAME = "ALS-BL403"
     ALIASES = [
@@ -96,6 +95,12 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
     }
 
     def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
+        """Concatenates frames from different files into a single scan.
+
+        Above standard process here, we need to look for a Motor_Pos.txt
+        file which contains the coordinates of the scanned axis so that we can
+        stitch the different elements together.
+        """
         if len(frames) < 2:
             return super().concatenate_frames(frames)
 
@@ -145,6 +150,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         return super().concatenate_frames(frames)
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
+        """Loads all regions for a single .pxt frame, and perform per-frame normalization."""
         import copy
         import os
         from arpes.repair import negate_energy
@@ -189,6 +195,7 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
             return self.concatenate_frames(region_files, scan_desc=scan_desc)
 
     def load_single_region(self, region_path: str = None, scan_desc: dict = None, **kwargs):
+        """Loads a single region for multi-region scans."""
         import os
         from arpes.repair import negate_energy
         from arpes.load_pxt import read_single_pxt
@@ -205,6 +212,22 @@ class BL403ARPESEndstation(SynchrotronEndstation, HemisphericalEndstation, SESEn
         )  # separate spectra for possibly unrelated data
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
+        """Performs final data normalization for MERLIN data.
+
+        Additional steps we perform here are:
+
+        1. We attach the slit information for the R8000 used on MERLIN.
+        2. We normalize the undulator polarization from the sentinel values
+          recorded by the beamline.
+        3. We convert angle units to radians.
+
+        Args:
+            data: The input data
+            scan_desc: Originating load parameters
+
+        Returns:
+            Processed copy of the data
+        """
         ls = [data] + data.S.spectra
 
         for l in ls:

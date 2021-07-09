@@ -1,3 +1,4 @@
+"""Provides background estimation approaches."""
 import xarray as xr
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -10,6 +11,7 @@ __all__ = (
 
 
 def calculate_background_hull(arr, breakpoints=None):
+    """Calculates a background using the convex hull of the data (viewing the intensity as a Z axis)."""
     if breakpoints:
         breakpoints = [None] + breakpoints + [None]
         dim = arr.dims[0]
@@ -35,4 +37,5 @@ def calculate_background_hull(arr, breakpoints=None):
 
 
 def remove_background_hull(data, *args, **kwargs):
+    """Removes a background according to `calculate_background_hull`."""
     return data - calculate_background_hull(data, *args, **kwargs)

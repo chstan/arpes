@@ -1,6 +1,6 @@
-"""
-For now we monkeypatch lmfit to make it easier to work with in Jupyter. We should consider forking
-or providing a pull at a later date after this settles down.
+"""For now we monkeypatch lmfit to make it easier to work with in Jupyter.
+
+We should consider forking or providing a pull at a later date after this settles down.
 
 The end goal here is to allow pleasing and functional representations of curve fitting sessions
 performed in Jupyter, so that they can be rapidly understood, and screencapped for simple purposes,
@@ -14,12 +14,7 @@ from lmfit import model
 
 
 def repr_html_ModelResult(self, **kwargs):
-    """
-    Provides a better Jupyter representation of an `lmfit.ModelResult` instance.
-    :param self:
-    :param kwargs:
-    :return:
-    """
+    """Provides a better Jupyter representation of an `lmfit.ModelResult` instance."""
     template = """
         <div>
             <span><strong>Converged: </strong>{success}</span>
@@ -37,11 +32,7 @@ def repr_html_ModelResult(self, **kwargs):
 
 
 def repr_html_Model(self):
-    """
-    Better Jupyter representation of `lmfit.Model` instances.
-    :param self:
-    :return:
-    """
+    """Better Jupyter representation of `lmfit.Model` instances."""
     template = """
     <div>
     <strong>{name}</strong>
@@ -51,6 +42,7 @@ def repr_html_Model(self):
 
 
 def repr_html_Parameters(self, short=False):
+    """HTML representation for `lmfit.Parameters` instances."""
     skip_on_short = {"Min", "Max", "Vary", "Expr", "Brute_Step"}
     all = ["Name", "Value", "Min", "Max", "Stderr", "Vary", "Expr", "Brute_Step"]
     keys = list(self.keys())
@@ -74,6 +66,7 @@ def repr_html_Parameters(self, short=False):
 
 
 def repr_html_Parameter(self, short=False):
+    """HTML representation for `lmfit.Parameter` instances."""
     if short:
         return """
             <tr>

@@ -1,3 +1,4 @@
+"""Utilities for modifying, iterating over, and transforming dictionaries."""
 import re
 from collections import OrderedDict
 
@@ -23,6 +24,7 @@ def _rename_key(d: Union[Dict[str, Any], OrderedDict], k: str, nk: str) -> None:
 def rename_keys(
     d: Union[Dict[str, Any], OrderedDict], keys_dict: Dict[str, str]
 ) -> Union[Dict[str, Any], OrderedDict]:
+    """Renames all the keys of `d` according to the remapping in `keys_dict`."""
     d = d.copy()
     for k, nk in keys_dict.items():
         _rename_key(d, k, nk)
@@ -31,6 +33,8 @@ def rename_keys(
 
 
 def clean_keys(d):
+    """Renames dictionary keys so that they are more Pythonic."""
+
     def clean_single_key(k):
         k = k.replace(" ", "_")
         k = k.replace(".", "_")
@@ -43,14 +47,15 @@ def clean_keys(d):
 
 
 def case_insensitive_get(d: dict, key: str, default=None, take_first=False):
-    """
-    Looks up a key in a dictionary ignoring case. We use this sometimes to be
-    nicer to users who don't provide perfectly sanitized data
-    :param d:
-    :param key:
-    :param default:
-    :param take_first:
-    :return:
+    """Looks up a key in a dictionary ignoring case.
+
+    We use this sometimes to be nicer to users who don't provide perfectly sanitized data.
+
+    Args:
+        d: The dictionary to perform lookup in
+        key: The key to get
+        default: A default value if the key is not present
+        take_first: Whether to take the first entry if there were multiple found
     """
     found_value = False
     value = None

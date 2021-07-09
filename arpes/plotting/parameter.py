@@ -1,3 +1,4 @@
+"""Utilities for plotting parameter data out of bulk fits."""
 import matplotlib.pyplot as plt
 
 import xarray as xr
@@ -20,6 +21,7 @@ def plot_parameter(
     two_sigma=False,
     **kwargs
 ):
+    """Makes a simple scatter plot of a parameter from an `broadcast_fit` result."""
     fig = None
 
     if ax is None:

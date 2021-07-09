@@ -1,5 +1,5 @@
-"""
-This module contains monkey-patched versions of functions from xrft until improvements are made upstream.
+"""This module contains monkey-patched versions of functions from xrft until improvements are made upstream.
+
 We don't generally use this module too much anyway, and it is not a default import.
 """
 
@@ -8,29 +8,32 @@ We don't generally use this module too much anyway, and it is not a default impo
 # TODO note that there is a slight bug in the inverse Fourier transform here where the coords are sometimes rolled
 
 import warnings
-import xrft
 
 import dask as dsar
 import numpy as np
 import xarray as xr
 
 from pandas.api.types import is_timedelta64_dtype
-from xrft.xrft import _hanning
 
 from arpes.provenance import provenance
 
 # Don't export the xrft additions we monkey patch them onto that module directly.
 __all__ = ("fft_filter",)
 
+import xrft
+from xrft.xrft import _hanning
+
 
 def fft_filter(data: xr.DataArray, stops):
-    """
-    Applies a brick wall filter at region in ``stops`` in the Fourier transform of data. Use with care.
-    :param data:
-    :param stops:
-    :return:
-    """
+    """Applies a brick wall filter at region in ``stops`` in the Fourier transform of data. Use with care.
 
+    Args:
+        data
+        stops
+
+    Returns:
+        The filtered data.
+    """
     # This won't tolerate inverse inverse filtering ;)
     kdata = xrft.dft(data)
 
@@ -62,10 +65,13 @@ def fft_filter(data: xr.DataArray, stops):
 
 
 def _spacing(da, dims):
-    """
-    Verify correct spacing and return the spacing for each axis
-    :param da:
-    :return:
+    """Verify correct spacing and return the spacing for each axis.
+
+    Args:
+        da
+
+    Returns:
+        The spacing along the axes.
     """
     delta_x = []
     for d in dims:
@@ -85,26 +91,17 @@ def _spacing(da, dims):
 
 
 def rdft(da, dim=None, shift=True, remove_mean=True, window=False):
-    """
-    Perform real discrete Fourier transform of xarray data-array `da` along the
-    specified dimensions.
+    """Perform real discrete Fourier transform of xarray data-array `da`.
 
-    Parameters
-    ----------
-    da : `xarray.DataArray`
-        The data to be transformed
-    dim : list (optional)
-        The dimensions along which to take the transformation. If `None`, all
-        dimensions will be transformed.
-    shift : bool (optional)
-        Whether to shift the fft output.
-    remove_mean : bool (optional)
-        If `True`, the mean across the transform dimensions will be subtracted
-        before calculating the Fourier transform.
+    Args:
+        da: The data to be transformed
+        dim: The dimensions along which to take the transformation. If `None`, all
+          dimensions will be transformed.
+        shift: Whether to shift the fft output.
+        remove_mean: If `True`, the mean across the transform dimensions will be subtracted
+          before calculating the Fourier transform.
 
-    Returns
-    -------
-    daft : `xarray.DataArray`
+    Returns:
         The output of the Fourier transformation, with appropriate dimensions.
     """
     if np.isnan(da.values).any():
@@ -164,23 +161,17 @@ def rdft(da, dim=None, shift=True, remove_mean=True, window=False):
 
 
 def irdft(da, dim=None, shift=True, window=False):
-    """
-    Perform inverse real discrete Fourier transform of xarray data-array `da` along the
-    specified dimensions.
+    """Perform inverse real discrete Fourier transform of xarray data-array `da`.
 
-    Parameters
-    ----------
-    da : `xarray.DataArray`
-        The data to be transformed
-    dim : list (optional)
-        The dimensions along which to take the transformation. If `None`, all
-        dimensions will be transformed.
-    shift : bool (optional)
-        Whether to shift the fft output.
+    The transofrm is performed along the specified dimensions.
 
-    Returns
-    -------
-    daft : `xarray.DataArray`
+    Args:
+        da: The data to be transformed
+        dim: The dimensions along which to take the transformation. If `None`, all
+          dimensions will be transformed.
+        shift: Whether to shift the fft output.
+
+    Returns:
         The output of the Fourier transformation, with appropriate dimensions.
     """
     if np.isnan(da.values).any():
@@ -245,23 +236,15 @@ def irdft(da, dim=None, shift=True, window=False):
 
 
 def idft(da, dim=None, shift=True, window=False):
-    """
-    Perform inverse real discrete Fourier transform of xarray data-array `da` along the
-    specified dimensions.
+    """Perform inverse real discrete Fourier transform of xarray data-array `da`.
 
-    Parameters
-    ----------
-    da : `xarray.DataArray`
-        The data to be transformed
-    dim : list (optional)
-        The dimensions along which to take the transformation. If `None`, all
-        dimensions will be transformed.
-    shift : bool (optional)
-        Whether to shift the fft output.
+    Args:
+        da: The data to be transformed
+        dim: The dimensions along which to take the transformation. If `None`, all
+          dimensions will be transformed.
+        shift: Whether to shift the fft output.
 
-    Returns
-    -------
-    daft : `xarray.DataArray`
+    Returns:
         The output of the Fourier transformation, with appropriate dimensions.
     """
     warnings.warn(

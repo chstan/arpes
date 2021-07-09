@@ -1,3 +1,4 @@
+"""Allows for making any function of a spectrum into a dynamic tool with Bokeh."""
 import inspect
 
 import numpy as np
@@ -15,11 +16,10 @@ __all__ = (
 
 
 class DynamicTool(BokehInteractiveTool, CursorTool):
-    """
-    Presents a utility to rerun a function with different arguments and see the result of the function
-    """
+    """Presents a utility to rerun a function with different arguments and see the result of the function."""
 
     def __init__(self, analysis_fn, widget_specification, **kwargs):
+        """Initialize the tool and load settings from the user specified ones."""
         super().__init__()
 
         self.load_settings(**kwargs)
@@ -30,6 +30,11 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
         self.app_marginal_size = self.settings.get("marginal_width", 300)
 
     def tool_handler(self, doc):
+        """Configures widgets for the dynamic tool.
+
+        In order to accomplish this, we need to inspect the type signature
+        for the function and generate inputs for it dynamically.
+        """
         from bokeh import events
         from bokeh.layouts import row, column, widgetbox
         from bokeh.models.mappers import LinearColorMapper
@@ -280,6 +285,7 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
 
 
 def dyn(dynamic_function: typing.Callable, data: DataType, widget_specifications=None):
+    """Starts the dynamic tool using `dynamic_function` and widgets for each arg."""
     data = normalize_to_spectrum(data)
 
     tool = DynamicTool(dynamic_function, widget_specifications)

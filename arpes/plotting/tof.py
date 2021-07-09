@@ -1,4 +1,5 @@
-"""
+"""Plotting routines for count-like data from a ToF or delay line.
+
 This module is a bit of a misnomer, in that it also applies perfectly well to data collected by a delay
 line on a hemisphere, the important point is that the data in any given channel should correspond to the true number of
 electrons that arrived in that channel.
@@ -22,6 +23,7 @@ __all__ = (
 
 @save_plot_provenance
 def plot_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs):
+    """Makes a fill-between line plot with error bars from associated statistical errors."""
     if name_to_plot is None:
         var_names = [k for k in data.data_vars.keys() if "_std" not in k]
         assert len(var_names) == 1
@@ -57,6 +59,7 @@ def plot_with_std(data: DataType, name_to_plot=None, ax=None, out=None, **kwargs
 
 @save_plot_provenance
 def scatter_with_std(data: DataType, name_to_plot=None, ax=None, fmt="o", out=None, **kwargs):
+    """Makes a scatter plot of data with error bars generated from associated statistical errors."""
     if name_to_plot is None:
         var_names = [k for k in data.data_vars.keys() if "_std" not in k]
         assert len(var_names) == 1

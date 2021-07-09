@@ -1,9 +1,10 @@
+"""Provides array decomposition approaches like principal component analysis for xarray types."""
 from functools import wraps
 
 from arpes.provenance import provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
-from typing import List
+from typing import List, Tuple, Any
 
 __all__ = (
     "decomposition_along",
@@ -16,11 +17,11 @@ __all__ = (
 
 def decomposition_along(
     data: DataType, axes: List[str], decomposition_cls, correlation=False, **kwargs
-):
-    """
-    Performs a change of basis of your data according to `sklearn` decomposition classes. This allows
-    for robust and simple PCA, ICA, factor analysis, and other decompositions of your data even when it
-    is very high dimensional.
+) -> Tuple[DataType, Any]:
+    """Performs a change of basis of multidimensional data according to `sklearn` decomposition classes.
+
+    This allows for robust and simple PCA, ICA, factor analysis, and other decompositions of your data
+    even when it is very high dimensional.
 
     Generally speaking, PCA and similar techniques work when data is 2D, i.e. a sequence of 1D observations.
     We can make the same techniques work by unravelling a ND dataset into 1D (i.e. np.ndarray.ravel()) and
@@ -39,14 +40,17 @@ def decomposition_along(
     The results of `decomposition_along` can be explored with `arpes.widgets.pca_explorer`, regardless of
     the decomposition class.
 
-    :param data: Input data, can be N-dimensional but should only include one "spectral" axis.
-    :param axes: Several axes to be treated as a single axis labeling the list of observations.
-    :param decomposition_cls: A sklearn.decomposition class (such as PCA or ICA) to be used
-                              to perform the decomposition.
-    :param correlation: Controls whether StandardScaler() is used as the first stage of the data ingestion
-                        pipeline for sklearn.
-    :param kwargs:
-    :return:
+    Args:
+        data: Input data, can be N-dimensional but should only include one "spectral" axis.
+        axes: Several axes to be treated as a single axis labeling the list of observations.
+        decomposition_cls: A sklearn.decomposition class (such as PCA or ICA) to be used
+          to perform the decomposition.
+        correlation: Controls whether StandardScaler() is used as the first stage of the data ingestion
+          pipeline for sklearn.
+        kwargs:
+
+    Returns:
+        A tuple containing the projected data and the decomposition fit instance.
     """
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import StandardScaler
@@ -101,6 +105,7 @@ def decomposition_along(
 
 @wraps(decomposition_along)
 def pca_along(*args, **kwargs):
+    """Specializes `decomposition_along` with `sklearn.decomposition.PCA`."""
     from sklearn.decomposition import PCA
 
     return decomposition_along(*args, **kwargs, decomposition_cls=PCA)
@@ -108,6 +113,7 @@ def pca_along(*args, **kwargs):
 
 @wraps(decomposition_along)
 def factor_analysis_along(*args, **kwargs):
+    """Specializes `decomposition_along` with `sklearn.decomposition.FactorAnalysis`."""
     from sklearn.decomposition import FactorAnalysis
 
     return decomposition_along(*args, **kwargs, decomposition_cls=FactorAnalysis)
@@ -115,6 +121,7 @@ def factor_analysis_along(*args, **kwargs):
 
 @wraps(decomposition_along)
 def ica_along(*args, **kwargs):
+    """Specializes `decomposition_along` with `sklearn.decomposition.FastICA`."""
     from sklearn.decomposition import FastICA
 
     return decomposition_along(*args, **kwargs, decomposition_cls=FastICA)
@@ -122,6 +129,7 @@ def ica_along(*args, **kwargs):
 
 @wraps(decomposition_along)
 def nmf_along(*args, **kwargs):
+    """Specializes `decomposition_along` with `sklearn.decomposition.NMF`."""
     from sklearn.decomposition import NMF
 
     return decomposition_along(*args, **kwargs, decomposition_cls=NMF)

@@ -1,3 +1,4 @@
+"""Plotting utilities related to density of states plots."""
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
@@ -27,6 +28,7 @@ def plot_core_levels(
     promenance=5,
     **kwargs
 ):
+    """Plots an XPS curve and approximate core level locations."""
     axes, cbar = plot_dos(data=data, title=title, out=None, norm=norm, dos_pow=dos_pow, **kwargs)
 
     if core_levels is None:
@@ -44,6 +46,7 @@ def plot_core_levels(
 
 @save_plot_provenance
 def plot_dos(data, title=None, out=None, norm=None, dos_pow=1, **kwargs):
+    """Plots the density of states (momentum integrated) image next to the original spectrum."""
     data = normalize_to_spectrum(data)
 
     fig = plt.figure(figsize=(14, 6))

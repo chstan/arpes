@@ -1,3 +1,4 @@
+"""Provides a Qt based implementation of Igor's ImageTool."""
 # pylint: disable=import-error
 
 from PyQt5 import QtGui, QtCore, QtWidgets
@@ -6,6 +7,7 @@ import numpy as np
 from collections import namedtuple
 import weakref
 import warnings
+from typing import List, Union
 
 import arpes.config
 from arpes.utilities import normalize_to_spectrum
@@ -42,7 +44,8 @@ qt_info.setup_pyqtgraph()
 
 
 class QtToolWindow(SimpleWindow):
-    """
+    """The application window for `QtTool`.
+
     QtToolWindow was the first Qt-Based Tool that I built for PyARPES. Much of its structure was ported
     to SimpleWindow and borrowed ideas from when I wrote DAQuiri. As a result, the structure is essentially
     now to define just the handlers and any lifecycle hooks (close, etc.)
@@ -140,20 +143,18 @@ class QtToolWindow(SimpleWindow):
 
 
 class QtTool(SimpleApp):
-    """
-    QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5 for now we retain a number of the
-    metaphors from BokehTool, including a "context" that stores the state, and can be used to programmatically interface
-    with the tool
+    """QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5.
+
+    For now we retain a number of the metaphors from BokehTool, including a "context"
+    that stores the state, and can be used to programmatically interface with the tool.
     """
 
     TITLE = "Qt Tool"
     WINDOW_CLS = QtToolWindow
-    WINDOW_SIZE = (
-        5,
-        5,
-    )
+    WINDOW_SIZE = (5, 5)
 
     def __init__(self):
+        """Initialize attributes to safe empty values."""
         super().__init__()
         self.data = None
 
@@ -167,6 +168,7 @@ class QtTool(SimpleApp):
         self._binning = None
 
     def center_cursor(self):
+        """Scrolls so that the cursors are in the center of the data volume."""
         new_cursor = [len(self.data.coords[d]) / 2 for d in self.data.dims]
         self.update_cursor_position(new_cursor)
 
@@ -175,6 +177,7 @@ class QtTool(SimpleApp):
                 cursor.set_location(new_cursor[i])
 
     def scroll(self, delta):
+        """Scroll the axis delta[0] by delta[1] pixels."""
         if delta[0] >= len(self.context["cursor"]):
             warnings.warn("Tried to scroll a non-existent dimension.")
             return
@@ -190,6 +193,7 @@ class QtTool(SimpleApp):
 
     @property
     def binning(self):
+        """The binning on each axis in pixels."""
         if self._binning is None:
             return [1 for _ in self.data.dims]
 
@@ -197,6 +201,7 @@ class QtTool(SimpleApp):
 
     @binning.setter
     def binning(self, value):
+        """Set the desired axis binning."""
         different_binnings = [i for i, (nv, v) in enumerate(zip(value, self._binning)) if nv != v]
         self._binning = value
 
@@ -207,7 +212,8 @@ class QtTool(SimpleApp):
 
         self.update_cursor_position(self.context["cursor"], force=True)
 
-    def transpose(self, transpose_order):
+    def transpose(self, transpose_order: List[str]):
+        """Transpose dimensions into the order specified by `transpose_order` and redraw."""
         reindex_order = [self.data.dims.index(t) for t in transpose_order]
         self.data = self.data.transpose(*transpose_order)
 
@@ -221,7 +227,8 @@ class QtTool(SimpleApp):
             for cursor in cursors:
                 cursor.set_location(new_cursor[i])
 
-    def transpose_to_front(self, dim):
+    def transpose_to_front(self, dim: Union[str, int]):
+        """Transpose the dimension `dim` to the front so that it is in the main marginal."""
         if not isinstance(dim, str):
             dim = self.data.dims[dim]
 
@@ -231,6 +238,14 @@ class QtTool(SimpleApp):
         self.transpose(order)
 
     def configure_image_widgets(self):
+        """Configure array marginals for the input data.
+
+        Depending on the array dimensionality, we need a different number and variety
+        of marginals. This is as easy as specifying which marginals we select over and
+        handling the rest dynamically.
+
+        An additional complexity is that we also handle the cursor registration here.
+        """
         if len(self.data.dims) == 2:
             self.generate_marginal_for((), 1, 0, "xy", cursors=True, layout=self.content_layout)
             self.generate_marginal_for(
@@ -305,9 +320,12 @@ class QtTool(SimpleApp):
             )
 
     def connect_cursor(self, dimension, the_line):
-        # without weak references we get a circular dependency here
-        # because `the_line` is owned by a child of `self` but we are
-        # providing self to a closure which is retained by `the_line`
+        """Connect a cursor to a line control.
+
+        without weak references we get a circular dependency here
+        because `the_line` is owned by a child of `self` but we are
+        providing self to a closure which is retained by `the_line`.
+        """
         self.registered_cursors[dimension].append(the_line)
         owner = weakref.ref(self)
 
@@ -319,6 +337,14 @@ class QtTool(SimpleApp):
         the_line.sigRegionChanged.connect(connected_cursor)
 
     def update_cursor_position(self, new_cursor, force=False, keep_levels=True):
+        """Sets the current cursor position.
+
+        Because setting the cursor position changes the marginal data, this is also
+        where redrawing originates.
+
+        The way we do this is basically to step through views, recompute the slice for that view
+        and set the image/array on the slice.
+        """
         old_cursor = list(self.context["cursor"])
         self.context["cursor"] = new_cursor
 
@@ -364,9 +390,7 @@ class QtTool(SimpleApp):
                             [self.data.dims[i] for i in reactive.dims],
                             [
                                 safe_slice(
-                                    int(new_cursor[i]),
-                                    int(new_cursor[i] + self.binning[i]),
-                                    i,
+                                    int(new_cursor[i]), int(new_cursor[i] + self.binning[i]), i
                                 )
                                 for i in reactive.dims
                             ],
@@ -404,12 +428,14 @@ class QtTool(SimpleApp):
                     pass
 
     def construct_axes_tab(self):
+        """Controls for axis order and transposition."""
         inner_items = [
             AxisInfoWidget(axis_index=i, root=weakref.ref(self)) for i in range(len(self.data.dims))
         ]
         return horizontal(*inner_items), inner_items
 
     def construct_binning_tab(self):
+        """This tab controls the degree of binning around the cursor."""
         binning_options = QtWidgets.QLabel("Options")
         inner_items = [
             BinningInfoWidget(axis_index=i, root=weakref.ref(self))
@@ -419,31 +445,21 @@ class QtTool(SimpleApp):
         return horizontal(binning_options, *inner_items), inner_items
 
     def construct_kspace_tab(self):
+        """The momentum exploration tab."""
         inner_items = []
         return horizontal(*inner_items), inner_items
 
     def add_contextual_widgets(self):
+        """Adds the widgets for the contextual controls at the bottom."""
         axes_tab, self.axis_info_widgets = self.construct_axes_tab()
         binning_tab, self.binning_info_widgets = self.construct_binning_tab()
         kspace_tab, self.kspace_info_widgets = self.construct_kspace_tab()
 
         self.tabs = tabs(
-            [
-                "Info",
-                horizontal(),
-            ],
-            [
-                "Axes",
-                axes_tab,
-            ],
-            [
-                "Binning",
-                binning_tab,
-            ],
-            [
-                "K-Space",
-                kspace_tab,
-            ],
+            ["Info", horizontal()],
+            ["Axes", axes_tab],
+            ["Binning", binning_tab],
+            ["K-Space", kspace_tab],
         )
         self.tabs.setFixedHeight(qt_info.inches_to_px(1))
 
@@ -451,11 +467,13 @@ class QtTool(SimpleApp):
         self.main_layout.addWidget(self.tabs, 1, 0)
 
     def layout(self):
+        """Initialize the layout components."""
         self.main_layout = QtWidgets.QGridLayout()
         self.content_layout = QtWidgets.QGridLayout()
         return self.main_layout
 
     def before_show(self):
+        """Lifecycle hook for configuration before app show."""
         self.configure_image_widgets()
         self.add_contextual_widgets()
         import matplotlib.cm
@@ -463,6 +481,11 @@ class QtTool(SimpleApp):
         self.set_colormap(matplotlib.cm.viridis)
 
     def after_show(self):
+        """Initialize application state after app show.
+
+        To do this, we need to set the initial cursor location, and call update
+        which forces a rerender.
+        """
         # basic state initialization
         self.context.update(
             {
@@ -475,15 +498,18 @@ class QtTool(SimpleApp):
         self.center_cursor()
 
     def reset_intensity(self):
+        """Autoscales intensity in each marginal plot."""
         self.update_cursor_position(self.context["cursor"], force=True, keep_levels=False)
 
     def set_data(self, data: DataType):
+        """Sets the current data to a new value and resets binning."""
         data = normalize_to_spectrum(data)
         self.data = data
         self._binning = [1 for _ in self.data.dims]
 
 
 def qt_tool(data: DataType):
+    """Starts the qt_tool using an input spectrum."""
     tool = QtTool()
     tool.set_data(data)
     tool.start()

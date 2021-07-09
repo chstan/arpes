@@ -1,3 +1,4 @@
+"""Contains routines for calculating and removing the classic Shirley background."""
 import warnings
 
 import numpy as np
@@ -14,22 +15,29 @@ __all__ = (
 
 
 @update_provenance("Remove Shirley background")
-def remove_shirley_background(xps: DataType, **kwargs):
-    """
-    Calculates and removes a Shirley background from a spectrum.
+def remove_shirley_background(xps: DataType, **kwargs) -> DataType:
+    """Calculates and removes a Shirley background from a spectrum.
+
     Only the background corrected spectrum is retrieved.
-    :param xps:
-    :param kwargs:
-    :return:
+
+    Args:
+        xps: The input array.
+        kwargs: Parameters to feed to the background estimation routine.
+
+    Returns:
+        The the input array with a Shirley background subtracted.
     """
     xps = normalize_to_spectrum(xps)
     return xps - calculate_shirley_background(xps, **kwargs)
 
 
 @update_provenance("Calculate full range Shirley background")
-def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=50, n_samples=5):
-    """
-    Calculates a shirley background in the range of `energy_slice` according to:
+def calculate_shirley_background_full_range(
+    xps: DataType, eps=1e-7, max_iters=50, n_samples=5
+) -> DataType:
+    """Calculates a shirley background.
+
+    The background is defined according to:
 
     S(E) = I(E_right) + k * (A_right(E)) / (A_left(E) + A_right(E))
 
@@ -44,11 +52,16 @@ def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=5
 
     In practice, what we can do is to calculate the cumulative sum of the data along the energy axis of
     both the data and the current estimate of the background
-    :param xps:
-    :param eps:
-    :return:
-    """
 
+    Args:
+        xps: The input data.
+        eps: Convergence parameter.
+        max_iters: The maximum number of iterations to allow before convengence.
+        n_samples: The number of samples to use at the boundaries of the input data.
+
+    Returns:
+        A monotonic Shirley backgruond over the entire energy range.
+    """
     xps = normalize_to_spectrum(xps)
     background = xps.copy(deep=True)
     cumulative_xps = np.cumsum(xps.values)
@@ -93,14 +106,23 @@ def calculate_shirley_background_full_range(xps: DataType, eps=1e-7, max_iters=5
 @update_provenance("Calculate limited range Shirley background")
 def calculate_shirley_background(
     xps: DataType, energy_range: slice = None, eps=1e-7, max_iters=50, n_samples=5
-):
-    """
-    Calculates a shirley background iteratively over the full energy range `energy_range`.
-    :param xps:
-    :param energy_range:
-    :param eps:
-    :param max_iters:
-    :return:
+) -> DataType:
+    """Calculates a shirley background iteratively over the full energy range `energy_range`.
+
+    Uses `calculate_shirley_background_full_range` internally.
+
+    Outside the indicated range, the background is extrapolated as a constant from
+    the nearest in-range value.
+
+    Args:
+        xps: The input data.
+        energy_range: A slice with the energy range to be used.
+        eps: Convergence parameter.
+        max_iters: The maximum number of iterations to allow before convengence.
+        n_samples: The number of samples to use at the boundaries of the input data.
+
+    Returns:
+        A monotonic Shirley backgruond over the entire energy range.
     """
     if energy_range is None:
         energy_range = slice(None, None)
@@ -108,7 +130,7 @@ def calculate_shirley_background(
     xps = normalize_to_spectrum(xps)
     xps_for_calc = xps.sel(eV=energy_range)
 
-    bkg = calculate_shirley_background_full_range(xps_for_calc, eps, max_iters)
+    bkg = calculate_shirley_background_full_range(xps_for_calc, eps, max_iters, n_samples)
     full_bkg = xps * 0
 
     left_idx = np.searchsorted(full_bkg.eV.values, bkg.eV.values[0], side="left")

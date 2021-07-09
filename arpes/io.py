@@ -1,7 +1,10 @@
-"""
-The core IO facilities supported by PyARPES. The most important here are the
-data loading functions (simpe_load, fallback_load, load_without_dataset, load_example_data),
-pickling utilities, data stitching, and dataset manipulation functions.
+"""Provides the core IO facilities supported by PyARPES.
+
+The most important here are the data loading functions (load_data, load_example_data).
+and pickling utilities.
+
+Heavy lifting is actually performed by the plugin definitions which know how to ingest
+different data formats into the PyARPES data model.
 """
 
 import pickle
@@ -195,7 +198,8 @@ def load_pickle(name: str) -> Any:
         return pickle.load(file)
 
 
-def save_pickle(data, name):
+def save_pickle(data: Any, name: str):
+    """Saves a workspace local pickle. Inverse to `load_pickle`."""
     pickle.dump(data, open(file_for_pickle(name), "wb"))
 
 
@@ -208,6 +212,7 @@ def easy_pickle(data_or_str: Any, name=None) -> Any:
     Examples:
         Retaining analysis results between sessions.
 
+        Sharing results between workspaces.
 
         Cacheing expensive or interim work.
 

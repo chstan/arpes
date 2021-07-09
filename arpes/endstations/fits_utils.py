@@ -1,3 +1,4 @@
+"""Utility functions for extracting ARPES information from the FITS file conventions."""
 import functools
 import warnings
 from ast import literal_eval
@@ -34,11 +35,14 @@ Dimension = str
 def extract_coords(
     attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = None
 ) -> Tuple[CoordsDict, List[Dimension], List[int]]:
-    """
-    Does the hard work of extracting coordinates from the scan description.
-    :param attrs:
-    :param dimension_renamings:
-    :return:
+    """Does the hard work of extracting coordinates from the scan description.
+
+    Args:
+        attrs:
+        dimension_renamings:
+
+    Returns:
+        A tuple consisting of the coordinate arrays, the dimension names, and their shapes
     """
     if dimension_renamings is None:
         dimension_renamings = DEFAULT_DIMENSION_RENAMINGS
@@ -215,10 +219,10 @@ def find_clean_coords(
     mode: str = "ToF",
     dimension_renamings: Optional[Any] = None,
 ) -> Tuple[CoordsDict, Dict[str, List[Dimension]], Dict[str, Any]]:
-    """
-    Determines the scan degrees of freedom, the shape of the actual "spectrum"
-    and reads and parses the coordinates from the header information in the recorded
-    scan.
+    """Determines the scan degrees of freedom, and reads coordinates.
+
+    To do this, we also extract the shape of the actual "spectrum" before reading and parsing
+    the coordinates from the header information in the recorded scan.
 
     Note: because different scan configurations can have different values of the detector coordinates, such as
     for instance when you record in two different angular modes of the spectrometer or when you record XPS spectra
@@ -230,12 +234,16 @@ def find_clean_coords(
 
     TODO Write data loading tests to ensure we don't break MC compatibility
 
-    :param spectra:
-    :param hdu:
-    :param attrs:
-    :param mode: Available modes are "ToF", "MC". This customizes the read process
-    :param dimension_renamings:
-    :return: (coordinates, dimensions, np shape of actual spectrum)
+    Args:
+        spectra
+        hdu
+        attrs
+        mode: Available modes are "ToF", "MC". This customizes the read process
+        dimension_renamings
+
+    Returns:
+        A tuple consisting of
+        (coordinates, dimensions, np shape of actual spectrum)
     """
     if dimension_renamings is None:
         dimension_renamings = DEFAULT_DIMENSION_RENAMINGS

@@ -1,6 +1,7 @@
-"""
-Note: this used to be a single function in xarray_extensions but was broken
-out to better support simultaneous traversal of collections.
+"""Note: this used to be a single function in xarray_extensions but was refactored out.
+
+TODO This was done to better support simultaneous traversal of collections, but is 
+still in process.
 
 Transform has similar semantics to matrix multiplication, the dimensions of the
 output can grow or shrink depending on whether the transformation is size preserving,
@@ -26,8 +27,6 @@ are iterated over and cannot therefore be modified.
 
 The transform function `transform_fn` must accept the coordinate of the
 marginal at the currently iterated point.
-"""
-
 
 if isinstance(self._obj, xr.Dataset):
     raise TypeError(
@@ -60,3 +59,4 @@ for coord, value in self.iterate_axis(axes):
     dest.loc[coord] = new_value
 
 return dest
+"""

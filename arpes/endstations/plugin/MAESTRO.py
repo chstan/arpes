@@ -1,3 +1,9 @@
+"""Implements data loading for the Beamline 7 (MAESTRO) ARPES experiments at ALS.
+
+Common code is provided by a base class reflecting DAQ similarities between micro- and nanoARPES
+at MAESTRO. This is subclassed for the individual experiments to handle some subtle differences
+in how nanoARPES handles its spatial coordiantes (they are hierarchical) and in the spectrometers.
+"""
 import numpy as np
 
 import xarray as xr
@@ -11,9 +17,7 @@ __all__ = ("MAESTROMicroARPESEndstation", "MAESTRONanoARPESEndstation")
 
 
 class MAESTROARPESEndstationBase(SynchrotronEndstation, HemisphericalEndstation, FITSEndstation):
-    """
-    The MERLIN ARPES Endstation at the Advanced Light Source
-    """
+    """Common code for the MAESTRO ARPES endstations at the Advanced Light Source."""
 
     PRINCIPAL_NAME = None  # skip me
     ALIASES = None  # skip me
@@ -65,9 +69,7 @@ class MAESTROARPESEndstationBase(SynchrotronEndstation, HemisphericalEndstation,
 
 
 class MAESTROMicroARPESEndstation(MAESTROARPESEndstationBase):
-    """
-    Implements data loading at the microARPES endstation of ALS's MAESTRO.
-    """
+    """Implements data loading at the microARPES endstation of ALS's MAESTRO."""
 
     PRINCIPAL_NAME = "ALS-BL7"
     ALIASES = ["BL7", "BL7.0.2", "ALS-BL7.0.2", "MAESTRO"]
@@ -140,9 +142,7 @@ class MAESTROMicroARPESEndstation(MAESTROARPESEndstationBase):
 
 
 class MAESTRONanoARPESEndstation(MAESTROARPESEndstationBase):
-    """
-    Implements data loading at the nanoARPES endstation of ALS's MAESTRO.
-    """
+    """Implements data loading at the nanoARPES endstation of ALS's MAESTRO."""
 
     PRINCIPAL_NAME = "ALS-BL7-nano"
     ALIASES = ["BL7-nano", "BL7.0.2-nano", "ALS-BL7.0.2-nano", "MAESTRO-nano"]
@@ -259,8 +259,9 @@ class MAESTRONanoARPESEndstation(MAESTROARPESEndstationBase):
     }
 
     @staticmethod
-    def update_hierarchical_coordinates(data: xr.Dataset):
-        """
+    def update_hierarchical_coordinates(data: xr.Dataset) -> xr.Dataset:
+        """Converts long and short coordinates to a single standard coordinate.
+
         Nano-ARPES endstations often have two sets of spatial coordinates, a long-range piezo inertia
         or stepper stage, sometimes outside vacuum, and a fast, high resolution piezo scan stage that may or may not
         be based on piezo inertia ("slip-stick") type actuators.
@@ -275,12 +276,12 @@ class MAESTRONanoARPESEndstation(MAESTROARPESEndstationBase):
         as appropriate. You can still access the underlying coordinates in this case as
         `long_{dim}` and `short_{dim}`.
 
-        :param data:
-        :return:
+        Args:
+            data: The input dataset to adjust coordinates for.
+
+        Returns:
+            The updated data.
         """
-
-        ls = [data] + data.S.spectra
-
         for d_name in ["x", "y", "z"]:
             short, long = "short_{}".format(d_name), "long_{}".format(d_name)
             phys = "physical_long_{}".format(d_name)
@@ -318,13 +319,17 @@ class MAESTRONanoARPESEndstation(MAESTROARPESEndstationBase):
 
     @staticmethod
     def unwind_serptentine(data: xr.Dataset) -> xr.Dataset:
-        """
+        """Changes serpentine scan data to a standard x-y cartesian scan format.
+
         MAESTRO supports a serpentine (think snake the computer game) scan mode to minimize the motion time for
         coarsely locating samples. Unfortunately, the DAQ just dumps the raw data, so we have to unwind it ourselves.
-        :param data:
-        :return:
-        """
 
+        Args:
+            data: The data to be normalized
+
+        Returns:
+            Data after conversion to standard x-y cartesian coordinates.
+        """
         spectra = data.S.spectra
         for spectrum in spectra:
             # serpentine axis always seems to be the first one, thankfully
@@ -338,6 +343,23 @@ class MAESTRONanoARPESEndstation(MAESTROARPESEndstationBase):
         return data
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
+        """Perform final preprocessing of MAESTRO nano-ARPES data.
+
+        In addition to standard tasks, we need to build a single unified spatial coordinate
+        system. nano-ARPES at MAESTRO uses a coarse and fine (piezo slip-stick/inertial) motion
+        control which are called "long_x"/"long_y"/"long_z" and "short_x"/"short_y"/"short_z"
+        respectively.
+
+        The physical motors use
+
+        By convention, "x"/"y"/"z" are the canonical spatial coordinates, so we convert the true
+        ("long_x" +/- "short_x") location to millimeters and make this the final coordinate.
+
+        You can look at `MAESTRONanoARPESEndstation.update_hierarchical_coordinates` for details.
+
+        Additionally, we do some normalization of different scan modes offered on this beamline,
+        like "serpentine" (x-y zigzag) scanning.
+        """
         data = data.rename({k: v for k, v in self.RENAME_COORDS.items() if k in data.coords.keys()})
         data = super().postprocess_final(data, scan_desc)
 

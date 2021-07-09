@@ -1,3 +1,4 @@
+"""Utilities for selecting and defining masks on data interactively."""
 import numpy as np
 
 from arpes.analysis.mask import apply_mask
@@ -6,13 +7,11 @@ from arpes.plotting.interactive_utils import CursorTool, SaveableTool
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = ("MaskTool", "mask")
+__all__ = ["mask"]
 
 
 class MaskTool(SaveableTool, CursorTool):
-    """
-    Tool to allow masking data by drawing regions.
-    """
+    """Tool to allow masking data by drawing regions."""
 
     auto_zero_nans = False
     auto_rebin = False
@@ -307,6 +306,7 @@ class MaskTool(SaveableTool, CursorTool):
 
 
 def mask(data: DataType, **kwargs):
+    """Start an interactive mask selection tool."""
     data = normalize_to_spectrum(data)
 
     tool = MaskTool(**kwargs)

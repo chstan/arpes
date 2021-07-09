@@ -1,3 +1,13 @@
+"""Provides standard corrections for datasets.
+
+Largely, this covers:
+1. Fermi edge corrections
+2. Background estimation and subtraction
+
+It also contains utilities related to identifying a piece of data
+earlier in a dataset which can be used to furnish equivalent references.
+
+"""
 from collections import OrderedDict
 
 from arpes.corrections.fermi_edge_corrections import apply_quadratic_fermi_edge_correction
@@ -13,9 +23,9 @@ __all__ = (
 
 
 class HashableDict(OrderedDict):
-    """
-    Implements hashing for ordered dictionaries. The dictionary
-    must be ordered for the hash to be stable.
+    """Implements hashing for ordered dictionaries.
+
+    The dictionary must be ordered for the hash to be stable.
     """
 
     def __hash__(self):
@@ -23,12 +33,14 @@ class HashableDict(OrderedDict):
 
 
 def reference_key(data: DataType):
+    """Calculates a key/hash for data determining reference/correction equality."""
     data = normalize_to_dataset(data)
 
     return HashableDict(data.S.reference_settings)
 
 
 def correction_from_reference_set(data: DataType, reference_set):
+    """Determines which correction to use from a set of references."""
     data = normalize_to_dataset(data)
 
     correction = None

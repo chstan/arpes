@@ -1,4 +1,4 @@
-import sys
+"""Shows cut orientations for scans in Brillouin zones."""
 import warnings
 
 import arpes.config
@@ -14,11 +14,15 @@ from arpes.utilities.conversion import convert_coordinates
 from arpes.utilities.bz_spec import SURFACE_ZONE_DEFINITIONS
 from arpes.utilities.image import imread_to_xarray
 from arpes.utilities.qt import SimpleWindow, BasicHelpDialog
-from arpes.utilities.ui import KeyBinding, horizontal, tabs, combo_box
+from arpes.utilities.ui import horizontal, tabs, combo_box
 from arpes.plotting.utils import imshow_arr
 import arpes.xarray_extensions
 
 from .CoordinateOffsetWidget import CoordinateOffsetWidget
+
+__all__ = [
+    "bz_tool",
+]
 
 
 class BZToolWindow(SimpleWindow):
@@ -26,10 +30,7 @@ class BZToolWindow(SimpleWindow):
 
 
 class BZTool:
-    """
-    Implements a Brillouin zone explorer showing the region of momentum
-    probed by ARPES.
-    """
+    """Implements a Brillouin zone explorer showing the region of momentum probed by ARPES."""
 
     def __init__(self):
         self.settings = None
@@ -235,5 +236,6 @@ class BZTool:
 
 
 def bz_tool():
+    """Starts the Brillouin zone exploration tool."""
     tool = BZTool()
     tool.start()

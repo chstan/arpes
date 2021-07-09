@@ -1,3 +1,4 @@
+"""Tools to get information about the running notebook and kernel."""
 import datetime
 import json
 import os
@@ -19,6 +20,7 @@ __all__ = (
 
 
 def wrap_tqdm(x, interactive=True, *args, **kwargs):
+    """Wraps with tqdm_notebook but supports disabling with a flag."""
     if not interactive:
         return x
 
@@ -26,12 +28,7 @@ def wrap_tqdm(x, interactive=True, *args, **kwargs):
 
 
 def get_full_notebook_information() -> Optional[dict]:
-    """
-    Javascriptless method to get information about the current Jupyter sessions and the one matching
-    this kernel.
-    :return:
-    """
-
+    """Javascriptless method to fetch current Jupyter sessions and the one matching this kernel."""
     try:  # Respect those that opt not to use IPython
         from notebook import notebookapp
         import ipykernel
@@ -63,18 +60,14 @@ def get_full_notebook_information() -> Optional[dict]:
 
 
 def get_notebook_name() -> Optional[str]:
-    """
-    Gets the unqualified name of the running Jupyter notebook, if there is a Jupyter session
-    not protected by password.
+    """Gets the unqualified name of the running Jupyter notebook if not password protected.
 
     As an example, if you were running a notebook called "Doping-Analysis.ipynb"
     this would return "Doping-Analysis".
 
     If no notebook is running for this kernel or the Jupyter session is password protected, we
     can only return None.
-    :return:
     """
-
     jupyter_info = get_full_notebook_information()
 
     try:
@@ -84,11 +77,7 @@ def get_notebook_name() -> Optional[str]:
 
 
 def generate_logfile_path() -> Path:
-    """
-    Generates a time and date qualified path for the notebook log file.
-    :return:
-    """
-
+    """Generates a time and date qualified path for the notebook log file."""
     base_name = get_notebook_name() or "unnamed"
     full_name = "{}_{}_{}.log".format(
         base_name,
@@ -99,6 +88,7 @@ def generate_logfile_path() -> Path:
 
 
 def get_recent_history(n_items=10) -> List[str]:
+    """Fetches recent cell evaluations for context on provenance outputs."""
     try:
         import IPython
 
@@ -112,6 +102,7 @@ def get_recent_history(n_items=10) -> List[str]:
 
 
 def get_recent_logs(n_bytes=1000) -> List[str]:
+    """Fetches a recent chunk of user logs. Used to populate a context on provenance outputs."""
     import arpes.config
 
     try:

@@ -1,3 +1,4 @@
+"""Scipy cookbook implementations of the Savitzky Golay filter for xr.DataArrays."""
 import warnings
 from math import factorial
 
@@ -16,18 +17,22 @@ __all__ = ("savitzky_golay",)
 def savitzky_golay(
     data: typing.Union[DataType, list, np.ndarray], window_size, order, deriv=0, rate=1, dim=None
 ):
-    """
-    Implements a Savitzky Golay filter with given window size. You can specify "pass through" dimensions
+    """Implements a Savitzky Golay filter with given window size.
+
+    You can specify "pass through" dimensions
     which will not be touched with the `dim` argument. This allows for filtering each frame of a map or each equal-energy
     contour in a 3D dataset, for instance.
 
-    :param data: Input data.
-    :param window_size: Number of points in the window that the filter uses locally.
-    :param order: The polynomial order used in the convolution.
-    :param deriv:
-    :param rate:
-    :param dim:
-    :return:
+    Args:
+        data: Input data.
+        window_size: Number of points in the window that the filter uses locally.
+        order: The polynomial order used in the convolution.
+        deriv
+        rate
+        dim
+
+    Returns:
+        Smoothed data.
     """
     if isinstance(
         data,
@@ -71,16 +76,18 @@ def savitzky_golay(
 
 
 def savitzky_golay_2d(z, window_size, order, derivative=None):
-    """
-    Implementation from the scipy cookbook before the Savitzky Golay filter
-    was supported. This is changed now, so we should ideally migrate to use the
-    new scipy implementation.
+    """Implementation from the scipy cookbook before the Savitzky Golay filter was supported.
 
-    :param z:
-    :param window_size:
-    :param order:
-    :param derivative:
-    :return:
+    This is changed now, so we should ideally migrate to use the new scipy implementation.
+
+    Args:
+        z
+        window_size
+        order
+        derivative
+
+    Returns:
+        Smoothed data
     """
     # number of terms in the polynomial expression
     n_terms = (order + 1) * (order + 2) / 2.0
@@ -179,53 +186,53 @@ def savitzky_golay_2d(z, window_size, order, derivative=None):
 
 def savitzky_golay_array(y, window_size, order, deriv=0, rate=1):
     r"""Smooth (and optionally differentiate) data with a Savitzky-Golay filter.
+
     The Savitzky-Golay filter removes high frequency noise from data.
     It has the advantage of preserving the original shape and
     features of the signal better than other types of filtering
     approaches, such as moving averages techniques.
-    Parameters
-    ----------
-    y : array_like, shape (N,)
-        the values of the time history of the signal.
-    window_size : int
-        the length of the window. Must be an odd integer number.
-    order : int
-        the order of the polynomial used in the filtering.
-        Must be less then `window_size` - 1.
-    deriv: int
-        the order of the derivative to compute (default = 0 means only smoothing)
-    Returns
-    -------
-    ys : ndarray, shape (N)
-        the smoothed signal (or it's n-th derivative).
-    Notes
-    -----
-    The Savitzky-Golay is a type of low-pass filter, particularly
-    suited for smoothing noisy data. The main idea behind this
-    approach is to make for each point a least-square fit with a
-    polynomial of high order over a odd-sized window centered at
-    the point.
-    Examples
-    --------
-    t = np.linspace(-4, 4, 500)
-    y = np.exp( -t**2 ) + np.random.normal(0, 0.05, t.shape)
-    ysg = savitzky_golay(y, window_size=31, order=4)
-    import matplotlib.pyplot as plt
-    plt.plot(t, y, label='Noisy signal')
-    plt.plot(t, np.exp(-t**2), 'k', lw=1.5, label='Original signal')
-    plt.plot(t, ysg, 'r', label='Filtered signal')
-    plt.legend()
-    plt.show()
-    References
-    ----------
-    .. [1] A. Savitzky, M. J. E. Golay, Smoothing and Differentiation of
-       Data by Simplified Least Squares Procedures. Analytical
-       Chemistry, 1964, 36 (8), pp 1627-1639.
-    .. [2] Numerical Recipes 3rd Edition: The Art of Scientific Computing
-       W.H. Press, S.A. Teukolsky, W.G. Vetterling, B.P. Flannery
-       Cambridge University Press ISBN-13: 9780521880688
-    """
 
+    Notes:
+        The Savitzky-Golay is a type of low-pass filter, particularly
+        suited for smoothing noisy data. The main idea behind this
+        approach is to make for each point a least-square fit with a
+        polynomial of high order over a odd-sized window centered at
+        the point.
+
+    Examples:
+        t = np.linspace(-4, 4, 500)
+        y = np.exp( -t**2 ) + np.random.normal(0, 0.05, t.shape)
+        ysg = savitzky_golay(y, window_size=31, order=4)
+        import matplotlib.pyplot as plt
+        plt.plot(t, y, label='Noisy signal')
+        plt.plot(t, np.exp(-t**2), 'k', lw=1.5, label='Original signal')
+        plt.plot(t, ysg, 'r', label='Filtered signal')
+        plt.legend()
+        plt.show()
+
+    References:
+        * [1] A. Savitzky, M. J. E. Golay, Smoothing and Differentiation of
+          Data by Simplified Least Squares Procedures. Analytical
+          Chemistry, 1964, 36 (8), pp 1627-1639.
+        * [2] Numerical Recipes 3rd Edition: The Art of Scientific Computing
+          W.H. Press, S.A. Teukolsky, W.G. Vetterling, B.P. Flannery
+        Cambridge University Press ISBN-13: 9780521880688
+
+    Args:
+        y : array_like, shape (N,)
+          the values of the time history of the signal.
+        window_size : int
+          the length of the window. Must be an odd integer number.
+        order : int
+          the order of the polynomial used in the filtering.
+          Must be less then `window_size` - 1.
+        deriv: int
+          the order of the derivative to compute (default = 0 means only smoothing)
+
+    Returns:
+        ndarray, shape (N)
+        the smoothed signal (or it's n-th derivative).
+    """
     try:
         window_size = np.abs(np.int(window_size))
         order = np.abs(np.int(order))

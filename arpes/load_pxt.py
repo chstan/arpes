@@ -1,19 +1,19 @@
-"""
-Implements Igor <-> xarray interop, notably loading Igor waves and
-packed experiment files.
-"""
+"""Implements Igor <-> xarray interop, notably loading Igor waves and packed experiment files."""
 
 import re
 import typing
 import warnings
 
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Optional
 
 import numpy as np
 import xarray as xr
 
 from arpes.utilities.string import safe_decode
+from arpes.typing import DataType
+
+Wave = Any  # really, igor.Wave but we do not assume installation
 
 __all__ = (
     "read_single_pxt",
@@ -26,19 +26,12 @@ binary_header_bytes = 10
 
 igor_wave_header_dtype = np.dtype(
     [
-        (
-            "next",
-            ">u8",
-        ),
+        ("next", ">u8"),
         ("creation_date", ">u8"),
         ("mod_date", ">u8"),
         ("type", ">H"),
         ("d_lock", ">H"),
-        (
-            "wave_header_pad1",
-            "B",
-            (62,),
-        ),  # unused
+        ("wave_header_pad1", "B", (62,)),  # unused
         ("n_points", ">u8"),
         ("wave_header_version", ">u4"),
         ("spacer", ">u8"),
@@ -47,25 +40,30 @@ igor_wave_header_dtype = np.dtype(
         ("dim_sizes", ">u4", (4,)),
         ("dim_scales", ">d", (4,)),
         ("dim_offsets", ">d", (4,)),
-        (
-            "data_units",
-            "b",
-            (4,),
-        ),
+        ("data_units", "b", (4,)),
         ("dim_units", ("S", 4), (4,)),
         ("final_spacer", "b", 2 + 8 * 18),
     ]
 )
 
 
-def read_igor_binary_wave(raw_bytes):
-    """
+def read_igor_binary_wave(raw_bytes: bytes) -> xr.DataArray:
+    """Reads an igor wave from raw binary data using the documented Igor binary format.
+
     Some weirdness here with the byte ordering and the target datatype. Additionally,
     newer Igor wave formats are very poorly documented. Data loading might not be perfectly
     correct as a result. For most purposes, you can load from .pxp files anyway.
 
-    :param raw_bytes:
-    :return:
+    Roughly, we first read a header from the bytestream. This header is used to determine the 
+    dtype and size of the array which remains to be read from the tail of the bytestream.
+
+    The header is defined by `igor_wave_header_dtype`.
+
+    Args:
+        raw_bytes: The bytes/buffer to be read.
+    
+    Returns:
+        The array read from the bytestream as an `xr.DataArray`.
     """
     header = np.fromstring(
         raw_bytes[: igor_wave_header_dtype.itemsize], dtype=igor_wave_header_dtype
@@ -162,13 +160,19 @@ def read_header(header_bytes: bytes):
     )
 
 
-def wave_to_xarray(wave: Any) -> xr.DataArray:  # wave: igor.Wave
-    """
-    Converts a wave to an xarray.DataArray
-    :param w:
-    :return:
-    """
+def wave_to_xarray(wave: Wave) -> xr.DataArray:
+    """Converts a wave to an `xr.DataArray`.
 
+    Units, if present on the wave, are used to furnish the dimension names.
+    If dimension names are not present, placeholder names ("X", "Y", "Z", "W", as in Igor)
+    are used for each unitless dimension.
+
+    Args:
+        wave: The input wave, an `igor.Wave` instance.
+
+    Returns:
+        The converted `xr.DataArray` instance.
+    """
     # only need four because Igor only supports four dimensions!
     extra_names = iter(["W", "X", "Y", "Z"])
     n_dims = len([a for a in wave.axis if len(a)])
@@ -196,12 +200,17 @@ def wave_to_xarray(wave: Any) -> xr.DataArray:  # wave: igor.Wave
     )
 
 
-def read_experiment(reference_path: typing.Union[Path, str], **kwargs):
-    """
-    Reads a whole experiment and translates all contained waves into xr.Dataset instances as appropriate
+def read_experiment(reference_path: typing.Union[Path, str], **kwargs) -> xr.Dataset:
+    """Reads an entire Igor experiment to a set of waves, as an `xr.Dataset`.
 
-    :param reference_path:
-    :return:
+    Looks for waves inside the experiment and collates them into an xr.Dataset using their
+    Igor names as the var names for the `xr.Dataset`.
+
+    Args:
+        reference_path: The path to the experiment to be loaded.
+
+    Returns:
+        The loaded dataset with only waves retained..
     """
     import igor.igorpy as igor
 
@@ -211,13 +220,8 @@ def read_experiment(reference_path: typing.Union[Path, str], **kwargs):
     return igor.load(reference_path, **kwargs)
 
 
-def read_single_ibw(reference_path: typing.Union[Path, str]):
-    """
-    Currently igorpy does not support this though
-    Uses igor.igorpy to load an .ibw file
-    :param reference_path:
-    :return:
-    """
+def read_single_ibw(reference_path: typing.Union[Path, str]) -> Wave:
+    """Uses igor.igorpy to load an .ibw file."""
     import igor.igorpy as igor
 
     if isinstance(reference_path, Path):
@@ -225,11 +229,8 @@ def read_single_ibw(reference_path: typing.Union[Path, str]):
     return igor.load(reference_path)
 
 
-def read_single_pxt(reference_path: typing.Union[Path, str], byte_order=None):
-    """
-    Uses igor.igorpy to load a single .PXT or .PXP file
-    :return:
-    """
+def read_single_pxt(reference_path: typing.Union[Path, str], byte_order=None) -> xr.DataArray:
+    """Uses igor.igorpy to load a single .PXT or .PXP file."""
     import igor.igorpy as igor
 
     if isinstance(reference_path, Path):
@@ -290,7 +291,20 @@ def find_ses_files_associated(reference_path: Path, separator: str = "S") -> Lis
     return components
 
 
-def read_separated_pxt(reference_path: Path, separator=None, byte_order=None):
+def read_separated_pxt(
+    reference_path: Path, separator=None, byte_order: Optional[str] = None
+) -> DataType:
+    """Reads a series of .pxt files which correspond to cuts in a multi-cut scan.
+
+    Args:
+        reference_path: The path to one of the files in the series.
+        separator: Unused, but kept in order to preserve uniform API. Defaults to None.
+        byte_order: The byte order on the file that is to be read. One of "<", ">", "=".
+          If None is provided byte orders will be tried in sequence. Defaults to None.
+
+    Returns:
+        Concatenated data corresponding to the waves in the different .pxt files.
+    """
     # determine if separated or not
     components = find_ses_files_associated(reference_path)
     frames = [read_single_pxt(f, byte_order=byte_order) for f in components]

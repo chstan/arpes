@@ -1,3 +1,4 @@
+"""Provides some band analysis tools."""
 import copy
 import functools
 import itertools
@@ -22,8 +23,9 @@ __all__ = (
 )
 
 
-def fit_for_effective_mass(data: DataType, fit_kwargs=None):
-    """
+def fit_for_effective_mass(data: DataType, fit_kwargs=None) -> float:
+    """Fits for the effective mass in a piece of data.
+
     Performs an effective mass fit by first fitting for Lorentzian lineshapes and then fitting a quadratic
     model to the result. This is an alternative to global effective mass fitting.
 
@@ -32,10 +34,13 @@ def fit_for_effective_mass(data: DataType, fit_kwargs=None):
 
     We should probably include uncertainties here.
 
-    :param data:
-    :param fit_kwargs: Passthrough for arguments to `broadcast_model`,
-    used internally to obtain the Lorentzian peak locations
-    :return:
+    Args:
+        data:
+        fit_kwargs: Passthrough for arguments to `broadcast_model`, used internally to
+          obtain the Lorentzian peak locations
+
+    Returns:
+        The effective mass in units of the bare mass.
     """
     if fit_kwargs is None:
         fit_kwargs = {}
@@ -60,8 +65,8 @@ def fit_for_effective_mass(data: DataType, fit_kwargs=None):
 
 
 def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_weighting=True):
-    """
-    This function is used to deconvolve the band identities of a series of overlapping bands.
+    """This function is used to deconvolve the band identities of a series of overlapping bands.
+
     Sometimes through the fitting process, or across a place in the band structure where there is a nodal
     point, the identities of the bands across sequential fits can get mixed up.
 
@@ -84,11 +89,15 @@ def unpack_bands_from_fit(band_results: xr.DataArray, weights=None, use_stderr_w
     The value of the weights parameter is chosen only to scale the dimensions so that they are closer to the
     same magnitude.
 
-    :param arr:
-    :param band_results:
-    :param weights:
-    :param use_stderr_weighting: Flag to indicate whether to scale vectors by the uncertainty
-    :return:
+    Args:
+        arr
+        band_results
+        weights
+        use_stderr_weighting: Flag to indicate whether to scale vectors
+            by the uncertainty
+
+    Returns:
+        Unpacked bands.
     """
     if weights is None:
         weights = (
@@ -214,8 +223,7 @@ def fit_patterned_bands(
     interactive=True,
     dataset=True,
 ):
-    """
-    Fits bands and determines dispersion in some region of a spectrum.
+    """Fits bands and determines dispersion in some region of a spectrum.
 
     The dimensions of the dataset are partitioned into three types:
 
@@ -229,15 +237,17 @@ def fit_patterned_bands(
     In general we can recover the free directions and the broadcast directions implicitly by examining the band_set
     passed as a pattern.
 
-    :param arr:
-    :param band_set: dictionary with bands and points along the spectrum
-    :param orientation: edc or mdc
-    :param direction_normal:
-    :param preferred_k_direction:
-    :param dataset:
-    :return: Dataset or DataArray, as controlled by the parameter "dataset"
-    """
+    Args:
+        arr
+        band_set: dictionary with bands and points along the spectrum
+        orientation: edc or mdc
+        direction_normal
+        preferred_k_direction
+        dataset
 
+    Returns:
+        Dataset or DataArray, as controlled by the parameter "dataset"
+    """
     if background:
         from arpes.models.band import AffineBackgroundBand
 
@@ -251,14 +261,7 @@ def fit_patterned_bands(
         return y0 <= x <= y1
 
     def interpolate_itersecting_fragments(coord, coord_index, points):
-        """
-        Finds all consecutive pairs of points in `points`
-        :param coord:
-        :param coord_idx:
-        :param points:
-        :return:
-        """
-
+        """Finds all consecutive pairs of points in `points`."""
         assert len(points[0]) == 2  # only support 2D interpolation
 
         for point_low, point_high in zip(points, points[1:]):
@@ -442,13 +445,16 @@ def fit_bands(
     preferred_k_direction=None,
     step=None,
 ):
-    """
-    Fits bands and determines dispersion in some region of a spectrum
-    :param arr:
-    :param band_description: A description of the bands to fit in the region
-    :param background:
-    :param direction:
-    :return:
+    """Fits bands and determines dispersion in some region of a spectrum.
+
+    Args:
+        arr
+        band_description: A description of the bands to fit in the region
+        background
+        direction
+
+    Returns:
+        Fitted bands.
     """
     assert direction in ["edc", "mdc"]
 

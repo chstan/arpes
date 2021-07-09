@@ -1,3 +1,4 @@
+"""Utilities and an example of how to make an animated plot to export as a movie."""
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
@@ -12,6 +13,7 @@ __all__ = ("plot_movie",)
 
 @save_plot_provenance
 def plot_movie(data: xr.DataArray, time_dim, interval=None, fig=None, ax=None, out=None, **kwargs):
+    """Make an animated plot of a 3D dataset using one dimension as "time"."""
     if not isinstance(data, xr.DataArray):
         raise TypeError("You must provide a DataArray")
 

@@ -1,3 +1,4 @@
+"""Some common spatial plotting routines. Useful for contextualizing nanoARPES data."""
 from typing import Any, Dict, List, Optional
 import itertools
 
@@ -37,18 +38,19 @@ def plot_spatial_reference(
     out: Optional[str] = None,
     plot_refs: bool = True,
 ):
-    """
-    Helpfully plots data against a reference scanning dataset. This is essential to understand
+    """Helpfully plots data against a reference scanning dataset.
+
+    This is essential to understand
     where data was taken and can be used early in the analysis phase in order to highlight the
     location of your datasets against core levels, etc.
 
-    :param reference_map: A scanning photoemission like dataset
-    :param data_list: A list of datasets you want to plot the relative locations of
-    :param offset_list: Optionally, offsets given as coordinate dicts
-    :param annotation_list: Optionally, text annotations for the data
-    :param out: Where to save the figure if we are outputting to disk
-    :param plot_refs: Whether to plot reference figures for each of the pieces of data in `data_list`
-    :return:
+    Args:
+        reference_map: A scanning photoemission like dataset
+        data_list: A list of datasets you want to plot the relative locations of
+        offset_list: Optionally, offsets given as coordinate dicts
+        annotation_list: Optionally, text annotations for the data
+        out: Where to save the figure if we are outputting to disk
+        plot_refs: Whether to plot reference figures for each of the pieces of data in `data_list`
     """
     if offset_list is None:
         offset_list = [None] * len(data_list)
@@ -199,6 +201,7 @@ def plot_spatial_reference(
 
 @save_plot_provenance
 def reference_scan_spatial(data, out=None, **kwargs):
+    """Plots the spatial content of a dataset, useful as a quick reference."""
     data = normalize_to_spectrum(data)
 
     dims = [d for d in data.dims if d in {"cycle", "phi", "eV"}]

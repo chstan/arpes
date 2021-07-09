@@ -1,3 +1,4 @@
+"""Implements a 2D and 3D data browser via Bokeh."""
 import copy
 import warnings
 
@@ -14,7 +15,10 @@ __all__ = ("ImageTool",)
 
 
 class ImageTool(SaveableTool, CursorTool):
+    """Implements a 2D and 3D data browser via Bokeh."""
+
     def __init__(self, curs=None, **kwargs):
+        """Load application and fetch marginal sizes from settings."""
         super().__init__(name=kwargs.pop("name", None))
 
         self.load_settings(**kwargs)
@@ -27,6 +31,7 @@ class ImageTool(SaveableTool, CursorTool):
 
     # TODO select path in image
     def prep_image(self, image_arr):
+        """Optionally, postprocess data before showing it."""
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             if self.app_context["color_mode"] == "linear":
@@ -38,12 +43,14 @@ class ImageTool(SaveableTool, CursorTool):
             return exposure.equalize_adapthist(image_arr.values, clip_limit=0.03)
 
     def tool_handler(self, doc):
+        """Delegates widget creation to 2D and 3D code based on array dimensions."""
         if len(self.arr.shape) == 3:
             return self.tool_handler_3d(doc)
 
         return self.tool_handler_2d(doc)
 
     def tool_handler_2d(self, doc):
+        """Application definition and widgets for the 2D data browser."""
         from bokeh import events
         from bokeh.layouts import row, column, widgetbox, Spacer
         from bokeh.models import ColumnDataSource, widgets
@@ -240,26 +247,14 @@ class ImageTool(SaveableTool, CursorTool):
         ]
 
         POINTER_MODES = [
-            (
-                "Cursor",
-                "cursor",
-            ),
-            (
-                "Path",
-                "path",
-            ),
+            ("Cursor", "cursor"),
+            ("Path", "path"),
         ]
 
         COLOR_MODES = [
-            (
-                "Adaptive Hist. Eq. (Slow)",
-                "adaptive_equalization",
-            ),
+            ("Adaptive Hist. Eq. (Slow)", "adaptive_equalization"),
             # ('Histogram Eq.', 'equalization',), # not implemented
-            (
-                "Linear",
-                "linear",
-            ),
+            ("Linear", "linear"),
             # ('Log', 'log',), # not implemented
         ]
 
@@ -432,16 +427,19 @@ class ImageTool(SaveableTool, CursorTool):
         self.save_app()
 
     def serialize(self):
+        """Saves the current cursor position so it can be loaded later."""
         return {
             "cursor_dict": self.cursor_dict,
             "cursor": self.cursor,
         }
 
     def deserialize(self, json_data):
+        """Loads the cursor position from a saved copy of the tool."""
         if "cursor" in json_data:
             self.cursor = json_data["cursor"]
 
     def tool_handler_3d(self, doc):
+        """Application and widget definitions for the 3D data browser."""
         from bokeh import events
         from bokeh.layouts import row, column, widgetbox, Spacer
         from bokeh.models import ColumnDataSource, HoverTool, widgets
@@ -801,26 +799,14 @@ class ImageTool(SaveableTool, CursorTool):
         ]
 
         POINTER_MODES = [
-            (
-                "Cursor",
-                "cursor",
-            ),
-            (
-                "Path",
-                "path",
-            ),
+            ("Cursor", "cursor"),
+            ("Path", "path"),
         ]
 
         COLOR_MODES = [
-            (
-                "Adaptive Hist. Eq. (Slow)",
-                "adaptive_equalization",
-            ),
+            ("Adaptive Hist. Eq. (Slow)", "adaptive_equalization"),
             # ('Histogram Eq.', 'equalization',), # not implemented
-            (
-                "Linear",
-                "linear",
-            ),
+            ("Linear", "linear"),
             # ('Log', 'log',), # not implemented
         ]
 

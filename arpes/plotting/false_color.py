@@ -1,3 +1,4 @@
+"""Provides RGB (false color) plotting for spectra."""
 import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +21,7 @@ def false_color_plot(
     pmax=1,
     **kwargs
 ):
+    """Plots a spectrum in false color after conversion to R, G, B arrays."""
     data_r, data_g, data_b = [normalize_to_spectrum(d) for d in (data_r, data_g, data_b)]
     fig = None
     if ax is None:

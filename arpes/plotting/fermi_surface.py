@@ -1,3 +1,4 @@
+"""Simple plotting routes related constant energy slices and Fermi surfaces."""
 import matplotlib.patches
 import matplotlib.path
 import matplotlib.pyplot as plt
@@ -19,6 +20,7 @@ __all__ = (
 def fermi_surface_slices(
     arr: xr.DataArray, n_slices=9, ev_per_slice=0.02, bin=0.01, out=None, **kwargs
 ):
+    """Plots many constant energy slices in an axis grid."""
     import holoviews as hv  # pylint: disable=import-error
 
     slices = []
@@ -59,18 +61,11 @@ def magnify_circular_regions_plot(
     ax=None,
     **kwargs
 ):
+    """Plots a Fermi surface with inset points magnified in an inset."""
     data = normalize_to_spectrum(data)
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(
-            figsize=kwargs.get(
-                "figsize",
-                (
-                    7,
-                    5,
-                ),
-            )
-        )
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (7, 5)))
 
     mesh = data.plot(ax=ax, cmap=cmap)
     clim = list(mesh.get_clim())

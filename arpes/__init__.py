@@ -1,7 +1,7 @@
+"""Top level module for PyARPES."""
 # pylint: disable=unused-import
 
 import warnings
-import contextlib
 
 from typing import Union
 
@@ -9,10 +9,7 @@ VERSION = "2.6.0"
 
 
 def check() -> None:
-    """
-    Verifies certain aspects of the installation and provides guidance for semi-broken installations.
-    :return:
-    """
+    """Verifies certain aspects of the installation and provides guidance broken installations."""
 
     def verify_qt_tool() -> Union[str, None]:
         pip_command = "pip install pyqtgraph"

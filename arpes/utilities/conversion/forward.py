@@ -1,7 +1,23 @@
+"""Contains routines for converting directly from angle to momentum.
+
+This cannot be done easily for volumetric data because otherwise we will 
+not end up with an even grid. As a result, we typically use utilities here
+to look at the forward projection of a single point or collection of 
+points/coordinates under the angle -> momentum transform.
+
+Additionally, we have exact inverses for the volumetric transforms which are 
+useful for aligning cuts which use those transforms. 
+See `convert_coordinate_forward`.
+"""
+from typing import Callable, Dict
+from arpes.trace import traceable
 import numpy as np
+import warnings
 import xarray as xr
 
+from arpes.utilities import normalize_to_spectrum
 from arpes.provenance import update_provenance
+from arpes.analysis.filters import gaussian_filter_arr
 from arpes.utilities.conversion.bounds_calculations import (
     euler_to_kx,
     euler_to_ky,
@@ -18,6 +34,8 @@ __all__ = (
 
 @update_provenance("Forward convert coordinates")
 def convert_coordinates(arr: DataType, collapse_parallel=False, **kwargs):
+    """Converts coordinates forward in momentum."""
+
     def unwrap_coord(c):
         try:
             return c.values
@@ -58,7 +76,7 @@ def convert_coordinates(arr: DataType, collapse_parallel=False, **kwargs):
     kx, ky, kz = full_angles_to_k(
         kinetic_energy,
         inner_potential=arr.S.inner_potential,
-        **{k: expand_to(k, v) for k, v in raw_angles.items()}
+        **{k: expand_to(k, v) for k, v in raw_angles.items()},
     )
 
     if will_collapse:
@@ -81,13 +99,7 @@ def convert_coordinates(arr: DataType, collapse_parallel=False, **kwargs):
 
 @update_provenance("Forward convert coordinates to momentum")
 def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
-    """
-    Forward converts all the individual coordinates of the data array
-    :param arr:
-    :param kwargs:
-    :return:
-    """
-
+    """Forward converts all the individual coordinates of the data array."""
     arr = arr.copy(deep=True)
 
     skip = {"eV", "cycle", "delay", "T"}
@@ -108,31 +120,14 @@ def convert_coordinates_to_kspace_forward(arr: DataType, **kwargs):
         ("phi",): ["kp", "kz"],
         ("theta",): ["kp", "kz"],
         ("beta",): ["kp", "kz"],
-        (
-            "phi",
-            "theta",
-        ): ["kx", "ky", "kz"],
-        (
-            "beta",
-            "phi",
-        ): ["kx", "ky", "kz"],
-        (
-            "hv",
-            "phi",
-        ): ["kx", "ky", "kz"],
+        ("phi", "theta"): ["kx", "ky", "kz"],
+        ("beta", "phi"): ["kx", "ky", "kz"],
+        ("hv", "phi"): ["kx", "ky", "kz"],
         ("hv",): ["kp", "kz"],
-        (
-            "beta",
-            "hv",
-            "phi",
-        ): ["kx", "ky", "kz"],
+        ("beta", "hv", "phi"): ["kx", "ky", "kz"],
         ("hv", "phi", "theta"): ["kx", "ky", "kz"],
         ("hv", "phi", "psi"): ["kx", "ky", "kz"],
-        (
-            "chi",
-            "hv",
-            "phi",
-        ): ["kx", "ky", "kz"],
+        ("chi", "hv", "phi"): ["kx", "ky", "kz"],
     }.get(tuple(old_dims))
 
     full_old_dims = old_dims + list(kept.keys())

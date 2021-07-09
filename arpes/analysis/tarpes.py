@@ -1,3 +1,4 @@
+"""Very basic, generic time-resolved ARPES analysis tools."""
 import numpy as np
 
 from arpes.preparation import normalize_dim
@@ -9,15 +10,23 @@ __all__ = ("find_t0", "relative_change", "normalized_relative_change")
 
 
 @update_provenance("Normalized subtraction map")
-def normalized_relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
-    """
-    Calculates a normalized relative change, obtained by normalizing along the pump-probe "delay"
-    axis and then subtracting the mean before t0 data and dividing by the original spectrum.
-    :param data:
-    :param t0:
-    :param buffer:
-    :param normalize_delay:
-    :return:
+def normalized_relative_change(
+    data: DataType, t0=None, buffer=0.3, normalize_delay=True
+) -> DataType:
+    """Calculates a normalized relative Tr-ARPES change in a delay scan.
+
+    Obtained by normalizing along the pump-probe "delay" axis and then subtracting
+    the mean before t0 data and dividing by the original spectrum.
+
+    Args:
+        data: The input spectrum to be normalized. Should have a "delay" dimension.
+        t0: The t0 for the input array.
+        buffer: How far before t0 to select equilibrium data. Should be at least
+          the temporal resolution in ps.
+        normalize_delay: If true, normalizes data along the "delay" dimension.
+
+    Returns:
+        The normalized data.
     """
     spectrum = normalize_to_spectrum(data)
     if normalize_delay:
@@ -30,15 +39,18 @@ def normalized_relative_change(data: DataType, t0=None, buffer=0.3, normalize_de
 
 
 @update_provenance("Created simple subtraction map")
-def relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
-    """
-    Like normalized_relative_change, but only subtracts the before t0 data rather than
-    normalizing by the original spectrum's intensity in each frame.
-    :param data:
-    :param t0:
-    :param buffer:
-    :param normalize_delay:
-    :return:
+def relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True) -> DataType:
+    """Like normalized_relative_change, but only subtracts the before t0 data.
+
+    Args:
+        data: The input spectrum to be normalized. Should have a "delay" dimension.
+        t0: The t0 for the input array.
+        buffer: How far before t0 to select equilibrium data. Should be at least
+          the temporal resolution in ps.
+        normalize_delay: If true, normalizes data along the "delay" dimension.
+
+    Returns:
+        The normalized data.
     """
     spectrum = normalize_to_spectrum(data)
     if normalize_delay:
@@ -57,13 +69,16 @@ def relative_change(data: DataType, t0=None, buffer=0.3, normalize_delay=True):
     return subtracted
 
 
-def find_t0(data: DataType, e_bound=0.02, approx=True):
-    """
-    Attempts to find the effective t0 in a spectrum by fitting a peak to the counts that occur
-    far enough above e_F
-    :param data:
-    :param e_bound: Lower bound on the energy to use for the fitting
-    :return:
+def find_t0(data: DataType, e_bound=0.02) -> float:
+    """Finds the effective t0 by fitting excited carriers.
+
+    Args:
+        data: A spectrum with "eV" and "delay" dimensions.
+        e_bound: Lower bound on the energy to use for the fitting
+
+    Returns:
+        The delay value at the estimated t0.
+
     """
     spectrum = normalize_to_spectrum(data)
 

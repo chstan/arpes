@@ -1,3 +1,4 @@
+"""A utility for selecting paths on a marginal of your data."""
 import numpy as np
 
 import xarray as xr
@@ -7,16 +8,11 @@ from arpes.plotting.interactive_utils import CursorTool, SaveableTool
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 
-__all__ = (
-    "PathTool",
-    "path_tool",
-)
+__all__ = ["path_tool"]
 
 
 class PathTool(SaveableTool, CursorTool):
-    """
-    Tool to allow drawing paths on data, creating selections based on paths,
-    and masking regions around paths
+    """Tool to allow drawing paths on data, creating selections, and masking regions around paths.
 
     Integrates with the tools in arpes.analysis.path
     """
@@ -120,21 +116,15 @@ class PathTool(SaveableTool, CursorTool):
                 add_point_to_path()
 
         POINTER_MODES = [
-            (
-                "Cursor",
-                "cursor",
-            ),
-            (
-                "Path",
-                "path",
-            ),
+            ("Cursor", "cursor"),
+            ("Path", "path"),
         ]
 
         def convert_to_xarray():
-            """
+            """Creates a Dataset consisting of one array for each path.
+
             For each of the paths, we will create a dataset which has an index dimension,
             and datavariables for each of the coordinate dimensions
-            :return:
             """
 
             def convert_single_path_to_xarray(points):
@@ -300,6 +290,7 @@ class PathTool(SaveableTool, CursorTool):
 
 
 def path_tool(data: DataType, **kwargs):
+    """Opens the path tool for the given data."""
     data = normalize_to_spectrum(data)
 
     tool = PathTool(**kwargs)

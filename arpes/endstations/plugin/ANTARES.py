@@ -1,3 +1,4 @@
+"""Implements data loading for ANTARES at SOLEIL."""
 import warnings
 
 import h5py
@@ -53,7 +54,8 @@ def parse_axis_name_from_long_name(name):
 
 
 def infer_scan_type_from_data(group):
-    """
+    """Determines the scan type for NeXuS format data.
+
     Because ANTARES stores every possible data type in the NeXuS file format, zeroing information that is
     not used, we have to determine which data folder to use on the basis of what kind of scan was done.
     """
@@ -71,8 +73,7 @@ def infer_scan_type_from_data(group):
 
 
 class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFileEndstation):
-    """
-    Implements loading text files from the MB Scientific text file format.
+    """Implements data loading for ANTARES at SOLEIL.
 
     There's not too much metadata here except what comes with the analyzer settings.
     """
@@ -91,6 +92,7 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
     }
 
     def load_top_level_scan(self, group, scan_desc: dict = None, spectrum_index=None):
+        """Reads a spectrum from the top level group in a NeXuS scan format."""
         dr = self.read_scan_data(group)
         attrs = read_data_attributes_from(group, general_paths)
 
@@ -106,9 +108,10 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         return xr.Dataset(dict([["spectrum-{}".format(spectrum_index), dr]]))
 
     def get_coords(self, group, scan_name, shape):
-        # This will have to be modified for data which lacks either a phi or energy axis
-        # We will cross this bridge once we have any idea what shape the bridge is in
+        """Extracts coordinates from the actuator header information.
 
+        In the future, this should be modified for data which lacks either a phi or energy axis.
+        """
         dims = list(shape)
         data = group["scan_data"]
 
@@ -207,9 +210,7 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         return dims, coords
 
     def read_scan_data(self, group):
-        """
-        Reads the scan data stored in /scan_data/data_{idx} as appropriate for the type of file.
-        """
+        """Reads the scan data stored in /scan_data/data_{idx} for the appropriate filetype."""
         data_key = infer_scan_type_from_data(group)
         data_group = group["scan_data"][data_key]
         data = data_group[:]
@@ -219,6 +220,10 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         return xr.DataArray(data, coords=coords, dims=dims)
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
+        """Loads a single ANTARES scan.
+
+        Additionally, we try to deduplicate coordinates for multi-region scans here.
+        """
         f = h5py.File(frame_path)
         top_level = list(f.keys())
 
@@ -241,6 +246,12 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         return loaded
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
+        """Performs final scan postprocessing.
+
+        This mostly consists of unwrapping bytestring attributes, and
+        inserting missing default coordinates if they are not provided.
+        """
+
         def check_attrs(s):
             for k in ["psi", "hv", "lens_mode", "pass_energy"]:
                 try:

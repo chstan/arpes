@@ -1,3 +1,4 @@
+"""Math snippets used elsewhere in PyARPES."""
 import collections
 import itertools
 
@@ -9,9 +10,7 @@ import xarray as xr
 
 
 def derivative(f, arg_idx=0):
-    """
-    Defines a simple midpoint derivative
-    """
+    """Defines a simple midpoint derivative."""
 
     def d(*args):
         args = list(args)
@@ -29,10 +28,13 @@ def derivative(f, arg_idx=0):
 
 
 def polarization(up, down):
+    """The equivalent normalized difference for a two component signal."""
     return (up - down) / (up + down)
 
 
 def propagate_statistical_error(f):
+    """Uses numerical derivatives and sampling to compute a function which propagates statistical error."""
+
     def compute_propagated_error(*args):
         running_sum = 0
         for i, arg in enumerate(args):
@@ -45,6 +47,7 @@ def propagate_statistical_error(f):
 
 
 def shift_by(arr, value, axis=0, by_axis=0, **kwargs):
+    """Shifts slices of `arr` perpendicular to `by_axis` by `value`."""
     assert axis != by_axis
     arr_copy = arr.copy()
 

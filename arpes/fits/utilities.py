@@ -1,4 +1,5 @@
-"""
+"""Provides broadcasted and process parallel curve fitting for PyARPES.
+
 The core of this module is `broadcast_model` which is a serious workhorse in PyARPES for
 analyses based on curve fitting. This allows simple multidimensional curve fitting by
 iterative fitting across one or many axes. Currently basic strategies are implemented,
@@ -28,7 +29,7 @@ from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from . import mp_fits
 
-__all__ = ("broadcast_model", "result_to_hints", "make_pickle_safe")
+__all__ = ("broadcast_model", "result_to_hints")
 
 
 TypeIterable = Union[List[type], Tuple[type]]
@@ -37,24 +38,23 @@ XARRAY_REQUIRES_VALUES_WRAPPING = version.parse(xr.__version__) > version.parse(
 
 
 def wrap_for_xarray_values_unpacking(item):
-    """
-    This is a shim for https://github.com/pydata/xarray/issues/2097
-    """
+    """This is a shim for https://github.com/pydata/xarray/issues/2097."""
     if XARRAY_REQUIRES_VALUES_WRAPPING:
         return np.array(item, dtype=object)
 
     return item
 
 
-def make_pickle_safe(result: lmfit.model.ModelResult):
-    return result
-
-
 def result_to_hints(m: lmfit.model.ModelResult, defaults: None) -> Dict[str, Dict[str, Any]]:
-    """
-    Turns an lmfit.model.ModelResult into a dictionary with initial guesses.
-    :param m:
-    :return:
+    """Turns an `lmfit.model.ModelResult` into a dictionary with initial guesses.
+
+    Args:
+        m: The model result to extract parameters from
+        defaults: Returned if `m` is None, useful for cell re-evaluation in Jupyter
+
+    Returns:
+        A dict containing parameter specifications in key-value rathan than `lmfit.Parameter`
+        format, as you might pass as `params=` to PyARPES fitting code.
     """
     if m is None:
         return defaults
@@ -62,8 +62,7 @@ def result_to_hints(m: lmfit.model.ModelResult, defaults: None) -> Dict[str, Dic
 
 
 def parse_model(model):
-    """
-    Takes a model string and turns it into a tokenized version.
+    """Takes a model string and turns it into a tokenized version.
 
     1. ModelClass -> ModelClass
     2. [ModelClass] -> [ModelClass]
@@ -73,8 +72,12 @@ def parse_model(model):
 
     A + (B + C) * D -> [A, '(', B, '+', C, ')', '*', D]
 
-    :param model:
-    :return:
+    Args:
+        model: The model specification
+
+    Returns:
+        A tokenized specification of the model suitable for passing to the curve
+        fitting routine.
     """
     if not isinstance(model, str):
         return model
@@ -109,7 +112,6 @@ def broadcast_model(
     broadcast_dims,
     params=None,
     progress=True,
-    dataset=True,
     weights=None,
     safe=False,
     prefixes=None,
@@ -117,19 +119,31 @@ def broadcast_model(
     parallelize=None,
     trace: Callable = None,
 ):
-    """
-    Perform a fit across a number of dimensions. Allows composite models as well as models
-    defined and compiled through strings.
-    :param model_cls:
-    :param data:
-    :param broadcast_dims:
-    :param params:
-    :param progress:
-    :param dataset:
-    :param weights:
-    :param safe:
-    :param window:
-    :return:
+    """Perform a fit across a number of dimensions.
+
+    Allows composite models as well as models defined and compiled through strings.
+
+    Args:
+        model_cls: The model specification
+        data: The data to curve fit
+        broadcast_dims: Which dimensions of the input should be iterated across as opposed
+          to fit across
+        params: Parameter hints, consisting of plain values or arrays for interpolation
+        progress: Whether to show a progress bar
+        weights: Weights to apply when curve fitting. Should have the same shape as the input data
+        safe: Whether to mask out nan values
+        window: A specification of cuts/windows to apply to each curve fit
+        parallelize: Whether to parallelize curve fits, defaults to True if unspecified and more
+          than 20 fits were requested
+        trace: Controls whether execution tracing/timestamping is used for performance investigation
+
+    Returns:
+        An `xr.Dataset` containing the curve fitting results. These are data vars:
+
+        - "results": Containing an `xr.DataArray` of the `lmfit.model.ModelResult` instances
+        - "residual": The residual array, with the same shape as the input
+        - "data": The original data used for fitting
+        - "norm_residual": The residual array normalized by the data, i.e. the fractional error
     """
     if params is None:
         params = {}
@@ -213,17 +227,13 @@ def broadcast_model(
         template.loc[coords] = wrap_for_xarray_values_unpacking(fit_result)
         residual.loc[coords] = fit_residual
 
-    if dataset:
-        trace("Bundling into dataset")
-        return xr.Dataset(
-            {
-                "results": template,
-                "data": data,
-                "residual": residual,
-                "norm_residual": residual / data,
-            },
-            residual.coords,
-        )
-
-    template.attrs["original_data"] = data
-    return template
+    trace("Bundling into dataset")
+    return xr.Dataset(
+        {
+            "results": template,
+            "data": data,
+            "residual": residual,
+            "norm_residual": residual / data,
+        },
+        residual.coords,
+    )

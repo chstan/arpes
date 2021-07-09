@@ -1,6 +1,4 @@
-"""
-Contains calibrations and information for spectrometer resolution.
-"""
+"""Contains calibrations and information for spectrometer resolution."""
 import math
 
 import numpy as np
@@ -23,14 +21,19 @@ def r8000(slits):
     }
 
 
-def analyzer_resolution(analyzer_information, slit_width=None, slit_number=None, pass_energy=10):
-    """
-    Estimates analyzer resolution from slit dimensioons pass energy, and analyzer radius.
-    :param analyzer_information:
-    :param slit_width:
-    :param slit_number:
-    :param pass_energy:
-    :return:
+def analyzer_resolution(
+    analyzer_information, slit_width=None, slit_number=None, pass_energy=10
+) -> float:
+    """Estimates analyzer resolution from slit dimensioons pass energy, and analyzer radius.
+
+    Args:
+        analyzer_information: The analyzer specification containing slit information.
+        slit_width: The width of the slit in mm.
+        slit_number: The slit number, if the slit width was not provided.
+        pass_energy: The pass energy used in the analyzer, in eV.
+
+    Returns:
+        The resolution of the analyzer for a given slit-pass energy configuration.
     """
     if slit_width is None:
         slit_width = analyzer_information["slits"][slit_number]
@@ -125,14 +128,17 @@ ENDSTATIONS_BEAMLINE_RESOLUTION = {
 }
 
 
-def analyzer_resolution_estimate(data: DataType, meV=False):
-    """
+def analyzer_resolution_estimate(data: DataType, meV=False) -> float:
+    """Estimates the energy resolution of the analyzer.
+
     For hemispherical analyzers, this can be determined by the slit
     and pass energy settings.
 
-    Roughly,
-    :param data:
-    :return:
+    Args:
+        data: The data to estimate for. Used to extract spectrometer info.
+
+    Returns:
+        The resolution in eV units.
     """
     data = normalize_to_spectrum(data)
 
@@ -151,16 +157,20 @@ def analyzer_resolution_estimate(data: DataType, meV=False):
     )
 
 
-def energy_resolution_from_beamline_slit(table, photon_energy, exit_slit_size):
-    """
+def energy_resolution_from_beamline_slit(table, photon_energy, exit_slit_size) -> float:
+    """Calculates the energy resolution contribution from the beamline slits.
+
     Assumes an exact match on the photon energy, though that interpolation
     could also be pulled into here...
-    :param table:
-    :param photon_energy:
-    :param exit_slit_size:
-    :return:
-    """
 
+    Args:
+        table: Beamline specific calibration table.
+        photon_energy: The photon energy used.
+        exit_slit_size: The exit slit size used by the beamline.
+
+    Returns:
+        The energy broadening in eV.
+    """
     by_slits = {k[1]: v for k, v in table.items() if k[0] == photon_energy}
     if exit_slit_size in by_slits:
         return by_slits[exit_slit_size]
@@ -217,25 +227,20 @@ def beamline_resolution_estimate(data: DataType, meV=False):
     raise NotImplementedError()
 
 
-def thermal_broadening_estimate(data: DataType, meV=False):
-    """
-    Simple Fermi-Dirac broadening
-    :param data:
-    :return:
-    """
+def thermal_broadening_estimate(data: DataType, meV=False) -> float:
+    """Calculates the thermal broadening from the temperature on the data."""
     return normalize_to_spectrum(data).S.temp * K_BOLTZMANN_MEV_KELVIN * (1 if meV else 0.001)
 
 
-def total_resolution_estimate(data: DataType, include_thermal_broadening=False, meV=False):
-    """
-    Gives the quadrature sum estimate of the resolution of an ARPES
-    spectrum that is decorated with appropriate information.
+def total_resolution_estimate(data: DataType, include_thermal_broadening=False, meV=False) -> float:
+    """Gives the quadrature sum estimate of the resolution of an ARPES spectrum.
 
     For synchrotron ARPES, this typically means the scan has the photon energy,
     exit slit information and analyzer slit settings
-    :return:
-    """
 
+    Returns:
+        The estimated total resolution broadening.
+    """
     thermal_broadening = 0
     if include_thermal_broadening:
         thermal_broadening = thermal_broadening_estimate(data, meV=meV)

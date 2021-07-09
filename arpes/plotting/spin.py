@@ -1,3 +1,4 @@
+"""Some general plotting routines for presentation of spin-ARPES data."""
 import matplotlib.cm as cm
 import matplotlib.colors
 import matplotlib.pyplot as plt
@@ -27,6 +28,7 @@ test_polarization = propagate_statistical_error(polarization)
 
 @save_plot_provenance
 def spin_colored_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False, **kwargs):
+    """Plots a spin spectrum using total intensity and assigning color with the spin polarization."""
     if ax is None:
         _, ax = plt.subplots(figsize=(6, 4))
 
@@ -69,6 +71,7 @@ def spin_colored_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False,
 
 @save_plot_provenance
 def spin_difference_spectrum(spin_dr, title=None, ax=None, out=None, scatter=False, **kwargs):
+    """Plots a spin difference spectrum."""
     if ax is None:
         _, ax = plt.subplots(figsize=(6, 4))
 
@@ -116,6 +119,7 @@ def spin_difference_spectrum(spin_dr, title=None, ax=None, out=None, scatter=Fal
 def spin_polarized_spectrum(
     spin_dr, title=None, ax=None, out=None, component="y", scatter=False, stats=False, norm=None
 ):
+    """Plots a simple spin polarized spectrum using curves for the up and down components."""
     if ax is None:
         _, ax = plt.subplots(2, 1, sharex=True)
 
@@ -199,17 +203,20 @@ def spin_polarized_spectrum(
 
 
 def polarization_intensity_to_color(data: xr.Dataset, vmax=None, pmax=1):
-    """
-    Converts a dataset with intensity and polarization into a RGB colorarray. This consists of a few steps:
+    """Converts a dataset with intensity and polarization into a RGB colorarray.
 
+    This consists of a few steps:
     1. first we take the polarization to get a RdBu RGB value
     2. We convert the RGB value to HSV
     3. We use the relative intensity to compute a new value for the V ('value') channel
     4. We convert back to RGB
-    :param data:
-    :return:
-    """
 
+    Args:
+        data: The input intensity/data to convert to a color representation.
+
+    Returns:
+        The rgb color data.
+    """
     if vmax is None:
         # use the 98th percentile data if not provided
         vmax = np.percentile(data.intensity.values, 98)

@@ -1,6 +1,6 @@
-"""
-Useful constants for experiments and some useful science facts
-Much of this is collected from past students, especially Jeff's 'Cstes.ipf'
+"""Useful constants for experiments and conversions.
+
+Much of this is collected from past students, especially Jeff's 'Cstes.ipf'.
 
 Some of this will disappear in future updates, as we move away from magic constants towards
 bundling necessary information on endstation classes.
@@ -9,7 +9,7 @@ bundling necessary information on endstation classes.
 from numpy import pi
 
 # eV, A reasonablish value if you aren't sure for the particular sample
-WORK_FUNCTION = 4.38
+WORK_FUNCTION = 4.3
 
 METERS_PER_SECOND_PER_EV_ANGSTROM = (
     151927  # converts from eV * angstrom to meters/second velocity units
@@ -31,12 +31,15 @@ HEX_ALPHABET = "ABCDEF0123456789"
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+# Lanzara lab specific
 STRAIGHT_TOF_LENGTH = 0.937206
 SPIN_TOF_LENGTH = 1.1456
 DLD_LENGTH = 1.1456  # This isn't correct but it should be a reasonable guess
 
 K_INV_ANGSTROM = 0.5123
+HV_CONVERSION = 3.81
 
+# TODO these should be migrated into their appropriate loaders
 SPECTROMETER_MC = {
     "name": "MC",
     "rad_per_pixel": (1 / 10) * (pi / 180),

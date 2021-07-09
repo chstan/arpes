@@ -1,5 +1,4 @@
-"""
-arpes.moire includes some tools for analyzing moirés and data on moiré heterostructures in particular.
+"""Tools for analyzing moirés and data on moiré heterostructures in particular.
 
 All of the moirés discussed here are on hexagonal crystal systems.
 """
@@ -12,16 +11,17 @@ from arpes.plotting.bz import bz_plot, Translation, Rotation
 import numpy as np
 from scipy.spatial.distance import pdist
 
+__all__ = [
+    "mod_points_to_lattice",
+    "generate_other_lattice_points",
+    "unique_points",
+    "plot_simple_moire_unit_cell",
+    "calc_commensurate_moire_cell",
+    "angle_between_vectors",
+]
+
 
 def higher_order_commensurability(lattice_constant_ratio, order=2, angle_range=None):
-    """
-    Unfinished
-
-    :param lattice_constant_ratio:
-    :param order:
-    :param angle_range:
-    :return:
-    """
     if angle_range is None:
         angle_range = (0, 5)
 
@@ -31,6 +31,7 @@ def higher_order_commensurability(lattice_constant_ratio, order=2, angle_range=N
 
 
 def mod_points_to_lattice(pts, a, b):
+    """Projects points to lattice equivalent ones in the first primitive cell."""
     rmat = np.asarray([[0, -1], [1, 0]])
     ra, rb = rmat @ a, rmat @ b
     ra, rb = ra / (np.sqrt(3) / 2), rb / (np.sqrt(3) / 2)
@@ -39,6 +40,7 @@ def mod_points_to_lattice(pts, a, b):
 
 
 def generate_other_lattice_points(a, b, ratio, order=1, angle=0):
+    """Generates (a, b, angle) superlattice points."""
     ratio = max(np.abs(ratio), 1 / np.abs(ratio))
     cosa, sina = np.cos(angle), np.sin(angle)
     rmat = np.asarray([[cosa, -sina], [sina, cosa]])
@@ -69,6 +71,7 @@ def generate_other_lattice_points(a, b, ratio, order=1, angle=0):
 
 
 def unique_points(pts):
+    """Makes a collection of points unique by removing duplicates."""
     return np.vstack([np.array(u) for u in set([tuple(p) for p in pts])])
 
 
@@ -107,15 +110,13 @@ def calculate_bz_vertices_from_direct_cell(cell):
     return bz1
 
 
-def angle_between_vectors(a, b):
+def angle_between_vectors(a, b) -> float:
+    """Calculates the angle between two vectors using the law of cosines."""
     return np.arccos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
 def calc_commensurate_moire_cell(underlayer_a, overlayer_a, relative_angle=0, swap_angle=False):
-    """
-    Calculates nearly commensurate moire unit cells for two hexagonal lattices
-    :return:
-    """
+    """Calculates nearly commensurate moire unit cells for two hexagonal lattices."""
     from ase.dft.kpoints import get_special_points
     from ase.dft.bz import bz_vertices
 
@@ -162,11 +163,7 @@ def calc_commensurate_moire_cell(underlayer_a, overlayer_a, relative_angle=0, sw
 def plot_simple_moire_unit_cell(
     underlayer_a, overlayer_a, relative_angle, ax=None, offset=True, swap_angle=False
 ):
-    """
-    Plots a digram of a moiré unit cell.
-    :return:
-    """
-
+    """Plots a digram of a moiré unit cell."""
     if ax is None:
         _, ax = plt.subplots()
 

@@ -1,6 +1,6 @@
-"""
-This module contains methods that get unitful alignments of one array against another. This is very useful
-for determining spectral shifts before doing serious curve fitting analysis or similar.
+"""This module contains methods that get unitful alignments of one array against another.
+
+This is very useful for determining spectral shifts before doing serious curve fitting analysis or similar.
 
 Implementations are included for each of 1D and 2D arrays, but this could be simply extended to ND if we need to.
 I doubt that this is necessary and don't mind the copied code too much at the present.
@@ -16,12 +16,15 @@ __all__ = ("align2d", "align1d", "align")
 
 
 def align2d(a, b, subpixel=True):
-    """
-    Returns the unitful offset of b in a for 2D arrays
-    :param a:
-    :param b:
-    :param subpixel:
-    :return:
+    """Returns the unitful offset of b in a for 2D arrays using 2D correlation.
+
+    Args:
+        a: The first input array.
+        b: The second input array.
+        subpixel: If True, will perform subpixel alignment using a curve fit to the peak.
+
+    Returns:
+        The offset of a 2D array against another.
     """
     corr = signal.correlate2d(
         a.values - np.mean(a.values), b.values - np.mean(b.values), boundary="fill", mode="same"
@@ -56,14 +59,16 @@ def align2d(a, b, subpixel=True):
 
 
 def align1d(a, b, subpixel=True):
-    """
-    Returns the unitful offset of b in a for 1D arrays
-    :param a:
-    :param b:
-    :param subpixel:
-    :return:
-    """
+    """Returns the unitful offset of b in a for 1D arrays using 1D correlation.
 
+    Args:
+        a: The first input array.
+        b: The second input array.
+        subpixel: If True, will perform subpixel alignment using a curve fit to the peak.
+
+    Returns:
+        The offset of an array against another.
+    """
     corr = np.correlate(a.values - np.mean(a.values), b.values - np.mean(b.values), mode="same")
     (x,) = np.unravel_index(np.argmax(corr), corr.shape)
 
@@ -80,12 +85,18 @@ def align1d(a, b, subpixel=True):
 
 
 def align(a, b, **kwargs):
+    """Returns the unitful offset of b in a for ndarrays.
+
+    Args:
+        a: The first input array.
+        b: The second input array.
+        subpixel: If True, will perform subpixel alignment using a curve fit to the peak.
+
+    Returns:
+        The offset of an array against another.
+    """
     if len(a.dims == 1):
         return align1d(a, b, **kwargs)
 
     assert len(a.dims) == 2
     return align2d(a, b, **kwargs)
-
-
-def align_all(to, spectra, **kwargs):
-    align_method = align1d if len(to.dims == 1) else align2d

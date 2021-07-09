@@ -1,3 +1,4 @@
+"""Application infrastructure for apps/tools which browse a data volume."""
 from PyQt5 import QtGui
 import pyqtgraph as pg
 import numpy as np
@@ -20,9 +21,7 @@ ReactivePlotRecord = namedtuple(
 
 
 class SimpleApp:
-    """
-    Has all of the layout information and business logic for an interactive data browsing utility using PyQt5.
-    """
+    """Has all of the layout information and business logic for an interactive data browsing utility using PyQt5."""
 
     WINDOW_CLS = None
     WINDOW_SIZE = (4, 4)
@@ -31,6 +30,7 @@ class SimpleApp:
     DEFAULT_COLORMAP = "viridis"
 
     def __init__(self):
+        """Only interesting thing on init is to make a copy of the user settings."""
         self._ninety_eight_percentile = None
         self.data = None
         self.settings = None
@@ -46,6 +46,7 @@ class SimpleApp:
         self.settings = arpes.config.SETTINGS.copy()
 
     def close(self):
+        """Graceful shutdown. Tell each view to close and drop references so GC happens."""
         for v in self.views.values():
             v.close()
 
@@ -54,6 +55,7 @@ class SimpleApp:
 
     @property
     def ninety_eight_percentile(self):
+        """Calculates the 98 percentile of data so colorscale is not outlier dependent."""
         if self._ninety_eight_percentile is not None:
             return self._ninety_eight_percentile
 
@@ -61,19 +63,28 @@ class SimpleApp:
         return self._ninety_eight_percentile
 
     def print(self, *args, **kwargs):
+        """Forwards printing to the application so it ends up in Jupyter."""
         self.window.window_print(*args, **kwargs)
 
     @staticmethod
     def build_pg_cmap(colormap):
+        """Converts a matplotlib colormap to one suitable for pyqtgraph.
+
+        pyqtgraph uses its own colormap format but for consistency and aesthetic
+        reasons we want to use the ones from matplotlib. This will sample the colors
+        from the colormap and convert it into an array suitable for pyqtgraph.
+        """
         sampled_colormap = colormap.colors[::51]
         sampled_colormap = np.array([s + [1.0] for s in sampled_colormap])
 
+        # need to scale colors if pyqtgraph is older.
         if pg.__version__.split(".")[1] != "10":
             sampled_colormap = sampled_colormap * 255  # super frustrating undocumented change
 
         return pg.ColorMap(pos=np.linspace(0, 1, len(sampled_colormap)), color=sampled_colormap)
 
     def set_colormap(self, colormap):
+        """Finds all `DataArrayImageView` instances and sets their color palette."""
         import matplotlib.cm
 
         if isinstance(colormap, str):
@@ -87,6 +98,10 @@ class SimpleApp:
     def generate_marginal_for(
         self, dimensions, column, row, name=None, orientation="horiz", cursors=False, layout=None
     ):
+        """Generates a marginal plot for this applications's data after selecting along `dimensions`.
+
+        This is used to generate the many different views of a volume in the browsable tools.
+        """
         if layout is None:
             layout = self._layout
 
@@ -134,19 +149,27 @@ class SimpleApp:
         return widget
 
     def before_show(self):
+        """Lifecycle hook."""
         pass
 
     def after_show(self):
+        """Lifecycle hook."""
         pass
 
     def layout(self):
+        """Hook for defining the application layout.
+
+        This needs to be provided by subclasses.
+        """
         raise NotImplementedError()
 
     @property
     def window(self):
+        """Gets the window instance on the current application."""
         return self._window
 
     def start(self):
+        """Starts the Qt application, configures the window, and begins Qt execution."""
         app = QtGui.QApplication([])
         app.owner = self
         # self.app = app

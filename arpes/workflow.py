@@ -1,4 +1,9 @@
-"""
+"""Utilities for managing analyses. Use of these is highly subjective and not core to PyARPES.
+
+This module contains some extra utilities for managing scientific workflows, especially between
+notebooks and workspaces.
+
+Provides:
 - go_to_figures
 - go_to_workspace
 - go_to_cwd
@@ -8,9 +13,6 @@
 - consume_data
 - summarize_data
 
-This module contains some extra utilities for managing scientific workflows, especially between
-notebooks and workspaces.
-
 A core feature of this module is that you can export and import data from between notebooks.
 `easy_pickle` also fulfills this to an extent, but with the tools included here,
 there are some extra useful goodies, like tracking of publishing and consuming notebooks,
@@ -18,6 +20,9 @@ so that you get reminders about where your data comes from if you need to regene
 
 This isn't dataflow for Jupyter notebooks, but it is at least more convenient than managing it
 all yourself.
+
+Another (better?) usage pattern is to turn data dependencies into code-dependencies (re-run 
+reproducible analyses) and share code between notebooks using a local module.
 """
 import os
 import dill
@@ -58,11 +63,11 @@ def with_workspace(f):
     return wrapped_with_workspace
 
 
-def _open_path(p):
-    """
-    Attempts to open the path p in the filesystem explorer, or else prints the path
-    :param p:
-    :return:
+def _open_path(p: str):
+    """Attempts to open the path p in the filesystem explorer, or else prints the path.
+
+    Args:
+        p: The path to open.
     """
     if "win" in sys.platform:
         subprocess.Popen(rf"explorer {p}")
@@ -72,10 +77,7 @@ def _open_path(p):
 
 @with_workspace
 def go_to_workspace(workspace=None):
-    """
-    Opens the workspace folder, otherwise opens the location of the running notebook.
-    :return:
-    """
+    """Opens the workspace folder, otherwise opens the location of the running notebook."""
     path = os.getcwd()
 
     from arpes.config import CONFIG
@@ -89,18 +91,15 @@ def go_to_workspace(workspace=None):
 
 
 def go_to_cwd():
-    """
-    Opens the current working directory.
-    :return:
-    """
+    """Opens the current working directory in the OS file browser."""
     _open_path(os.getcwd())
 
 
 def go_to_figures():
-    """
-    Opens the figures folder for the current workspace and the current day,
+    """Opens the figures folder.
+
+    If in a workspace, opens the figures folder for the current workspace and the current day,
     otherwise finds the most recent one and opens it.
-    :return:
     """
     path = path_for_plot("")
     if not Path(path).exists():
@@ -239,23 +238,30 @@ class DataProvider:
 
 @with_workspace
 def publish_data(key, data, workspace):
+    """Publish/write data to a DataProvider."""
     provider = DataProvider.from_workspace(workspace)
     provider.publish(key, data)
 
 
 @with_workspace
-def read_data(key="*", workspace=None):
+def read_data(key="*", workspace=None) -> Any:
+    """Read/consume a summary of the available data from a DataProvider.
+
+    Differs from consume_data in that it does not set up a dependency.
+    """
     provider = DataProvider.from_workspace(workspace)
     return provider.consume(key, subscribe=False)
 
 
 @with_workspace
 def summarize_data(key=None, workspace=None):
+    """Give a summary of the available data from a DataProvider."""
     provider = DataProvider.from_workspace(workspace)
     provider.summarize_clients(key=key)
 
 
 @with_workspace
-def consume_data(key="*", workspace=None):
+def consume_data(key="*", workspace=None) -> Any:
+    """Read/consume data from a DataProvider in a given workspace."""
     provider = DataProvider.from_workspace(workspace)
     return provider.consume(key, subscribe=True)

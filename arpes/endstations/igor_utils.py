@@ -1,20 +1,26 @@
+"""Utilities related to handling Igor data ingestion quirks."""
+
 import itertools
 import os.path
 import subprocess
+from typing import Any, Dict
 
 __all__ = ("shim_wave_note",)
 
 
-def shim_wave_note(path):
-    """
-    Hack to read the corrupted wavenote out of the h5 files that Igor has been producing.
+def shim_wave_note(path) -> Dict[str, Any]:
+    """Hack to read the corrupted wavenote out of the h5 files that Igor has been producing.
+
     h5 dump still produces the right value, so we use it from the command line in order to get the value of the note.
 
     This is not necessary unless you are trying to read HDF files exported from Igor (the
     preferred way before we developed an Igor data loading plugin).
 
-    :param path: Location of the file
-    :return:
+    Args:
+        path: Location of the file
+
+    Returns:
+        The header/wavenote contents.
     """
     wave_name = os.path.splitext(os.path.basename(path))[0]
     cmd = "h5dump -A --attribute /{}/IGORWaveNote {}".format(wave_name, path)

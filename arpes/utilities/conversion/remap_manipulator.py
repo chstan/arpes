@@ -1,3 +1,4 @@
+"""Contains utilities to determine equivalent coordinates between pairs of scans."""
 from copy import deepcopy
 
 import numpy as np
@@ -6,7 +7,8 @@ __all__ = ["remap_coords_to"]
 
 
 def remap_coords_to(arr, reference_arr):
-    """
+    """Produces coordinates for the scan path of `arr` in the coordinate system of `reference_arr`.
+
     This needs to be thought out a bit more, namely to take into account better the
     manipulator scan degree of freeedom.
 
@@ -14,17 +16,15 @@ def remap_coords_to(arr, reference_arr):
     by the manipulator location in ``reference_arr``. This is useful for plotting locations of cuts in a FS.
 
     This code also assumes that a hemispherical analyzer was used, because it uses the coordinate 'phi'.
-    :param arr: Scan that represents a cut we would like to understand
-    :param reference_arr: Scan providing the desired destination coordinates
-    :return: Coordinates dict providing the path cut by the dataset ``arr``
-    """
 
-    irrelevant_coordinates = list(
-        {
-            "hv",
-            "eV",
-        }.intersection(set(arr.dims))
-    )
+    Args:
+        arr: Scan that represents a cut we would like to understand
+        reference_arr: Scan providing the desired destination coordinates
+
+    Returns:
+        Coordinates dict providing the path cut by the dataset ``arr``
+    """
+    irrelevant_coordinates = list({"hv", "eV"}.intersection(set(arr.dims)))
     arr = arr.sum(
         *irrelevant_coordinates, keep_attrs=True
     )  # sum is not so fast, but ensures there is data

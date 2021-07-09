@@ -1,5 +1,4 @@
-"""
-Specialized type annotations for use in PyARPES.
+"""Specialized type annotations for use in PyARPES.
 
 In particular, we frequently allow using the `DataType` annotation,
 which refers to either an xarray.DataArray or xarray.Dataset.
@@ -14,13 +13,13 @@ import uuid
 
 import typing
 import xarray as xr
+import numpy as np
 
-__all__ = ["DataType", "NormalizableDataType", "xr_types"]
+__all__ = ["DTypeLike", "DataType", "NormalizableDataType", "xr_types"]
+
+DTypeLike = typing.Union[np.dtype, None, type, str]
 
 DataType = typing.Union[xr.DataArray, xr.Dataset]
 NormalizableDataType = typing.Union[DataType, str, uuid.UUID]
 
-xr_types = (
-    xr.DataArray,
-    xr.Dataset,
-)
+xr_types = (xr.DataArray, xr.Dataset)

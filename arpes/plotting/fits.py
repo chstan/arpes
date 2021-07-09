@@ -1,3 +1,4 @@
+"""Utilities for inspecting fit results by hand by plotting them individually."""
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -10,9 +11,7 @@ __all__ = (
 
 
 def plot_fit(model_result, ax=None):
-    """
-    Performs a straightforward plot of the data, residual, and fit to an axis
-    """
+    """Performs a straightforward plot of the data, residual, and fit to an axis."""
     if ax is None:
         fig, ax = plt.subplots()
 
@@ -40,6 +39,7 @@ def plot_fit(model_result, ax=None):
 
 
 def plot_fits(model_results, ax=None):
+    """Plots several fits onto a grid of axes."""
     n_results = len(model_results)
     if ax is None:
         fig, ax, ax_extra = simple_ax_grid(n_results, sharex="col", sharey="row")

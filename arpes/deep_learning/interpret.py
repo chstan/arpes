@@ -1,3 +1,8 @@
+"""Utilities related to interpretation of model results.
+
+This borrows ideas heavily from fastai which provides interpreter classes
+for different kinds of models.
+"""
 from dataclasses import dataclass, field
 import math
 
@@ -20,6 +25,8 @@ __all__ = [
 
 @dataclass
 class InterpretationItem:
+    """Provides tools to introspect model performance on a single item."""
+
     target: Any
     predicted_target: Any
     loss: float
@@ -28,7 +35,8 @@ class InterpretationItem:
 
     @property
     def dataset(self):
-        """
+        """Fetches the original dataset used to train and containing this item.
+
         We need to unwrap the dataset in case we are actually dealing
         with a Subset. We should obtain an indexed Dataset at the end
         of the day, and we will know this is the case because we use
@@ -47,6 +55,7 @@ class InterpretationItem:
         return dset
 
     def show(self, input_formatter, target_formatter, ax=None, pullback=True):
+        """Plots this item onto the provided axes. See also the `show` method of `Interpretation`."""
         if ax is None:
             _, ax = plt.subplots()
 
@@ -77,10 +86,10 @@ class InterpretationItem:
             target_formatter.show(predicted, ax)
 
     def decodes_target(self, value: Any) -> Any:
-        """
-        Pulls the predicted target backwards through the transformation stack until
-        an irreversible transform is met in order to be able to plot targets and
-        predictions in a natural space
+        """Pulls the predicted target backwards through the transformation stack.
+
+        Pullback continues until an irreversible transform is met in order
+        to be able to plot targets and predictions in a natural space.
         """
         tfm = self.dataset.transforms
         if hasattr(tfm, "decodes_target"):
@@ -91,8 +100,8 @@ class InterpretationItem:
 
 @dataclass
 class Interpretation:
-    """
-    Provides utilities to interpret predictions of a model.
+    """Provides utilities to interpret predictions of a model.
+
     Importantly, this is not intended to provide any model introspection
     tools.
     """
@@ -109,12 +118,14 @@ class Interpretation:
 
     @property
     def items(self) -> List[InterpretationItem]:
+        """All of the `InterpretationItem`s inside this instance."""
         if self.train:
             return self.train_items
 
         return self.val_item_lists[self.val_index]
 
     def top_losses(self, ascending=False) -> List[InterpretationItem]:
+        """Orders the items by loss."""
         key = lambda item: item.loss if ascending else -item.loss
         return sorted(self.items, key=key)
 
@@ -125,6 +136,14 @@ class Interpretation:
         input_formatter=None,
         target_formatter=None,
     ) -> None:
+        """Plots a subset of the interpreted items.
+
+        For each item, we "plot" its data, its label, and model performance characteristics
+        on this item.
+
+        For example, on an image classification task this might mean to plot the image,
+        the images class name as a label above it, the predicted class, and the numerical loss.
+        """
         layout = None
 
         if items is None:
@@ -153,9 +172,11 @@ class Interpretation:
 
     @classmethod
     def from_trainer(cls, trainer: pl.Trainer):
+        """Builds an interpreter from an instance of a `pytorch_lightning.Trainer`."""
         return cls(trainer.model, trainer.train_dataloader, trainer.val_dataloaders)
 
     def dataloader_to_item_list(self, dataloader: DataLoader) -> List[InterpretationItem]:
+        """Converts a data loader into a list of interpretation items corresponding to the data samples."""
         items = []
 
         for batch in tqdm.tqdm(dataloader.iter_all()):
@@ -181,11 +202,9 @@ class Interpretation:
         return items
 
     def __post_init__(self):
-        """
-        We need to populate the train_items and val_item_lists fields
-        this is done by iterating through the dataloaders and pushing data
-        through the models
-        """
+        """Populates train_items and val_item_lists.
 
+        This is done by iterating through the dataloaders and pushing data through the models.
+        """
         self.train_items = self.dataloader_to_item_list(self.train_dataloader)
         self.val_item_lists = [self.dataloader_to_item_list(dl) for dl in self.val_dataloaders]

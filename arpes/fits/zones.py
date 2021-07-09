@@ -1,7 +1,6 @@
-"""
-Contains models and utilities for "curve fitting" the forward momentum conversion
-function. This allows for rapid fine tuning of the angle offsets used in momentum
-conversion.
+r"""Contains models and utilities for "curve fitting" the forward momentum conversion function.
+
+This allows for rapid fine tuning of the angle offsets used in momentum conversion.
 
 If the user calculates, places, or curve fits for the high symmetry
 locations in the data $H_i(\phi,\psi,\theta,\beta,\chi)$, these can be used
@@ -21,11 +20,7 @@ using the constituent lattices and Brillouin zones.
 """
 
 import numpy as np
-import lmfit as lf
 
-from lmfit.models import update_param_vals
-
-from .fit_models import XModelMixin
 from arpes.utilities.conversion.forward import convert_coordinates
 
 
@@ -33,13 +28,6 @@ __all__ = ("HighSymmetryPointModel",)
 
 
 def k_points_residual(paramters, coords_dataset, high_symmetry_points, dimensionality=2):
-    """
-    :param paramters:
-    :param coords_dataset:
-    :param high_symmetry_points:
-    :return:
-    """
-
     momentum_coordinates = convert_coordinates(coords_dataset)
     if dimensionality == 2:
         return np.asarray(
@@ -67,11 +55,13 @@ def minimum_forward_error(
     chi_offset=0,
     high_symmetry_points=None,
 ):
-    """
-    Sets offsets for a dataset of coordinate samples before forward converting them all to momentum. Then, for each sample, the
-    closest high symmetry point among the provided `high_symmetry_points` is calculated, and the distance to the high symmetry point obtained.
-    The distance of each of the coordinate samples to these symmetry points is returned, and the optimizer adjusts the offsets to find a "best"
-    set in the sense of least total L2 distance to the symmetry points.
+    r"""Sets offsets for a coordinate sample dataset before converting them all to momentum.
+
+    Then, for each sample, the closest high symmetry point among the provided
+    `high_symmetry_points` is calculated, and the distance to the high symmetry point obtained.
+    The distance of each of the coordinate samples to these symmetry points is returned, and the
+    optimizer adjusts the offsets to find a "best" set in the sense of least total L2 distance
+    to the symmetry points.
 
     If the coordinate samples are labelled as described above as H_i, then we return
 
@@ -92,13 +82,16 @@ def minimum_forward_error(
     \text{min}_j |text{P}(H_i, \Delta\phi, \Delta\theta, \ldots) - S_j|^\frac{1}{2}
     $$
 
-    :param coordinate_samples: (N, 6 + 1)
-    :param phi_offset:
-    :param psi_offset:
-    :param theta_offset:
-    :param beta_offset:
-    :param chi_offset:
-    :param high_symmetry_points:
-    :return:
+    Args:
+        coordinate_samples: (N, 6 + 1)
+        phi_offset
+        psi_offset
+        theta_offset
+        beta_offset
+        chi_offset
+        high_symmetry_points
+
+    Returns:
+        The MSE distance error for this set of coordinate offsets.
     """
     pass

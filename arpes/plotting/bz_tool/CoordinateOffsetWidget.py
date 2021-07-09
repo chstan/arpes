@@ -1,3 +1,4 @@
+"""A widget providing controls for a coordinate offset in the momentum tool."""
 from functools import partial
 
 from PyQt5 import QtGui, QtWidgets
@@ -6,7 +7,10 @@ __all__ = ("CoordinateOffsetWidget",)
 
 
 class CoordinateOffsetWidget(QtWidgets.QGroupBox):
+    """Control for a single coordinate offset in the momentum tool."""
+
     def __init__(self, parent=None, root=None, coordinate_name=None, value=None):
+        """Configures utility label, an inner control, and a linked spinbox for text entry."""
         super().__init__(title=coordinate_name, parent=parent)
 
         self.layout = QtGui.QGridLayout(self)
@@ -28,6 +32,7 @@ class CoordinateOffsetWidget(QtWidgets.QGroupBox):
         self.recompute()
 
     def value_changed(self, event, source):
+        """Propagates values change to update the displayed data."""
         if self._prevent_change_events:
             return
 
@@ -40,8 +45,10 @@ class CoordinateOffsetWidget(QtWidgets.QGroupBox):
             self.root.update_cut()
 
     def recompute(self):
+        """Recompute stale UI state from this control's value."""
         value = self.spinbox.value()
         self.label.setText("Value: {:.3g}".format(value))
 
     def value(self):
+        """The value of the control, which just forwards the inner widget."""
         return self.spinbox.value()

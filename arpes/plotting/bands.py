@@ -1,3 +1,4 @@
+"""For plotting band locations."""
 import matplotlib.pyplot as plt
 
 from arpes.provenance import save_plot_provenance
@@ -9,6 +10,7 @@ __all__ = ("plot_with_bands",)
 
 @save_plot_provenance
 def plot_with_bands(data, bands, title=None, ax=None, norm=None, out=None, **kwargs):
+    """Makes a dispersion plot with bands overlaid."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(8, 5))
 

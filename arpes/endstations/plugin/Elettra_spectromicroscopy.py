@@ -1,3 +1,4 @@
+"""Implements data loading for the spectromicroscopy beamline at Elettra."""
 import os
 import h5py
 import numpy as np
@@ -16,11 +17,15 @@ __all__ = ("SpectromicroscopyElettraEndstation",)
 
 
 def collect_coord(index: int, dset: h5py.Dataset) -> Tuple[str, np.ndarray]:
-    """
-    Uses the Spectromicroscopy beamline metadata format to normalize the coordinate information for a given axis.
-    :param index:
-    :param dset:
-    :return:
+    """Uses the beamline metadata to normalize the coordinate information for a given axis.
+
+    Args:
+        index: The index of the coordinate to extract from metadata.
+        dset: The HDF dataset containin Elettra spectromicroscopy data.
+
+    Returns:
+        The coordinate extracted at `index` from the metadata. The return convention here is to provide
+        a tuple consisting of the extracted coordinate name, and the values for that coordinate.
     """
     shape = dset.shape
     name = dset.attrs[f"Dim{index} Name Units"][0].decode()
@@ -94,8 +99,7 @@ def h5_dataset_to_dataarray(dset: h5py.Dataset) -> xr.DataArray:
 
 
 class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEndstation):
-    """
-    Data loading for the nano-ARPES beamline "Spectromicroscopy Elettra".
+    """Data loading for the nano-ARPES beamline "Spectromicroscopy Elettra".
 
     Information available on the beamline can be accessed
     `here <https://www.elettra.trieste.it/elettra-beamlines/spectromicroscopy>`_.
@@ -117,6 +121,11 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
 
     @classmethod
     def files_for_search(cls, directory):
+        """Determines which files should be considered as candidates.
+
+        Spectromicroscopy Elettra uses directories to group associated files together, so we have
+        to find those.
+        """
         base_files = []
         for file in os.listdir(directory):
             p = os.path.join(directory, file)
@@ -164,6 +173,12 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
     CONCAT_COORDS = ["T", "P"]
 
     def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
+        """Concatenates frame for spectromicroscopy at Elettra.
+
+        The scan axis is determined dynamically by checking for uniqueness across
+        frames. The truth here is a bit more complicated because Elettra supports "diagonal" scans
+        but frequently users set a very small offset in the other angular coordinate.
+        """
         if not frames:
             raise ValueError("Could not read any frames.")
 
@@ -199,6 +214,12 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
         return xr.Dataset({"spectrum": xr.concat(fs, scan_coord)})
 
     def resolve_frame_locations(self, scan_desc: dict = None):
+        """Determines all files associated with a given scan.
+        
+        This beamline saves several HDF files in scan associated folders, so this
+        amounts to checking whether the scan is multi-file and associating sibling  
+        files if so.
+        """
         if scan_desc is None:
             raise ValueError(
                 "Must pass dictionary as file scan_desc to all endstation loading code."
@@ -218,6 +239,7 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
         return [p]
 
     def load_single_frame(self, frame_path: str = None, scan_desc: dict = None, **kwargs):
+        """Loads a single HDF file with spectromicroscopy Elettra data."""
         with h5py.File(str(frame_path), "r") as f:
             arrays = {k: h5_dataset_to_dataarray(f[k]) for k in f.keys()}
 
@@ -227,6 +249,13 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
             return xr.Dataset(arrays)
 
     def postprocess_final(self, data: xr.Dataset, scan_desc: dict = None):
+        """Performs final postprocessing of the data.
+
+        This mostly amounts to:
+        1. Adjusting for the work function and converting kinetic to binding energy
+        2. Adjusting angular coordinates to standard conventions
+        3. Microns -> millimeters on spatial coordinates
+        """
         data = data.rename({k: v for k, v in self.RENAME_COORDS.items() if k in data.coords.keys()})
 
         if "eV" in data.coords:

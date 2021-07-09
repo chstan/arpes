@@ -1,3 +1,8 @@
+"""Calculates momentum bounds from the angular coordinates.
+
+Mostly these are used as common helper routines to the coordinate conversion code,
+which is responsible for actually outputing the desired bounds.
+"""
 import numpy as np
 
 import arpes.constants
@@ -12,49 +17,25 @@ __all__ = (
 )
 
 
-def full_angles_to_k_approx(kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_potential):
+def full_angles_to_k(kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_potential):
+    """Converts from the full set of standard PyARPES angles to momentum.
+
+    More details on angle to momentum conversion can be found at
+    `the momentum conversion notes <https://arpes.netlify.com/#/momentum-conversion>`_.
+
+    Args:
+        kinetic_energy ([float]): [kinetic energy]
+        phi ([float]): [angle along analyzer]
+        psi ([float]): [analyzer deflector angle]
+        alpha ([float]): [analyzer rotation angle]
+        beta ([float]): [scan angle perpendicular to theta]
+        theta ([float]): [goniometer azimuthal angle]
+        chi ([float]): [sample azimuthal angle]
+        inner_potential ([float]): [material inner potential in eV]
+
+    Returns:
+        [(float, float, float)]: [(kx, ky, kz)]
     """
-    Small angle approximation of the momentum conversion functions. Depending on the value of alpha,
-    which we do not small angle approximate, this takes a few different forms.
-
-    :param kinetic_energy:
-    :param phi:
-    :param psi:
-    :param alpha:
-    :param beta:
-    :param theta:
-    :param chi:
-    :param inner_potential:
-    :return:
-    """
-    raise NotImplementedError()
-
-
-def full_angles_to_k(
-    kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_potential, approximate=False
-):
-    """
-    Converts from the full set of standard PyARPES angles to momentum. More details on angle to momentum conversion
-    can be found at `the momentum conversion notes <https://arpes.netlify.com/#/momentum-conversion>`_.
-
-    Because the inverse coordinate transforms in PyARPES use the small angle approximation, we also allow
-    the small angle approximation in the forward direction, using the `approximate=` keyword argument.
-    :param kinetic_energy:
-    :param phi:
-    :param psi:
-    :param alpha:
-    :param beta:
-    :param theta:
-    :param chi:
-    :param inner_potential:
-    :param approximate:
-    :return:
-    """
-    if approximate:
-        return full_angles_to_k_approx(
-            kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_potential
-        )
-
     theta, beta, chi, psi = theta, beta, -chi, psi
 
     # use the full direct momentum conversion
@@ -105,6 +86,7 @@ def full_angles_to_k(
 
 
 def euler_to_kx(kinetic_energy, phi, beta, theta=0, slit_is_vertical=False):
+    """Calculates kx from the phi/beta Euler angles given the experimental geometry."""
     if slit_is_vertical:
         return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(beta) * np.cos(phi)
     else:
@@ -112,6 +94,7 @@ def euler_to_kx(kinetic_energy, phi, beta, theta=0, slit_is_vertical=False):
 
 
 def euler_to_ky(kinetic_energy, phi, beta, theta=0, slit_is_vertical=False):
+    """Calculates ky from the phi/beta Euler angles given the experimental geometry."""
     if slit_is_vertical:
         return (
             arpes.constants.K_INV_ANGSTROM
@@ -127,6 +110,7 @@ def euler_to_ky(kinetic_energy, phi, beta, theta=0, slit_is_vertical=False):
 
 
 def euler_to_kz(kinetic_energy, phi, beta, theta=0, inner_potential=10, slit_is_vertical=False):
+    """Calculates kz from the phi/beta Euler angles given the experimental geometry."""
     if slit_is_vertical:
         beta_term = -np.sin(theta) * np.sin(phi) + np.cos(theta) * np.cos(beta) * np.cos(phi)
 
@@ -139,28 +123,36 @@ def euler_to_kz(kinetic_energy, phi, beta, theta=0, inner_potential=10, slit_is_
 
 
 def spherical_to_kx(kinetic_energy: np.float, theta: np.float, phi: np.float) -> np.float:
+    """Calculates kx from the sample spherical (emission, not measurement) coordinates."""
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.cos(phi)
 
 
 def spherical_to_ky(kinetic_energy, theta, phi):
+    """Calculates ky from the sample spherical (emission, not measurement) coordinates."""
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(theta) * np.sin(phi)
 
 
 def spherical_to_kz(
     kinetic_energy: np.float, theta: np.float, phi: np.float, inner_V: np.float
 ) -> np.float:
-    r"""
+    r"""Calculates the out of plane momentum from sample spherical (not measurement) coordinates.
+
     K_INV_ANGSTROM encodes that k_z = \frac{\sqrt{2 * m * E_kin * \cos^2\theta + V_0}}{\hbar}
-    :param kinetic_energy:
-    :param theta:
-    :param phi:
-    :param inner_V:
-    :return:
+
+    Args:
+        kinetic_energy
+        theta
+        phi
+        inner_V
+
+    Returns:
+        The out of plane momentum, kz.
     """
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy * np.cos(theta) ** 2 + inner_V)
 
 
 def calculate_kp_kz_bounds(arr: xr.DataArray):
+    """Calculates kp and kz bounds for angle-hv Fermi surfaces."""
     phi_offset = arr.S.phi_offset
     phi_min = np.min(arr.coords["phi"].values) - phi_offset
     phi_max = np.max(arr.coords["phi"].values) - phi_offset
@@ -192,6 +184,7 @@ def calculate_kp_kz_bounds(arr: xr.DataArray):
 
 
 def calculate_kp_bounds(arr: xr.DataArray):
+    """Calculates kp bounds for a single ARPES cut."""
     phi_coords = arr.coords["phi"].values - arr.S.phi_offset
     beta = float(arr.coords["beta"]) - arr.S.beta_offset
 
@@ -212,13 +205,17 @@ def calculate_kp_bounds(arr: xr.DataArray):
 
 
 def calculate_kx_ky_bounds(arr: xr.DataArray):
-    """
-    Calculates the kx and ky range for a dataset with a fixed photon energy
+    """Calculates the kx and ky range for a dataset with a fixed photon energy.
 
     This is used to infer the gridding that should be used for a k-space conversion.
     Based on Jonathan Denlinger's old codes
-    :param arr: Dataset that includes a key indicating the photon energy of the scan
-    :return: ((kx_low, kx_high,), (ky_low, ky_high,))
+
+    Args:
+        arr: Dataset that includes a key indicating the photon energy of
+          the scan
+
+    Returns:
+        ((kx_low, kx_high,), (ky_low, ky_high,))
     """
     phi_coords, beta_coords = (
         arr.coords["phi"] - arr.S.phi_offset,

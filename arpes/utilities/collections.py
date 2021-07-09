@@ -1,3 +1,4 @@
+"""Utilities for comparing collections and some specialty collection types."""
 import collections
 
 import numpy as np
@@ -12,51 +13,59 @@ __all__ = (
 
 
 class MappableDict(dict):
-    """
-    Like dict except that +, -, *, / are cascaded to values.
-    """
+    """Like dict except that +, -, *, / are cascaded to values."""
 
     def __add__(self, other):
+        """Applies `+` onto values."""
         if set(self.keys()) != set(other.keys()):
             raise ValueError("You can only add two MappableDicts with the same keys.")
 
         return MappableDict({k: self.get(k) + other.get(k) for k in self.keys()})
 
     def __sub__(self, other):
+        """Applies `-` onto values."""
         if set(self.keys()) != set(other.keys()):
             raise ValueError("You can only subtract two MappableDicts with the same keys.")
 
         return MappableDict({k: self.get(k) - other.get(k) for k in self.keys()})
 
     def __mul__(self, other):
+        """Applies `*` onto values."""
         if set(self.keys()) != set(other.keys()):
             raise ValueError("You can only multiply two MappableDicts with the same keys.")
 
         return MappableDict({k: self.get(k) * other.get(k) for k in self.keys()})
 
     def __truediv__(self, other):
+        """Applies `/` onto values."""
         if set(self.keys()) != set(other.keys()):
             raise ValueError("You can only divide two MappableDicts with the same keys.")
 
         return MappableDict({k: self.get(k) / other.get(k) for k in self.keys()})
 
     def __floordiv__(self, other):
+        """Applies `//` onto values."""
         if set(self.keys()) != set(other.keys()):
             raise ValueError("You can only divide (//) two MappableDicts with the same keys.")
 
         return MappableDict({k: self.get(k) // other.get(k) for k in self.keys()})
 
     def __neg__(self):
+        """Applies unary negation onto values."""
         return MappableDict({k: -self.get(k) for k in self.keys()})
 
 
 def deep_update(destination: Any, source: Any) -> Dict[str, Any]:
-    """
-    Doesn't clobber keys further down trees like doing a shallow update would. Instead recurse down from the root
-    and update as appropriate.
-    :param destination:
-    :param source:
-    :return:
+    """Doesn't clobber keys further down trees like doing a shallow update would.
+
+    Instead recurse down from the root and update as appropriate.
+
+    Args:
+        destination
+        source
+
+    Returns:
+        The destination item
     """
     for k, v in source.items():
         if isinstance(v, collections.Mapping):
@@ -68,6 +77,7 @@ def deep_update(destination: Any, source: Any) -> Dict[str, Any]:
 
 
 def deep_equals(a: Any, b: Any) -> bool:
+    """An equality check that looks into common collection types."""
     if not isinstance(b, type(a)):
         print(b, a)
         return False
