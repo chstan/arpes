@@ -5,7 +5,9 @@ import warnings
 
 from typing import Union
 
-VERSION = "2.6.0"
+# Use both version conventions for people's sanity.
+VERSION = "3.0.0"
+__version__ = VERSION
 
 
 def check() -> None:

@@ -9,6 +9,7 @@ Additionally, we have exact inverses for the volumetric transforms which are
 useful for aligning cuts which use those transforms. 
 See `convert_coordinate_forward`.
 """
+from arpes.utilities.conversion.core import convert_to_kspace
 from typing import Callable, Dict
 from arpes.trace import traceable
 import numpy as np
