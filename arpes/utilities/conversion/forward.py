@@ -29,7 +29,97 @@ from arpes.typing import DataType
 __all__ = (
     "convert_coordinates_to_kspace_forward",
     "convert_coordinates",
+    "convert_coordinate_forward",
 )
+
+
+def test():
+    pass
+
+
+@traceable
+def convert_coordinate_forward(
+    data: DataType, coords: Dict[str, float], trace: Callable = None, **k_coords
+):
+    """This function is the inverse/forward transform for the small angle volumetric k-conversion code.
+
+    This differs from the other forward transforms here which are exact, up to correct assignment
+    of offset constants.
+
+    This makes this routine very practical for determining the location of cuts to be taken around a
+    point or direction of interest in k-space. If you use the exact methods to determine the
+    location of interest in k-space then in general there will be some misalignment because
+    the small angle volumetric transform is not the inverse of the exact forward transforms.
+
+    The way that we accomplish this is that the data is copied and a "test charge" is placed in the
+    data which distinguished the location of interest in angle-space. The data is converted with
+    the volumetric interpolation methods, and the location of the "test charge" is determined in
+    k-space. With the approximate location in k determined, this process is repeated once more with a
+    finer k-grid to determine more precisely the forward transform location.
+
+    A nice property of this approach is that it is automatic because it determines the result
+    numerically using the volumetric transform code. Any changes to the volumetric code will
+    automatically reflect here. However, it comes with a few downsides:
+
+    1. The "test charge" is placed in a cell in the original data. This means that the resolution is
+      limited by the resolution of the dataset in angle-space. This could be circumvented by
+      regridding the data to have a higher resolution.
+    2. The procedure can only be performed for a single point at a time.
+    3. The procedure is relatively expensive.
+
+    Another approach would be to write down the exact small angle approximated transforms.
+
+    Args:
+        data: The data defining the coordinate offsets and experiment geometry.
+        coords: The coordinates of a point in angle-space to be converted.
+        trace: Used for performance tracing and debugging.
+
+    Returns:
+        The location of the desired coordinate in momentum.
+    """
+    data = normalize_to_spectrum(data)
+
+    if "eV" in coords:
+        coords = dict(coords)
+        energy_coord = coords.pop("eV")
+        data = data.sel(eV=energy_coord, method="nearest")
+    elif "eV" in data.dims:
+        warnings.warn(
+            """
+            You didn't specify an energy coordinate for the high symmetry point but the 
+            dataset you provided has an energy dimension. This will likely be very 
+            slow. Where possible, provide an energy coordinate
+            """
+        )
+
+    # Copying after taking a constant energy plane is much much cheaper
+    trace("Copying")
+    data = data.copy(deep=True)
+
+    data.loc[data.G.round_coordinates(coords)] = data.values.max() * 100000
+    trace("Filtering")
+    data = gaussian_filter_arr(data, default_size=3)
+
+    trace("Converting once")
+    kdata = convert_to_kspace(data, **k_coords, trace=trace)
+
+    trace("argmax")
+    near_target = kdata.G.argmax_coords()
+
+    trace("Converting twice")
+    kdata_close = convert_to_kspace(
+        data,
+        trace=trace,
+        **{k: np.linspace(v - 0.08, v + 0.08, 100) for k, v in near_target.items()},
+    )
+
+    # inconsistently, the energy coordinate is sometimes returned here
+    # so we remove it just in case
+    trace("argmax")
+    coords = kdata_close.G.argmax_coords()
+    if "eV" in coords:
+        del coords["eV"]
+    return coords
 
 
 @update_provenance("Forward convert coordinates")
