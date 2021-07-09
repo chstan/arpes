@@ -2458,12 +2458,16 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
             spectrum = self._obj.raw
         elif "__xarray_dataarray_variable__" in self._obj.data_vars:
             spectrum = self._obj.__xarray_dataarray_variable__
-        elif any("spectrum" in dv for dv in self._obj.data_vars):
-            spectrum = self._obj[
-                list(self._obj.data_vars)[
-                    list("spectrum" in dv for dv in self._obj.data_vars).index(True)
-                ]
-            ]
+        else:
+            candidates = self.spectra
+            if candidates:
+                spectrum = candidates[0]
+                best_volume = np.prod(spectrum.shape)
+                for c in candidates[1:]:
+                    volume = np.prod(c.shape)
+                    if volume > best_volume:
+                        spectrum = c
+                        best_volume = volume
 
         if spectrum is not None and "df" not in spectrum.attrs:
             spectrum.attrs["df"] = self._obj.attrs.get("df", None)
