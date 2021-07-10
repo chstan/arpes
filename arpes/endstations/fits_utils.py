@@ -2,14 +2,13 @@
 import functools
 import warnings
 from ast import literal_eval
-from collections import Iterable
 
 import numpy as np
 from astropy.io.fits.hdu.table import BinTableHDU
 from numpy import ndarray
 
 from arpes.utilities.funcutils import collect_leaves, iter_leaves
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Iterable
 
 __all__ = (
     "extract_coords",

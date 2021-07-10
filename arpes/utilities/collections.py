@@ -1,5 +1,5 @@
 """Utilities for comparing collections and some specialty collection types."""
-import collections
+from collections.abc import Mapping
 
 import numpy as np
 
@@ -68,7 +68,7 @@ def deep_update(destination: Any, source: Any) -> Dict[str, Any]:
         The destination item
     """
     for k, v in source.items():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, Mapping):
             destination[k] = deep_update(destination.get(k, {}), v)
         else:
             destination[k] = v
@@ -88,8 +88,8 @@ def deep_equals(a: Any, b: Any) -> bool:
             int,
             str,
             float,
-            np.float,
-            np.int,
+            np.float32,
+            np.int32,
             np.float64,
             np.int64,
         ),
