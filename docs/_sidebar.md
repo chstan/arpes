@@ -1,15 +1,12 @@
 <!-- docs/_sidebar.md -->
 
-[Installation + Tech Notes](/)
-==============================
+# [Installation + Tech Notes](/)
 
 -   [Installation](/)
 
-[FAQ](/faq)
-===========
+# [FAQ](/faq)
 
-[Usage](/how-to)
-================
+# [Usage](/how-to)
 
 -   [How To](/how-to)
 
@@ -58,8 +55,7 @@
     -   [Phenomenological and Detector Models](/modeling)
     -   [Developer’s Guide](/dev-guide)
 
-arpes
-=====
+# arpes
 
 -   [arpes package](arpes)
     -   [Subpackages](arpes#subpackages)

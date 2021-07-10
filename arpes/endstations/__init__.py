@@ -791,7 +791,7 @@ class FITSEndstation(EndstationBase):
                 )
 
                 if "pixel" in data.coords:
-                    del data.coords["pixel"]
+                    data = data.rename(pixel="phi")
 
                 data = data.assign_coords(phi=phi_axis)
 

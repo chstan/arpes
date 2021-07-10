@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": "git@gitlab.com:lanzara-group/python-arpes.git",
   "author": "Conrad Stansbury <chstansbury@gmail.com>",
-  "license": "GPLv3",
+  "license": "GPL-3.0",
   "scripts": {
     "test": "pytest -c pytest-config/pytest.ini",
     "watch-test": "pytest -c pytest-config/pytest-watch.ini",

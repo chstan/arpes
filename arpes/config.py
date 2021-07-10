@@ -89,8 +89,8 @@ class WorkspaceManager:
     Example:
         You can use this to load data from another named workspace:
 
-        >>> with WorkspaceManager("another_project"):
-        >>>    file_5_from_another_project = load_data(5)
+        >>> with WorkspaceManager("another_project"):      # doctest: +SKIP
+        ...    file_5_from_another_project = load_data(5)  # doctest: +SKIP
     """
 
     def __init__(self, workspace: Optional[Any] = None) -> None:

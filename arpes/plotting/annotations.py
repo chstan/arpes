@@ -102,7 +102,7 @@ def annotate_cuts(ax, data, plotted_axes, include_text_labels=False, **kwargs):
     """Annotates a cut location onto a plot.
 
     Example:
-        >>> annotate_cuts(ax, conv, ['kz', 'ky'], hv=80)
+        >>> annotate_cuts(ax, conv, ['kz', 'ky'], hv=80)  # doctest: +SKIP
 
     Args:
         ax: The axes to plot onto

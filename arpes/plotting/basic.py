@@ -6,7 +6,6 @@ import pandas as pd
 import xarray as xr
 from arpes.io import load_data
 from arpes.preparation import normalize_dim
-from arpes.utilities import default_dataset
 from arpes.utilities.conversion import convert_to_kspace
 
 __all__ = ["make_reference_plots"]
@@ -14,9 +13,6 @@ __all__ = ["make_reference_plots"]
 
 def make_reference_plots(df: pd.DataFrame = None, with_kspace=False):
     """Makes standard reference plots for orienting oneself."""
-    if df is None:
-        df = default_dataset()
-
     try:
         df = df[df.spectrum_type != "xps_spectrum"]
     except TypeError:

@@ -6,7 +6,7 @@ from .x_model_mixin import XModelMixin
 from .functional_forms import gaussian, affine_bkg, lorentzian, twolorentzian
 from lmfit.models import update_param_vals
 
-__all__ = ["TwoGaussianModel", "TwoLorModel", "TwoLorEdgeModel"]
+__all__ = ["TwoGaussianModel", "TwoLorModel"]
 
 
 class TwoGaussianModel(XModelMixin):

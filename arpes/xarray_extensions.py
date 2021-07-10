@@ -335,7 +335,7 @@ class ARPESAccessorBase:
             dataarray kFs. Then we could select momentum integrated EDCs in a small window around the fermi momentum
             for each temperature by using
 
-            >>> edcs_at_fermi_momentum = full_data.S.select_around_data({'kp': kFs}, radius={'kp': 0.04}, fast=True)
+            >>> edcs_at_fermi_momentum = full_data.S.select_around_data({'kp': kFs}, radius={'kp': 0.04}, fast=True)  # doctest: +SKIP
 
             The resulting data will be EDCs for each T, in a region of radius 0.04 inverse angstroms around the
             Fermi momentum.
@@ -2113,7 +2113,7 @@ class GenericAccessorTools:
         Example:
             We can use this to quickly scatter a 1D dataset where one axis is the coordinate value.
 
-            >>> plt.scatter(*data.G.as_arrays(), marker='s')
+            >>> plt.scatter(*data.G.as_arrays(), marker='s')  # doctest: +SKIP
 
         Returns:
             A tuple of the coordinate array (first index) and the data array (second index)
@@ -2232,7 +2232,7 @@ class GenericAccessorTools:
             the length 2 label {'mean', 'variance'}. The full dimensions in this case are
             ['X', {'mean', 'variance'}].
 
-            >>> data.G.transform('X', f).dims
+            >>> data.G.transform('X', f).dims  # doctest: +SKIP
             ["X", "mean", "variance"]
 
         Please note that the transformed axes always remain in the data because they

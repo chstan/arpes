@@ -1,6 +1,7 @@
 channels:
   - defaults
 dependencies:
+  - pip
   - pip:
       - pytest
       - pytest-cov

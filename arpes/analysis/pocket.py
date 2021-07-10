@@ -85,7 +85,7 @@ def radial_edcs_along_pocket(
     Example:
         I.e. an appropriate call would be
 
-        >>> radial_edcs_along_pocket(spectrum, np.pi / 4, inner_radius=1, outer_radius=4, phi=0.1, beta=0)
+        >>> radial_edcs_along_pocket(spectrum, np.pi / 4, inner_radius=1, outer_radius=4, phi=0.1, beta=0)  # doctest: +SKIP
 
     Args:
         data: ARPES Spectrum.

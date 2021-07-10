@@ -345,12 +345,12 @@ def convert_to_kspace(
     Examples:
         Convert a 2D cut with automatically inferred range and resolution.
 
-        >>> convert_to_kspace(arpes.io.load_example_data())
+        >>> convert_to_kspace(arpes.io.load_example_data())  # doctest: +SKIP
         xr.DataArray(...)
 
         Convert a 3D map with a specified momentum window
 
-        >>> convert_to_kspace(
+        >>> convert_to_kspace(  # doctest: +SKIP
                 fermi_surface_map,
                 kx=np.linspace(-1, 1, 200),
                 ky=np.linspace(-1, 1, 350),
