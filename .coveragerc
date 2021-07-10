@@ -1,4 +1,12 @@
-[report]
-omit =
-    # for now, the plotting scripts
+[run]
+include = 
+    arpes/*
+omit = 
+    tests/*
     arpes/plotting/*
+    arpes/deep_learning/*
+
+[report]
+exclude_lines =
+    raise NotImplementedError
+    pragma: no cover

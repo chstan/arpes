@@ -224,7 +224,7 @@ def beamline_resolution_estimate(data: DataType, meV=False):
             high_hv - low_hv
         ) * (1000 if meV else 1)
 
-    raise NotImplementedError()
+    raise NotImplementedError
 
 
 def thermal_broadening_estimate(data: DataType, meV=False) -> float:

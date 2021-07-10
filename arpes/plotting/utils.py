@@ -456,7 +456,7 @@ def lineplot_arr(arr, ax=None, method="plot", mask=None, mask_kwargs=None, **kwa
             for slice_mask in mask:
                 ax.fill_betweenx(y_lim, slice_mask.start, slice_mask.stop, **mask_kwargs)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
         ax.set_ylim(y_lim)
 
     return ax

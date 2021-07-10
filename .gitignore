@@ -2,6 +2,10 @@
 *.code-workspace
 .vscode/
 
+# JS Ecosystem
+node_modules/
+
+
 # Lanzara Group Internal Utilities
 arpes/tight_binding/**
 

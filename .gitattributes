@@ -4,3 +4,4 @@
 *.fits binary
 *.h5   binary
 *.pxt  binary
+*.nc   binary

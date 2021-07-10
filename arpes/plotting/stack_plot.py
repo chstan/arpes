@@ -226,7 +226,7 @@ def flat_stack_plot(
                 )
             else:
                 assert mode == "scatter"
-                raise NotImplementedError()
+                raise NotImplementedError
         else:
             if mode == "line":
                 marginal.plot(ax=ax, color=cmap(coord_dict[stack_axis]), **kwargs)

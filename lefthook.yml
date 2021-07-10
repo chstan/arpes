@@ -1,0 +1,11 @@
+pre-commit:
+  parallel: true
+  commands:
+    black:
+      glob: "*.py"
+      run: yarn check-black {staged_files}
+    pytest:
+      run: yarn test
+    pydocstyle:
+      glob: "*.py"
+      run: yarn check-docstyle {staged_files}

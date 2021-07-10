@@ -110,7 +110,7 @@ class FixedModeDetectorEffect(DetectorEffect):
     @property
     def detector_imprint(self) -> xr.DataArray:
         """Provides the transmission factor for the grid on the spectrometer or "imprint"."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def __call__(self, spectrum: xr.DataArray) -> xr.DataArray:
         """Applies the detector effect to a spectrum.

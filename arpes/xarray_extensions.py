@@ -431,7 +431,7 @@ class ARPESAccessorBase:
                 }
                 selected = value.sel(**selection_slices)
             else:
-                raise NotImplementedError()
+                raise NotImplementedError
 
             if nearest_sel_params:
                 selected = selected.sel(**nearest_sel_params, method="nearest")
@@ -547,7 +547,7 @@ class ARPESAccessorBase:
             selected = self._obj.sel(**selection_slices)
         else:
             # selected = self._obj
-            raise NotImplementedError()
+            raise NotImplementedError
 
         if nearest_sel_params:
             selected = selected.sel(**nearest_sel_params, method="nearest")
@@ -1080,7 +1080,7 @@ class ARPESAccessorBase:
         return edges * delta[angular_dim] + self._obj.coords[angular_dim].values[0]
 
     def trimmed_selector(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def wide_angle_selector(self, include_margin=True):
         edges = self.find_spectrum_angular_edges()
@@ -1098,7 +1098,7 @@ class ARPESAccessorBase:
         return slice(low_edge, high_edge)
 
     def narrow_angle_selector(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def meso_effective_selector(self):
         energy_edge = self.find_spectrum_energy_edges()

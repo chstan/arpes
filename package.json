@@ -1,13 +1,20 @@
 {
   "name": "python-arpes",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Data analysis utilities for ARPES in Python",
   "main": "index.js",
   "repository": "git@gitlab.com:lanzara-group/python-arpes.git",
   "author": "Conrad Stansbury <chstansbury@gmail.com>",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "GPLv3",
   "scripts": {
-    "test": "until ack -f --python | entr -d pytest; do sleep 1; done"
+    "test": "pytest -c pytest-config/pytest.ini",
+    "watch-test": "pytest -c pytest-config/pytest-watch.ini",
+    "watch-coverage": "pytest -c pytest-config/pytest-coverage.ini -f",
+    "coverage": "pytest -c pytest-config/pytest-coverage.ini",
+    "check-black": "black --config pyproject.toml --check",
+    "check-docstyle": "pydocstyle --config pyproject.toml"
+  },
+  "devDependencies": {
+    "@arkweid/lefthook": "^0.7.6"
   }
 }

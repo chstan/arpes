@@ -1,4 +1,4 @@
-name: arpes-verify-2
+name: arpes
 channels:
   - arpes
   - defaults
@@ -44,3 +44,4 @@ dependencies:
       - tqdm
       - rx
       - dill
+      - -e .

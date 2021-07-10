@@ -46,7 +46,7 @@ def remap_coords_to(arr, reference_arr):
 
     if arr.S.is_kspace:
         # kspace
-        raise NotImplementedError()
+        raise NotImplementedError
     else:
         # rotation matrix is
         # cos -sin

@@ -161,7 +161,7 @@ class SimpleApp:
 
         This needs to be provided by subclasses.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def window(self):

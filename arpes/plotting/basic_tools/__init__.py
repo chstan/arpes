@@ -126,7 +126,7 @@ class CoreTool(SimpleApp):
             pass
 
     def path_changed(self, path):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def add_controls(self):
         pass

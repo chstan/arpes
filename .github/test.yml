@@ -1,0 +1,49 @@
+name: CI with pytest
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # we are currently only testing on Python 3.8
+    strategy:
+      max-parallel: 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      # Get the package installed
+      - name: Add conda to system path
+        run: |
+          # $CONDA is an environment variable pointing to the root of the miniconda directory
+          echo $CONDA/bin >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          conda env create --file environment.yml
+
+      # This is a little tricky apparently, the shell isn't actually inited. We can use source activative
+      # but a more reliable option long term is probably to init the shell, reload the shell's profile, and finally
+      # conda activating.
+      - name: Source environment, test with pytest and generate coverage
+        run: |
+          source activate arpes
+          conda env update --file test-environment-update.yml
+          sudo apt install libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0
+          python -m pytest -c pytest-config/pytest-coverage-codecov.ini
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: unittests
+          env_vars: OS,PYTHON
+          fail_ci_if_error: true
+          path_to_write_report: ./coverage/codecov_report.txt
+          verbose: true
