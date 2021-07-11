@@ -36,7 +36,7 @@ import scipy.interpolate
 import xarray as xr
 from arpes.provenance import provenance, update_provenance
 from arpes.utilities import normalize_to_spectrum
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 from .kx_ky_conversion import ConvertKxKy, ConvertKp
 from .kz_conversion import ConvertKpKz
@@ -92,6 +92,7 @@ def slice_along_path(
     axis_name=None,
     resolution=None,
     shift_gamma=True,
+    n_points: Optional[int] = None,
     extend_to_edge=False,
     **kwargs,
 ):
@@ -130,6 +131,8 @@ def slice_along_path(
         resolution: Requested resolution along the interpolated axis.
         shift_gamma: Controls whether the interpolated axis is shifted
             to a value of 0 at Gamma.
+        n_points: The number of desired points along the output path. This will be inferred
+            approximately based on resolution if not provided.
         extend_to_edge: Controls whether or not to scale the vector S -
             G for symmetry point S so that you interpolate
         **kwargs
@@ -236,7 +239,10 @@ def slice_along_path(
         gamma_offset = sum(segment_lengths[0 : interpolation_points.index("G")])
 
     if resolution is None:
-        resolution = np.min([required_sampling_density(*segment) for segment in path_segments])
+        if n_points is None:
+            resolution = np.min([required_sampling_density(*segment) for segment in path_segments])
+        else:
+            path_length / n_points
 
     def converter_for_coordinate_name(name):
         def raw_interpolator(*coordinates):
@@ -272,6 +278,9 @@ def slice_along_path(
         return interpolated_coordinate_to_raw
 
     converted_coordinates = {d: arr.coords[d].values for d in free_coordinates}
+
+    if n_points is None:
+        n_points = int(path_length / resolution)
 
     # Adjust this coordinate under special circumstances
     converted_coordinates[axis_name] = (
