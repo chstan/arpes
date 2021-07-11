@@ -54,14 +54,14 @@ def read_igor_binary_wave(raw_bytes: bytes) -> xr.DataArray:
     newer Igor wave formats are very poorly documented. Data loading might not be perfectly
     correct as a result. For most purposes, you can load from .pxp files anyway.
 
-    Roughly, we first read a header from the bytestream. This header is used to determine the 
+    Roughly, we first read a header from the bytestream. This header is used to determine the
     dtype and size of the array which remains to be read from the tail of the bytestream.
 
     The header is defined by `igor_wave_header_dtype`.
 
     Args:
         raw_bytes: The bytes/buffer to be read.
-    
+
     Returns:
         The array read from the bytestream as an `xr.DataArray`.
     """

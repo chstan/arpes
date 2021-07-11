@@ -215,9 +215,9 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
 
     def resolve_frame_locations(self, scan_desc: dict = None):
         """Determines all files associated with a given scan.
-        
+
         This beamline saves several HDF files in scan associated folders, so this
-        amounts to checking whether the scan is multi-file and associating sibling  
+        amounts to checking whether the scan is multi-file and associating sibling
         files if so.
         """
         if scan_desc is None:

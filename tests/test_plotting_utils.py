@@ -1,5 +1,3 @@
-
-
 def test_sum_annotation():
     pass
 
