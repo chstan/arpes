@@ -30,8 +30,9 @@ jobs:
         env:
           cache-name: cache-conda-and-pypi
         with:
-          path: ~/.conda
-          path: ${{ steps.pip-cache.outputs.dir }}
+          path: |
+            ~/.conda
+            ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-build-${{ env.cache-name}}-${{ hashFiles("**/environment*.yml") }}
           restore-keys: |
             ${{ runner.os }}-conda
@@ -64,7 +65,7 @@ jobs:
         run: |
           yes | anaconda login --username ${{ conda.user }} --password ${{ conda.password }}
           anaconda upload -u arpes conda-dist/noarch/$(ls conda-dist/noarch/ | grep ".tar.bz2")
-      
+
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:

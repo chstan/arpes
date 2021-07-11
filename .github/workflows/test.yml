@@ -8,7 +8,6 @@ on:
   pull_request:
     branches: "**"
 
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -18,7 +17,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -35,8 +33,9 @@ jobs:
         env:
           cache-name: cache-conda-and-pypi
         with:
-          path: ~/.conda
-          path: ${{ steps.pip-cache.outputs.dir }}
+          path: |
+            ~/.conda
+            ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-build-${{ env.cache-name}}-${{ hashFiles("**/environment*.yml") }}
           restore-keys: |
             ${{ runner.os }}-conda
