@@ -33,7 +33,7 @@ jobs:
           path: |
             ~/.conda
             ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-build-${{ env.cache-name}}-${{ hashFiles("**/environment*.yml") }}
+          key: ${{ runner.os }}-build-${{ env.cache-name}}-${{ hashFiles('**/environment*.yml') }}
           restore-keys: |
             ${{ runner.os }}-conda
 
