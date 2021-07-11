@@ -1,0 +1,11 @@
+channels:
+  - defaults
+dependencies:
+  - pip
+  - pip:
+      - pytest
+      - pytest-cov
+      - pytest-mock
+      - pytest-qt
+      - pytest-env
+      - pytest-xvfb

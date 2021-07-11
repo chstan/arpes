@@ -29,7 +29,7 @@ You need some additional Python packages as well as Yarn.
 Install additional test requirements by running
 
 ```bash
-$> conda env update --file test-environment-update.yml
+$> conda env update --file environment-update-test.yml
 ```
 
 or by manually installing the requirements.

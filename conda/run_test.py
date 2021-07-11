@@ -5,11 +5,6 @@ don't entirely understand.
 """
 
 
-def check_imports():
-    import arpes
-    arpes.check()
-
-
 def check_load_example_data():
     import arpes.io
     import xarray as xr
@@ -18,6 +13,5 @@ def check_load_example_data():
     assert isinstance(data, xr.Dataset)
 
 
-if __name__ == '__main__':
-    check_imports()
+if __name__ == "__main__":
     check_load_example_data()
