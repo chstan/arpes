@@ -9,3 +9,4 @@ dependencies:
       - pytest-qt
       - pytest-env
       - pytest-xvfb
+      - "https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor"
