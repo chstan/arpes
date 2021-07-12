@@ -23,10 +23,20 @@ jobs:
         with:
           python-version: "3.8"
 
+      - name: Add conda to system path
+        run: |
+          # $CONDA is an environment variable pointing to the root of the miniconda directory
+          echo $CONDA/bin >> $GITHUB_PATH
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: Get conda package dir
+        id: conda-cache
+        run: |
+          echo "::set-output name=dir::$(conda info --json | python -c "import sys, json; print(json.load(sys.stdin)['pkgs_dirs'][0])")"
 
       - name: Cache conda and PyPI modules
         uses: actions/cache@v2
@@ -34,16 +44,12 @@ jobs:
           cache-name: cache-conda-and-pypi
         with:
           path: |
-            ~/.conda
             ${{ steps.pip-cache.outputs.dir }}
+            ${{ steps.conda-cache.outputs.dir }}
           key: ${{ runner.os }}-build-${{ env.cache-name}}-${{ hashFiles('**/environment*.yml') }}
           restore-keys: |
             ${{ runner.os }}-conda
 
-      - name: Add conda to system path
-        run: |
-          # $CONDA is an environment variable pointing to the root of the miniconda directory
-          echo $CONDA/bin >> $GITHUB_PATH
       - name: Install dependencies
         run: |
           conda env create --quiet --file environment.yml
