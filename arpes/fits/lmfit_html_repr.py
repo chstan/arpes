@@ -13,6 +13,21 @@ import numpy as np
 from lmfit import model
 
 
+def repr_multiline_ModelResult(self, **kwargs):
+    """Provides a text-based multiline representation used in Qt based interactive tools."""
+    template = "ModelResult\n  Converged: {success}\n  Components:\n {formatted_components}\n  Parameters:\n{parameters}"
+
+    return template.format(
+        success=self.success,
+        formatted_components="\n".join(
+            [(" " * 4) + c._repr_multiline_text_() for c in self.components]
+        ),
+        parameters="\n".join(
+            f"    {l}" for l in self.params._repr_multiline_text_(**kwargs).split("\n")
+        ),
+    )
+
+
 def repr_html_ModelResult(self, **kwargs):
     """Provides a better Jupyter representation of an `lmfit.ModelResult` instance."""
     template = """
@@ -41,12 +56,18 @@ def repr_html_Model(self):
     return template.format(name=self.name)
 
 
+def repr_multiline_Model(self, **kwargs):
+    """Provides a text-based multiline representation used in Qt based interactive tools."""
+    return self.name
+
+
+ALL_PARAMETER_ATTRIBUTES = ["name", "value", "min", "max", "stderr", "vary", "expr", "brute_step"]
+SKIP_ON_SHORT = {"min", "max", "vary", "expr", "brute_step"}
+
+
 def repr_html_Parameters(self, short=False):
     """HTML representation for `lmfit.Parameters` instances."""
-    skip_on_short = {"Min", "Max", "Vary", "Expr", "Brute_Step"}
-    all = ["Name", "Value", "Min", "Max", "Stderr", "Vary", "Expr", "Brute_Step"]
-    keys = list(self.keys())
-    keys.sort()
+    keys = sorted(list(self.keys()))
     template = """
     <table>
       <thead>
@@ -60,9 +81,18 @@ def repr_html_Parameters(self, short=False):
     </table>
     """
     return template.format(
-        cols="".join("<th>{}</th>".format(c) for c in all if not short or c not in skip_on_short),
+        cols="".join(
+            "<th>{}</th>".format(c)
+            for c in ALL_PARAMETER_ATTRIBUTES
+            if not short or c not in SKIP_ON_SHORT
+        ),
         rows="".join(self[p].to_table_row(short=short) for p in keys),
     )
+
+
+def repr_multiline_Parameters(self, short=False):
+    """Provides a text-based multiline representation used in Qt based interactive tools."""
+    return "\n".join(self[k]._repr_multiline_text_(short=short) for k in self.keys())
 
 
 def repr_html_Parameter(self, short=False):
@@ -104,12 +134,38 @@ def repr_html_Parameter(self, short=False):
     )
 
 
+def repr_multiline_Parameter(self: model.Parameter, short=False):
+    """Provides a text-based multiline representation used in Qt based interactive tools."""
+    template = "{name}:\n{contents}"
+
+    get_attrs = [a for a in ALL_PARAMETER_ATTRIBUTES if not short or a not in SKIP_ON_SHORT]
+
+    def format_attr(value) -> str:
+        if isinstance(value, float):
+            return f"{value:.3f}"
+
+        return str(value)
+
+    return template.format(
+        name=self.name,
+        contents="\n".join(
+            f"  {attr_name}: {format_attr(getattr(self, attr_name))}"
+            for attr_name in get_attrs
+            if attr_name != "name"
+        ),
+    )
+
+
 model.Model._repr_html_ = repr_html_Model
-# model.Parameter._repr_html_ = repr_html_Parameter
+model.Model._repr_multiline_text_ = repr_multiline_Model
 model.Parameters._repr_html_ = repr_html_Parameters
+model.Parameters._repr_multiline_text_ = repr_multiline_Parameters
 model.ModelResult._repr_html_ = repr_html_ModelResult
+model.ModelResult._repr_multiline_text_ = repr_multiline_ModelResult
 
 model.Parameter.to_table_row = repr_html_Parameter
+model.Parameter._repr_multiline_text_ = repr_multiline_Parameter
+# model.Parameter._repr_html_ = repr_html_Parameter
 
 # we don't export anything, just monkey-patch
 __all__ = tuple()
