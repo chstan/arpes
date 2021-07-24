@@ -1,5 +1,6 @@
 """Coordinate conversion classes for photon energy scans."""
 import numpy as np
+import numba
 
 import arpes.constants
 from typing import Any, Callable, Dict
@@ -8,6 +9,31 @@ from .base import CoordinateConverter, K_SPACE_BORDER, MOMENTUM_BREAKPOINTS
 from .bounds_calculations import calculate_kp_kz_bounds
 
 __all__ = ["ConvertKpKzV0", "ConvertKxKyKz", "ConvertKpKz"]
+
+
+@numba.njit(parallel=True, cache=True)
+def _kspace_to_hv(kp, kz, hv, energy_shift, is_constant_shift):
+    """Efficiently perform the inverse coordinate transform to photon energy."""
+    shift_ratio = 0 if is_constant_shift else 1
+
+    for i in numba.prange(len(kp)):
+        hv[i] = (
+            arpes.constants.HV_CONVERSION * (kp[i] ** 2 + kz[i] ** 2)
+            + energy_shift[i * shift_ratio]
+        )
+
+
+@numba.njit(parallel=True, cache=True)
+def _kp_to_polar(kinetic_energy, kp, phi, inner_potential, angle_offset):
+    """Efficiently performs the inverse coordinate transform phi(hv, kp)."""
+    for i in numba.prange(len(kp)):
+        phi[i] = (
+            np.arcsin(
+                kp[i]
+                / (arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy[i] + inner_potential))
+            )
+            + angle_offset
+        )
 
 
 class ConvertKpKzV0(CoordinateConverter):
@@ -36,6 +62,7 @@ class ConvertKpKz(CoordinateConverter):
         """Cache the photon energy coordinate we calculate backwards from kz."""
         super(ConvertKpKz, self).__init__(*args, **kwargs)
         self.hv = None
+        self.phi = None
 
     def get_coordinates(
         self, resolution: dict = None, bounds: dict = None
@@ -79,13 +106,17 @@ class ConvertKpKz(CoordinateConverter):
         self, binding_energy: np.ndarray, kp: np.ndarray, kz: np.ndarray, *args: Any, **kwargs: Any
     ) -> np.ndarray:
         """Converts from momentum back to the raw photon energy."""
-        # x = kp, y = kz, z = BE
         if self.hv is None:
             inner_v = self.arr.S.inner_potential
             wf = self.arr.S.work_function
-            self.hv = arpes.constants.HV_CONVERSION * (kp ** 2 + kz ** 2) + (
-                -inner_v - binding_energy + wf
-            )
+
+            is_constant_shift = True
+            if not isinstance(binding_energy, np.ndarray):
+                is_constant_shift = True
+                binding_energy = np.array([binding_energy])
+
+            self.hv = np.zeros_like(kp)
+            _kspace_to_hv(kp, kz, self.hv, -inner_v - binding_energy + wf, is_constant_shift)
 
         return self.hv
 
@@ -93,20 +124,30 @@ class ConvertKpKz(CoordinateConverter):
         self, binding_energy: np.ndarray, kp: np.ndarray, kz: np.ndarray, *args: Any, **kwargs: Any
     ) -> np.ndarray:
         """Converts from momentum back to the hemisphere angle axis."""
+        if self.phi is not None:
+            return self.phi
+
         if self.hv is None:
             self.kspace_to_hv(binding_energy, kp, kz, *args, **kwargs)
 
-        def kp_to_polar(kinetic_energy_out: np.ndarray, kp: np.ndarray) -> np.ndarray:
-            return np.arcsin(kp / (arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy_out)))
+        kinetic_energy = binding_energy + self.hv - self.arr.S.work_function
 
-        phi = kp_to_polar(self.hv + self.arr.S.work_function, kp) + self.arr.S.phi_offset
+        self.phi = np.zeros_like(self.hv)
+
+        _kp_to_polar(
+            kinetic_energy,
+            kp,
+            self.phi,
+            self.arr.S.inner_potential,
+            self.arr.S.phi_offset,
+        )
 
         try:
-            phi = self.calibration.correct_detector_angle(eV=binding_energy, phi=phi)
+            self.phi = self.calibration.correct_detector_angle(eV=binding_energy, phi=self.phi)
         except:
             pass
 
-        return phi
+        return self.phi
 
     def conversion_for(self, dim: str) -> Callable:
         """Looks up the appropriate momentum-to-angle conversion routine by dimension name."""
