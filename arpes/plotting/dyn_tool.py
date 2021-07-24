@@ -36,7 +36,7 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
         for the function and generate inputs for it dynamically.
         """
         from bokeh import events
-        from bokeh.layouts import row, column, widgetbox
+        from bokeh.layouts import row, column
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models import widgets
         from bokeh.plotting import figure
@@ -271,8 +271,8 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
             column(figures["main"], figures["bottom_marginal"]),
             column(figures["right_marginal"]),
             column(
-                widgetbox(*[built_widgets[p] for p in parameter_names if p in built_widgets]),
-                widgetbox(
+                column(*[built_widgets[p] for p in parameter_names if p in built_widgets]),
+                column(
                     self._cursor_info,
                     main_color_range_slider,
                     error_msg,

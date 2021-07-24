@@ -52,7 +52,7 @@ class ImageTool(SaveableTool, CursorTool):
     def tool_handler_2d(self, doc):
         """Application definition and widgets for the 2D data browser."""
         from bokeh import events
-        from bokeh.layouts import row, column, widgetbox, Spacer
+        from bokeh.layouts import row, column, Spacer
         from bokeh.models import ColumnDataSource, widgets
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models.widgets.markups import Div
@@ -339,7 +339,7 @@ class ImageTool(SaveableTool, CursorTool):
             column(figures["main"], figures["bottom_marginal"]),
             column(figures["right_marginal"], Spacer(width=200, height=200)),
             column(
-                widgetbox(
+                column(
                     widgets.Dropdown(
                         label="Pointer Mode", button_type="primary", menu=POINTER_MODES
                     )
@@ -347,7 +347,7 @@ class ImageTool(SaveableTool, CursorTool):
                 widgets.Tabs(
                     tabs=[
                         widgets.Panel(
-                            child=widgetbox(
+                            child=column(
                                 Div(text="<h2>Colorscale:</h2>"),
                                 color_mode_dropdown,
                                 main_color_range_slider,
@@ -359,7 +359,7 @@ class ImageTool(SaveableTool, CursorTool):
                             title="Settings",
                         ),
                         widgets.Panel(
-                            child=widgetbox(
+                            child=column(
                                 app_widgets["info_div"],
                                 Div(
                                     text='<h2 style="padding-top: 30px; padding-bottom: 10px;">Scan Info</h2>'
@@ -376,7 +376,7 @@ class ImageTool(SaveableTool, CursorTool):
                             title="Info",
                         ),
                         widgets.Panel(
-                            child=widgetbox(
+                            child=column(
                                 Div(text="<h2>Preparation</h2>"),
                                 symmetry_point_name_input,
                                 snap_checkbox,
@@ -441,7 +441,7 @@ class ImageTool(SaveableTool, CursorTool):
     def tool_handler_3d(self, doc):
         """Application and widget definitions for the 3D data browser."""
         from bokeh import events
-        from bokeh.layouts import row, column, widgetbox, Spacer
+        from bokeh.layouts import row, column, Spacer
         from bokeh.models import ColumnDataSource, HoverTool, widgets
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models.widgets.markups import Div
@@ -916,7 +916,7 @@ class ImageTool(SaveableTool, CursorTool):
                 Spacer(width=200, height=200),
             ),
             column(
-                widgetbox(
+                column(
                     widgets.Dropdown(
                         label="Pointer Mode", button_type="primary", menu=POINTER_MODES
                     )
@@ -924,7 +924,7 @@ class ImageTool(SaveableTool, CursorTool):
                 widgets.Tabs(
                     tabs=[
                         widgets.Panel(
-                            child=widgetbox(
+                            child=column(
                                 Div(text="<h2>Colorscale:</h2>"),
                                 color_mode_dropdown,
                                 main_color_range_slider,
@@ -938,7 +938,7 @@ class ImageTool(SaveableTool, CursorTool):
                             title="Settings",
                         ),
                         widgets.Panel(
-                            child=widgetbox(
+                            child=column(
                                 app_widgets["info_div"],
                                 Div(
                                     text='<h2 style="padding-top: 30px; padding-bottom: 10px;">Scan Info</h2>'
@@ -955,7 +955,7 @@ class ImageTool(SaveableTool, CursorTool):
                             title="Info",
                         ),
                         widgets.Panel(
-                            child=widgetbox(
+                            child=column(
                                 Div(text="<h2>Preparation</h2>"),
                                 symmetry_point_name_input,
                                 snap_checkbox,

@@ -27,7 +27,7 @@ class ComparisonTool(BokehInteractiveTool):
         self.other = other
 
     def tool_handler(self, doc):
-        from bokeh.layouts import row, column, widgetbox
+        from bokeh.layouts import row, column
         from bokeh.models import widgets
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.plotting import figure
@@ -165,7 +165,7 @@ class ComparisonTool(BokehInteractiveTool):
             ),
             row(
                 column(self.app_context["figures"]["compared"]),
-                widgetbox(
+                column(
                     intensity_slider,
                     delta_x_slider,
                     delta_y_slider,

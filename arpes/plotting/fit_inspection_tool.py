@@ -28,7 +28,7 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
 
     def tool_handler(self, doc):
         """Defines the application widgets and UI interactions."""
-        from bokeh.layouts import row, column, widgetbox, Spacer
+        from bokeh.layouts import row, column, Spacer
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models import widgets
         from bokeh.models.widgets.markups import Div
@@ -442,7 +442,7 @@ class FitCheckTool(BokehInteractiveTool, CursorTool):
             column(figures["main"], figures.get("bottom")),
             column(figures["right"], app_widgets["fit_info_div"]),
             column(
-                widgetbox(
+                column(
                     *[
                         widget
                         for widget in [

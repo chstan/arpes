@@ -25,7 +25,7 @@ class CurvatureTool(BokehInteractiveTool):
 
     def tool_handler(self, doc):
         """Configures the Bokeh widgets for the curvature tool."""
-        from bokeh.layouts import row, column, widgetbox
+        from bokeh.layouts import row, column
         from bokeh.models import widgets, Spacer
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.plotting import figure
@@ -318,7 +318,7 @@ class CurvatureTool(BokehInteractiveTool):
                 ),
                 column(self.app_context["figures"]["raw"], color_slider, gamma_slider),
             ),
-            widgetbox(
+            column(
                 filter_select,
                 *smoothing_sliders,
                 n_smoothing_steps_slider,

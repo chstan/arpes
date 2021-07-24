@@ -31,7 +31,7 @@ class BandTool(SaveableTool, CursorTool):
 
     def tool_handler(self, doc):
         """Sets up widgets for the Bokeh application."""
-        from bokeh.layouts import row, column, widgetbox
+        from bokeh.layouts import row, column
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models import widgets
         from bokeh.plotting import figure
@@ -335,7 +335,7 @@ class BandTool(SaveableTool, CursorTool):
         layout = row(
             column(figures["main"]),
             column(
-                widgetbox(
+                column(
                     self.pointer_dropdown,
                     self.band_dropdown,
                     self.fit_mode_dropdown,
@@ -351,7 +351,7 @@ class BandTool(SaveableTool, CursorTool):
                     self.remove_band_button,
                 ),
                 row(self.center_float_widget, self.center_float_copy),
-                widgetbox(
+                column(
                     self._cursor_info,
                     self.main_color_range_slider,
                 ),

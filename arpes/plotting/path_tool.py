@@ -31,7 +31,7 @@ class PathTool(SaveableTool, CursorTool):
 
     def tool_handler(self, doc):
         from bokeh import events
-        from bokeh.layouts import row, column, widgetbox
+        from bokeh.layouts import row, column
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models import widgets, warnings
         from bokeh.plotting import figure
@@ -245,7 +245,7 @@ class PathTool(SaveableTool, CursorTool):
         layout = row(
             column(self.figures["main"]),
             column(
-                widgetbox(
+                column(
                     pointer_dropdown,
                     self.path_dropdown,
                 ),
@@ -257,7 +257,7 @@ class PathTool(SaveableTool, CursorTool):
                     clear_path_button,
                     remove_path_button,
                 ),
-                widgetbox(
+                column(
                     self._cursor_info,
                     main_color_range_slider,
                 ),
