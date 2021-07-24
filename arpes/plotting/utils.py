@@ -5,6 +5,7 @@ import contextlib
 from typing import List, Tuple, Union
 
 import datetime
+import re
 import errno
 import itertools
 import json
@@ -23,7 +24,7 @@ from matplotlib.lines import Line2D
 
 import xarray as xr
 from arpes import VERSION
-from arpes.config import CONFIG, SETTINGS, attempt_determine_workspace
+from arpes.config import CONFIG, SETTINGS, attempt_determine_workspace, is_using_tex
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.jupyter import get_recent_history, get_notebook_name
@@ -75,6 +76,7 @@ __all__ = (
     "ddata_daxis_units",
     # TeX related
     "quick_tex",
+    "latex_escape",
     # Decorating + labeling
     "label_for_colorbar",
     "label_for_dim",
@@ -413,10 +415,56 @@ def frame_with(ax, color="red", linewidth=2):
         ax.spines[spine].set_linewidth(linewidth)
 
 
-def quick_tex(latex_fragment: str, ax=None, fontsize=30) -> plt.Axes:
-    """Sometimes you just need to render some latex.
+LATEX_ESCAPE_MAP = {
+    "_": r"\_",
+    "<": r"\textless{}",
+    ">": r"\textgreater{}",
+    "{": r"\{",
+    "}": r"\}",
+    "&": r"\&",
+    "%": r"\%",
+    "$": r"\$",
+    "#": r"\#",
+    "~": r"\textasciitilde{}",
+    "^": r"\^{}",
+    "\\": r"\textbackslash{}",
+}
+LATEX_ESCAPE_REGEX = re.compile(
+    "|".join(
+        re.escape(str(k)) for k in sorted(LATEX_ESCAPE_MAP.keys(), key=lambda item: -len(item))
+    )
+)
 
-    Getting a latex session running is far too much effort.
+
+def latex_escape(text: str, force: bool = False) -> str:
+    """Conditionally escapes a string based on the matplotlib settings.
+
+    If you need the escaped string even if you are not using matplotlib with LaTeX
+    support, you can pass `force=True`.
+
+    Adjusted from suggestions at:
+    https://stackoverflow.com/questions/16259923/how-can-i-escape-latex-special-characters-inside-django-templates
+
+    Args:
+        text: The contents which should be escaped
+        force: Whether we should perform escaping even if matplotlib is
+          not being used with LaTeX support.
+
+    Returns:
+        The escaped string which should appear in LaTeX with the same
+        contents as the original.
+    """
+    if not is_using_tex() and not force:
+        return text
+
+    # otherwise, we need to escape
+    return LATEX_ESCAPE_REGEX.sub(lambda match: LATEX_ESCAPE_MAP[match.group()], text)
+
+
+def quick_tex(latex_fragment: str, ax=None, fontsize=30) -> plt.Axes:
+    """Sometimes you just need to render some LaTeX.
+
+    Getting a LaTex session running is far too much effort.
     Also just go to the KaTeX website and can work well.
 
     Args:
@@ -990,12 +1038,13 @@ def savefig(desired_path, dpi=400, data=None, save_data=None, paper=False, **kwa
 
     Provides a number of conveniences over matplotlib's `savefig`:
 
-    1. Output is scoped per project and per day, which aids organization
-    2. The dpi is set to a reasonable value for the year 2021.
-    3. By omitting a file extension you will get high and low res formats in .png and .pdf
-      which is useful for figure drafting in external software (Adobe Illustrator)
-    4. Data and plot provenenace is tracked, which makes it easier to find your analysis
-      after the fact if you have many many plots.
+    #. Output is scoped per project and per day, which aids organization
+    #. The dpi is set to a reasonable value for the year 2021.
+    #. By omitting a file extension you will get high and low res formats in .png and .pdf
+       which is useful for figure drafting in external software (Adobe Illustrator)
+    #. Data and plot provenenace is tracked, which makes it easier to find your analysis
+       after the fact if you have many many plots.
+
     """
     if not os.path.splitext(desired_path)[1]:
         paper = True
@@ -1128,6 +1177,7 @@ def name_for_dim(dim_name, escaped=True):
     """Alternate variant of `label_for_dim`."""
     if SETTINGS["use_tex"]:
         name = {
+            "temperature": "Temperature",
             "beta": r"$\beta$",
             "theta": r"$\theta$",
             "chi": r"$\chi$",
@@ -1143,6 +1193,7 @@ def name_for_dim(dim_name, escaped=True):
         }.get(dim_name)
     else:
         name = {
+            "temperature": "Temperature",
             "beta": "β",
             "theta": "θ",
             "chi": "χ",
@@ -1167,6 +1218,7 @@ def unit_for_dim(dim_name, escaped=True):
     """Calculate LaTeX or fancy display label for the unit associated to a dimension."""
     if SETTINGS["use_tex"]:
         unit = {
+            "temperature": "K",
             "theta": r"rad",
             "beta": r"rad",
             "psi": r"rad",
@@ -1182,6 +1234,7 @@ def unit_for_dim(dim_name, escaped=True):
         }.get(dim_name)
     else:
         unit = {
+            "temperature": "K",
             "theta": r"rad",
             "beta": r"rad",
             "psi": r"rad",
@@ -1242,6 +1295,7 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
     """Generates a fancy label (LaTeX, if available) for a dimension according to standard conventions."""
     if SETTINGS["use_tex"]:
         raw_dim_names = {
+            "temperature": "Temperature",
             "theta": r"$\theta$",
             "beta": r"$\beta$",
             "chi": r"$\chi$",
@@ -1264,6 +1318,7 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
         }
     else:
         raw_dim_names = {
+            "temperature": "Temperature",
             "beta": "β",
             "theta": "θ",
             "chi": "χ",
