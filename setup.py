@@ -53,6 +53,7 @@ DEPENDENCY_GROUPS = {
         "tqdm",
         "rx",
         "dill",
+        "ase",
     ],
     "igor": ["igor==0.3.1"],
     "ml": [

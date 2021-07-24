@@ -42,6 +42,7 @@ dependencies:
       - tqdm
       - rx
       - dill
+      - ase
       - sphinx
       - sphinxcontrib-restbuilder
       - sphinx_rtd_theme
