@@ -1,10 +1,10 @@
 """Provides xarray aware pyqtgraph plotting widgets."""
 # pylint: disable=import-error
-from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 import numpy as np
-import weakref
 from scipy import interpolate
+
+from .utils import PlotOrientation
 
 __all__ = (
     "DataArrayImageView",
@@ -39,7 +39,7 @@ class DataArrayPlot(pg.PlotWidget):
         """Use custom axes so that we can provide coordinate-ful rather than pixel based values."""
         self.orientation = orientation
 
-        axis_or = "bottom" if orientation == "horiz" else "left"
+        axis_or = "bottom" if orientation == PlotOrientation.Horizontal else "left"
         self._coord_axis = CoordAxis(dim_index=0, orientation=axis_or)
 
         super().__init__(axisItems=dict([[axis_or, self._coord_axis]]), *args, **kwargs)
@@ -53,10 +53,10 @@ class DataArrayPlot(pg.PlotWidget):
         y = data.values
         self._coord_axis.setImage(data)
 
-        if self.orientation == "horiz":
-            self.plotItem.plot(np.arange(0, len(y)), y, *args, **kwargs)
+        if self.orientation == PlotOrientation.Horizontal:
+            return self.plotItem.plot(np.arange(0, len(y)), y, *args, **kwargs)
         else:
-            self.plotItem.plot(y, np.arange(0, len(y)), *args, **kwargs)
+            return self.plotItem.plot(y, np.arange(0, len(y)), *args, **kwargs)
 
 
 class DataArrayImageView(pg.ImageView):
@@ -72,6 +72,7 @@ class DataArrayImageView(pg.ImageView):
             "bottom": CoordAxis(dim_index=0, orientation="bottom"),
         }
         plot_item = pg.PlotItem(axisItems=self._coord_axes)
+        self.plot_item = plot_item
         super().__init__(view=plot_item, *args, **kwargs)
 
         self.view.invertY(False)

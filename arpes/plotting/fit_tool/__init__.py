@@ -1,54 +1,54 @@
-"""Provides a Qt based implementation of Igor's ImageTool."""
-# pylint: disable=import-error
-
-from arpes.utilities.qt.utils import PlotOrientation
+"""Provides a Qt based implementation of a curve fit inspection tool."""
+from arpes.plotting.qt_tool.BinningInfoWidget import BinningInfoWidget
+from arpes.utilities.qt.utils import PlotOrientation, ReactivePlotRecord
 from PyQt5 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import numpy as np
+import dill
+from dataclasses import dataclass
+import enum
+import xarray as xr
 import weakref
 import warnings
-import dill
-from typing import List, Union
+from typing import List, Optional, Union
 
 import arpes.config
-import arpes.xarray_extensions
-from arpes.utilities import normalize_to_spectrum
-from arpes.typing import DataType
 from arpes.utilities.qt.data_array_image_view import DataArrayPlot
 
-from arpes.utilities.ui import KeyBinding, horizontal, tabs, CursorRegion
+from arpes.fits.utilities import result_to_hints
+from arpes.utilities.ui import KeyBinding, CursorRegion, button, horizontal, label, tabs
 from arpes.utilities.qt import (
     qt_info,
-    run_tool_in_daemon_process,
     DataArrayImageView,
     BasicHelpDialog,
     SimpleWindow,
     SimpleApp,
+    run_tool_in_daemon_process,
 )
 
-from .AxisInfoWidget import AxisInfoWidget
-from .BinningInfoWidget import BinningInfoWidget
+from .fit_inspection_plot import FitInspectionPlot
 
 __all__ = (
-    "QtTool",
-    "qt_tool",
+    "FitTool",
+    "fit_tool",
 )
 
 qt_info.setup_pyqtgraph()
 
 
-class QtToolWindow(SimpleWindow):
-    """The application window for `QtTool`.
+class DataKey(str, enum.Enum):
+    Data = "data"
+    Residual = "residual"
+    NormalizedResidual = "norm_residual"
 
-    QtToolWindow was the first Qt-Based Tool that I built for PyARPES. Much of its structure was ported
-    to SimpleWindow and borrowed ideas from when I wrote DAQuiri. As a result, the structure is essentially
-    now to define just the handlers and any lifecycle hooks (close, etc.)
-    """
+
+class FitToolWindow(SimpleWindow):
+    """The application window for `FitTool`."""
 
     HELP_DIALOG_CLS = BasicHelpDialog
 
     def compile_key_bindings(self):
-        return super().compile_key_bindings() + [  # already includes Help and Close
+        return super().compile_key_bindings() + [
             KeyBinding(
                 "Scroll Cursor",
                 [
@@ -63,14 +63,6 @@ class QtToolWindow(SimpleWindow):
                 "Reset Intensity",
                 [QtCore.Qt.Key_I],
                 self.reset_intensity,
-            ),
-            KeyBinding(
-                "Scroll Z-Cursor",
-                [
-                    QtCore.Qt.Key_N,
-                    QtCore.Qt.Key_M,
-                ],
-                self.scroll_z,
             ),
             KeyBinding(
                 "Center Cursor",
@@ -136,30 +128,32 @@ class QtToolWindow(SimpleWindow):
             self.app().scroll(delta)
 
 
-class QtTool(SimpleApp):
-    """QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5.
+@dataclass
+class FitTool(SimpleApp):
+    """FitTool is an implementation of a curve fit browser for PyARPES."""
 
-    For now we retain a number of the metaphors from BokehTool, including a "context"
-    that stores the state, and can be used to programmatically interface with the tool.
-    """
+    data_key: DataKey = DataKey.Data
+    dataset: Optional[xr.Dataset] = None
 
-    TITLE = "Qt Tool"
-    WINDOW_CLS = QtToolWindow
-    WINDOW_SIZE = (5, 5)
+    TITLE = "Fit Tool"
+    WINDOW_CLS = FitToolWindow
+    WINDOW_SIZE = (8, 5)
 
     def __init__(self):
         """Initialize attributes to safe empty values."""
         super().__init__()
-        self.data = None
 
         self.content_layout = None
         self.main_layout = None
 
-        self.axis_info_widgets = []
-        self.binning_info_widgets = []
-        self.kspace_info_widgets = []
+    @property
+    def data(self) -> xr.DataArray:
+        """Extract the array-like values according to what content we are rendering."""
+        return self.dataset[self.data_key.value]
 
-        self._binning = None
+    @data.setter
+    def data(self, new_data) -> None:
+        raise TypeError("On fit_tool, the data is computed from the original dataset.")
 
     def center_cursor(self):
         """Scrolls so that the cursors are in the center of the data volume."""
@@ -185,34 +179,10 @@ class QtTool(SimpleApp):
             for c in cursors:
                 c.set_location(cursor[i])
 
-    @property
-    def binning(self):
-        """The binning on each axis in pixels."""
-        if self._binning is None:
-            return [1 for _ in self.data.dims]
-
-        return list(self._binning)
-
-    @binning.setter
-    def binning(self, value):
-        """Set the desired axis binning."""
-        different_binnings = [i for i, (nv, v) in enumerate(zip(value, self._binning)) if nv != v]
-        self._binning = value
-
-        for i in different_binnings:
-            cursors = self.registered_cursors.get(i)
-            for cursor in cursors:
-                cursor.set_width(self._binning[i])
-
-        self.update_cursor_position(self.context["cursor"], force=True)
-
     def transpose(self, transpose_order: List[str]):
         """Transpose dimensions into the order specified by `transpose_order` and redraw."""
         reindex_order = [self.data.dims.index(t) for t in transpose_order]
         self.data = self.data.transpose(*transpose_order)
-
-        for widget in self.axis_info_widgets + self.binning_info_widgets:
-            widget.recompute()
 
         new_cursor = [self.context["cursor"][i] for i in reindex_order]
         self.update_cursor_position(new_cursor, force=True)
@@ -239,54 +209,103 @@ class QtTool(SimpleApp):
         handling the rest dynamically.
 
         An additional complexity is that we also handle the cursor registration here.
+
+        Unlike the simple data browser, we have a few additional complexities. For one,
+        we need to generate a display of the fit which is currently under the cursor.
+
+        For now, we are going to support 1D fits only. The remaining data will be either
+        1, 2, or 3 dimensional, under current assumptions. Let's consider each case in
+        turn.
+
+        One Dimensional Marginals:
+            In this case, the total dataset is 2D, we will put a single 1D cursor
+            on the broadcast axis but we will display *all* of the data as a 2D image
+            plot with a 1D marginal and the 1D fit display.
+
+        Two Dimensional Marginals:
+            Here, we will give a single 2D image plot with the perpendicular (fit)
+            axis out of the image plane. A cursor will be registered to the 1D fit
+            display so that the contents of the main display can be changed. This 1D
+            fit cursor will have binning controls.
+
+        Three Dimensional Marginals:
+            The total dataset is 4D. We will use the standard 3D set of marginal planes,
+            and 1D marginals like we do in the 3D qt_tool with a 3D cursor.
+
+            The 1D marginal will have a cursor and binning controls on that cursor.
         """
-        if len(self.data.dims) == 2:
-            self.generate_marginal_for((), 1, 0, "xy", cursors=True, layout=self.content_layout)
-            self.generate_marginal_for(
-                (1,), 0, 0, "x", orientation=PlotOrientation.Horizontal, layout=self.content_layout
-            )
-            self.generate_marginal_for(
-                (0,), 1, 1, "y", orientation=PlotOrientation.Vertical, layout=self.content_layout
-            )
-
-            self.views["xy"].view.setYLink(self.views["y"])
-            self.views["xy"].view.setXLink(self.views["x"])
-
-        if len(self.data.dims) == 3:
-            self.generate_marginal_for(
-                (1, 2),
-                0,
-                0,
-                "x",
-                orientation=PlotOrientation.Horizontal,
-                layout=self.content_layout,
-            )
-            self.generate_marginal_for((1,), 1, 0, "xz", layout=self.content_layout)
-            self.generate_marginal_for((2,), 2, 0, "xy", cursors=True, layout=self.content_layout)
-            self.generate_marginal_for(
+        if len(self.data.dims) == 2:  # 1 broadcast dimension and one data dimension
+            self.generate_marginal_for((), 0, 0, "xy", cursors=True, layout=self.content_layout)
+            self.generate_fit_marginal_for(
                 (0, 1),
                 0,
                 1,
-                "z",
-                orientation=PlotOrientation.Horizontal,
-                cursors=True,
+                "fit",
+                cursors=False,
+                orientation=PlotOrientation.Vertical,
                 layout=self.content_layout,
             )
-            self.generate_marginal_for(
-                (0, 2), 2, 2, "y", orientation=PlotOrientation.Vertical, layout=self.content_layout
-            )
-            self.generate_marginal_for((0,), 2, 1, "yz", layout=self.content_layout)
+            self.views["xy"].view.setYLink(self.views["fit"].inner_plot)
 
-            self.views["xy"].view.setYLink(self.views["y"])
-            self.views["xy"].view.setXLink(self.views["x"])
-            self.views["xz"].view.setYLink(self.views["z"])
-            self.views["xz"].view.setXLink(self.views["xy"].view)
+        if len(self.data.dims) == 3:
+            self.generate_marginal_for((2,), 1, 0, "xy", cursors=True, layout=self.content_layout)
+            self.generate_fit_marginal_for(
+                (0, 1, 2), 0, 0, "fit", cursors=True, layout=self.content_layout
+            )
 
         if len(self.data.dims) == 4:
-            self.generate_marginal_for((1, 3), 0, 0, "xz", layout=self.content_layout)
-            self.generate_marginal_for((2, 3), 1, 0, "xy", cursors=True, layout=self.content_layout)
-            self.generate_marginal_for((0, 2), 1, 1, "yz", layout=self.content_layout)
-            self.generate_marginal_for((0, 1), 0, 1, "zw", cursors=True, layout=self.content_layout)
+            # no idea if these marginal locations are correct, need to check that
+            self.generate_marginal_for((1, 3), 1, 0, "xz", cursors=True, layout=self.content_layout)
+            self.generate_marginal_for((2, 3), 0, 1, "xy", cursors=True, layout=self.content_layout)
+            self.generate_marginal_for((0, 3), 1, 1, "yz", layout=self.content_layout)
+            self.generate_fit_marginal_for(
+                (0, 1, 2, 3), 0, 0, "fit", cursors=True, layout=self.content_layout
+            )
+
+    def generate_fit_marginal_for(
+        self,
+        dimensions,
+        column,
+        row,
+        name="fit",
+        orientation=PlotOrientation.Horizontal,
+        cursors=False,
+        layout=None,
+    ):
+        """Generates a marginal plot for a fit at a given set of coordinates.
+
+        This does something very similar to `generate_marginal_for` except that it is
+        specialized to showing a widget which embeds information about the current fit result.
+        """
+        if layout is None:
+            layout = self._layout
+
+        remaining_dims = [l for l in list(range(len(self.data.dims))) if l not in dimensions]
+
+        # for now, we only allow a single fit dimension
+        widget = FitInspectionPlot(name=name, root=weakref.ref(self), orientation=orientation)
+        self.views[name] = widget
+
+        if orientation == PlotOrientation.Horizontal:
+            widget.setMaximumHeight(qt_info.inches_to_px(3))
+        else:
+            widget.setMaximumWidth(qt_info.inches_to_px(3))
+
+        if cursors:
+            cursor = CursorRegion(
+                orientation=CursorRegion.Vertical
+                if orientation == PlotOrientation.Vertical
+                else CursorRegion.Horizontal,
+                movable=True,
+            )
+            widget.addItem(cursor, ignoreBounds=False)
+            self.connect_cursor(remaining_dims[-1], cursor)
+
+        self.reactive_views.append(
+            ReactivePlotRecord(dims=dimensions, view=widget, orientation=orientation)
+        )
+        layout.addWidget(widget, column, row)
+        return widget
 
     def connect_cursor(self, dimension, the_line):
         """Connect a cursor to a line control.
@@ -331,10 +350,6 @@ class QtTool(SimpleApp):
         )
         self.window.statusBar().showMessage("({})".format(cursor_text))
 
-        # update axis info widgets
-        for widget in self.axis_info_widgets + self.binning_info_widgets:
-            widget.recompute()
-
         # update data
         def safe_slice(vlow, vhigh, axis=0):
             vlow, vhigh = int(min(vlow, vhigh)), int(max(vlow, vhigh))
@@ -358,9 +373,7 @@ class QtTool(SimpleApp):
                         zip(
                             [self.data.dims[i] for i in reactive.dims],
                             [
-                                safe_slice(
-                                    int(new_cursor[i]), int(new_cursor[i] + self.binning[i]), i
-                                )
+                                safe_slice(int(new_cursor[i]), int(new_cursor[i] + 1), i)
                                 for i in reactive.dims
                             ],
                         )
@@ -370,6 +383,13 @@ class QtTool(SimpleApp):
                         if select_coord:
                             image_data = image_data.mean(list(select_coord.keys()))
                         reactive.view.setImage(image_data, keep_levels=keep_levels)
+                    elif isinstance(reactive.view, FitInspectionPlot):
+                        results_coord = {
+                            k: v for k, v in select_coord.items() if k in self.dataset.results.dims
+                        }
+                        result = self.dataset.results.isel(**results_coord)
+                        result = result.item()
+                        reactive.view.set_model_result(result)
 
                     elif isinstance(reactive.view, pg.PlotWidget):
                         for_plot = self.data.isel(**select_coord)
@@ -396,40 +416,34 @@ class QtTool(SimpleApp):
                 except IndexError:
                     pass
 
-    def construct_axes_tab(self):
-        """Controls for axis order and transposition."""
-        inner_items = [
-            AxisInfoWidget(axis_index=i, root=weakref.ref(self)) for i in range(len(self.data.dims))
-        ]
-        return horizontal(*inner_items), inner_items
-
     def construct_binning_tab(self):
-        """This tab controls the degree of binning around the cursor."""
-        binning_options = QtWidgets.QLabel("Options")
+        """Gives tab controls for the axis along the fit only."""
         inner_items = [
-            BinningInfoWidget(axis_index=i, root=weakref.ref(self))
-            for i in range(len(self.data.dims))
+            BinningInfoWidget(axis_index=len(self.data.dims) - 1, root=weakref.ref(self))
         ]
+        return horizontal(label("Options"), *inner_items), inner_items
 
-        return horizontal(binning_options, *inner_items), inner_items
+    def copy_parameter_hint(self, *_) -> None:
+        """Converts parameters for the current model being displayed and copies to clipboard."""
+        result = self.views["fit"].result
+        hint = result_to_hints(result)
+        self.copy_to_clipboard(hint)
 
-    def construct_kspace_tab(self):
-        """The momentum exploration tab."""
-        inner_items = []
+    def construct_info_tab(self):
+        """Provides some utility functionality to make curve fitting easier."""
+        copy_button = button("Copy parameters as hint")
+        copy_button.setMaximumWidth(qt_info.inches_to_px(1.5))
+        copy_button.subject.subscribe(self.copy_parameter_hint)
+        inner_items = [copy_button]
         return horizontal(*inner_items), inner_items
 
     def add_contextual_widgets(self):
         """Adds the widgets for the contextual controls at the bottom."""
-        axes_tab, self.axis_info_widgets = self.construct_axes_tab()
-        binning_tab, self.binning_info_widgets = self.construct_binning_tab()
-        kspace_tab, self.kspace_info_widgets = self.construct_kspace_tab()
+        self.main_layout.addLayout(self.content_layout, 0, 0)
+        info_tab, self.info_tab_widgets = self.construct_info_tab()
+        binning_tab, self.binning_tab_widgets = self.construct_binning_tab()
 
-        self.tabs = tabs(
-            ["Info", horizontal()],
-            ["Axes", axes_tab],
-            ["Binning", binning_tab],
-            ["K-Space", kspace_tab],
-        )
+        self.tabs = tabs(["Info", info_tab], ["Binning", binning_tab])
         self.tabs.setFixedHeight(qt_info.inches_to_px(1))
 
         self.main_layout.addLayout(self.content_layout, 0, 0)
@@ -470,28 +484,31 @@ class QtTool(SimpleApp):
         """Autoscales intensity in each marginal plot."""
         self.update_cursor_position(self.context["cursor"], force=True, keep_levels=False)
 
-    def set_data(self, data: DataType):
-        """Sets the current data to a new value and resets binning."""
-        data = normalize_to_spectrum(data)
+    def set_data(self, data: xr.Dataset):
+        """Sets the current data to a new value and resets UI state."""
+        self.dataset = data
+        self.data_key = DataKey.Data
 
-        if np.any(np.isnan(data)):
-            warnings.warn("Nan values encountered, copying data and assigning zeros.")
-            data = data.fillna(0)
-
-        self.data = data
-        self._binning = [1 for _ in self.data.dims]
+        # For now, we only support 1D fit results
+        fit_dims = self.dataset.F.fit_dimensions
+        assert len(fit_dims) == 1
+        self.dataset = self.dataset.S.transpose_to_back(*fit_dims)
 
 
-def _qt_tool(data: DataType):
-    """Starts the qt_tool using an input spectrum."""
+def _fit_tool(data: xr.Dataset) -> None:
+    """Starts the fitting inspection tool using an input fit result Dataset."""
     try:
         data = dill.loads(data)
     except TypeError:
         pass
 
-    tool = QtTool()
+    # some sanity checks that we were actually passed a collection of fit results
+    assert isinstance(data, xr.Dataset)
+    assert "results" in data.data_vars
+
+    tool = FitTool()
     tool.set_data(data)
     tool.start()
 
 
-qt_tool = run_tool_in_daemon_process(_qt_tool)
+fit_tool = run_tool_in_daemon_process(_fit_tool)

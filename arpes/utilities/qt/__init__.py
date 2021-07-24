@@ -1,6 +1,12 @@
 """Infrastructure code for Qt based analysis tools."""
+from arpes.typing import xr_types
 import pyqtgraph as pg
 from pyqtgraph import ViewBox
+import functools
+from multiprocessing import Process
+import dill
+
+from typing import Callable
 
 from .data_array_image_view import DataArrayImageView
 from .help_dialogs import BasicHelpDialog
@@ -14,7 +20,38 @@ __all__ = (
     "SimpleApp",
     "qt_info",
     "remove_dangling_viewboxes",
+    "run_tool_in_daemon_process",
 )
+
+
+def run_tool_in_daemon_process(tool_handler: Callable) -> Callable:
+    """Starts a Qt based tool as a daemon process.
+
+    This is exceptionally useful because it let's you have multiple tool windows
+    open simultaneously and does not block the main "analysis" process.
+
+    It also means that crashes due to Qt do not crash the analysis process, although
+    it makes them slightly harder to debug.
+
+    For this reason, if you are developing a Qt based analysis tool
+    it might make sense for you to run it in the main thread.
+    """
+
+    @functools.wraps(tool_handler)
+    def wrapped_handler(data, detached: bool = False):
+        if not detached:
+            return tool_handler(data)
+
+        if isinstance(data, xr_types):
+            # this should be a noop but seems to fix a bug which
+            # causes dill to crash after loading an nc array
+            data = data.assign_coords(data.coords)
+
+        ser_data = dill.dumps(data)
+        p = Process(target=tool_handler, args=(ser_data,), daemon=True)
+        p.start()
+
+    return wrapped_handler
 
 
 def remove_dangling_viewboxes():
@@ -75,13 +112,16 @@ class QtInfo:
         dpis = [screen.physicalDotsPerInch() for screen in app.screens()]
         self.screen_dpi = sum(dpis) / len(dpis)
 
+    def apply_settings_to_app(self, app):
+        # Adjust the font size based on screen DPI
+        font = app.font()
+        font.setPointSize(self.inches_to_px(0.04))
+        app.instance().setFont(font)
+
     def inches_to_px(self, arg):
         if isinstance(
             arg,
-            (
-                int,
-                float,
-            ),
+            (int, float),
         ):
             return self.screen_dpi * arg
 

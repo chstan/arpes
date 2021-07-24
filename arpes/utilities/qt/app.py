@@ -3,21 +3,18 @@ from PyQt5 import QtGui
 import pyqtgraph as pg
 import numpy as np
 import typing
+import xarray as xr
 import weakref
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 
 from arpes.utilities.ui import CursorRegion
 from .data_array_image_view import DataArrayImageView, DataArrayPlot
+from .utils import PlotOrientation, ReactivePlotRecord
 
 import arpes.config
 
 __all__ = ["SimpleApp"]
-
-ReactivePlotRecord = namedtuple(
-    "ReactivePlotRecord",
-    ("dims", "view", "orientation"),
-)
 
 
 class SimpleApp:
@@ -29,10 +26,12 @@ class SimpleApp:
 
     DEFAULT_COLORMAP = "viridis"
 
+    _data = None
+
     def __init__(self):
         """Only interesting thing on init is to make a copy of the user settings."""
         self._ninety_eight_percentile = None
-        self.data = None
+        self._data = None
         self.settings = None
         self._window = None
         self._layout = None
@@ -44,6 +43,34 @@ class SimpleApp:
         self.registered_cursors: typing.Dict[typing.List[CursorRegion]] = defaultdict(list)
 
         self.settings = arpes.config.SETTINGS.copy()
+
+    def copy_to_clipboard(self, value: typing.Any) -> None:
+        """Attempts to copy the value to the clipboard, or else prints."""
+        try:
+            import pyperclip
+            import pprint
+
+            pyperclip.copy(pprint.pformat(value))
+        except ImportError:
+            pass
+        finally:
+            import pprint
+
+            print(pprint.pformat(value))
+
+    @property
+    def data(self) -> xr.DataArray:
+        """Read data from the cached attribute.
+
+        This is a propety as opposed to a plain attribute
+        in order to facilitate rendering datasets with several
+        data_vars.
+        """
+        return self._data
+
+    @data.setter
+    def data(self, new_data: xr.DataArray):
+        self._data = new_data
 
     def close(self):
         """Graceful shutdown. Tell each view to close and drop references so GC happens."""
@@ -96,7 +123,14 @@ class SimpleApp:
                 view.setColorMap(cmap)
 
     def generate_marginal_for(
-        self, dimensions, column, row, name=None, orientation="horiz", cursors=False, layout=None
+        self,
+        dimensions,
+        column,
+        row,
+        name=None,
+        orientation=PlotOrientation.Horizontal,
+        cursors=False,
+        layout=None,
     ):
         """Generates a marginal plot for this applications's data after selecting along `dimensions`.
 
@@ -111,7 +145,7 @@ class SimpleApp:
             widget = DataArrayPlot(name=name, root=weakref.ref(self), orientation=orientation)
             self.views[name] = widget
 
-            if orientation == "horiz":
+            if orientation == PlotOrientation.Horizontal:
                 widget.setMaximumHeight(200)
             else:
                 widget.setMaximumWidth(200)
@@ -119,7 +153,7 @@ class SimpleApp:
             if cursors:
                 cursor = CursorRegion(
                     orientation=CursorRegion.Vertical
-                    if orientation == "vert"
+                    if orientation == PlotOrientation.Vertical
                     else CursorRegion.Horizontal,
                     movable=True,
                 )
@@ -170,6 +204,12 @@ class SimpleApp:
 
     def start(self):
         """Starts the Qt application, configures the window, and begins Qt execution."""
+        # When running in nbconvert, don't actually open tools.
+        import arpes.config
+
+        if arpes.config.DOCS_BUILD:
+            return
+
         app = QtGui.QApplication([])
         app.owner = self
         # self.app = app
@@ -196,5 +236,6 @@ class SimpleApp:
         self.window.show()
 
         self.after_show()
+        qt_info.apply_settings_to_app(app)
 
         QtGui.QApplication.instance().exec()

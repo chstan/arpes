@@ -135,9 +135,6 @@ class KTool(SimpleApp):
 
         self.views["kxy"].setImage(kdata.S.nan_to_num())
         if self.segments_x is not None:
-            print(self.segments_x)
-            print(self.segments_y)
-
             bz_plot = self.views["kxy"].plot_item
             kx, ky = self.conversion_kwargs["kx"], self.conversion_kwargs["ky"]
             for segx, segy in zip(self.segments_x, self.segments_y):
