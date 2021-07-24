@@ -7,6 +7,8 @@ As a result, this custom loader let's us pretend we store the data in
 a higher quality format.
 """
 
+from os import replace
+import numpy as np
 import xarray as xr
 from arpes.endstations import SingleFileEndstation, HemisphericalEndstation
 import arpes.xarray_extensions
@@ -30,6 +32,18 @@ class ExampleDataEndstation(SingleFileEndstation, HemisphericalEndstation):
         preloaded these for convenience on maps.
         """
         data = xr.open_dataarray(frame_path)
+        data = data.astype(np.float64)
+
+        # Process coordinates so that there are no non-dimension coordinates
+        # which are not a function of some index. This is for simplicity for beginners.
+        replacement_coords = {}
+        for cname, coord in data.coords.items():
+            if len(coord.values.shape) and cname not in data.dims:
+                replacement_coords[cname] = coord.mean().item()
+
+        data = data.assign_coords(**replacement_coords)
+
+        # Wrap into a dataset
         dataset = xr.Dataset({"spectrum": data})
         dataset.S.apply_offsets(data.S.offsets)
 
