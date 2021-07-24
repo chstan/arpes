@@ -14,14 +14,16 @@ different projects.
 
 # pylint: disable=global-statement
 
-
+from dataclasses import dataclass, field
+import warnings
 import json
 import logging
 import os.path
+import matplotlib
 import pint
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 ureg = pint.UnitRegistry()
 
@@ -39,9 +41,18 @@ SETTINGS = {
 }
 
 # these are all set by ``update_configuration``
+DOCS_BUILD = False
 HAS_LOADED = False
 FIGURE_PATH = None
 DATASET_PATH = None
+
+
+def warn(msg: str):
+    """Conditionally render a warning using `warnings.warn`."""
+    if DOCS_BUILD:
+        return
+
+    warnings.warn(msg)
 
 
 def update_configuration(user_path: Optional[str] = None) -> None:
@@ -293,8 +304,6 @@ def use_tex(rc_text_should_use: bool = False):
     Args:
         rc_text_should_use: Whether to enable TeX. Defaults to False.
     """
-    import matplotlib
-
     # in matplotlib v3 we do not need to change other settings unless
     # the preamble needs customization
     matplotlib.rcParams["text.usetex"] = rc_text_should_use
