@@ -38,7 +38,9 @@ The `.F.` accessor:
 """
 
 import pandas as pd
+import lmfit
 import arpes
+import contextlib
 import deprecation
 import collections
 import copy
@@ -59,13 +61,13 @@ import arpes.plotting as plotting
 from arpes.analysis.general import rebin
 from arpes.analysis.band_analysis_utils import param_getter, param_stderr_getter
 from arpes.models.band import MultifitBand
-from arpes.plotting.all import BandTool, CurvatureTool, FitCheckTool, ImageTool
 from arpes.plotting.utils import fancy_labels, remove_colorbars
+from arpes.plotting.parameter import plot_parameter
 from arpes.typing import DataType, DTypeLike
 from arpes.utilities import apply_dataarray
 from arpes.utilities.collections import MappableDict
 from arpes.utilities.conversion import slice_along_path
-from arpes.utilities.math import shift_by
+import arpes.utilities.math
 from arpes.utilities.region import DesignatedRegions, normalize_region
 from arpes.utilities.xarray import unwrap_xarray_item, unwrap_xarray_dict
 
@@ -816,6 +818,16 @@ class ARPESAccessorBase:
 
         return None
 
+    @contextlib.contextmanager
+    def with_rotation_offset(self, offset: float):
+        """Temporarily rotates the chi_offset by `offset`."""
+        old_chi_offset = self.offsets.get("chi", 0)
+        self.apply_offsets({"chi": old_chi_offset + offset})
+
+        yield old_chi_offset + offset
+
+        self.apply_offsets({"chi": old_chi_offset})
+
     def apply_offsets(self, offsets):
         for k, v in offsets.items():
             self._obj.attrs["{}_offset".format(k)] = v
@@ -868,8 +880,8 @@ class ARPESAccessorBase:
         return self.lookup_offset("phi")
 
     @property
-    def psi_offset(self):
-        return self.lookup_offset("psi")
+    def chi_offset(self):
+        return self.lookup_offset("chi")
 
     @property
     def work_function(self) -> float:
@@ -1764,18 +1776,23 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
         with plt.rc_context(rc={"text.usetex": False}):
             self._obj.plot(*args, **kwargs)
 
-    def show(self, **kwargs):
-        """Opens the Bokeh based image tool."""
-        image_tool = ImageTool(**kwargs)
-        return image_tool.make_tool(self._obj)
+    def show(self, detached=False, **kwargs):
+        """Opens the Qt based image tool."""
+        import arpes.plotting.qt_tool
+
+        arpes.plotting.qt_tool.qt_tool(self._obj, detached=detached)
 
     def show_d2(self, **kwargs):
         """Opens the Bokeh based second derivative image tool."""
+        from arpes.plotting.all import CurvatureTool
+
         curve_tool = CurvatureTool(**kwargs)
         return curve_tool.make_tool(self._obj)
 
     def show_band_tool(self, **kwargs):
         """Opens the Bokeh based band placement tool."""
+        from arpes.plotting.all import BandTool
+
         band_tool = BandTool(**kwargs)
         return band_tool.make_tool(self._obj)
 
@@ -2105,7 +2122,7 @@ class GenericAccessorTools:
         return meshed_coordinates
 
     def to_arrays(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Converts a (1D) `xr.DataArray` into two plain `ndarray`s of their coordinate and data.
+        """Converts a (1D) `xr.DataArray` into two plain ``ndarray``s of their coordinate and data.
 
         Useful for rapidly converting into a format than can be `plt.scatter`ed
         or similar.
@@ -2340,18 +2357,19 @@ class GenericAccessorTools:
 
         return result
 
-    def shift_by(self, other, shift_axis=None, zero_nans=True, shift_coords=False):
+    def shift_by(self, other: xr.DataArray, shift_axis=None, zero_nans=True, shift_coords=False):
         # for now we only support shifting by a one dimensional array
 
-        data = self._obj
-
-        assert len(other.dims) == 1
-
-        if shift_coords:
-            mean_shift = np.mean(other)
-            other -= mean_shift
+        data = self._obj.copy(deep=True)
 
         by_axis = other.dims[0]
+        assert len(other.dims) == 1
+        assert len(other.coords[by_axis]) == len(data.coords[by_axis])
+
+        if shift_coords:
+            mean_shift = np.mean(other.values)
+            other -= mean_shift
+
         if shift_axis is None:
             option_dims = list(data.dims)
             option_dims.remove(by_axis)
@@ -2360,7 +2378,7 @@ class GenericAccessorTools:
 
         shift_amount = -other.values / data.G.stride(generic_dim_names=False)[shift_axis]
 
-        shifted_data = shift_by(
+        shifted_data = arpes.utilities.math.shift_by(
             data.values,
             shift_amount,
             axis=list(data.dims).index(shift_axis),
@@ -2371,16 +2389,19 @@ class GenericAccessorTools:
         if zero_nans:
             shifted_data[np.isnan(shifted_data)] = 0
 
-        coords = copy.deepcopy(data.coords)
-        if shift_coords:
-            coords[shift_axis] -= mean_shift
-
-        return xr.DataArray(
+        built_data = xr.DataArray(
             shifted_data,
-            coords,
+            data.coords,
             data.dims,
             attrs=data.attrs.copy(),
         )
+
+        if shift_coords:
+            built_data = built_data.assign_coords(
+                **dict([[shift_axis, data.coords[shift_axis] + mean_shift]])
+            )
+
+        return built_data
 
     def __init__(self, xarray_obj: DataType):
         self._obj = xarray_obj
@@ -2461,9 +2482,58 @@ class ARPESDatasetFitToolAccessor:
     def eval(self, *args, **kwargs):
         return self._obj.results.G.map(lambda x: x.eval(*args, **kwargs))
 
-    def show(self):
-        fit_diagnostic_tool = FitCheckTool()
-        return fit_diagnostic_tool.make_tool(self._obj)
+    def show(self, detached=False):
+        from arpes.plotting.fit_tool import fit_tool
+
+        fit_tool(self._obj, detached=detached)
+
+    @property
+    def broadcast_dimensions(self) -> List[str]:
+        """Returns the dimensions which were used in the fitting process.
+
+        This is a sibling property to `fit_dimensions`.
+
+        Returns:
+            The list of the dimensions which were used in any individual fit.
+            For example, a broadcast of MDCs across energy on a dataset with dimensions
+            `["eV", "kp"]` would produce `["kp"]`.
+        """
+        return list(self._obj.results.dims)
+
+    @property
+    def fit_dimensions(self) -> List[str]:
+        """Returns the dimensions which were broadcasted across, as opposed to fit across.
+
+        This is a sibling property to `broadcast_dimensions`.
+
+        Returns:
+            The list of the dimensions which were **not** used in any individual fit.
+            For example, a broadcast of MDCs across energy on a dataset with dimensions
+            `["eV", "kp"]` would produce `["eV"]`.
+        """
+        return list(set(self._obj.data.dims).difference(self._obj.results.dims))
+
+    def best_fits(self) -> xr.DataArray:
+        """Alias for `ARPESFitToolsAccessor.best_fits`.
+
+        Orders the fits into a raveled array by the MSE error.
+        """
+        return self._obj.results.F.best_fits()
+
+    def worst_fits(self) -> xr.DataArray:
+        """Alias for `ARPESFitToolsAccessor.worst_fits`.
+
+        Orders the fits into a raveled array by the MSE error.
+        """
+        return self._obj.results.F.worst_fits()
+
+    def mean_square_error(self) -> xr.DataArray:
+        """Alias for `ARPESFitToolsAccessor.mean_square_error`.
+
+        Calculates the mean square error of the fit across the fit
+        axes for all model result instances in the collection.
+        """
+        return self._obj.results.F.mean_square_error()
 
     def p(self, param_name: str) -> xr.DataArray:
         """Alias for `ARPESFitToolsAccessor.p`.
@@ -2538,7 +2608,7 @@ class ARPESFitToolsAccessor:
             param_name: The name of the parameter which should be plotted
             kwargs: Passed to plotting routines to provide user control
         """
-        plotting.plot_parameter(self._obj, param_name, **kwargs)
+        plot_parameter(self._obj, param_name, **kwargs)
 
     def param_as_dataset(self, param_name: str) -> xr.Dataset:
         """Maps from `lmfit.ModelResult` to a Dict parameter summary.
@@ -2558,10 +2628,56 @@ class ARPESFitToolsAccessor:
             }
         )
 
-    def show(self):
+    def show(self, detached: bool = False):
         """Opens a Bokeh based interactive fit inspection tool."""
-        fit_diagnostic_tool = FitCheckTool()
-        return fit_diagnostic_tool.make_tool(self._obj)
+        from arpes.plotting.fit_tool import fit_tool
+
+        fit_tool(self._obj, detached=detached)
+
+    def best_fits(self) -> xr.DataArray:
+        """Orders the fits into a raveled array by the MSE error."""
+        return self.order_stacked_fits(ascending=True)
+
+    def worst_fits(self) -> xr.DataArray:
+        """Orders the fits into a raveled array by the MSE error."""
+        return self.order_stacked_fits(ascending=False)
+
+    def mean_square_error(self) -> xr.DataArray:
+        """Calculates the mean square error of the fit across fit axes.
+
+        Producing a scalar metric of the error for all model result instances in
+        the collection.
+        """
+
+        def safe_error(model_result_instance: Optional[lmfit.model.ModelResult]) -> float:
+            if model_result_instance is None:
+                return np.nan
+
+            return (model_result_instance.residual ** 2).mean()
+
+        return self._obj.G.map(safe_error)
+
+    def order_stacked_fits(self, ascending=False) -> xr.DataArray:
+        """Produces an ordered collection of `lmfit.ModelResult` instances.
+
+        For multidimensional broadcasts, the broadcasted dimensions will be
+        stacked for ordering to produce a 1D array of the results.
+
+        Args:
+            ascending: Whether the results should be ordered according to ascending
+              mean squared error (best fits first) or descending error (worst fits first).
+
+        Returns:
+            An xr.DataArray instance with stacked axes whose values are the ordered models.
+        """
+        stacked = self._obj.stack({"by_error": self._obj.dims})
+        error = stacked.F.mean_square_error()
+
+        if not ascending:
+            error = -error
+
+        indices = np.argsort(error.values)
+        return stacked[indices]
 
     def p(self, param_name: str) -> xr.DataArray:
         """Collects the value of a parameter from curve fitting.
@@ -2615,14 +2731,13 @@ class ARPESFitToolsAccessor:
         """Collects the names of the bands from a multiband fit.
 
         Heuristically, a band is defined as a dispersive peak so we look for
-        prefixes corresponding to parameter names which contain "center".
+        prefixes corresponding to parameter names which contain `"center"`.
 
         Returns:
             The collected prefix names for the bands.
 
-            For instance, if the param name "a_center", the return value
-            would contain "a_".
-
+            For instance, if the param name `"a_center"`, the return value
+            would contain `"a_"`.
         """
         collected_band_names = set()
 
@@ -2639,7 +2754,7 @@ class ARPESFitToolsAccessor:
     def parameter_names(self) -> Set[str]:
         """Collects the parameter names for a multidimensional fit.
 
-        Assumes that the model used is the same for all `lmfit.ModelResult`s
+        Assumes that the model used is the same for all ``lmfit.ModelResult``s
         so that we can merely extract the parameter names from a single non-null
         result.
 
@@ -2656,10 +2771,6 @@ class ARPESFitToolsAccessor:
             collected_parameter_names = collected_parameter_names.union(set(param_names))
 
         return collected_parameter_names
-
-    def show_fit_diagnostic(self):
-        """Alias for `.show`."""
-        return self.show()
 
 
 @xr.register_dataset_accessor("S")
@@ -2821,18 +2932,18 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
         A bit of a misnomer because this actually makes many plots. For full datasets,
         the relevant components are:
 
-        1. Temperature as function of scan DOF
-        2. Photocurrent as a function of scan DOF
-        3. Photocurrent normalized + unnormalized figures, in particular
-           i. The reference plots for the photocurrent normalized spectrum
-           ii. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF
-               integrated over E, phi
-           iii. For delay scans:
-             1. Fermi location as a function of scan DoF, integrated over phi
-             2. Subtraction scans
-        4. For spatial scans:
-           i. energy/angle integrated spatial maps with subsequent measurements indicated
-           2. energy/angle integrated FS spatial maps with subsequent measurements indicated
+        #. Temperature as function of scan DOF
+        #. Photocurrent as a function of scan DOF
+        #. Photocurrent normalized + unnormalized figures, in particular
+            #. The reference plots for the photocurrent normalized spectrum
+            #. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF
+              integrated over E, phi
+            #. For delay scans:
+                #. Fermi location as a function of scan DoF, integrated over phi
+                #. Subtraction scans
+        #. For spatial scans:
+            #. energy/angle integrated spatial maps with subsequent measurements indicated
+            #. energy/angle integrated FS spatial maps with subsequent measurements indicated
 
         Args:
             kwargs: Passed to plotting routines to provide user control
@@ -2872,11 +2983,12 @@ class ARPESDatasetAccessor(ARPESAccessorBase):
         """Creates photocurrent normalized + unnormalized figures.
 
         Creates:
-        i. The reference plots for the photocurrent normalized spectrum
-        ii. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF integrated over E, phi
-        iii. For delay scans:
-          1. Fermi location as a function of scan DoF, integrated over phi
-          2. Subtraction scans
+        #. The reference plots for the photocurrent normalized spectrum
+        #. The normalized total cycle intensity over scan DoF, i.e. cycle vs scan DOF integrated over E, phi
+        #. For delay scans:
+
+            #. Fermi location as a function of scan DoF, integrated over phi
+            #. Subtraction scans
 
         Args:
             prefix: A prefix inserted into filenames to make them unique.
