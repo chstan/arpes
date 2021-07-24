@@ -5,6 +5,6 @@ dependencies:
   - pip:
       - sphinx
       - sphinxcontrib-restbuilder
-      - sphinxcontrib-katex
       - sphinx_rtd_theme
       - nbsphinx
+      - sphinx_copybutton

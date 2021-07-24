@@ -54,10 +54,20 @@ jobs:
           sudo apt install libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0
           python -m pytest -c pytest-config/pytest.ini
 
-      - name: Build conda artifacts
+      - name: Install build requirements
         run: |
           conda install -y conda-build anaconda-client
-          python -m build
+          pip install setuptools setuptools-scm wheel twine check-manifest
+
+      - name: Build wheels
+          git clean -xdf
+          git restore -SW .
+          python -m build --sdist --wheel .
+
+      - name: Check pip artifacts
+          python -m twine check dist/*
+
+      - name: Conda build
           mkdir "conda-dist"
           conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
 
