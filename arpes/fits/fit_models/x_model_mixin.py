@@ -19,7 +19,7 @@ def dict_to_parameters(dict_of_parameters) -> lf.Parameters:
 
 
 class XModelMixin(lf.Model):
-    """A mixin providing curve fitting for xarray.DataArray instances.
+    """A mixin providing curve fitting for ``xarray.DataArray`` instances.
 
     This amounts mostly to making `lmfit` coordinate aware, and providing
     a translation layer between xarray and raw np.ndarray instances.
@@ -202,7 +202,7 @@ class XAdditiveCompositeModel(lf.CompositeModel, XModelMixin):
 class XMultiplicativeCompositeModel(lf.CompositeModel, XModelMixin):
     """xarray coordinate aware composite model corresponding to the sum of two models.
 
-    Currently this just copies +, might want to adjust things!
+    Currently this just copies ``+``, might want to adjust things!
     """
 
     def guess(self, data, x=None, **kwargs):
@@ -218,7 +218,7 @@ class XMultiplicativeCompositeModel(lf.CompositeModel, XModelMixin):
 
 
 class XConvolutionCompositeModel(lf.CompositeModel, XModelMixin):
-    """Work in progress for convolving two `Model`s."""
+    """Work in progress for convolving two ``Model``."""
 
     def guess(self, data, x=None, **kwargs):
         pars = self.make_params()

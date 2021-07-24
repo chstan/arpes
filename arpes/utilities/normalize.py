@@ -11,6 +11,7 @@ __all__ = (
 def normalize_to_spectrum(data: DataType):
     """Tries to extract the actual ARPES spectrum from a dataset containing other variables."""
     from arpes.io import load_data
+    import arpes.xarray_extensions
 
     if isinstance(data, xr.Dataset):
         if "up" in data.data_vars:

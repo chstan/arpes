@@ -27,14 +27,7 @@ def annotate_experimental_conditions(ax, data, desc, show=False, orientation="to
 
     or a list of such items.
     """
-    if isinstance(
-        desc,
-        (
-            str,
-            int,
-            float,
-        ),
-    ):
+    if isinstance(desc, (str, int, float)):
         desc = [desc]
 
     ax.grid(False)

@@ -1,5 +1,6 @@
 """Utilities for plotting parameter data out of bulk fits."""
 import matplotlib.pyplot as plt
+from arpes.plotting.utils import latex_escape
 
 import xarray as xr
 from arpes.provenance import save_plot_provenance
@@ -28,8 +29,9 @@ def plot_parameter(
         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (7, 5)))
 
     ds = fit_data.F.param_as_dataset(param_name)
-    x = ds.coords[ds.value.dims[0]].values
-    print(kwargs)
+    x_name = ds.value.dims[0]
+    x = ds.coords[x_name].values
+
     color = kwargs.get("color")
     e_width = None
     l_width = None
@@ -59,3 +61,7 @@ def plot_parameter(
         fillstyle=fillstyle,
         markersize=markersize,
     )
+
+    ax.set_xlabel(latex_escape(x_name))
+    ax.set_ylabel(latex_escape(param_name))
+    return ax

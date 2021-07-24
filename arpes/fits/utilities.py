@@ -45,7 +45,7 @@ def wrap_for_xarray_values_unpacking(item):
     return item
 
 
-def result_to_hints(m: lmfit.model.ModelResult, defaults: None) -> Dict[str, Dict[str, Any]]:
+def result_to_hints(m: lmfit.model.ModelResult, defaults=None) -> Dict[str, Dict[str, Any]]:
     """Turns an `lmfit.model.ModelResult` into a dictionary with initial guesses.
 
     Args:

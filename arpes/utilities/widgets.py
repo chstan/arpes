@@ -33,7 +33,7 @@ class SubjectiveComboBox(QComboBox):
     """A QComboBox using rx instead of signals."""
 
     def __init__(self, *args, **kwargs):
-        """Wrap signals in `rx.BehaviorSubject`s."""
+        """Wrap signals in ``rx.BehaviorSubject``s."""
         super().__init__(*args, **kwargs)
         self.subject = BehaviorSubject(self.currentData())
         self.currentIndexChanged.connect(lambda: self.subject.on_next(self.currentText()))
@@ -43,7 +43,7 @@ class SubjectiveSpinBox(QSpinBox):
     """A QSpinBox using rx instead of signals."""
 
     def __init__(self, *args, **kwargs):
-        """Wrap signals in `rx.BehaviorSubject`s."""
+        """Wrap signals in ``rx.BehaviorSubject``s."""
         super().__init__(*args, **kwargs)
         self.subject = BehaviorSubject(self.value())
         self.valueChanged.connect(self.subject.on_next)
@@ -58,7 +58,7 @@ class SubjectiveTextEdit(QTextEdit):
     """A QTextEdit using rx instead of signals."""
 
     def __init__(self, *args):
-        """Wrap signals in `rx.BehaviorSubject`s."""
+        """Wrap signals in ``rx.BehaviorSubject``s."""
         super().__init__(*args)
         self.subject = BehaviorSubject(self.toPlainText())
         self.textChanged.connect(lambda: self.subject.on_next(self.toPlainText()))
@@ -74,7 +74,7 @@ class SubjectiveSlider(QSlider):
     """A QSlider using rx instead of signals."""
 
     def __init__(self, *args, **kwargs):
-        """Wrap signals in `rx.BehaviorSubject`s."""
+        """Wrap signals in ``rx.BehaviorSubject``s."""
         super().__init__(*args, **kwargs)
         self.subject = BehaviorSubject(self.value())
         self.valueChanged.connect(self.subject.on_next)
@@ -89,7 +89,7 @@ class SubjectiveLineEdit(QLineEdit):
     """A QLineEdit using rx instead of signals."""
 
     def __init__(self, *args):
-        """Wrap signals in `rx.BehaviorSubject`s."""
+        """Wrap signals in ``rx.BehaviorSubject``s."""
         super().__init__(*args)
         self.subject = BehaviorSubject(self.text())
         self.textChanged[str].connect(self.subject.on_next)
@@ -105,7 +105,7 @@ class SubjectiveRadioButton(QRadioButton):
     """A QRadioButton using rx instead of signals."""
 
     def __init__(self, *args):
-        """Wrap signals in `rx.BehaviorSubject`s."""
+        """Wrap signals in ``rx.BehaviorSubject``s."""
         super().__init__(*args)
         self.subject = BehaviorSubject(self.isChecked())
         self.toggled.connect(lambda: self.subject.on_next(self.isChecked()))
@@ -165,7 +165,7 @@ class SubjectivePushButton(QPushButton):
     """A QCheckBox using rx instead of signals."""
 
     def __init__(self, *args, **kwargs):
-        """Wrap signals in `rx.BehaviorSubject`s."""
+        """Wrap signals in ``rx.BehaviorSubject``s."""
         super().__init__(*args)
         self.subject = Subject()
         self.clicked.connect(lambda: self.subject.on_next(True))
@@ -175,7 +175,7 @@ class SubjectiveCheckBox(QCheckBox):
     """A QCheckBox using rx instead of signals."""
 
     def __init__(self, *args, **kwargs):
-        """Wrap signals in `rx.BehaviorSubject`s."""
+        """Wrap signals in ``rx.BehaviorSubject``s."""
         super().__init__(*args)
         self.subject = BehaviorSubject(self.checkState())
         self.stateChanged.connect(self.subject.on_next)

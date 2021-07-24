@@ -30,7 +30,16 @@ def is_dimension_unconvertible(dimension_name: str) -> bool:
     Returns:
         bool: [description]
     """
-    if dimension_name in ["eV", "delay", "cycle", "temp", "x", "y", "optics_insertion"]:
+    if dimension_name in [
+        "eV",
+        "delay",
+        "cycle",
+        "temp",
+        "temperature",
+        "x",
+        "y",
+        "optics_insertion",
+    ]:
         return True
 
     if "volt" in dimension_name:

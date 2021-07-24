@@ -59,12 +59,7 @@ def load_laue(path: typing.Union[Path, str]):
     )
 
     provenance_from_file(
-        arr,
-        str(path),
-        {
-            "what": "Loaded Laue dataset from Northstar.",
-            "by": "load_laue",
-        },
+        arr, str(path), {"what": "Loaded Laue dataset from Northstar.", "by": "load_laue"}
     )
 
     return arr

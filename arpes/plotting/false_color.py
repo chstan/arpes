@@ -25,15 +25,7 @@ def false_color_plot(
     data_r, data_g, data_b = [normalize_to_spectrum(d) for d in (data_r, data_g, data_b)]
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(
-            figsize=kwargs.get(
-                "figsize",
-                (
-                    7,
-                    5,
-                ),
-            )
-        )
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (7, 5)))
 
     def normalize_channel(channel):
         channel -= np.percentile(channel, 100 * pmin)
