@@ -1,0 +1,8 @@
+img.logo {
+  width: 140px !important;
+}
+
+.rst-content .section .xr-var-list li > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
