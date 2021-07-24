@@ -59,7 +59,7 @@ def infer_scan_type_from_data(group):
     Because ANTARES stores every possible data type in the NeXuS file format, zeroing information that is
     not used, we have to determine which data folder to use on the basis of what kind of scan was done.
     """
-    scan_name = str(group["scan_config"]["name"].value)
+    scan_name = str(group["scan_config"]["name"][()])
 
     if "DeflX" in scan_name:
         # Fermi Surface, might need to be more robust

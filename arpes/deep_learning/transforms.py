@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from typing import Callable, List, Any
 
-__all__ = ["ComposeBoth", "ReversibleLambda"]
+__all__ = ["ComposeBoth", "ReversibleLambda", "Identity"]
 
 
 class Identity:

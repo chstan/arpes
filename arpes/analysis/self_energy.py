@@ -75,11 +75,11 @@ def estimate_bare_band(dispersion: xr.DataArray, bare_band_specification: Option
     """Estimates the bare band from a fitted dispersion.
 
     This can be done in a few ways:
-    1. None: Equivalent to 'baseline_linear' below
-    2. 'linear': A linear fit to the dispersion is used, and this also provides the fermi_velocity
-    3. 'ransac_linear': A linear fit with random sample consensus (RANSAC) region will be used and this
-       also provides the fermi_velocity
-    4. 'hough': Hough transform based method
+    #. None: Equivalent to 'baseline_linear' below
+    #. `'linear'`: A linear fit to the dispersion is used, and this also provides the fermi_velocity
+    #. `'ransac_linear'`: A linear fit with random sample consensus (RANSAC) region will be used and this
+      also provides the `fermi_velocity`
+    #. `'hough'`: Hough transform based method
 
     Args:
         dispersion: The array of the fitted peak locations.

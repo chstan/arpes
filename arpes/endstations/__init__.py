@@ -892,6 +892,11 @@ def resolve_endstation(retry=True, **kwargs) -> type:
     endstation_name = case_insensitive_get(
         kwargs, "location", case_insensitive_get(kwargs, "endstation")
     )
+
+    # check if the user actually provided a plugin
+    if isinstance(endstation_name, type):
+        return endstation_name
+
     if endstation_name is None:
         warnings.warn("Endstation not provided. Using `fallback` plugin.")
         endstation_name = "fallback"
@@ -914,6 +919,9 @@ def resolve_endstation(retry=True, **kwargs) -> type:
 
 def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Dataset:
     """Resolves a plugin and delegates loading a scan.
+
+    This is used interally by `load_data` and should not be invoked directly
+    by users.
 
     Determines which data loading class is appropriate for the data,
     shuffles a bit of metadata, and calls the .load function on the

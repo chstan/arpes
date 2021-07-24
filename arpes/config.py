@@ -17,7 +17,6 @@ different projects.
 from dataclasses import dataclass, field
 import warnings
 import json
-import logging
 import os.path
 import matplotlib
 import pint
@@ -209,7 +208,7 @@ def load_json_configuration(filename: str):
 try:
     from local_config import *  # pylint: disable=wildcard-import
 except ImportError:
-    logging.warning(
+    warn(
         "Could not find local configuration file. If you don't "
         "have one, you can safely ignore this message."
     )

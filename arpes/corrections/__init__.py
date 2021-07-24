@@ -10,9 +10,8 @@ earlier in a dataset which can be used to furnish equivalent references.
 """
 from collections import OrderedDict
 
-from arpes.corrections.fermi_edge_corrections import apply_quadratic_fermi_edge_correction
 from arpes.typing import DataType
-from arpes.utilities import normalize_to_dataset, normalize_to_spectrum, deep_equals
+from arpes.utilities import normalize_to_dataset, deep_equals
 from .fermi_edge_corrections import *
 
 

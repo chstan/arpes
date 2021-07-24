@@ -16,8 +16,8 @@ def kfermi_from_mdcs(mdc_results: DataType, param=None):
     but will always attempt to look for an attribute containing "center".
 
     Args:
-        mdc_results: A DataArray or Dataset containing `lmfit.ModelResult`s.
-        param:
+        mdc_results: A DataArray or Dataset containing :obj:``lmfit.ModelResult``s.
+        param: The name of the parameter to use as the Fermi momentum in the fit
 
     Returns:
         The k_fermi values for the input data.

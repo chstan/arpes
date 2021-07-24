@@ -33,7 +33,7 @@ def read_data_attributes_from(group, paths) -> Dict[str, Any]:
             try:
                 data = data[:]
             except ValueError:
-                data = data.value
+                data = data[()]
 
             read_attrs[attribute_name] = data
 

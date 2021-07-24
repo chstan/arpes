@@ -71,62 +71,14 @@ def gradient_modulus(data: DataType, delta=1):
     values = spectrum.values
     gradient_vector = np.zeros(shape=(8,) + values.shape)
 
-    gradient_vector[0, :-delta, :] = vector_diff(
-        values,
-        (
-            delta,
-            0,
-        ),
-    )
-    gradient_vector[1, :, :-delta] = vector_diff(
-        values,
-        (
-            0,
-            delta,
-        ),
-    )
-    gradient_vector[2, delta:, :] = vector_diff(
-        values,
-        (
-            -delta,
-            0,
-        ),
-    )
-    gradient_vector[3, :, delta:] = vector_diff(
-        values,
-        (
-            0,
-            -delta,
-        ),
-    )
-    gradient_vector[4, :-delta, :-delta] = vector_diff(
-        values,
-        (
-            delta,
-            delta,
-        ),
-    )
-    gradient_vector[5, :-delta, delta:] = vector_diff(
-        values,
-        (
-            delta,
-            -delta,
-        ),
-    )
-    gradient_vector[6, delta:, :-delta] = vector_diff(
-        values,
-        (
-            -delta,
-            delta,
-        ),
-    )
-    gradient_vector[7, delta:, delta:] = vector_diff(
-        values,
-        (
-            -delta,
-            -delta,
-        ),
-    )
+    gradient_vector[0, :-delta, :] = vector_diff(values, (delta, 0))
+    gradient_vector[1, :, :-delta] = vector_diff(values, (0, delta))
+    gradient_vector[2, delta:, :] = vector_diff(values, (-delta, 0))
+    gradient_vector[3, :, delta:] = vector_diff(values, (0, -delta))
+    gradient_vector[4, :-delta, :-delta] = vector_diff(values, (delta, delta))
+    gradient_vector[5, :-delta, delta:] = vector_diff(values, (delta, -delta))
+    gradient_vector[6, delta:, :-delta] = vector_diff(values, (-delta, delta))
+    gradient_vector[7, delta:, delta:] = vector_diff(values, (-delta, -delta))
 
     data_copy = spectrum.copy(deep=True)
     data_copy.values = np.linalg.norm(gradient_vector, axis=0)
@@ -137,24 +89,36 @@ def curvature(arr: xr.DataArray, directions=None, alpha=1, beta=None):
     r"""Provides "curvature" analysis for band locations.
 
     Defined via
-        C(x,y) = ([C_0 + (df/dx)^2]d^2f/dy^2 - 2 * df/dx df/dy d^2f/dxdy + [C_0 + (df/dy)^2]d^2f/dx^2) /
-                 (C_0 (df/dx)^2 + (df/dy)^2)^(3/2)
+
+    .. math::
+
+        C(x,y) = \frac{([C_0 + (df/dx)^2]\frac{d^2f}{dy^2} - 2 \frac{df}{dx}\frac{df}{dy} \frac{d^2f}{dxdy} + [C_0 + (\frac{df}{dy})^2]\frac{d^2f}{dx^2})}{
+            (C_0 (\frac{df}{dx})^2 + (\frac{df}{dy})^2)^{3/2}}
+
 
     of in the case of inequivalent dimensions x and y
 
-        C(x,y) = ([1 + C_x(df/dx)^2]C_y * d^2f/dy^2 -
-                  2 * C_x * C_y * df/dx df/dy d^2f/dxdy +
-                  [1 + C_y * (df/dy)^2] * C_x * d^2f/dx^2) /
-                 (1 + C_x (df/dx)^2 + C_y (df/dy)^2)^(3/2)
+    .. math::
 
-        where
-        C_x = C_y * (xi / eta)^2
-        and where (xi / eta) = dx / dy
+        C(x,y) = \frac{[1 + C_x(\frac{df}{dx})^2]C_y
+        \frac{d^2f}{dy^2} - 2 C_x  C_y  \frac{df}{dx}\frac{df}{dy}\frac{d^2f}{dxdy} +
+        [1 + C_y (\frac{df}{dy})^2] C_x \frac{d^2f}{dx^2}}{
+        (1 + C_x (\frac{df}{dx})^2 + C_y (\frac{df}{dy})^2)^{3/2}}
 
-        The value of C_y can reasonably be taken to have the value |df/dx|_max^2 + |df/dy|_max^2
-        C_y = (dy / dx) * (|df/dx|_max^2 + |df/dy|_max^2) * \alpha
+    where
 
-        for some dimensionless parameter alpha
+    .. math::
+
+        C_x = C_y (\frac{dx}{dy})^2
+
+    The value of C_y can reasonably be taken to have the value
+
+    .. math::
+
+        (\frac{df}{dx})_\text{max}^2 + \left|\frac{df}{dy}\right|_\text{max}^2
+        C_y = (\frac{dy}{dx}) (\left|\frac{df}{dx}\right|_\text{max}^2 + \left|\frac{df}{dy}\right|_\text{max}^2) \alpha
+
+    for some dimensionless parameter :math:`\alpha`.
 
     Args:
         arr

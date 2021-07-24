@@ -118,7 +118,7 @@ class Interpretation:
 
     @property
     def items(self) -> List[InterpretationItem]:
-        """All of the `InterpretationItem`s inside this instance."""
+        """All of the ``InterpretationItem`` instances inside this instance."""
         if self.train:
             return self.train_items
 

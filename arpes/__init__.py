@@ -49,19 +49,17 @@ def check() -> None:
         return None
 
     def verify_bokeh() -> Union[str, None]:
-        pip_command = "pip install bokeh==0.12.10"
+        pip_command = "pip install bokeh>=2.0.0,<3.0.0"
 
-        warning = "For bokeh support, install version 0.12.10\n\t with {}".format(pip_command)
+        warning = "For bokeh support, install version 2.3.x\n\t with {}".format(pip_command)
         warning_incompatible = (
-            "PyARPES, requires version 0.12.10 of bokeh. You can install with \n\t{}".format(
-                pip_command
-            )
+            "PyARPES, requires version 2 of bokeh. You can install with \n\t{}".format(pip_command)
         )
 
         try:
             import bokeh
 
-            if not bokeh.__version__ == "0.12.10":
+            if not bokeh.__version__.startswith("2."):
                 raise ValueError("Not using the specified version of Bokeh.")
 
         except ImportError:

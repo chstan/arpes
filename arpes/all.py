@@ -12,7 +12,6 @@ from arpes.analysis.all import *
 from arpes.plotting.all import *
 from arpes.fits import *
 
-from arpes.endstations import load_scan
 from arpes.io import load_data, load_example_data, easy_pickle
 from arpes.preparation import normalize_dim
 from arpes.utilities.conversion import *
