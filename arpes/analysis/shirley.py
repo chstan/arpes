@@ -2,6 +2,7 @@
 import warnings
 
 import numpy as np
+import xarray as xr
 
 from arpes.provenance import update_provenance
 from arpes.typing import DataType
@@ -29,6 +30,50 @@ def remove_shirley_background(xps: DataType, **kwargs) -> DataType:
     """
     xps = normalize_to_spectrum(xps)
     return xps - calculate_shirley_background(xps, **kwargs)
+
+
+def _calculate_shirley_background_full_range(
+    xps: np.ndarray, eps=1e-7, max_iters=50, n_samples=5
+) -> np.ndarray:
+    """Core routine for calculating a Shirley background on np.ndarray data."""
+    background = np.copy(xps)
+    cumulative_xps = np.cumsum(xps, axis=0)
+    total_xps = np.sum(xps, axis=0)
+
+    rel_error = np.inf
+
+    i_left = np.mean(xps[:n_samples], axis=0)
+    i_right = np.mean(xps[-n_samples:], axis=0)
+
+    iter_count = 0
+
+    k = i_left - i_right
+    for iter_count in range(max_iters):
+        cumulative_background = np.cumsum(background, axis=0)
+        total_background = np.sum(background, axis=0)
+
+        new_bkg = np.copy(background)
+
+        for i in range(len(new_bkg)):
+            new_bkg[i] = i_right + k * (
+                (total_xps - cumulative_xps[i] - (total_background - cumulative_background[i]))
+                / (total_xps - total_background + 1e-5)
+            )
+
+        rel_error = np.abs(np.sum(new_bkg, axis=0) - total_background) / (total_background)
+
+        background = new_bkg
+
+        if np.any(rel_error < eps):
+            break
+
+    if (iter_count + 1) == max_iters:
+        warnings.warn(
+            "Shirley background calculation did not converge "
+            + "after {} steps with relative error {}!".format(max_iters, rel_error)
+        )
+
+    return background
 
 
 @update_provenance("Calculate full range Shirley background")
@@ -62,45 +107,20 @@ def calculate_shirley_background_full_range(
     Returns:
         A monotonic Shirley backgruond over the entire energy range.
     """
-    xps = normalize_to_spectrum(xps)
-    background = xps.copy(deep=True)
-    cumulative_xps = np.cumsum(xps.values)
-    total_xps = np.sum(xps.values)
+    xps = normalize_to_spectrum(xps).copy(deep=True)
+    core_dims = [d for d in xps.dims if d != "eV"]
 
-    rel_error = np.inf
-
-    i_left = np.mean(xps.values[:n_samples])
-    i_right = np.mean(xps.values[-n_samples:])
-
-    iter_count = 0
-
-    k = i_left - i_right
-    for iter_count in range(max_iters):
-        cumulative_background = np.cumsum(background.values)
-        total_background = np.sum(background.values)
-
-        new_bkg = background.copy(deep=True)
-
-        for i in range(len(new_bkg)):
-            new_bkg.values[i] = i_right + k * (
-                (total_xps - cumulative_xps[i] - (total_background - cumulative_background[i]))
-                / (total_xps - total_background + 1e-5)
-            )
-
-        rel_error = np.abs(np.sum(new_bkg.values) - total_background) / (total_background)
-
-        background = new_bkg
-
-        if rel_error < eps:
-            break
-
-    if (iter_count + 1) == max_iters:
-        warnings.warn(
-            "Shirley background calculation did not converge "
-            + "after {} steps with relative error {}!".format(max_iters, rel_error)
-        )
-
-    return background
+    return xr.apply_ufunc(
+        _calculate_shirley_background_full_range,
+        xps,
+        eps,
+        max_iters,
+        n_samples,
+        input_core_dims=[core_dims, [], [], []],
+        output_core_dims=[core_dims],
+        exclude_dims=set(core_dims),
+        vectorize=False,
+    )
 
 
 @update_provenance("Calculate limited range Shirley background")
@@ -131,6 +151,7 @@ def calculate_shirley_background(
     xps_for_calc = xps.sel(eV=energy_range)
 
     bkg = calculate_shirley_background_full_range(xps_for_calc, eps, max_iters, n_samples)
+    bkg = bkg.transpose(*xps.dims)
     full_bkg = xps * 0
 
     left_idx = np.searchsorted(full_bkg.eV.values, bkg.eV.values[0], side="left")
