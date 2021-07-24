@@ -24,16 +24,12 @@ Experiments/
 # Generated Files
 conda-dist/
 junit/
-source/arpes.md
-source/toc.md
-source/arpes.*.md
-source/arpes.*.rst
-source/arpes.rst
-source/modules.rst
-docs/toc.rst.md
 
 # Sphinx
 build/
+docs/source/generated/
+docs/source/notebooks/logs/
+docs/source/notebooks/img/
 
 cache/*.nc
 cache/*.json

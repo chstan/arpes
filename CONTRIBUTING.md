@@ -18,48 +18,6 @@ Additionally, these all represent great ways to learn more about the software as
 If it makes sense, we will consider adding users as developers on
 [the repo](https://gitlab.com/lanzara-group/python-arpes).
 
-## Running Tests
-
-### Prerequisites
-
-You need some additional Python packages as well as Yarn.
-
-#### Installing Test Requirements
-
-Install additional test requirements by running
-
-```bash
-$> conda env update --file environment-update-test.yml
-```
-
-or by manually installing the requirements.
-
-#### Installing Yarn
-
-Follow instructions for your platform at [yarnpkg.com](https://yarnpkg.com/).
-
-## Running Tests
-
-```bash
-$> yarn test
-```
-
-## Building HTML coverage information
-
-### Running an HTTP server to view results
-
-```bash
-$> python -m http.server --directory htmlcov
-```
-
-then you can view results at `localhost:8000`.
-
-### Building coverage
-
-```bash
-$> yarn coverage
-```
-
 ## What you'll need
 
 Here's a summary of what you'll need to do, if you'are already familar with contributing to open source. If you
@@ -69,7 +27,7 @@ are less familiar, much more detail on this is described in the [developer guide
 2. [Install an editable copy of PyARPES](/dev-guide)
 3. Write your new analysis code, bug patch, documentation, etc.
 4. Put it someplace reasonable in line with the project's organizational principles
-5. Add convenience accessors on `.T`, `.S`, or `.F` if relelvant
+5. Add convenience accessors on `.G`, `.S`, or `.F` if relelvant
 6. Make sure the new code is adequately documented with a
    [docstring](https://en.wikipedia.org/wiki/Docstring#Python).
 7. Add documentation to this documentation site if relevant, see the [developer guide](/dev-guide) for details

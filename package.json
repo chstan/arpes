@@ -1,5 +1,5 @@
 {
-  "name": "python-arpes",
+  "name": "arpes",
   "version": "3.0.0",
   "description": "Data analysis utilities for ARPES in Python",
   "main": "index.js",
@@ -12,7 +12,8 @@
     "watch-coverage": "pytest -c pytest-config/pytest-coverage.ini -f",
     "coverage": "pytest -c pytest-config/pytest-coverage.ini",
     "check-black": "black --config pyproject.toml --check",
-    "check-docstyle": "pydocstyle --config pyproject.toml"
+    "check-docstyle": "pydocstyle --config pyproject.toml",
+    "build-docs": "python scripts/build_docs.py"
   },
   "devDependencies": {
     "@arkweid/lefthook": "^0.7.6"

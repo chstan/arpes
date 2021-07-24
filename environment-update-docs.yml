@@ -1,0 +1,10 @@
+channels:
+  - defaults
+dependencies:
+  - pip
+  - pip:
+      - sphinx
+      - sphinxcontrib-restbuilder
+      - sphinxcontrib-katex
+      - sphinx_rtd_theme
+      - nbsphinx
