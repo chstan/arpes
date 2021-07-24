@@ -16,7 +16,7 @@
    :target: https://codecov.io/gh/chstan/arpes
 .. |test_status| image:: https://github.com/chstan/arpes/actions/workflows/test.yml/badge.svg?branch=master
    :target: https://github.com/chstan/arpes/actions/workflows/test.yml
-.. |pypi| image:: https://img.shields.io/pypi/pyversions/arpes.svg
+.. |pypi| image:: https://img.shields.io/pypi/v/arpes/arpes.svg
    :target: https://pypi.org/project/arpes/
 .. |conda| image:: https://img.shields.io/conda/v/arpes/arpes.svg
    :target: https://anaconda.org/arpes/arpes
@@ -24,7 +24,7 @@
 PyARPES
 =======
 
-.. image:: docs/static/video/intro-video.gif
+.. image:: docs/_static/video/intro-video.gif
 
 ========
 
@@ -98,7 +98,7 @@ Copyright |copy| 2018-2019 by Conrad Stansbury, all rights reserved.
 .. |copy|   unicode:: U+000A9 .. COPYRIGHT SIGN
 
 .. _Jupyter: https://jupyter.org/
-.. _the documentation site: https://arpes.netlify.com/
-.. _contributing: https://arpes.netlify.com/#/contributing
-.. _FAQ: https://arpes.netlify.com/#/faq
+.. _the documentation site: https://arpes.readthedocs.io/en/latest
+.. _contributing: https://arpes.readthedocs.io/en/latest/contributing
+.. _FAQ: https://arpes.readthedocs.io/en/latest/faq
 

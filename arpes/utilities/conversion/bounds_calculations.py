@@ -21,7 +21,7 @@ def full_angles_to_k(kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_po
     """Converts from the full set of standard PyARPES angles to momentum.
 
     More details on angle to momentum conversion can be found at
-    `the momentum conversion notes <https://arpes.netlify.com/#/momentum-conversion>`_.
+    `the momentum conversion notes <https://arpes.readthedocs.io/momentum-conversion>`_.
 
     Args:
         kinetic_energy ([float]): [kinetic energy]

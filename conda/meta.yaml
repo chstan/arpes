@@ -70,12 +70,12 @@ test:
     - python
 
 about:
-  home: https://arpes.netlify.com/#/
+  home: https://arpes.readthedocs.io/
   license: GPL-3.0
   license_family: GPL
   summary: 'Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)'
   description: 'Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)'
-  doc_url: https://arpes.netlify.com/#/
+  doc_url: https://arpes.readthedocs.io/
   dev_url: https://gitlab.com/lanzara-group/python-arpes
 
 extra:

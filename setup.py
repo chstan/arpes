@@ -86,7 +86,7 @@ with open("pypi-readme.rst", "r") as f_readme:
     long_description = f_readme.read()
 
 
-DOCUMENTATION_URL = "https://arpes.netlify.com/#/"
+DOCUMENTATION_URL = "https://arpes.readthedocs.io/"
 
 POST_INSTALL_MESSAGE = """
 Documentation available at: {}

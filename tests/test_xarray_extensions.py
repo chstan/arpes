@@ -41,7 +41,7 @@ def test_attribute_normalization():
     the description of the data model.
 
     This is at:
-    https://arpes.netlify.com/#/spectra
+    https://arpes.readthedocs.io/spectra
 
     :return:
     """

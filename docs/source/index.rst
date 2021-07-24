@@ -85,7 +85,7 @@ Contributing and Documentation
 ==============================
 
 See the section on the docs site about
-`contributing <https://arpes.netlify.com/#/contributing>`__ for
+`contributing <https://arpes.readthedocs.io/contributing>`__ for
 information on adding to PyARPES and rebuilding documentation from
 source.
 

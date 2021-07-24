@@ -1,7 +1,7 @@
 """Helper functions for coordinate transformations and user/analysis API.
 
 All the functions here assume standard polar angles, as given in the
-`data model documentation <https://arpes.netlify.com/#/spectra>`_.
+`data model documentation <https://arpes.readthedocs.io/spectra>`_.
 
 Functions here must accept constants or numpy arrays as valid inputs,
 so all standard math functions have been replaced by their equivalents out

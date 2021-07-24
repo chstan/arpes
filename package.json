@@ -1,5 +1,5 @@
 {
-  "name": "arpes",
+  "name": "python3",
   "version": "3.0.0",
   "description": "Data analysis utilities for ARPES in Python",
   "main": "index.js",

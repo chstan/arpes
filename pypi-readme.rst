@@ -5,25 +5,28 @@
 +-----------------------+
 
 .. |Documentation| image:: https://img.shields.io/badge/api-reference-blue.svg
-   :target: https://arpes.netlify.com/
+   :target: https://arpes.readthedocs.io/en/latest/
 
-.. image:: https://dev.azure.com/lanzara-group/PyARPES/_apis/build/status/PyARPES%20CI%20Build?branchName=master
-   :target: https://dev.azure.com/lanzara-group/PyARPES/_build?definitionId=2
+|test_status| |coverage| |docs_status| |conda| |pypi|
 
-.. image:: https://img.shields.io/azure-devops/coverage/lanzara-group/PyARPES/2.svg
-   :target: https://dev.azure.com/lanzara-group/PyARPES/_build?definitionId=2
 
-.. image:: https://img.shields.io/pypi/v/arpes.svg
+.. |docs_status| image:: https://readthedocs.org/projects/arpes/badge/?version=latest&style=flat
+   :target: https://arpes.readthedocs.io/en/latest/
+.. |coverage| image:: https://codecov.io/gh/chstan/arpes/branch/master/graph/badge.svg?token=mVrFuVRr3p
+   :target: https://codecov.io/gh/chstan/arpes
+.. |test_status| image:: https://github.com/chstan/arpes/actions/workflows/test.yml/badge.svg?branch=master
+   :target: https://github.com/chstan/arpes/actions/workflows/test.yml
+.. |pypi| image:: https://img.shields.io/pypi/v/arpes/arpes.svg
    :target: https://pypi.org/project/arpes/
-
-.. image:: https://img.shields.io/conda/v/arpes/arpes.svg
+.. |conda| image:: https://img.shields.io/conda/v/arpes/arpes.svg
    :target: https://anaconda.org/arpes/arpes
-
-.. image:: https://img.shields.io/pypi/pyversions/arpes.svg
-   :target: https://pypi.org/project/arpes/
 
 PyARPES
 =======
+
+.. image:: docs/_static/video/intro-video.gif
+
+========
 
 PyARPES simplifies the analysis and collection of angle-resolved photoemission spectroscopy (ARPES) and emphasizes
 
@@ -95,7 +98,7 @@ Copyright |copy| 2018-2019 by Conrad Stansbury, all rights reserved.
 .. |copy|   unicode:: U+000A9 .. COPYRIGHT SIGN
 
 .. _Jupyter: https://jupyter.org/
-.. _the documentation site: https://arpes.netlify.com/
-.. _contributing: https://arpes.netlify.com/#/contributing
-.. _FAQ: https://arpes.netlify.com/#/faq
+.. _the documentation site: https://arpes.readthedocs.io/en/latest
+.. _contributing: https://arpes.readthedocs.io/en/latest/contributing
+.. _FAQ: https://arpes.readthedocs.io/en/latest/faq
 

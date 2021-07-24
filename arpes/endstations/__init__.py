@@ -42,7 +42,7 @@ class EndstationBase:
     """Implements the core features of ARPES data loading.
 
     A thorough documentation
-    is available at `the plugin documentation <https://arpes.netlify.com/#/writing-plugins>`_.
+    is available at `the plugin documentation <https://arpes.readthedocs.io/writing-plugins>`_.
 
     To summarize, a plugin has a few core jobs:
 
@@ -51,7 +51,7 @@ class EndstationBase:
        to `load_single_frame`. Frame collation is then performed by `concatenate_frames`.
     2. Loading and attaching metadata.
     3. Normalizing metadata to standardized names. These are documented at the
-       `data model documentation <https://arpes.netlify.com/#/spectra>`_.
+       `data model documentation <https://arpes.readthedocs.io/spectra>`_.
     4. Ensuring all angles and necessary coordinates are attached to the data.
        Data should permit immediate conversion to angle space after being loaded.
 
