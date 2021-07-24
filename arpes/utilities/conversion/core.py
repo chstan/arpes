@@ -455,6 +455,13 @@ def convert_to_kspace(
 
     old_dims.sort()
 
+    trace("Replacing dummy coordinates with index-like ones.")
+    # temporarily reassign coordinates for dimensions we will not
+    # convert to "index-like" dimensions
+    restore_index_like_coordinates = {r: arr.coords[r].values for r in removed}
+    new_index_like_coordinates = {r: np.arange(len(arr.coords[r].values)) for r in removed}
+    arr = arr.assign_coords(**new_index_like_coordinates)
+
     if not old_dims:
         return arr  # no need to convert, might be XPS or similar
 
@@ -493,6 +500,8 @@ def convert_to_kspace(
         },
         trace=trace,
     )
+    trace("Reassigning index-like coordinates.")
+    result = result.assign_coords(**restore_index_like_coordinates)
     trace("Finished.")
     return result
 
