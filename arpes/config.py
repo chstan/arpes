@@ -243,6 +243,46 @@ def load_plugins() -> None:
             pass
 
 
+def is_using_tex() -> bool:
+    """Whether we are configured to use LaTeX currently or not.
+
+    Uses the values in rcParams for safety.
+
+    Returns:
+        True if matplotlib will use LaTeX for plotting and False otherwise.
+    """
+    return matplotlib.rcParams["text.usetex"]
+
+
+@dataclass
+class UseTex:
+    """A context manager to control whether LaTeX is used when plotting.
+
+    Internally, this uses `use_tex`, but it caches a few settings so that
+    it can restore them afterwards.
+
+    Attributes:
+        use_tex: Whether to temporarily enable (use_tex=True) or disable
+          (use_tex=False) TeX support in plotting.
+    """
+
+    use_tex: bool = False
+    saved_context: Dict[str, Any] = field(default_factory=dict)
+
+    def __enter__(self):
+        """Save old settings so we can restore them later."""
+        self.saved_context["text.usetex"] = matplotlib.rcParams["text.usetex"]
+        self.saved_context["SETTINGS.use_tex"] = SETTINGS["use_tex"]
+
+        # temporarily set the TeX configuration to the requested one
+        use_tex(self.use_tex)
+
+    def __exit__(self):
+        """Reset configuration back to the cached settings."""
+        SETTINGS["use_tex"] = self.saved_context["use_tex"]
+        matplotlib.rcParams["text.usetex"] = self.saved_context["text.usetex"]
+
+
 def use_tex(rc_text_should_use: bool = False):
     """Configures Matplotlib to use TeX.
 
