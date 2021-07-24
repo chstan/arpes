@@ -6,3 +6,4 @@ recursive-include resources *.fits
 recursive-include docs *.md *.png
 
 recursive-include arpes/example_data *.fits
+recursive-include arpes/example_data *.nc

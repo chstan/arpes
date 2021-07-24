@@ -77,12 +77,12 @@ def load_data(file: Union[str, Path, int], location: Optional[Union[str, type]] 
     return load_scan(desc, **kwargs)
 
 
-load_without_dataset = load_data
-
 DATA_EXAMPLES = {
     "cut": ("ALG-MC", "cut.fits"),
-    "fermi_surface": ("example_data", "fermi_surface.nc"),
+    "map": ("example_data", "fermi_surface.nc"),
     "photon_energy": ("example_data", "photon_energy.nc"),
+    "nano_xps": ("example_data", "nano_xps.nc"),
+    "temperature_dependence": ("example_data", "temperature_dependence.nc"),
 }
 
 
@@ -105,12 +105,20 @@ class ExampleData:
         return load_example_data("cut")
 
     @property
-    def fermi_surface(self) -> xr.DataArray:
-        return load_example_data("fermi_surface")
+    def map(self) -> xr.DataArray:
+        return load_example_data("map")
 
     @property
     def photon_energy(self) -> xr.DataArray:
         return load_example_data("photon_energy")
+
+    @property
+    def nano_xps(self) -> xr.DataArray:
+        return load_example_data("nano_xps")
+
+    @property
+    def temperature_dependence(self) -> xr.DataArray:
+        return load_example_data("temperature_dependence")
 
 
 example_data = ExampleData()
