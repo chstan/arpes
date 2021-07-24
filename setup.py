@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Specifies installation requirements and build steps."""
 
 import io
 import os
@@ -129,11 +130,10 @@ with io.open(os.path.join(here, "README.rst"), encoding="utf-8") as f:
 
 
 class PostInstallCommand(install):
-    """
-    Provides some extra information and context after install.
-    """
+    """Provides some extra information and context after install."""
 
     def run(self):
+        """Print the post-installation message after successful install."""
         install.run(self)
         print(POST_INSTALL_MESSAGE)
 

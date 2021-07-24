@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+"""Utility script for synchronizing data."""
+
 import argparse
 import os
 import subprocess
