@@ -1,3 +1,0 @@
-# Electron Diffraction
-
-Coming soon.
