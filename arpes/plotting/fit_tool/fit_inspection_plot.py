@@ -8,26 +8,12 @@ import xarray as xr
 import numpy as np
 import math
 from PyQt5.QtWidgets import QLayout, QGridLayout, QWidget
-from PyQt5 import QtWebEngineWidgets
 import lmfit
 from weakref import ReferenceType
 
 from arpes.utilities.qt import qt_info
 
 __all__ = ["FitInspectionPlot"]
-
-
-class ModelParametersInfoView(QtWebEngineWidgets.QWebEngineView):
-    """A small webview for displaying the model result using the Jupyter repr."""
-
-    def __init__(self, parent=None):
-        """Nothing interesting to do here, we just delegate to super."""
-        super().__init__(parent)
-
-    def set_model_result(self, model_result: lmfit.model.ModelResult):
-        """Converts the ModelResult to the HTML representation and sets page contents."""
-        assert model_result is not None
-        self.setHtml(model_result._repr_html_())
 
 
 class LabelParametersInfoView(QtWidgets.QLabel):
