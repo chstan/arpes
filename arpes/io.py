@@ -35,7 +35,9 @@ __all__ = (
 )
 
 
-def load_data(file: Union[str, Path, int], location: Optional[Union[str, type]] = None, **kwargs) -> xr.Dataset:
+def load_data(
+    file: Union[str, Path, int], location: Optional[Union[str, type]] = None, **kwargs
+) -> xr.Dataset:
     """Loads a piece of data using available plugins. This the user facing API for data loading.
 
     Args:
@@ -45,8 +47,8 @@ def load_data(file: Union[str, Path, int], location: Optional[Union[str, type]] 
           Absolute paths can also be used in a pinch.
         location: The name of the endstation/plugin to use. You should try to provide one. If None is provided,
           the loader will try to find an appropriate one based on the file extension and brute force. This will be slower
-          and can be error prone in certain circumstances. 
-          
+          and can be error prone in certain circumstances.
+
           Optionally, you can pass a loading plugin (the class) through this kwarg and directly specify
           the class to be used.
 
