@@ -5,6 +5,10 @@ and pickling utilities.
 
 Heavy lifting is actually performed by the plugin definitions which know how to ingest
 different data formats into the PyARPES data model.
+
+TODO: An improvement could be made to the example data if served
+over a network and someone was willing to host a few larger pieces
+of data.
 """
 
 import pickle
@@ -24,7 +28,6 @@ from arpes.typing import DataType
 
 __all__ = (
     "load_data",
-    "load_without_dataset",
     "load_example_data",
     "easy_pickle",
     "list_pickles",
@@ -32,7 +35,7 @@ __all__ = (
 )
 
 
-def load_data(file: Union[str, Path, int], location: Optional[str] = None, **kwargs) -> xr.Dataset:
+def load_data(file: Union[str, Path, int], location: Optional[Union[str, type]] = None, **kwargs) -> xr.Dataset:
     """Loads a piece of data using available plugins. This the user facing API for data loading.
 
     Args:
@@ -42,7 +45,11 @@ def load_data(file: Union[str, Path, int], location: Optional[str] = None, **kwa
           Absolute paths can also be used in a pinch.
         location: The name of the endstation/plugin to use. You should try to provide one. If None is provided,
           the loader will try to find an appropriate one based on the file extension and brute force. This will be slower
-          and can be error prone in certain circumstances. Defaults to None.
+          and can be error prone in certain circumstances. 
+          
+          Optionally, you can pass a loading plugin (the class) through this kwarg and directly specify
+          the class to be used.
+
 
     Returns:
         The loaded data. Ideally, data which is loaded through the plugin system should be highly compliant with

@@ -1,3 +1,4 @@
+"""Provides cached data fixtures for tests."""
 import xarray as xr
 import warnings
 from typing import Dict

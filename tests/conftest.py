@@ -1,4 +1,7 @@
+"""Mocks the analysis environment and provides data fixutres for tests."""
+from dataclasses import dataclass
 import os
+from typing import Callable
 
 import pytest
 
@@ -7,9 +10,12 @@ import arpes.endstations
 from tests.utils import cache_loader
 
 
-class AttrAccessorDict(dict):
-    __getattr__ = dict.__getitem__
-    __setattr__ = dict.__setitem__
+@dataclass
+class Sandbox:
+    """Mocks some configuration calls which should not touch the FS during tests."""
+
+    with_workspace: Callable
+    load: Callable
 
 
 SCAN_FIXTURE_LOCATIONS = {
@@ -35,11 +41,8 @@ SCAN_FIXTURE_LOCATIONS = {
 
 
 @pytest.fixture(scope="function")
-def sandbox_configuration(tmpdir_factory):
-    """
-    Generates a sandboxed configuration of the ARPES data analysis suite.
-    """
-
+def sandbox_configuration():
+    """Generates a sandboxed configuration of the ARPES data analysis suite."""
     resources_dir = os.path.join(os.getcwd(), "tests", "resources")
 
     def set_workspace(name):
@@ -58,11 +61,9 @@ def sandbox_configuration(tmpdir_factory):
         )
 
     arpes.config.update_configuration(user_path=resources_dir)
-    sandbox = AttrAccessorDict(
-        {
-            "with_workspace": set_workspace,
-            "load": load,
-        }
+    sandbox = Sandbox(
+        with_workspace=set_workspace,
+        load=load,
     )
     arpes.config.load_plugins()
     yield sandbox
