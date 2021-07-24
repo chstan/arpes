@@ -31,11 +31,9 @@ __all__ = (
     "convert_coordinates_to_kspace_forward",
     "convert_coordinates",
     "convert_coordinate_forward",
+    "convert_through_angular_pair",
+    "convert_through_angular_point",
 )
-
-
-def test():
-    pass
 
 
 @traceable
@@ -62,11 +60,11 @@ def convert_coordinate_forward(
     numerically using the volumetric transform code. Any changes to the volumetric code will
     automatically reflect here. However, it comes with a few downsides:
 
-    1. The "test charge" is placed in a cell in the original data. This means that the resolution is
-      limited by the resolution of the dataset in angle-space. This could be circumvented by
-      regridding the data to have a higher resolution.
-    2. The procedure can only be performed for a single point at a time.
-    3. The procedure is relatively expensive.
+    #. The "test charge" is placed in a cell in the original data. This means that the resolution is
+       limited by the resolution of the dataset in angle-space. This could be circumvented by
+       regridding the data to have a higher resolution.
+    #. The procedure can only be performed for a single point at a time.
+    #. The procedure is relatively expensive.
 
     Another approach would be to write down the exact small angle approximated transforms.
 
@@ -92,6 +90,12 @@ def convert_coordinate_forward(
             slow. Where possible, provide an energy coordinate
             """
         )
+
+    if not k_coords:
+        k_coords = {
+            "kx": np.linspace(-4, 4, 300),
+            "ky": np.linspace(-4, 4, 300),
+        }
 
     # Copying after taking a constant energy plane is much much cheaper
     trace("Copying")
@@ -121,6 +125,144 @@ def convert_coordinate_forward(
     if "eV" in coords:
         del coords["eV"]
     return coords
+
+
+@traceable
+def convert_through_angular_pair(
+    data: DataType,
+    first_point: Dict[str, float],
+    second_point: Dict[str, float],
+    cut_specification: Dict[str, np.ndarray],
+    transverse_specification: Dict[str, np.ndarray],
+    relative_coords: bool = True,
+    trace: Callable = None,
+    **k_coords,
+):
+    """Converts the lower dimensional ARPES cut passing through `first_point` and `second_point`.
+
+    This is a sibling method to `convert_through_angular_point`. A point and a `chi` angle
+    fix a plane in momentum, as do two points. This method implements the two points
+    equivalent whereas `convert_through_angular_point` fixes the latter.
+
+    A difference between this function and `convert_through_angular_point` is that
+    the momentum range requested by `cut_specification` is considered a margin outside
+    the interval defined by `first_point` and `second_point`. I.e.
+    np.linspace(0, 0, 400) would produce a 400 point interpolation between
+    `first_point` and `second_point` whereas passing `np.linspace(-1, 0, 400)` would provide
+    a left margin past `first_point` of 1 inverse angstrom.
+
+    This endpoint relative behavior can be disabled with the `relative_coords` flag.
+
+    Args:
+        data: The angle space data to be converted.
+        first_point: The angle space coordinates of the first point the cut should
+          pass through.
+        second_point: The angle space coordinates of the second point the cut should
+          pass through. This point will have larger momentum coordinate in the output
+          data than `first_point`, i.e. it will appear on the "right side" of the data
+          if the data is plotted as a cut.
+        cut_specification: A dictionary specifying the momentum varying axes
+          on the output data. Interpreted as defining boundaries relative to
+          the endpoints.
+        transverse_specification: A dictionary specifying the transverse (summed)
+          axis on the momentum converted data.
+        relative_coords: Whether to give `cut_specification` relative to the momentum
+          converted location specified in `coords`
+        trace: Flag controlling execution tracing
+        k_coords: Passed as hints through to `convert_coordinate_forward`.
+
+    Returns:
+        The momentum cut passing first through `first_point` and then through `second_point`.
+    """
+    k_first_point = convert_coordinate_forward(data, first_point, trace=trace, **k_coords)
+    k_second_point = convert_coordinate_forward(data, second_point, trace=trace, **k_coords)
+
+    k_dims = set(k_first_point.keys())
+    if k_dims != {"kx", "ky"}:
+        raise NotImplementedError(f"Two point {k_dims} momentum conversion is not supported yet.")
+
+    assert k_dims == set(cut_specification.keys()).union(transverse_specification.keys())
+    assert (
+        "ky" in transverse_specification.keys()
+    )  # You must use ky as the transverse coordinate for now
+    assert len(cut_specification) == 1
+
+    offset_ang = np.arctan2(
+        k_second_point["ky"] - k_first_point["ky"],
+        k_second_point["kx"] - k_first_point["kx"],
+    )
+
+    with data.S.with_rotation_offset(-offset_ang):
+        k_first_point = convert_coordinate_forward(data, first_point, trace=trace, **k_coords)
+        k_second_point = convert_coordinate_forward(data, second_point, trace=trace, **k_coords)
+
+        # adjust output coordinate ranges
+        transverse_specification = {
+            k: v + k_first_point[k] for k, v in transverse_specification.items()
+        }
+
+        # here, we assume we were passed an array for simplicities sake
+        # we could also allow a slice in the future
+        parallel_axis = list(cut_specification.values())[0]
+        if relative_coords:
+            delta = parallel_axis[1] - parallel_axis[0]
+            left_margin, right_margin = parallel_axis[0], parallel_axis[-1] + delta
+
+            left_point = k_first_point["kx"] + left_margin
+            right_point = k_second_point["kx"] + right_margin
+            parallel_axis = np.linspace(left_point, right_point, len(parallel_axis))
+
+        # perform the conversion
+        return convert_to_kspace(data, **transverse_specification, kx=parallel_axis).mean(
+            list(transverse_specification.keys())
+        )
+
+
+@traceable
+def convert_through_angular_point(
+    data: DataType,
+    coords: Dict[str, float],
+    cut_specification: Dict[str, np.ndarray],
+    transverse_specification: Dict[str, np.ndarray],
+    relative_coords: bool = True,
+    trace: Callable = None,
+    **k_coords,
+) -> xr.DataArray:
+    """Converts the lower dimensional ARPES cut passing through given angular `coords`.
+
+    The fixed momentum axis is given by `cut_specification` in coordinates relative to
+    the momentum converted copy of `coords`. Absolute coordinates can be enabled
+    with the `relative_coords` flag.
+
+
+    Args:
+        data: The angle space data to be converted.
+        coords: The angle space coordinates of the point the cut should pass through.
+        cut_specification: A dictionary specifying the momentum varying axes
+          on the output data.
+        transverse_specification: A dictionary specifying the transverse (summed)
+          axis on the momentum converted data.
+        relative_coords: Whether to give `cut_specification` relative to the momentum
+          converted location specified in `coords`
+        trace: Flag controlling execution tracing
+        k_coords: Passed as hints through to `convert_coordinate_forward`.
+
+    Returns:
+        A momentum cut passing through the point `coords`.
+    """
+    k_coords = convert_coordinate_forward(data, coords, trace=trace, **k_coords)
+    all_momentum_dims = set(k_coords.keys())
+    assert all_momentum_dims == set(cut_specification.keys()).union(transverse_specification.keys())
+
+    # adjust output coordinate ranges
+    transverse_specification = {k: v + k_coords[k] for k, v in transverse_specification.items()}
+    if relative_coords:
+        cut_specification = {k: v + k_coords[k] for k, v in cut_specification.items()}
+
+    # perform the conversion
+    return convert_to_kspace(data, **transverse_specification, **cut_specification).mean(
+        list(transverse_specification.keys())
+    )
 
 
 @update_provenance("Forward convert coordinates")
