@@ -232,7 +232,7 @@ def rebin(
         if remainder != 0:
             slices[dim] = slice(None, -remainder)
 
-    trimmed_data = data.data[[slices[d] for d in data.dims]]
+    trimmed_data = data.data[tuple(slices[d] for d in data.dims)]
     trimmed_coords = {d: coord[slices[d]] for d, coord in data.indexes.items()}
 
     temp_shape = [

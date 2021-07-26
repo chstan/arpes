@@ -50,6 +50,8 @@ def vector_diff(arr: np.ndarray, delta, n=1):
                 slice1[dim] = slice(delta_val, None)
                 slice2[dim] = slice(None, -delta_val)
 
+    slice1, slice2 = tuple(slice1), tuple(slice2)
+
     if n > 1:
         return vector_diff(arr[slice1] - arr[slice2], delta, n - 1)
 
