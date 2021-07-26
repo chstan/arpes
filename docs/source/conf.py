@@ -95,7 +95,11 @@ napoleon_use_rtype = True
 
 # nbsphinx settings
 nbsphinx_timeout = 600
-nbsphinx_execute = "always"
+
+if os.getenv("READTHEDOCS"):
+    nbsphinx_execute = "never"
+else:
+    nbsphinx_execute = "always"
 
 
 autosummary_generate = True
