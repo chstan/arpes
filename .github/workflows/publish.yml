@@ -60,14 +60,17 @@ jobs:
           pip install setuptools setuptools-scm wheel twine check-manifest
 
       - name: Build wheels
+        run: |
           git clean -xdf
           git restore -SW .
           python -m build --sdist --wheel .
 
       - name: Check pip artifacts
+        run: |
           python -m twine check dist/*
 
       - name: Conda build
+        run: |
           mkdir "conda-dist"
           conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
 
