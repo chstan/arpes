@@ -41,7 +41,6 @@ import pandas as pd
 import lmfit
 import arpes
 import contextlib
-import deprecation
 import collections
 import copy
 import itertools
@@ -1867,12 +1866,6 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
 
         return self._obj.isel(**slices)
 
-    @deprecation.deprecated(
-        deprecated_in="3.0",
-        removed_in="4.0",
-        current_version=arpes.__version__,
-        details="Prefer xr.DataArray.fillna instead.",
-    )
     def nan_to_num(self, x: Any = 0) -> xr.DataArray:
         """Provides an `xarray` version of `numpy.nan_to_num`.
 
