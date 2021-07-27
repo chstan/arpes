@@ -11,8 +11,16 @@ opt into them with
    import matplotlib.pyplot as plt
    plt.style.use(['seaborn-white', 'arpes'])
 
+However, you will need to install seaborn first in order to override these 
+styles.
+
+.. code::bash
+
+   $> pip install seaborn
+
 The ARPES style file can be found in the root of the repository as
-``arpes.mplstyle``.
+``arpes.mplstyle``. You should copy this to the location matplotlib
+expects and modify in order to suit your needs.
 
 Fancy axis labels
 -----------------

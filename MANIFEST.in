@@ -1,6 +1,7 @@
 include LICENSE
 include CONTRIBUTING.md
 include README.rst
+include pypi-readme.rst
 
 recursive-include resources *.fits
 recursive-include docs *.md *.png

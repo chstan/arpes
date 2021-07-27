@@ -16,7 +16,7 @@
    :target: https://codecov.io/gh/chstan/arpes
 .. |test_status| image:: https://github.com/chstan/arpes/actions/workflows/test.yml/badge.svg?branch=master
    :target: https://github.com/chstan/arpes/actions/workflows/test.yml
-.. |pypi| image:: https://img.shields.io/pypi/v/arpes/arpes.svg
+.. |pypi| image:: https://img.shields.io/pypi/v/arpes
    :target: https://pypi.org/project/arpes/
 .. |conda| image:: https://img.shields.io/conda/v/arpes/arpes.svg
    :target: https://anaconda.org/arpes/arpes
@@ -24,7 +24,7 @@
 PyARPES
 =======
 
-.. image:: docs/_static/video/intro-video.gif
+.. image:: docs/source/_static/video/intro-video.gif
 
 ========
 
