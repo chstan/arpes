@@ -74,14 +74,14 @@ jobs:
           mkdir "conda-dist"
           conda-build ./conda/ -c anaconda -c conda-forge --output-folder conda-dist
 
-      - name: Publish package to Conda
-        run: |
-          yes | anaconda login --username ${{ secrets.CONDA_USER }} --password ${{ secrets.CONDA_PASSWORD }}
-          anaconda upload -u arpes conda-dist/noarch/$(ls conda-dist/noarch/ | grep ".tar.bz2")
-
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
           skip_existing: true
+
+      - name: Publish package to Conda
+        run: |
+          yes | anaconda login --username ${{ secrets.CONDA_USER }} --password ${{ secrets.CONDA_PASSWORD }}
+          anaconda upload -u arpes conda-dist/noarch/$(ls conda-dist/noarch/ | grep ".tar.bz2")
