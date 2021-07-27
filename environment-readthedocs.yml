@@ -8,22 +8,21 @@ dependencies:
   - astropy
   - xarray>=0.16.1
   - h5py>=3.2.1
-  - pyqtgraph==0.12
+  - pyqtgraph>=0.12.0,<0.13.0
 
   - pint
   - pandas
-  - dask
-  - numpy
-  - scipy
-  - lmfit==1.0
-  - netCDF4
+
+  - numpy>=1.20.0,<2.0.0
+  - scipy>=1.6.0,<2.0.0
+  - lmfit>=1.0.0,<2.0.0
+  - netCDF4>=1.5.0,<2.0.0
 
   # plotting
   - colorcet
   - matplotlib>=3.0.3
-  - seaborn
-  - bokeh>=2.0.0
-  - ipywidgets==7.0.1
+  - bokeh>=2.0.0,<3.0.0
+  - ipywidgets>=7.0.1,<8.0.0
 
   # Misc deps
   - pip
@@ -32,17 +31,16 @@ dependencies:
   - pip:
       - PyQt5==5.15
       - packaging
-      - deprecation
-      - xlrd
-      - numba
+      - numba>=0.53.0,<1.0.0
       - colorama
       - imageio
       - titlecase
-      - openpyxl
       - tqdm
       - rx
       - dill
-      - ase
+      - ase>=3.20.0,<4.0.0
+
+      # documentation dependencies are basically only these
       - sphinx
       - sphinxcontrib-restbuilder
       - sphinx_rtd_theme

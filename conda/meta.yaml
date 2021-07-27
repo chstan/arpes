@@ -1,6 +1,3 @@
-# full guide of options:
-# https://conda.io/docs/user-guide/tasks/build-packages/define-metadata.html
-
 # To see what comes out after this template is processed, run:
 #    conda-render ./conda/
 
@@ -17,55 +14,55 @@ source:
   url: ../dist/{{ data.name }}-{{ data.version }}.tar.gz
 
 build:
-  number: 1
+  number: 2
   noarch: python
-  script: "python setup.py install --single-version-externally-managed --record=record.txt"
+  script: "{{ PYTHON }} setup.py install --single-version-externally-managed --record=record.txt"
 
-# unlike pypi, conda has a slightly different format for required
-# versions, with one space between package name and version specifier, i.e.
-# we must use - xarray >=0.9.6. For details see:
-# https://conda.io/docs/user-guide/tasks/build-packages/package-spec.html#package-match-specifications
+# PyQt5 and ase are not available on conda so they are installed via the script above
 requirements:
   build:
     - conda-build
-    - python
+  host:
+    - python =3.8
     - pip
   run:
-    - tornado ==4.5.3
+    - python =3.8
+
     - astropy
-    - xarray ==0.9.6
-    - h5py ==2.7.0
-    - netcdf4
-    - colorcet
-    - colorama
+    - xarray >=0.16.1
+    - h5py >=3.2.1
+    - pyqtgraph >=0.12.0,<0.13.0
+    - pyqt
+
     - pint
     - pandas
-    - dask
-    - numpy
-    - scipy
-    - lmfit
-    - scikit-learn
-    - scikit-image
+    - numpy>=1.20.0,<2.0.0
+    - scipy>=1.6.0,<2.0.0
+    - netcdf4 >=1.5.0,<2.0.0
+    - lmfit >=1.0.0,<2.0.0
+
+    - colorcet
+    - matplotlib >=3.0.3
+    - bokeh >=2.0.0,<3.0.0
+    - ipywidgets >=7.0.1,<8.0.0
+
+    - scikit-learn >=0.24.0,<1.0.0
+
+    - packaging
+    - numba >=0.53.0,<1.0.0
+
+    - colorama
     - imageio
+    - titlecase
 
-    - matplotlib >=3.0.0
-    - bokeh ==0.12.10
-    - xlrd
-    - openpyxl
-    - toolz >=0.7.3
     - tqdm
+    - rx
+    - dill
 
-
-# Optional dependencies
-# - seaborn
-# - PyQt5
-# - pyqtgraph
-# - igor ==0.3.1
 
 test:
   imports:
     - arpes
-
   requires:
     - python
 
@@ -73,6 +70,7 @@ about:
   home: https://arpes.readthedocs.io/
   license: GPL-3.0
   license_family: GPL
+  license_file: LICENSE
   summary: 'Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)'
   description: 'Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)'
   doc_url: https://arpes.readthedocs.io/

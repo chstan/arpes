@@ -24,40 +24,36 @@ VERSION = about["VERSION"]
 DEPENDENCY_GROUPS = {
     "core": [
         "astropy",
-        "xarray",
+        "xarray>=0.16.1",
         "h5py>=3.2.1",
-        "pyqtgraph==0.12",
+        "pyqtgraph>=0.12.0,<0.13.0",
         "PyQt5==5.15",
-        "netCDF4",
+        "netCDF4>=1.5.0,<2.0.0",
         "colorcet",
         "pint",
         "pandas",
-        "dask",
-        "numpy",
-        "scipy",
-        "lmfit==1.0",
+        "numpy>=1.20.0,<2.0.0",
+        "scipy>=1.6.0,<2.0.0",
+        "lmfit>=1.0.0,<2.0.0",
         "scikit-learn",
         # plotting
         "matplotlib>=3.0.3",
-        "seaborn",
-        "bokeh>=2.0.0",
-        "ipywidgets==7.0.1",
+        "bokeh>=2.0.0,<3.0.0",
+        "ipywidgets>=7.0.1,<8.0.0",
         # Misc deps
-        "deprecation",
         "packaging",
-        "xlrd",
         "colorama",
         "imageio",
         "titlecase",
-        "openpyxl",
         "tqdm",
         "rx",
         "dill",
-        "ase",
+        "ase>=3.20.0,<4.0.0",
+        "numba>=0.53.0,<1.0.0",
     ],
     "igor": ["igor==0.3.1"],
     "ml": [
-        "scikit-learn",
+        "scikit-learn>=0.24.0,<1.0.0",
         "scikit-image",
         "cvxpy",
         "libgcc",
@@ -83,7 +79,7 @@ DEV_DEPENDENCIES = {
 }
 
 
-with open("pypi-readme.rst", "r") as f_readme:
+with open("./pypi-readme.rst", "r") as f_readme:
     long_description = f_readme.read()
 
 
@@ -114,6 +110,7 @@ packages = find_packages(
         "tests",
         "source",
         "info_session",
+        "scripts",
         "docs",
         "example_configuration",
         "conda",

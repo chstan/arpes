@@ -77,7 +77,7 @@ def setup(app):
     app.connect("autodoc-skip-member", autodoc_skip_member)
 
 
-autodoc_mock_imports = ["torch", "pytorch_lightning", "xrft"]
+autodoc_mock_imports = ["torch", "pytorch_lightning"]
 
 
 # Napoleon settings
