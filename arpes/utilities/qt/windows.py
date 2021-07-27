@@ -1,7 +1,7 @@
 """Infrastructure code for Qt application windows."""
 import sys
 
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 
 import arpes.config
 from arpes.utilities.excepthook import patched_excepthook
@@ -10,7 +10,7 @@ from arpes.utilities.ui import KeyBinding
 __all__ = ("SimpleWindow",)
 
 
-class SimpleWindow(QtGui.QMainWindow, QtCore.QObject):
+class SimpleWindow(QtWidgets.QMainWindow, QtCore.QObject):
     """Provides a relatively simple way of making a windowed application.
 
     The following utilities are largely managed for you:
