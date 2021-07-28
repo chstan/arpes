@@ -8,6 +8,7 @@
   "license": "GPL-3.0",
   "scripts": {
     "test": "pytest -c pytest-config/pytest.ini",
+    "integration-test": "pytest -c pytest-config/pytest.ini tests/test_qt.py",
     "watch-test": "pytest -c pytest-config/pytest-watch.ini",
     "watch-coverage": "pytest -c pytest-config/pytest-coverage.ini -f",
     "coverage": "pytest -c pytest-config/pytest-coverage.ini",

@@ -6,7 +6,7 @@ import arpes.config
 import numpy as np
 import xarray as xr
 
-from PyQt5 import QtGui
+from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
@@ -210,18 +210,18 @@ class BZTool:
         self.main_layout.addWidget(self.tabs, 1, 0)
 
     def start(self):
-        app = QtGui.QApplication([])
+        app = QtWidgets.QApplication([])
 
         win = BZToolWindow()
         win.resize(1100 - 250, 1100)
         win.setWindowTitle("Brillouin Zone Tool")
-        cw = QtGui.QWidget()
+        cw = QtWidgets.QWidget()
         win.setCentralWidget(cw)
         self.window = win
         self.window.tool = self
 
-        self.content_layout = QtGui.QGridLayout()
-        self.main_layout = QtGui.QGridLayout()
+        self.content_layout = QtWidgets.QGridLayout()
+        self.main_layout = QtWidgets.QGridLayout()
 
         cw.setLayout(self.main_layout)
 
@@ -232,7 +232,7 @@ class BZTool:
 
         self.window.show()
 
-        QtGui.QApplication.instance().exec()
+        QtWidgets.QApplication.instance().exec()
 
 
 def bz_tool():

@@ -1,5 +1,5 @@
 """Application infrastructure for apps/tools which browse a data volume."""
-from PyQt5 import QtGui
+from PyQt5 import QtWidgets
 import pyqtgraph as pg
 import numpy as np
 import typing
@@ -202,7 +202,7 @@ class SimpleApp:
         """Gets the window instance on the current application."""
         return self._window
 
-    def start(self):
+    def start(self, no_exec: bool = False, app: QtWidgets.QApplication = None):
         """Starts the Qt application, configures the window, and begins Qt execution."""
         # When running in nbconvert, don't actually open tools.
         import arpes.config
@@ -210,7 +210,9 @@ class SimpleApp:
         if arpes.config.DOCS_BUILD:
             return
 
-        app = QtGui.QApplication([])
+        if app is None:
+            app = QtWidgets.QApplication([])
+
         app.owner = self
         # self.app = app
 
@@ -222,7 +224,7 @@ class SimpleApp:
         self.window.resize(*qt_info.inches_to_px(self.WINDOW_SIZE))
         self.window.setWindowTitle(self.TITLE)
 
-        self.cw = QtGui.QWidget()
+        self.cw = QtWidgets.QWidget()
         self._layout = self.layout()
         self.cw.setLayout(self._layout)
         self.window.setCentralWidget(self.cw)
@@ -238,4 +240,7 @@ class SimpleApp:
         self.after_show()
         qt_info.apply_settings_to_app(app)
 
-        QtGui.QApplication.instance().exec()
+        if no_exec:
+            return
+
+        QtWidgets.QApplication.instance().exec()
