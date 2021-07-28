@@ -11,9 +11,9 @@ import arpes.xarray_extensions
 
 def load_energy_corrected():
     fmap = example_data.map.spectrum
-    cut = fmap.sum("theta").sel(eV=slice(-0.2, 0.1), phi=slice(-0.25, 0.3))
+    return fmap
 
-    results = broadcast_model(AffineBroadenedFD, cut, "phi")
+    results = broadcast_model(AffineBroadenedFD, cut, "phi", parallelize=False)
     edge = QuadraticModel().guess_fit(results.F.p("fd_center")).eval(x=fmap.phi)
     return fmap.G.shift_by(edge, "eV")
 
@@ -74,8 +74,8 @@ def test_fermi_surface_conversion():
 
     assert ky_max == pytest.approx(0.4373433583959896)
     assert kx_max == pytest.approx(-0.015037593984962516)
-    assert kdata.mean().item() == pytest.approx(820.5092717)
-    assert kdata.fillna(0).mean().item() == pytest.approx(555.710417022)
+    assert kdata.mean().item() == pytest.approx(613.79029047)
+    assert kdata.fillna(0).mean().item() == pytest.approx(415.7048189)
 
 
 @pytest.mark.skip
@@ -120,32 +120,32 @@ def test_convert_angular_point_and_angle():
     )
 
     max_values = [
-        0.0,
-        4332.821244449737,
-        4532.076642909317,
-        4753.245322434983,
-        4933.894741353865,
-        5145.826374585494,
-        5389.024768971414,
-        5560.16820212156,
-        5934.7580649508045,
-        6477.344494538664,
-        6848.5894673342045,
-        7112.208395216838,
-        7742.842693967063,
-        8141.299758744744,
-        8489.459016788936,
-        8529.650628690946,
-        8277.185652641712,
-        7802.5196797546305,
-        7171.889758677037,
-        6792.642286906545,
-        6378.868806982989,
-        6087.525338632965,
-        5916.242988353441,
-        5644.807978079201,
-        3251.882137466492,
-        141.21390323116498,
+        4141.79361851789,
+        4352.118805852634,
+        4528.183675544601,
+        4772.701193743715,
+        4967.954937427305,
+        5143.416481043858,
+        5389.480518039409,
+        5564.486620498726,
+        5963.2608828950015,
+        6495.800810281041,
+        6865.562982108332,
+        7112.036574537716,
+        7796.474181791687,
+        8160.106902788172,
+        8524.980143784462,
+        8520.4603140169,
+        8266.738479510586,
+        7786.5089626268455,
+        7151.2409294143,
+        6764.616607333701,
+        6381.040104212984,
+        6075.501205633937,
+        5922.880496514519,
+        5625.495181926943,
+        3077.8516096096077,
+        117.28646806572776,
     ]
 
     assert kdata.sel(ky=slice(-0.7, 0)).isel(eV=slice(None, -20, 5)).max("ky").values.tolist() == [
