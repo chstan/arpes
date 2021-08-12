@@ -83,19 +83,7 @@ class HERSEndstation(SynchrotronEndstation, HemisphericalEndstation):
             for k, c in relevant_coords.items()
         }
 
-        dataset = xr.Dataset(
-            data_vars,
-            relevant_coords,
-            scan_desc,
-        )
-
-        provenance_from_file(
-            dataset,
-            data_loc,
-            {
-                "what": "Loaded BL10 dataset",
-                "by": "load_DLD",
-            },
-        )
+        dataset = xr.Dataset(data_vars, relevant_coords, scan_desc)
+        provenance_from_file(dataset, data_loc, {"what": "Loaded BL10 dataset", "by": "load_DLD"})
 
         return dataset
