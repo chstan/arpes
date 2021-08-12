@@ -86,7 +86,7 @@ def extract_coords(
                 scan_shape.append(n)
                 scan_coords[name] = np.linspace(start, end, n, endpoint=True)
         else:  # tabulated scan, this is more complicated
-            if "NMPOS_%g" % loop not in attrs and n_scan_dimensions > 1:
+            if n_scan_dimensions > 1:
                 trace(f"Loop is tabulated and is not region based")
                 for i in range(n_scan_dimensions):
                     name, start, end, n = (
