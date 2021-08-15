@@ -172,7 +172,11 @@ class SpectromicroscopyElettraEndstation(HemisphericalEndstation, SynchrotronEnd
 
     CONCAT_COORDS = ["T", "P"]
 
-    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
+    def concatenate_frames(
+        self,
+        frames=typing.List[xr.Dataset],
+        scan_desc: dict = None,
+    ):
         """Concatenates frame for spectromicroscopy at Elettra.
 
         The scan axis is determined dynamically by checking for uniqueness across

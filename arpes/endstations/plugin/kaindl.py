@@ -114,7 +114,11 @@ class KaindlEndstation(HemisphericalEndstation, SESEndstation):
         p = Path(original_data_loc)
         return find_kaindl_files_associated(p)
 
-    def concatenate_frames(self, frames=typing.List[xr.Dataset], scan_desc: dict = None):
+    def concatenate_frames(
+        self,
+        frames=typing.List[xr.Dataset],
+        scan_desc: dict = None,
+    ):
         """Concenates frames from individual .pxt files on the Kaindl setup.
 
         The unique challenge here is to look for and parse the motor positions file (if

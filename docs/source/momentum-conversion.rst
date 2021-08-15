@@ -78,4 +78,4 @@ change dramatically, these equations once calculated can be applied
 directly to data.
 
 You can find a relatively complete implementation of these transforms in
-the small angle approximation picture in this Mathematica notebook.
+the small angle approximation picture in this :download:`Mathematica notebook <_static/mathematica-coordinates.pdf>`.

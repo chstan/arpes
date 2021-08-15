@@ -6,7 +6,7 @@ import warnings
 from typing import Union
 
 # Use both version conventions for people's sanity.
-VERSION = "3.0.0"
+VERSION = "3.0.1"
 __version__ = VERSION
 
 

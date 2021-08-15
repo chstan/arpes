@@ -1,4 +1,5 @@
 """Plugin facility to read and normalize information from different sources to a common format."""
+from arpes.trace import Trace, traceable
 import warnings
 import re
 
@@ -8,7 +9,7 @@ import xarray as xr
 from astropy.io import fits
 
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 import copy
 import arpes.config
 import arpes.constants
@@ -100,6 +101,11 @@ class EndstationBase:
     SUMMABLE_NULL_DIMS = ["phi", "cycle"]
 
     RENAME_KEYS = {}
+
+    trace: Trace
+
+    def __init__(self):
+        self.trace = Trace(silent=True)
 
     @classmethod
     def is_file_accepted(cls, file, scan_desc) -> bool:
@@ -236,7 +242,6 @@ class EndstationBase:
 
         This always needs to be overridden in subclasses to handle data appropriately.
         """
-        print(frame_path)
         return xr.Dataset()
 
     def postprocess(self, frame: xr.Dataset):
@@ -372,11 +377,12 @@ class EndstationBase:
         but for the most part loaders just specializing one or more of these different steps
         as appropriate for a beamline.
         """
+        self.trace("Resolving frame locations")
         resolved_frame_locations = self.resolve_frame_locations(scan_desc)
         resolved_frame_locations = [
             f if isinstance(f, str) else str(f) for f in resolved_frame_locations
         ]
-
+        self.trace(f"Found frames: {resolved_frame_locations}")
         frames = [
             self.load_single_frame(fpath, scan_desc, **kwargs) for fpath in resolved_frame_locations
         ]
@@ -630,6 +636,7 @@ class FITSEndstation(EndstationBase):
         5. Handling early scan termination
         """
         # Use dimension labels instead of
+        self.trace("Opening FITS HDU list.")
         hdulist = fits.open(frame_path, ignore_missing_end=True)
         primary_dataset_name = None
 
@@ -640,10 +647,12 @@ class FITSEndstation(EndstationBase):
             del hdulist[i].header["UN_0_0"]
             hdulist[i].header["UN_0_0"] = ""
             if "TTYPE2" in hdulist[i].header and hdulist[i].header["TTYPE2"] == "Delay":
+                self.trace("Using ps delay units. This looks like an ALG main chamber scan.")
                 hdulist[i].header["TUNIT2"] = ""
                 del hdulist[i].header["TUNIT2"]
                 hdulist[i].header["TUNIT2"] = "ps"
 
+            self.trace(f"HDU {i}: Attempting to fix FITS errors.")
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 hdulist[i].verify("fix+warn")
@@ -664,7 +673,11 @@ class FITSEndstation(EndstationBase):
 
         from arpes.utilities import rename_keys
 
-        built_coords, dimensions, real_spectrum_shape = find_clean_coords(hdu, attrs, mode="MC")
+        built_coords, dimensions, real_spectrum_shape = find_clean_coords(
+            hdu, attrs, mode="MC", trace=self.trace
+        )
+        self.trace("Recovered coordinates from FITS file.")
+
         attrs = rename_keys(attrs, self.RENAME_KEYS)
         scan_desc = rename_keys(scan_desc, self.RENAME_KEYS)
 
@@ -797,12 +810,7 @@ class FITSEndstation(EndstationBase):
 
             # Always attach provenance
             provenance_from_file(
-                data,
-                frame_path,
-                {
-                    "what": "Loaded MC dataset from FITS.",
-                    "by": "load_MC",
-                },
+                data, frame_path, {"what": "Loaded MC dataset from FITS.", "by": "load_MC"}
             )
 
             return data
@@ -815,6 +823,7 @@ class FITSEndstation(EndstationBase):
             k: c * (np.pi / 180) if k in deg_to_rad_coords else c for k, c in built_coords.items()
         }
 
+        self.trace("Stitching together xr.Dataset.")
         return xr.Dataset(
             {
                 "safe-{}".format(name) if name in data_var.coords else name: data_var
@@ -917,7 +926,8 @@ def resolve_endstation(retry=True, **kwargs) -> type:
             )
 
 
-def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Dataset:
+@traceable
+def load_scan(scan_desc: Dict[str, str], retry=True, trace=None, **kwargs: Any) -> xr.Dataset:
     """Resolves a plugin and delegates loading a scan.
 
     This is used interally by `load_data` and should not be invoked directly
@@ -930,6 +940,7 @@ def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Datase
     Args:
         scan_desc: Information identifying the scan, typically a scan number or full path.
         retry: Used to attempt a reload of plugins and subsequent data load attempt.
+        trace: Trace instance for debugging, pass True or False (default) to control this parameter
         kwargs:
 
     Returns:
@@ -940,6 +951,7 @@ def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Datase
     full_note.update(note)
 
     endstation_cls = resolve_endstation(retry=retry, **full_note)
+    trace(f"Using plugin class {endstation_cls}")
 
     key = "file" if "file" in scan_desc else "path"
 
@@ -952,4 +964,7 @@ def load_scan(scan_desc: Dict[str, str], retry=True, **kwargs: Any) -> xr.Datase
     except ValueError:
         pass
 
-    return endstation_cls().load(scan_desc, **kwargs)
+    trace(f"Loading {scan_desc}")
+    endstation = endstation_cls()
+    endstation.trace = trace
+    return endstation.load(scan_desc, trace=trace, **kwargs)

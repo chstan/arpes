@@ -1,12 +1,12 @@
 name: Python Package to conda/arpes
 
 on:
-  push:
-    branches:
-      - master
-      - main
-  #release:
-  #  types: [published]
+  #push:  # you can uncomment these if you need to debug the publish process
+  #  branches:
+  #    - master
+  #    - main
+  release:
+    types: [published]
 
 jobs:
   deploy-conda:

@@ -482,7 +482,7 @@ class QtTool(SimpleApp):
         self._binning = [1 for _ in self.data.dims]
 
 
-def _qt_tool(data: DataType):
+def _qt_tool(data: DataType, **kwargs):
     """Starts the qt_tool using an input spectrum."""
     try:
         data = dill.loads(data)
@@ -491,7 +491,7 @@ def _qt_tool(data: DataType):
 
     tool = QtTool()
     tool.set_data(data)
-    tool.start()
+    tool.start(**kwargs)
 
 
 qt_tool = run_tool_in_daemon_process(_qt_tool)

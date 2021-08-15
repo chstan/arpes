@@ -11,7 +11,7 @@ omit = [
   "tests/*",
   "arpes/plotting/*",
   "arpes/deep_learning/*",
-  "apres/widgets.py",
+  "arpes/widgets.py",
 ]
 
 [tool.coverage.report]

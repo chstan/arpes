@@ -1,7 +1,7 @@
 """A control which can provide a range or a single value (i.e. a half open range with ends equal)."""
 from functools import partial
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 
 __all__ = ["RangeOrSingleValueWidget"]
@@ -21,7 +21,7 @@ class RangeOrSingleValueWidget(QtWidgets.QGroupBox):
         """
         super().__init__(title=coordinate_name, parent=parent)
 
-        self.layout = QtGui.QGridLayout(self)
+        self.layout = QtWidgets.QGridLayout(self)
 
         self.label = QtWidgets.QLabel("Value: ")
         self.spinbox = QtWidgets.QSpinBox()

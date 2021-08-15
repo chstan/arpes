@@ -38,9 +38,9 @@ def run_tool_in_daemon_process(tool_handler: Callable) -> Callable:
     """
 
     @functools.wraps(tool_handler)
-    def wrapped_handler(data, detached: bool = False):
+    def wrapped_handler(data, detached: bool = False, **kwargs):
         if not detached:
-            return tool_handler(data)
+            return tool_handler(data, **kwargs)
 
         if isinstance(data, xr_types):
             # this should be a noop but seems to fix a bug which
@@ -48,7 +48,7 @@ def run_tool_in_daemon_process(tool_handler: Callable) -> Callable:
             data = data.assign_coords(data.coords)
 
         ser_data = dill.dumps(data)
-        p = Process(target=tool_handler, args=(ser_data,), daemon=True)
+        p = Process(target=tool_handler, args=(ser_data,), kwargs=kwargs, daemon=True)
         p.start()
 
     return wrapped_handler

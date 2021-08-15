@@ -1,4 +1,5 @@
 """Utility functions for extracting ARPES information from the FITS file conventions."""
+from arpes.trace import traceable
 import functools
 import warnings
 from ast import literal_eval
@@ -31,14 +32,19 @@ CoordsDict = Dict[str, ndarray]
 Dimension = str
 
 
+@traceable
 def extract_coords(
-    attrs: Dict[str, Any], dimension_renamings: Dict[str, str] = None
+    attrs: Dict[str, Any],
+    dimension_renamings: Dict[str, str] = None,
+    trace=None,
 ) -> Tuple[CoordsDict, List[Dimension], List[int]]:
     """Does the hard work of extracting coordinates from the scan description.
 
     Args:
         attrs:
         dimension_renamings:
+        trace: A Trace instance used for debugging. You can pass True or False (including to the originating load_data call)
+            to enable execution tracing.
 
     Returns:
         A tuple consisting of the coordinate arrays, the dimension names, and their shapes
@@ -48,6 +54,7 @@ def extract_coords(
 
     try:
         n_loops = attrs["LWLVLPN"]
+        trace(f"Found n_loops={n_loops}")
     except KeyError:
         # Looks like no scan, this happens for instance in the SToF when you take a single
         # EDC
@@ -60,45 +67,17 @@ def extract_coords(
     scan_shape = []
     scan_coords = {}
     for loop in range(n_loops):
-        n_scan_dimensions = attrs["NMSBDV%g" % loop]
-        if attrs["SCNTYP%g" % loop] == 0:  # computed
+        n_scan_dimensions = attrs[f"NMSBDV{loop}"]
+        trace(f"Considering loop {loop}, n_scan_dimensions={n_scan_dimensions}")
+        if attrs[f"SCNTYP{loop}"] == 0:
+            trace(f"Loop is computed")
             for i in range(n_scan_dimensions):
                 name, start, end, n = (
-                    attrs[
-                        "NM_%g_%g"
-                        % (
-                            loop,
-                            i,
-                        )
-                    ],
-                    # attrs['UN_0_%g' % i],
-                    float(
-                        attrs[
-                            "ST_%g_%g"
-                            % (
-                                loop,
-                                i,
-                            )
-                        ]
-                    ),
-                    float(
-                        attrs[
-                            "EN_%g_%g"
-                            % (
-                                loop,
-                                i,
-                            )
-                        ]
-                    ),
-                    int(
-                        attrs[
-                            "N_%g_%g"
-                            % (
-                                loop,
-                                i,
-                            )
-                        ]
-                    ),
+                    attrs[f"NM_{loop}_{i}"],
+                    # attrs[f"UN_0_{loop}"],
+                    float(attrs[f"ST_{loop}_{i}"]),
+                    float(attrs[f"EN_{loop}_{i}"]),
+                    int(attrs[f"N_{loop}_{i}"]),
                 )
 
                 name = dimension_renamings.get(name, name)
@@ -107,57 +86,30 @@ def extract_coords(
                 scan_shape.append(n)
                 scan_coords[name] = np.linspace(start, end, n, endpoint=True)
         else:  # tabulated scan, this is more complicated
-            if "NMPOS_%g" % loop not in attrs and n_scan_dimensions > 1:
+            if n_scan_dimensions > 1:
+                trace(f"Loop is tabulated and is not region based")
                 for i in range(n_scan_dimensions):
                     name, start, end, n = (
-                        attrs[
-                            "NM_%g_%g"
-                            % (
-                                loop,
-                                i,
-                            )
-                        ],
-                        # attrs['UN_0_%g' % i],
-                        float(
-                            attrs[
-                                "ST_%g_%g"
-                                % (
-                                    loop,
-                                    i,
-                                )
-                            ]
-                        ),
-                        float(
-                            attrs[
-                                "EN_%g_%g"
-                                % (
-                                    loop,
-                                    i,
-                                )
-                            ]
-                        ),
-                        int(
-                            attrs[
-                                "N_%g_%g"
-                                % (
-                                    loop,
-                                    i,
-                                )
-                            ]
-                        ),
+                        attrs[f"NM_{loop}_{i}"],
+                        # attrs[f"UN_0_{i}"],
+                        float(attrs[f"ST_{loop}_{i}"]),
+                        float(attrs[f"EN_{loop}_{i}"]),
+                        int(attrs[f"N_{loop}_{i}"]),
                     )
 
+                    old_name = name
                     name = dimension_renamings.get(name, name)
+                    trace(f"Renaming: {old_name} -> {name}")
 
                     scan_dimension.append(name)
                     scan_shape.append(n)
                     scan_coords[name] = np.linspace(start, end, n, endpoint=True)
 
             else:
-                # region based tabulated scan
+                trace(f"Loop is tabulated and is region based")
                 name, n = (
-                    attrs["NM_%g_0" % loop],
-                    attrs["NMPOS_%g" % loop],
+                    attrs[f"NM_{loop}_0"],
+                    attrs[f"NMPOS_{loop}"],
                 )
 
                 try:
@@ -172,38 +124,20 @@ def extract_coords(
                     n_regions = 1
                     name = dimension_renamings.get(name, name)
 
+                trace(f"Loop (name, n_regions, size) = {(name, n_regions, n)}")
+
                 coord = np.array(())
                 for region in range(n_regions):
                     start, end, n = (
-                        attrs[
-                            "ST_%g_%g"
-                            % (
-                                loop,
-                                region,
-                            )
-                        ],
-                        attrs[
-                            "EN_%g_%g"
-                            % (
-                                loop,
-                                region,
-                            )
-                        ],
-                        attrs[
-                            "N_%g_%g"
-                            % (
-                                loop,
-                                region,
-                            )
-                        ],
+                        attrs[f"ST_{loop}_{region}"],
+                        attrs[f"EN_{loop}_{region}"],
+                        attrs[f"N_{loop}_{region}"],
+                    )
+                    trace(
+                        f"Reading coordinate {region} from loop. (start, end, n) = {(start, end, n)}"
                     )
 
-                    coord = np.concatenate(
-                        (
-                            coord,
-                            np.linspace(start, end, n, endpoint=True),
-                        )
-                    )
+                    coord = np.concatenate((coord, np.linspace(start, end, n, endpoint=True)))
 
                 scan_dimension.append(name)
                 scan_shape.append(len(coord))
@@ -211,12 +145,14 @@ def extract_coords(
     return scan_coords, scan_dimension, scan_shape
 
 
+@traceable
 def find_clean_coords(
     hdu: BinTableHDU,
     attrs: Dict[str, Any],
     spectra: Optional[Any] = None,
     mode: str = "ToF",
     dimension_renamings: Optional[Any] = None,
+    trace=None,
 ) -> Tuple[CoordsDict, Dict[str, List[Dimension]], Dict[str, Any]]:
     """Determines the scan degrees of freedom, and reads coordinates.
 
@@ -248,11 +184,15 @@ def find_clean_coords(
         dimension_renamings = DEFAULT_DIMENSION_RENAMINGS
 
     scan_coords, scan_dimension, scan_shape = extract_coords(
-        attrs, dimension_renamings=dimension_renamings
+        attrs,
+        dimension_renamings=dimension_renamings,
+        trace=trace,
     )
+    trace(f"Found scan shape {scan_shape} and dimensions {scan_dimension}.")
 
     # bit of a hack to deal with the internal motor used for the swept spectra being considered as a cycle
     if "cycle" in scan_coords and len(scan_coords["cycle"]) > 200:
+        trace(f"Renaming swept scan coordinate to cycle and extracting. This is hack.")
         idx = scan_dimension.index("cycle")
 
         real_data_for_cycle = hdu.data.columns["null"].array
@@ -275,12 +215,14 @@ def find_clean_coords(
         spectra = [spectra]
 
     for spectrum_key in spectra:
+        trace(f"Considering potential spectrum {spectrum_key}")
         skip_names = {
             lambda name: True if ("beamview" in name or "IMAQdx" in name) else False,
         }
 
         if spectrum_key is None:
             spectrum_key = hdu.columns.names[-1]
+            trace(f"Column name was None, using {spectrum_key}")
 
         if isinstance(spectrum_key, str):
             spectrum_key = hdu.columns.names.index(spectrum_key) + 1
@@ -296,23 +238,27 @@ def find_clean_coords(
             elif skipped == spectrum_name:
                 should_skip = True
         if should_skip:
+            trace(f"Skipping column.")
             continue
 
         try:
-            offset = hdu.header["TRVAL%g" % spectrum_key]
-            delta = hdu.header["TDELT%g" % spectrum_key]
+            offset = hdu.header[f"TRVAL{spectrum_key}"]
+            delta = hdu.header[f"TDELT{spectrum_key}"]
             offset = literal_eval(offset) if isinstance(offset, str) else offset
             delta = literal_eval(delta) if isinstance(delta, str) else delta
+            trace(f"Determined (offset, delta): {(offset, delta)}.")
 
             try:
-                shape = hdu.header["TDIM%g" % spectrum_key]
+                shape = hdu.header[f"TDIM{spectrum_key}"]
                 shape = literal_eval(shape) if isinstance(shape, str) else shape
                 loaded_shape_from_header = True
+                trace(f"Successfully loaded coordinate shape from header: {shape}")
             except:
                 shape = hdu.data.field(spectrum_key - 1).shape
+                trace(f"Could not use header to determine coordinate shape, using: {shape}")
 
             try:
-                desc = hdu.header["TDESC%g" % spectrum_key]
+                desc = hdu.header[f"TDESC{spectrum_key}"]
                 if "(" in desc:
                     # might be a malformed tuple, we can't use literal_eval unfortunately
                     desc = desc.replace("(", "").replace(")", "").split(",")
@@ -383,8 +329,7 @@ def find_clean_coords(
             except KeyError:
                 pass
 
-            # Need to fall back on some human in the loop to improve the read
-            # here
+            # Need to fall back on some human in the loop to improve the read here
             import pdb
 
             pdb.set_trace()

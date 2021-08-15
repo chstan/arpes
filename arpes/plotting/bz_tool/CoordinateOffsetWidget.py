@@ -1,7 +1,7 @@
 """A widget providing controls for a coordinate offset in the momentum tool."""
 from functools import partial
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 __all__ = ("CoordinateOffsetWidget",)
 
@@ -13,7 +13,7 @@ class CoordinateOffsetWidget(QtWidgets.QGroupBox):
         """Configures utility label, an inner control, and a linked spinbox for text entry."""
         super().__init__(title=coordinate_name, parent=parent)
 
-        self.layout = QtGui.QGridLayout(self)
+        self.layout = QtWidgets.QGridLayout(self)
 
         self.label = QtWidgets.QLabel("Value: ")
         self.spinbox = QtWidgets.QSpinBox()

@@ -1,7 +1,7 @@
 """A widget providing rudimentary information about an axis on a DataArray."""
 # pylint: disable=import-error
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 __all__ = ("AxisInfoWidget",)
 
@@ -13,7 +13,7 @@ class AxisInfoWidget(QtWidgets.QGroupBox):
         """Configure inner widgets for axis info, and transpose to front button."""
         super().__init__(title=str(axis_index), parent=parent)
 
-        self.layout = QtGui.QGridLayout(self)
+        self.layout = QtWidgets.QGridLayout(self)
 
         self.label = QtWidgets.QLabel("Cursor: ")
         self.transpose_button = QtWidgets.QPushButton("To Front")

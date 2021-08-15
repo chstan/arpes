@@ -9,11 +9,56 @@ Primary (X.-.-) version numbers are used to denote backwards
 incompatibilities between versions, while minor (-.X.-) numbers
 primarily indicate new features and documentation.
 
-3.0.0 (2021-05-17)
+3.0.1 (2021-07-27)
+
+New
+~~~
+
+Changed
+~~~~~~~
+
+Added tests for momentum conversion and for Qt tools.
+
+Fixed
+~~~~~
+
+Bugfix release to fix Qt API after bumping Qt versions.
+Tests have been added which hit large parts of the Qt code
+to prevent problems like this in the future.
+
+3.0.0 (2021-07-27)
 ------------------
 
 New
 ~~~
+
+1. Numba has been adopted to accelerate k-space conversion resulting in 
+   10-50x speedup compared to the older plain numpy versions of code.
+2. Additional example data has been added so that representative ARPES data
+   covering standard types of experiments are available.
+3. The documentation site has been moved from Netlify to https://arpes.readthedocs.io/
+   and the content available greatly expanded.
+
+   * Tutorials for common types of analysis are available as Jupyter notebooks.
+   * An organized API documentation page is availabe.
+   * Docstrings have been massively expanded to cover the public API
+     and most of the internal API.
+   * The documentation build process has been simplified.
+
+4. The momentum conversion API has been expanded with utility functions
+   
+   * ``arpes.utilities.conversion.forward.convert_through_angular_point``: Performs
+     a cut in momentum at a particular angle and passing through the angular coordinate 
+     provided.
+   * ``arpes.utilities.conversion.forward.convert_through_angular_pair``: Performs 
+     a cut in momentum passing through two given angular coordinates.
+
+   These are very helpful in getting high symmetry cuts rapidly.
+
+5. Deep learning utilities upstreamed.
+6. Multithreaded curve fitting.
+7. Fit introspection utilities upstreamed.
+8. Numerous small but compatible changes to the public API.
 
 Changed
 ~~~~~~~
@@ -23,6 +68,7 @@ Changed
 2. pylint -> black
 3. Bump dependency versions, largely due to compatibility requirements
    with pyqtgraph.
+4. Old .csv/spreadsheet driven APIs removed.
 
 Fixed
 ~~~~~
