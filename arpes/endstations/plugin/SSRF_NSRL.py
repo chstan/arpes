@@ -71,7 +71,7 @@ class DA30_L(SingleFileEndstation):
 
         if file.suffix == '.pxt':
             frame = read_single_pxt(fpath).rename(W = 'eV', X = 'phi')
-            frame.assign_coords(phi = np.deg2rad(frame.phi))
+            frame = frame.assign_coords(phi = np.deg2rad(frame.phi))
             
             return xr.Dataset(
                 {'spectrum': frame},
@@ -144,7 +144,7 @@ class DA30_L(SingleFileEndstation):
                 coords = built_coords,
                 attrs = attrs, 
             )
-            data.assign_coords(
+            data = data.assign_coords(
                 phi = np.deg2rad(data.phi),
                 psi = np.deg2rad(data.psi),
             )
