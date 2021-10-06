@@ -34,8 +34,8 @@ class FallbackEndstation(EndstationBase):
         "ALG-SToF",
     ]
 
-    @traceable
     @classmethod
+    @traceable
     def determine_associated_loader(cls, file, scan_desc, trace=None):
         """Determines which loading plugin to use for a given piece of data.
 

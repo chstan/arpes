@@ -229,7 +229,9 @@ def read_single_ibw(reference_path: typing.Union[Path, str]) -> Wave:
     return igor.load(reference_path)
 
 
-def read_single_pxt(reference_path: typing.Union[Path, str], byte_order=None) -> xr.DataArray:
+def read_single_pxt(
+    reference_path: typing.Union[Path, str], byte_order=None, allow_multiple=False, raw=False
+) -> xr.DataArray:
     """Uses igor.igorpy to load a single .PXT or .PXP file."""
     import igor.igorpy as igor
 
@@ -248,12 +250,20 @@ def read_single_pxt(reference_path: typing.Union[Path, str], byte_order=None) ->
     else:
         loaded = igor.load(reference_path, initial_byte_order=byte_order)
 
+    if raw:
+        return loaded
+
     children = [c for c in loaded.children if isinstance(c, igor.Wave)]
 
-    if len(children) > 1:
-        warnings.warn("Igor PXT file contained {} waves. Ignoring all but first.", len(children))
+    if len(children) == 0:
+        return wave_to_xarray(children[0])
 
-    return wave_to_xarray(children[0])
+    if not allow_multiple:
+        warnings.warn(f"Igor PXT file contained {len(children)} waves. Ignoring all but first.")
+        return wave_to_xarray(children[0])
+
+    children = {c.name: wave_to_xarray(c) for c in children}
+    return xr.Dataset({k: c for k, c in children.items()})
 
 
 def find_ses_files_associated(reference_path: Path, separator: str = "S") -> List[Path]:
