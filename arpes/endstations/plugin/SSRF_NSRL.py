@@ -29,6 +29,21 @@ from arpes.load_pxt import read_single_pxt
 __all__ = ('SSRFEndstation', 'NSRLEndstation')
 
 
+def determine_dim(viewer_ini, dim_name):
+    spectrum_info = viewer_ini.sections()[-1]
+    
+    num = viewer_ini.getint(spectrum_info, dim_name)
+    
+    offset = viewer_ini.getfloat(spectrum_info, dim_name + '_offset')
+    delta = viewer_ini.getfloat(spectrum_info, dim_name + '_delta')
+    end = offset + num * delta
+    coord = np.linspace(offset, end, num = num, endpoint= False)
+    
+    name = viewer_ini.get(spectrum_info, dim_name + '_label')
+    
+    return num, coord, name
+
+
 class DA30_L(SingleFileEndstation):
     ALPHA = np.pi / 2
 
@@ -82,22 +97,8 @@ class DA30_L(SingleFileEndstation):
             viewer_ini = ConfigParser(strict = False)
             viewer_ini.read_file(viewer_ini_io)                    
                          
-            def determine_dim(dim_name):
-                spectrum_info = viewer_ini.sections()[-1]
-
-                num = viewer_ini.getint(spectrum_info, dim_name)
-
-                offset = viewer_ini.getfloat(spectrum_info, dim_name + '_offset') 
-                delta = viewer_ini.getfloat(spectrum_info, dim_name + '_delta')            
-                end = offset + num * delta
-                coord = np.linspace(offset, end, num = num, endpoint= False)
-
-                name = viewer_ini.get(spectrum_info, dim_name + '_label') 
-                return num, coord, name
-
-    
             # Usually, ['width', 'height', 'depth'] -> ['eV', 'phi', 'psi']
-            # For safety, get its label name and sort it
+            # For safety, get label name and sort them
             raw_coords = {}
             for label in ['width', 'height', 'depth']:
                 num, data, name = determine_dim(label)
@@ -106,7 +107,7 @@ class DA30_L(SingleFileEndstation):
             raw_coords_name.sort() 
     
             # After sorting, labels must be ['Energy [eV]', 'Thetax [deg]', 
-            # 'Thetay [deg]'].Those means ['eV', 'phi', 'psi'].
+            # 'Thetay [deg]'], which means ['eV', 'phi', 'psi'].
             built_coords = {
                 'psi': raw_coords[raw_coords_name[2]][1],
                 'phi': raw_coords[raw_coords_name[1]][1],
