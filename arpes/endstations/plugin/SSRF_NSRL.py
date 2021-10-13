@@ -1,5 +1,3 @@
-# coding=utf-8
-# Author : pfd@ruc.edu.cn, scw@ruc.edu.cn
 """
 Implements data loading for the beamlines BL03U, BL09U (SSRF, China) 
 and BL13U (NSRL, China).
@@ -47,7 +45,6 @@ class DA30_L(SingleFileEndstation):
         
     RENAME_KEYS = {
         'sample': 'sample_name',
-        'uesr' : 'experimenter',
         'spectrum_name' : 'spectrum_type',
         'low_energy' : 'sweep_low_energy',
         'center_energy' : 'sweep_center_energy',
