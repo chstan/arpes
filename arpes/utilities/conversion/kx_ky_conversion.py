@@ -241,6 +241,7 @@ class ConvertKxKy(CoordinateConverter):
         if self.is_slit_vertical:
             # phi actually measures along ky
             ky_angle, kx_angle = kx_angle, ky_angle
+            ((ky_low, ky_high), (kx_low, kx_high)) = ((kx_low, kx_high), (ky_low, ky_high))
 
         len_ky_angle = len(self.arr.coords[ky_angle])
         len_kx_angle = len(self.arr.coords[kx_angle])
