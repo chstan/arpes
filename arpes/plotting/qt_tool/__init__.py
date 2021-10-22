@@ -430,7 +430,7 @@ class QtTool(SimpleApp):
             ["Binning", binning_tab],
             ["K-Space", kspace_tab],
         )
-        self.tabs.setFixedHeight(qt_info.inches_to_px(1))
+        self.tabs.setFixedHeight(qt_info.inches_to_px(1.25))
 
         self.main_layout.addLayout(self.content_layout, 0, 0)
         self.main_layout.addWidget(self.tabs, 1, 0)
