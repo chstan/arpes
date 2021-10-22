@@ -152,9 +152,9 @@ class SimpleApp:
 
             if cursors:
                 cursor = CursorRegion(
-                    orientation=CursorRegion.Vertical
+                    orientation=CursorRegion.Horizontal
                     if orientation == PlotOrientation.Vertical
-                    else CursorRegion.Horizontal,
+                    else CursorRegion.Vertical,
                     movable=True,
                 )
                 widget.addItem(cursor, ignoreBounds=False)
