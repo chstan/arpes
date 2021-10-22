@@ -115,7 +115,7 @@ class QtInfo:
     def apply_settings_to_app(self, app):
         # Adjust the font size based on screen DPI
         font = app.font()
-        font.setPointSize(self.inches_to_px(0.04))
+        font.setPointSize(self.inches_to_px(0.1))
         app.instance().setFont(font)
 
     def inches_to_px(self, arg):
