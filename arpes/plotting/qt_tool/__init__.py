@@ -279,7 +279,7 @@ class QtTool(SimpleApp):
 
             self.views["xy"].view.setYLink(self.views["y"])
             self.views["xy"].view.setXLink(self.views["x"])
-            self.views["xz"].view.setYLink(self.views["z"])
+            self.views["xz"].view.setXLink(self.views["z"])
             self.views["xz"].view.setXLink(self.views["xy"].view)
 
         if len(self.data.dims) == 4:
