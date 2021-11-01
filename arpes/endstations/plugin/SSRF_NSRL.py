@@ -101,7 +101,7 @@ class DA30_L(SingleFileEndstation):
             # For safety, get label name and sort them
             raw_coords = {}
             for label in ['width', 'height', 'depth']:
-                num, data, name = determine_dim(label)
+                num, data, name = determine_dim(viewer_ini, label)
                 raw_coords[name] = [num, data]
             raw_coords_name = list(raw_coords.keys())
             raw_coords_name.sort() 
