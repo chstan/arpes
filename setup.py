@@ -48,7 +48,7 @@ DEPENDENCY_GROUPS = {
         "tqdm",
         "rx",
         "dill",
-        "ase>=3.20.0,<4.0.0",
+        "ase>=3.17.0,<3.22.0",
         "numba>=0.53.0,<1.0.0",
     ],
     "igor": ["igor==0.3.1"],
