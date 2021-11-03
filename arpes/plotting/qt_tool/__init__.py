@@ -446,8 +446,10 @@ class QtTool(SimpleApp):
         self.configure_image_widgets()
         self.add_contextual_widgets()
         import matplotlib.cm
-
-        self.set_colormap(matplotlib.cm.viridis)
+        if self.data.min()>=0.0:
+            self.set_colormap(matplotlib.cm.viridis)
+        else:
+            self.set_colormap(matplotlib.cm.RdBu_r)
 
     def after_show(self):
         """Initialize application state after app show.
