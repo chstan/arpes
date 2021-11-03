@@ -59,8 +59,6 @@ class SimpleWindow(QtWidgets.QMainWindow, QtCore.QObject):
         return []
 
     def closeEvent(self,event):
-        #result = print('U so Qt!')
-        #event.ignore()
         self.do_close(event)
 
     def do_close(self, event):
