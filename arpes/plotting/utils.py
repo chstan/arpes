@@ -1293,7 +1293,7 @@ def label_for_colorbar(data):
 
 def label_for_dim(data=None, dim_name=None, escaped=True):
     """Generates a fancy label (LaTeX, if available) for a dimension according to standard conventions."""
-    if SETTINGS["use_tex"]:
+    if SETTINGS.get("use_tex", False):
         raw_dim_names = {
             "temperature": "Temperature",
             "theta": r"$\theta$",
@@ -1302,14 +1302,14 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
             "alpha": r"$\alpha$",
             "psi": r"$\psi$",
             "phi": r"$\varphi$",
-            "eV": r"Binding Energy (\textbf{eV})",
-            "angle": r"Interp. \textbf{Angle}",
-            "kinetic": r"Kinetic Energy (\textbf{eV})",
-            "temp": r"\textbf{Temperature}",
-            "kp": r"$\textbf{k}_\parallel$",
-            "kx": r"$\textbf{k}_\text{x}$",
-            "ky": r"$\textbf{k}_\text{y}$",
-            "kz": r"$\textbf{k}_\perp$",
+            "eV": r"Binding Energy (eV)",
+            "angle": r"Interp. Angle",
+            "kinetic": r"Kinetic Energy (eV)",
+            "temp": r"Temperature",
+            "kp": r"$k_\parallel$",
+            "kx": r"$k_\text{x}$",
+            "ky": r"$k_\text{y}$",
+            "kz": r"$k_\perp$",
             "hv": "Photon Energy",
             "x": "X (mm)",
             "y": "Y (mm)",
@@ -1359,7 +1359,8 @@ def label_for_dim(data=None, dim_name=None, escaped=True):
             """
             return s.title()
 
-    return titlecase(dim_name.replace("_", " "))
+    result = titlecase(dim_name.replace("_", " "))
+    return result
 
 
 def fancy_labels(ax_or_ax_set, data=None):
@@ -1379,7 +1380,8 @@ def fancy_labels(ax_or_ax_set, data=None):
     ax = ax_or_ax_set
     try:
         ax.set_xlabel(label_for_dim(data=data, dim_name=ax.get_xlabel()))
-    except Exception:
+    except Exception as e:
+        raise e
         pass
 
     try:

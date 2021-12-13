@@ -191,9 +191,12 @@ def convert_through_angular_pair(
         k_second_point["ky"] - k_first_point["ky"],
         k_second_point["kx"] - k_first_point["kx"],
     )
+    trace(f"Determined offset angle {-offset_ang}")
 
     with data.S.with_rotation_offset(-offset_ang):
+        trace(f"Finding first momentum coordinate.")
         k_first_point = convert_coordinate_forward(data, first_point, trace=trace, **k_coords)
+        trace(f"Finding second momentum coordinate.")
         k_second_point = convert_coordinate_forward(data, second_point, trace=trace, **k_coords)
 
         # adjust output coordinate ranges
@@ -204,6 +207,7 @@ def convert_through_angular_pair(
         # here, we assume we were passed an array for simplicities sake
         # we could also allow a slice in the future
         parallel_axis = list(cut_specification.values())[0]
+        parallel_dim = list(cut_specification.keys())[0]
         if relative_coords:
             delta = parallel_axis[1] - parallel_axis[0]
             left_margin, right_margin = parallel_axis[0], parallel_axis[-1] + delta
@@ -213,9 +217,20 @@ def convert_through_angular_pair(
             parallel_axis = np.linspace(left_point, right_point, len(parallel_axis))
 
         # perform the conversion
-        return convert_to_kspace(data, **transverse_specification, kx=parallel_axis).mean(
-            list(transverse_specification.keys())
+        trace(f"Performing final momentum conversion.")
+        converted_data = convert_to_kspace(
+            data, **transverse_specification, kx=parallel_axis, trace=trace
+        ).mean(list(transverse_specification.keys()))
+
+        trace(f"Annotating the requested point momentum values.")
+        converted_data = converted_data.assign_attrs(
+            {
+                "first_point_kx": k_first_point[parallel_dim],
+                "second_point_kx": k_second_point[parallel_dim],
+                "offset_angle": -offset_ang,
+            }
         )
+        return converted_data
 
 
 @traceable
@@ -260,9 +275,14 @@ def convert_through_angular_point(
         cut_specification = {k: v + k_coords[k] for k, v in cut_specification.items()}
 
     # perform the conversion
-    return convert_to_kspace(data, **transverse_specification, **cut_specification).mean(
-        list(transverse_specification.keys())
-    )
+    converted_data = convert_to_kspace(
+        data, **transverse_specification, **cut_specification, trace=trace
+    ).mean(list(transverse_specification.keys()), keep_attrs=True)
+
+    for k, v in k_coords.items():
+        converted_data.attrs[f"highsymm_{k}"] = v
+
+    return converted_data
 
 
 @update_provenance("Forward convert coordinates")

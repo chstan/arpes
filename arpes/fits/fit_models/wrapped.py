@@ -16,7 +16,14 @@ __all__ = [
     "LinearModel",
     "LogisticModel",
     "StepModel",
+    "SineModel",
 ]
+
+
+class SineModel(XModelMixin, lf.models.SineModel):
+    """Wraps `lf.models.SineModel`."""
+
+    pass
 
 
 class VoigtModel(XModelMixin, lf.models.VoigtModel):

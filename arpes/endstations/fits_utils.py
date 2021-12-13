@@ -86,11 +86,27 @@ def extract_coords(
                 scan_shape.append(n)
                 scan_coords[name] = np.linspace(start, end, n, endpoint=True)
         else:  # tabulated scan, this is more complicated
+            # In the past this branch has been especially tricky.
+            # I know of at least two client pieces of data:
+            #    * Tabulated scans which include angle-compensated scans
+            #    * Multi region scans at MAESTRO
+            #
+            # Remarkably, I'm having a hard time figuring out how this code ever worked
+            # in the past for beta compensated scans which appear to be stored with a literal table.
+            # I think in the past I probably neglected to unfreeze the tabulated coordinates which were
+            # attached since they do not matter much from the perspective of analysis.
+            #
+            # As of 2021, that is the perspective we are taking on the issue.
             if n_scan_dimensions > 1:
                 trace(f"Loop is tabulated and is not region based")
                 for i in range(n_scan_dimensions):
-                    name, start, end, n = (
-                        attrs[f"NM_{loop}_{i}"],
+                    name = attrs[f"NM_{loop}_{i}"]
+                    if f"ST_{loop}_{i}" not in attrs and f"PV_{loop}_{i}_0" in attrs:
+                        trace(
+                            f"Determined that coordinate {name} is tabulated based on scan coordinate. Skipping!"
+                        )
+                        continue
+                    start, end, n = (
                         # attrs[f"UN_0_{i}"],
                         float(attrs[f"ST_{loop}_{i}"]),
                         float(attrs[f"EN_{loop}_{i}"]),
