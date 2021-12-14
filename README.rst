@@ -55,7 +55,34 @@ Pip installation
 
 ::
 
-   pip install arpes
+   pip install arpes[all]
+   # optionally
+   # pip install arpes[standard]
+   # pip install arpes[core]
+   # ... see the feature bundles section below for more details
+
+Feature bundles and extra requirements
+--------------------------------------
+
+Not all users need all PyARPES features. You can specify which sets of feautures 
+you want using brackets after the `arpes` package name in order to specify
+what functionality you need. Available options are
+
+1. `slim`
+2. `standard`
+3. `all`
+4. `legacy_ui`
+5. `ml`
+
+If you do not specify an extra requirements group, the installation will defualt to use
+`slim`. `legacy_ui` provides support for in Jupyter interactive analysis tools via Bokeh. 
+These have been superseded by tools written with Qt. `ml` provides support for funtionality 
+requiring `scikit-learn` and its derivatives. Notably, this includes the decomposition functionality
+for data exploration like `arpes.decomposition.pca_along` and `arpes.widgets.pca_explorer`.
+
+You should use `pip install arpes[standard]` unless you know that what you want is only 
+provided by `slim` or `all`. `legacy_ui` and `ml` are included in `all`.
+
 
 
 Conda installation
@@ -68,7 +95,7 @@ A minimal install looks like
 ::
 
    conda config --append channels conda-forge
-   conda install -c arpes -c conda-forge arpes
+   conda install -c arpes -c conda-forge arpes[all]
 
 
 Local installation from source

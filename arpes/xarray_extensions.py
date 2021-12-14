@@ -1782,6 +1782,7 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
         with plt.rc_context(rc={"text.usetex": False}):
             self._obj.plot(*args, **kwargs)
 
+    @gate(Gates.Qt)
     def show(self, detached=False, **kwargs):
         """Opens the Qt based image tool."""
         import arpes.plotting.qt_tool
@@ -2484,6 +2485,7 @@ class ARPESDatasetFitToolAccessor:
     def eval(self, *args, **kwargs):
         return self._obj.results.G.map(lambda x: x.eval(*args, **kwargs))
 
+    @gate(Gates.Qt)
     def show(self, detached=False):
         from arpes.plotting.fit_tool import fit_tool
 

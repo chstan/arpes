@@ -72,17 +72,21 @@ extra_groups = {
     "slim": ["core"],
     "standard": ["qt", "core"],
     "all": ["ml", "legacy_ui", "qt", "core"],
-
     # other feature sets
     "legacy_ui": ["core"],
-    "ml": ["ml", "core"],
+    "ml": ["core"],
 }
 
+
 def compile_dependencies_for_group(group_name):
+    """Joins all dependencies required for an extras group."""
     all_groups = [group_name] + extra_groups[group_name]
     return sum(DEPENDENCY_GROUPS[gname] for gname in all_groups)
 
-EXTRAS = {group_name: compile_dependencies_for_group(group_name) for group_name in extra_groups.keys()}
+
+EXTRAS = {
+    group_name: compile_dependencies_for_group(group_name) for group_name in extra_groups.keys()
+}
 
 DEV_DEPENDENCIES = {
     "jupyter": [

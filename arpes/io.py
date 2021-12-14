@@ -86,13 +86,13 @@ class DataExampleReference:
 
 
 DATA_EXAMPLES = [
-    DataExampleReference(name="cut", location="ALG-MC"),
-    DataExampleReference(name="map"),
-    DataExampleReference(name="photon_energy"),
-    DataExampleReference(name="nano_xps"),
-    DataExampleReference(name="temperature_dependence"),
+    DataExampleReference(name="cut.fits", location="ALG-MC"),
+    DataExampleReference(name="fermi_surface.nc"),
+    DataExampleReference(name="photon_energy.nc"),
+    DataExampleReference(name="nano_xps.nc"),
+    DataExampleReference(name="temperature_dependence.nc"),
 ]
-DATA_EXAMPLES = {example.name: example for example in DATA_EXAMPLES}
+DATA_EXAMPLES = {Path(example.name).stem: example for example in DATA_EXAMPLES}
 
 
 def load_example_data(example_name="cut") -> xr.Dataset:
@@ -116,7 +116,7 @@ class ExampleData:
 
     @property
     def map(self) -> xr.DataArray:
-        return load_example_data("map")
+        return load_example_data("fermi_surface")
 
     @property
     def photon_energy(self) -> xr.DataArray:

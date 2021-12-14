@@ -105,6 +105,7 @@ class EndstationBase:
     trace: Trace
 
     def __init__(self):
+        """Setup a trace object so that it can be used throughout the load steps."""
         self.trace = Trace(silent=True)
 
     @classmethod
