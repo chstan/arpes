@@ -79,13 +79,20 @@ def load_data(
     return load_scan(desc, **kwargs)
 
 
-DATA_EXAMPLES = {
-    "cut": ("ALG-MC", "cut.fits"),
-    "map": ("example_data", "fermi_surface.nc"),
-    "photon_energy": ("example_data", "photon_energy.nc"),
-    "nano_xps": ("example_data", "nano_xps.nc"),
-    "temperature_dependence": ("example_data", "temperature_dependence.nc"),
-}
+@dataclass
+class DataExampleReference:
+    name: str
+    location: str = "example_data"
+
+
+DATA_EXAMPLES = [
+    DataExampleReference(name="cut", location="ALG-MC"),
+    DataExampleReference(name="map"),
+    DataExampleReference(name="photon_energy"),
+    DataExampleReference(name="nano_xps"),
+    DataExampleReference(name="temperature_dependence"),
+]
+DATA_EXAMPLES = {example.name: example for example in DATA_EXAMPLES}
 
 
 def load_example_data(example_name="cut") -> xr.Dataset:
@@ -94,10 +101,11 @@ def load_example_data(example_name="cut") -> xr.Dataset:
         warnings.warn(
             f"Could not find requested example_name: {example_name}. Please provide one of {list(DATA_EXAMPLES.keys())}"
         )
+        raise ValueError(f"No requested example {example_name}")
 
-    location, example = DATA_EXAMPLES[example_name]
-    file = Path(__file__).parent / "example_data" / example
-    return load_data(file=file, location=location)
+    example = DATA_EXAMPLES[example_name]
+    file = Path(__file__).parent / "example_data" / example.name
+    return load_data(file=file, location=example.location)
 
 
 @dataclass

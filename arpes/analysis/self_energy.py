@@ -1,4 +1,5 @@
 """Contains self-energy analysis routines."""
+from arpes.feature_gate import Gates, gate
 import xarray as xr
 import lmfit as lf
 import numpy as np
@@ -69,6 +70,9 @@ def local_fermi_velocity(bare_band: xr.DataArray):
         raw_velocity = 1 / raw_velocity
 
     return raw_velocity * METERS_PER_SECOND_PER_EV_ANGSTROM
+
+
+gate(Gates.ML)
 
 
 def estimate_bare_band(dispersion: xr.DataArray, bare_band_specification: Optional[str] = None):

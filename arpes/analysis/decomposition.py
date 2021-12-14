@@ -1,5 +1,6 @@
 """Provides array decomposition approaches like principal component analysis for xarray types."""
 from functools import wraps
+from arpes.feature_gate import Gates, gate
 
 from arpes.provenance import provenance
 from arpes.typing import DataType
@@ -15,6 +16,7 @@ __all__ = (
 )
 
 
+@gate(Gates.ML)
 def decomposition_along(
     data: DataType, axes: List[str], decomposition_cls, correlation=False, **kwargs
 ) -> Tuple[DataType, Any]:
@@ -103,6 +105,7 @@ def decomposition_along(
     return into, decomp
 
 
+@gate(Gates.ML)
 @wraps(decomposition_along)
 def pca_along(*args, **kwargs):
     """Specializes `decomposition_along` with `sklearn.decomposition.PCA`."""
@@ -111,6 +114,7 @@ def pca_along(*args, **kwargs):
     return decomposition_along(*args, **kwargs, decomposition_cls=PCA)
 
 
+@gate(Gates.ML)
 @wraps(decomposition_along)
 def factor_analysis_along(*args, **kwargs):
     """Specializes `decomposition_along` with `sklearn.decomposition.FactorAnalysis`."""
@@ -119,6 +123,7 @@ def factor_analysis_along(*args, **kwargs):
     return decomposition_along(*args, **kwargs, decomposition_cls=FactorAnalysis)
 
 
+@gate(Gates.ML)
 @wraps(decomposition_along)
 def ica_along(*args, **kwargs):
     """Specializes `decomposition_along` with `sklearn.decomposition.FastICA`."""
@@ -127,6 +132,7 @@ def ica_along(*args, **kwargs):
     return decomposition_along(*args, **kwargs, decomposition_cls=FastICA)
 
 
+@gate(Gates.ML)
 @wraps(decomposition_along)
 def nmf_along(*args, **kwargs):
     """Specializes `decomposition_along` with `sklearn.decomposition.NMF`."""

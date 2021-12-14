@@ -19,8 +19,6 @@ from arpes.utilities.ui import (
 
 __all__ = ("make_dynamic",)
 
-qt_info.setup_pyqtgraph()
-
 
 class DynamicToolWindow(SimpleWindow):
     HELP_DIALOG_CLS = BasicHelpDialog
@@ -155,6 +153,7 @@ class DynamicTool(SimpleApp):
 
 def make_dynamic(fn, data):
     """Starts a tool which makes any analysis function dynamic."""
+    qt_info.setup_pyqtgraph()
     tool = DynamicTool(fn)
     tool.set_data(data)
     tool.start()

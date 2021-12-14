@@ -8,6 +8,8 @@ import os
 from setuptools import find_packages, setup
 from setuptools.command.install import install
 
+from arpes.utilities.ui import group
+
 NAME = "arpes"
 DESCRIPTION = "Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)"
 URL = "https://gitlab.com/lanzara-group/python-arpes"
@@ -26,8 +28,6 @@ DEPENDENCY_GROUPS = {
         "astropy",
         "xarray>=0.16.1",
         "h5py>=3.2.1",
-        "pyqtgraph>=0.12.0,<0.13.0",
-        "PyQt5==5.15",
         "netCDF4>=1.5.0,<2.0.0",
         "colorcet",
         "pint",
@@ -35,10 +35,8 @@ DEPENDENCY_GROUPS = {
         "numpy>=1.20.0,<2.0.0",
         "scipy>=1.6.0,<2.0.0",
         "lmfit>=1.0.0,<2.0.0",
-        "scikit-learn",
         # plotting
         "matplotlib>=3.0.3",
-        "bokeh>=2.0.0,<3.0.0",
         "ipywidgets>=7.0.1,<8.0.0",
         # Misc deps
         "packaging",
@@ -48,8 +46,15 @@ DEPENDENCY_GROUPS = {
         "tqdm",
         "rx",
         "dill",
-        "ase>=3.17.0,<3.22.0",
         "numba>=0.53.0,<1.0.0",
+        "ase>=3.17.0,<3.22.0",
+    ],
+    "qt": [
+        "pyqtgraph>=0.12.0,<0.13.0",
+        "PyQt5==5.15",
+    ],
+    "legacy_ui": [
+        "bokeh>=2.0.0,<3.0.0",
     ],
     "igor": ["igor==0.3.1"],
     "ml": [
@@ -58,9 +63,26 @@ DEPENDENCY_GROUPS = {
         "cvxpy",
         "libgcc",
     ],
+    "slim": ["nomkl"],
+    "all": [],
 }
 
-requirements = [y for k, v in DEPENDENCY_GROUPS.items() for y in v if k not in {"igor", "ml"}]
+extra_groups = {
+    # base builds, from light to heavy installations
+    "slim": ["core"],
+    "standard": ["qt", "core"],
+    "all": ["ml", "legacy_ui", "qt", "core"],
+
+    # other feature sets
+    "legacy_ui": ["core"],
+    "ml": ["ml", "core"],
+}
+
+def compile_dependencies_for_group(group_name):
+    all_groups = [group_name] + extra_groups[group_name]
+    return sum(DEPENDENCY_GROUPS[gname] for gname in all_groups)
+
+EXTRAS = {group_name: compile_dependencies_for_group(group_name) for group_name in extra_groups.keys()}
 
 DEV_DEPENDENCIES = {
     "jupyter": [
@@ -150,7 +172,8 @@ setup(
     dependency_links=[
         "https://github.com/chstan/igorpy/tarball/712a4c4#egg=igor-0.3.1",
     ],
-    install_requires=requirements,
+    install_requires=DEPENDENCY_GROUPS["core"],
+    extras_require=EXTRAS,
     include_package_data=True,
     license="GPLv3",
     classifiers=[
