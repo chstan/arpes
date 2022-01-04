@@ -74,6 +74,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 
 
 def setup(app):
+    """Add the autodoc skip member hook, and any other module level config."""
     app.connect("autodoc-skip-member", autodoc_skip_member)
 
 

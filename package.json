@@ -16,7 +16,9 @@
     "check-docstyle": "pydocstyle --config pyproject.toml",
     "build-docs": "python scripts/build_docs.py",
     "build-pypi": "python -m build --sdist --wheel .",
-    "build-conda": "yarn build-pypi && conda-build purge-all && conda-build ./conda -c anaconda -c conda-forge --output-folder conda-dist --numpy 1.20"
+    "build-conda": "yarn build-pypi && conda-build purge-all && conda-build ./conda -c anaconda -c conda-forge --output-folder conda-dist --numpy 1.20",
+    "build-container": "docker build . -t pyarpes -f containers/fairmat-slim/Dockerfile",
+    "run-container": "docker run -d pyarpes"
   },
   "devDependencies": {
     "@arkweid/lefthook": "^0.7.6"

@@ -137,7 +137,9 @@ def failing_feature_gates(gate_name) -> Optional[List[Gate]]:
 
     if failing_gates:
         warnings.warn(
-            FAILED_GATE_MESSAGE.format(messages=" - " + "\n - ".join(failing_gates.message))
+            FAILED_GATE_MESSAGE.format(
+                messages=" - " + "\n - ".join([g.message for g in failing_gates])
+            )
         )
 
     return failing_gates
