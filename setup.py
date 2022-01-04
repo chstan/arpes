@@ -8,8 +8,6 @@ import os
 from setuptools import find_packages, setup
 from setuptools.command.install import install
 
-from arpes.utilities.ui import group
-
 NAME = "arpes"
 DESCRIPTION = "Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)"
 URL = "https://gitlab.com/lanzara-group/python-arpes"
@@ -42,7 +40,6 @@ DEPENDENCY_GROUPS = {
         "packaging",
         "colorama",
         "imageio",
-        "titlecase",
         "tqdm",
         "rx",
         "dill",
@@ -63,8 +60,9 @@ DEPENDENCY_GROUPS = {
         "cvxpy",
         "libgcc",
     ],
-    "slim": ["nomkl"],
+    "slim": [],  # nomkl should be installed via conda
     "all": [],
+    "standard": [],
 }
 
 extra_groups = {
@@ -81,7 +79,7 @@ extra_groups = {
 def compile_dependencies_for_group(group_name):
     """Joins all dependencies required for an extras group."""
     all_groups = [group_name] + extra_groups[group_name]
-    return sum(DEPENDENCY_GROUPS[gname] for gname in all_groups)
+    return sum([DEPENDENCY_GROUPS[gname] for gname in all_groups], start=[])
 
 
 EXTRAS = {
