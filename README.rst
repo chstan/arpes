@@ -43,6 +43,28 @@ visit `the documentation site`_.
 
 PyARPES is currently developed by Conrad Stansbury of the Lanzara Group at the University of California, Berkeley.
 
+Citing PyARPES
+--------------
+
+If you use PyARPES in your work, please support the development of scientific software by acknowledging its usefulness to you with a citation. The simplest way to do this is to cite the paper describing the package in SoftwareX
+
+
+    @article{
+        stansburypyarpes,
+        title = {PyARPES: An analysis framework for multimodal angle-resolved photoemission spectroscopies},
+        journal = {SoftwareX},
+        volume = {11},
+        pages = {100472},
+        year = {2020},
+        issn = {2352-7110},
+        doi = {https://doi.org/10.1016/j.softx.2020.100472},
+        url = {https://www.sciencedirect.com/science/article/pii/S2352711019301633},
+        author = {Conrad Stansbury and Alessandra Lanzara},
+        keywords = {ARPES, NanoARPES, Pump-probe ARPES, Photoemission, Python, Qt, Jupyter},
+        abstract = {},
+    }
+
+
 Installation
 ============
 

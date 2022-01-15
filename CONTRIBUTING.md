@@ -1,3 +1,9 @@
+# IMPORTANT NOTICE
+
+GitLab provides no way for messaging between users. Please contact directly by email to [Conrad](mailto:chstansbury@gmail.com) if you have questions about contributing.
+
+If you open Issues or Merge Requests at GitHub, Conrad is also much more likely to see them there in a timely fashion.
+
 # How to contribute to PyARPES
 
 We absolutely welcome the support and partnership of users that want to contribute to PyARPES!
@@ -5,7 +11,7 @@ If you just want to add a particular analysis routine, provide a patch for a bug
 change, the best way to contribute is to submit a pull request. Even submitting an issue is
 a substantial help as it lets us know what might be useful for others to see changed in the software.
 Generally speaking, you should verify or check the need for a new feature by first opening
-[an issue](https://gitlab.com/lanzara-group/python-arpes/issues).
+an issue on [GitHub](https://github.com/chstan/arpes)
 
 If you are looking for low hanging fruit, we are acutely aware of some current shortcomings:
 
@@ -15,8 +21,8 @@ If you are looking for low hanging fruit, we are acutely aware of some current s
 
 Additionally, these all represent great ways to learn more about the software as a user.
 
-If it makes sense, we will consider adding users as developers on
-[the repo](https://gitlab.com/lanzara-group/python-arpes).
+If it makes sense, we will consider adding users as developers. However, the preferred way of contributing code is by opening a merge request for changes on [GitHub](https://github.com/chstan/arpes). When contributing code, please
+also update the AUTHORS file or prompt Conrad to change it so that your record of contribution can be seen by other users.
 
 ## What you'll need
 
