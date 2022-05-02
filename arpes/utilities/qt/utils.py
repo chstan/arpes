@@ -3,7 +3,7 @@
 import enum
 from dataclasses import dataclass
 from typing import List
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 
 __all__ = ["PlotOrientation", "ReactivePlotRecord"]
 

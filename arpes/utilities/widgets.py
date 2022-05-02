@@ -2,7 +2,7 @@
 import os
 from rx.subject import BehaviorSubject, Subject
 
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QPushButton,
     QCheckBox,
     QComboBox,
@@ -154,9 +154,9 @@ class SubjectiveFileDialog(QWidget):
     def get_files(self):
         """Opens a dialog allowing multiple selections from the user."""
         dialog = QFileDialog()
-        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setFileMode(QFileDialog.FileMode.AnyFile)
 
-        if dialog.exec_():
+        if dialog.exec():
             filenames = dialog.selectedFiles()
             self.subject.on_next(filenames)
 

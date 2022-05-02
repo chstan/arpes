@@ -1,7 +1,7 @@
 """Provides a Qt based implementation of a curve fit inspection tool."""
 from arpes.plotting.qt_tool.BinningInfoWidget import BinningInfoWidget
 from arpes.utilities.qt.utils import PlotOrientation, ReactivePlotRecord
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import numpy as np
 import dill
@@ -52,31 +52,31 @@ class FitToolWindow(SimpleWindow):
             KeyBinding(
                 "Scroll Cursor",
                 [
-                    QtCore.Qt.Key_Left,
-                    QtCore.Qt.Key_Right,
-                    QtCore.Qt.Key_Up,
-                    QtCore.Qt.Key_Down,
+                    QtCore.Qt.Key.Key_Left,
+                    QtCore.Qt.Key.Key_Right,
+                    QtCore.Qt.Key.Key_Up,
+                    QtCore.Qt.Key.Key_Down,
                 ],
                 self.scroll,
             ),
             KeyBinding(
                 "Reset Intensity",
-                [QtCore.Qt.Key_I],
+                [QtCore.Qt.Key.Key_I],
                 self.reset_intensity,
             ),
             KeyBinding(
                 "Center Cursor",
-                [QtCore.Qt.Key_C],
+                [QtCore.Qt.Key.Key_C],
                 self.center_cursor,
             ),
             KeyBinding(
                 "Transpose - Roll Axis",
-                [QtCore.Qt.Key_T],
+                [QtCore.Qt.Key.Key_T],
                 self.transpose_roll,
             ),
             KeyBinding(
                 "Transpose - Swap Front Axes",
-                [QtCore.Qt.Key_Y],
+                [QtCore.Qt.Key.Key_Y],
                 self.transpose_swap,
             ),
         ]
@@ -105,8 +105,8 @@ class FitToolWindow(SimpleWindow):
 
     def scroll_z(self, event: QtGui.QKeyEvent):
         key_map = {
-            QtCore.Qt.Key_N: (2, -1),
-            QtCore.Qt.Key_M: (2, 1),
+            QtCore.Qt.Key.Key_N: (2, -1),
+            QtCore.Qt.Key.Key_M: (2, 1),
         }
 
         delta = self._update_scroll_delta(key_map.get(event.key()), event)
@@ -116,10 +116,10 @@ class FitToolWindow(SimpleWindow):
 
     def scroll(self, event: QtGui.QKeyEvent):
         key_map = {
-            QtCore.Qt.Key_Left: (0, -1),
-            QtCore.Qt.Key_Right: (0, 1),
-            QtCore.Qt.Key_Down: (1, -1),
-            QtCore.Qt.Key_Up: (1, 1),
+            QtCore.Qt.Key.Key_Left: (0, -1),
+            QtCore.Qt.Key.Key_Right: (0, 1),
+            QtCore.Qt.Key.Key_Down: (1, -1),
+            QtCore.Qt.Key.Key_Up: (1, 1),
         }
 
         delta = self._update_scroll_delta(key_map.get(event.key()), event)

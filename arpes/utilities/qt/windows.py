@@ -1,7 +1,7 @@
 """Infrastructure code for Qt application windows."""
 import sys
 
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 
 import arpes.config
 from arpes.utilities.excepthook import patched_excepthook
@@ -50,8 +50,8 @@ class SimpleWindow(QtWidgets.QMainWindow, QtCore.QObject):
         Additional keybindings can be added here as requied by the tool.
         """
         return [
-            KeyBinding("Close Window", [QtCore.Qt.Key_Escape], self.do_close),
-            KeyBinding("Toggle Help", [QtCore.Qt.Key_H], self.toggle_help),
+            KeyBinding("Close Window", [QtCore.Qt.Key.Key_Escape], self.do_close),
+            KeyBinding("Toggle Help", [QtCore.Qt.Key.Key_H], self.toggle_help),
         ]
 
     def compile_cursor_modes(self):
@@ -71,14 +71,14 @@ class SimpleWindow(QtWidgets.QMainWindow, QtCore.QObject):
     def eventFilter(self, source, event):
         """Neglect Qt events which do not relate to key presses for now."""
         special_keys = [
-            QtCore.Qt.Key_Down,
-            QtCore.Qt.Key_Up,
-            QtCore.Qt.Key_Left,
-            QtCore.Qt.Key_Right,
+            QtCore.Qt.Key.Key_Down,
+            QtCore.Qt.Key.Key_Up,
+            QtCore.Qt.Key.Key_Left,
+            QtCore.Qt.Key.Key_Right,
         ]
 
-        if event.type() in [QtCore.QEvent.KeyPress, QtCore.QEvent.ShortcutOverride]:
-            if event.type() != QtCore.QEvent.ShortcutOverride or event.key() in special_keys:
+        if event.type() in [QtCore.QEvent.Type.KeyPress, QtCore.QEvent.Type.ShortcutOverride]:
+            if event.type() != QtCore.QEvent.Type.ShortcutOverride or event.key() in special_keys:
                 self.handleKeyPressEvent(event)
 
         return super().eventFilter(source, event)

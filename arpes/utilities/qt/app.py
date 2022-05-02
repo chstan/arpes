@@ -1,5 +1,5 @@
 """Application infrastructure for apps/tools which browse a data volume."""
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 import pyqtgraph as pg
 import numpy as np
 import typing
@@ -18,7 +18,7 @@ __all__ = ["SimpleApp"]
 
 
 class SimpleApp:
-    """Has all of the layout information and business logic for an interactive data browsing utility using PyQt5."""
+    """Has all of the layout information and business logic for an interactive data browsing utility using PyQt6."""
 
     WINDOW_CLS = None
     WINDOW_SIZE = (4, 4)

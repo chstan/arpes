@@ -1,7 +1,7 @@
 """A control which can provide a range or a single value (i.e. a half open range with ends equal)."""
 from functools import partial
 
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 
 
 __all__ = ["RangeOrSingleValueWidget"]

@@ -17,7 +17,7 @@ def check() -> None:
         pip_command = "pip install pyqtgraph"
         warning = (
             "Using qt_tool, the PyARPES version of Image Tool, requires "
-            "pyqtgraph and Qt5:\n\n\tYou can install with: {}".format(pip_command)
+            "pyqtgraph and Qt6:\n\n\tYou can install with: {}".format(pip_command)
         )
         try:
             with warnings.catch_warnings():

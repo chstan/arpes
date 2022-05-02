@@ -1,7 +1,7 @@
 """A widget providing controls for a coordinate offset in the momentum tool."""
 from functools import partial
 
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 
 __all__ = ("CoordinateOffsetWidget",)
 

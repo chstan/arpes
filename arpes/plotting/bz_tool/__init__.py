@@ -6,7 +6,7 @@ import arpes.config
 import numpy as np
 import xarray as xr
 
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 

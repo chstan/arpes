@@ -1,13 +1,13 @@
 """Defines a widget which provides a 1D browsable `lmfit.model.ModelResult`."""
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtWidgets
 from arpes.utilities.qt.data_array_image_view import DataArrayPlot
 from typing import Optional
 import pyqtgraph as pg
 import xarray as xr
 import numpy as np
 import math
-from PyQt5.QtWidgets import QLayout, QGridLayout, QWidget
+from PyQt6.QtWidgets import QLayout, QGridLayout, QWidget
 import lmfit
 from weakref import ReferenceType
 

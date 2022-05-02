@@ -1,10 +1,10 @@
-"""Easily composable and reactive UI utilities using RxPy and PyQt5.
+"""Easily composable and reactive UI utilities using RxPy and PyQt6.
 
-This makes UI prototyping *MUCH* faster. In order to log IDs so that you can 
+This makes UI prototyping *MUCH* faster. In order to log IDs so that you can
 attach subscriptions after the fact, you will need to use the CollectUI
 context manager.
 
-An example is as follows, showing the currently available widgets. If you don't 
+An example is as follows, showing the currently available widgets. If you don't
 need to attach callbacks, you can get away without using the context manager.
 
 ```
@@ -26,16 +26,16 @@ with CollectUI(ui):
     )
 ```
 
-"Forms" can effectively be built by building an observable out of the subjects in the UI. 
+"Forms" can effectively be built by building an observable out of the subjects in the UI.
 We have a `submit` function that makes creating such an observable simple.
 
 ```
 submit('submit', ['check', 'slider', 'file'], ui).subscribe(lambda item: print(item))
 ```
 
-With the line above, whenever the button with id='submit' is pressed, we will log a dictionary 
-with the most recent values of the inputs {'check','slider','file'} as a dictionary with these 
-keys. This allows building PyQt5 "forms" without effort.
+With the line above, whenever the button with id='submit' is pressed, we will log a dictionary
+with the most recent values of the inputs {'check','slider','file'} as a dictionary with these
+keys. This allows building PyQt6 "forms" without effort.
 """
 from enum import Enum
 from typing import Type
@@ -51,7 +51,7 @@ from typing import Dict, List, Optional
 from collections import namedtuple
 
 import functools
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QGridLayout,
     QWidget,
     QVBoxLayout,
@@ -62,8 +62,8 @@ from PyQt5.QtWidgets import (
     QLabel,
 )
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import Qt
+from PyQt6 import QtCore, QtGui
+from PyQt6.QtCore import Qt
 
 from .widgets import *
 
@@ -204,7 +204,7 @@ horizontal = functools.partial(layout, layout_cls=QHBoxLayout)
 
 
 @ui_builder
-def splitter(first, second, direction=Qt.Vertical, size=None) -> QWidget:
+def splitter(first, second, direction=Qt.Orientation.Vertical, size=None) -> QWidget:
     """A convenience method for making a splitter."""
     split_widget = QSplitter(direction)
 
@@ -217,8 +217,8 @@ def splitter(first, second, direction=Qt.Vertical, size=None) -> QWidget:
     return split_widget
 
 
-splitter.Vertical = Qt.Vertical
-splitter.Horizontal = Qt.Horizontal
+splitter.Vertical = Qt.Orientation.Vertical
+splitter.Horizontal = Qt.Orientation.Horizontal
 
 
 @ui_builder
@@ -304,7 +304,7 @@ def radio_button(text, *args) -> QWidget:
 @ui_builder
 def slider(minimum=0, maximum=10, interval=None, horizontal=True) -> QWidget:
     """A convenience method for making a Slider."""
-    widget = SubjectiveSlider(orientation=Qt.Horizontal if horizontal else Qt.Vertical)
+    widget = SubjectiveSlider(orientation=Qt.Orientation.Horizontal if horizontal else Qt.Orientation.Vertical)
     widget.setMinimum(minimum)
     widget.setMaximum(maximum)
 
@@ -325,7 +325,7 @@ def spin_box(minimum=0, maximum=10, step=1, adaptive=True, value=None) -> QWidge
         widget.subject.on_next(value)
 
     if adaptive:
-        widget.setStepType(SubjectiveSpinBox.AdaptiveDecimalStepType)
+        widget.setStepType(SubjectiveSpinBox.StepType.AdaptiveDecimalStepType)
     else:
         widget.setSingleStep(step)
 

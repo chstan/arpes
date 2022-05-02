@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from scipy import interpolate
 
-from PyQt5 import QtWidgets, QtCore
+from PyQt6 import QtWidgets, QtCore
 
 from arpes import analysis
 from arpes.utilities import normalize_to_spectrum
@@ -29,8 +29,8 @@ class CoreToolWindow(SimpleWindow):
 
     def compile_key_bindings(self):
         return super().compile_key_bindings() + [
-            KeyBinding("Transpose - Roll Axis", [QtCore.Qt.Key_T], self.transpose_roll),
-            KeyBinding("Transpose - Swap Front Axes", [QtCore.Qt.Key_Y], self.transpose_swap),
+            KeyBinding("Transpose - Roll Axis", [QtCore.Qt.Key.Key_T], self.transpose_roll),
+            KeyBinding("Transpose - Swap Front Axes", [QtCore.Qt.Key.Key_Y], self.transpose_swap),
         ]
 
     def transpose_roll(self, event):

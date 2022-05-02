@@ -1,5 +1,5 @@
 """A live momentun conversion tool, useful for finding and setting offsets."""
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 import numpy as np
 
 from arpes.utilities import normalize_to_spectrum, group_by
@@ -22,7 +22,7 @@ qt_info.setup_pyqtgraph()
 class KTool(SimpleApp):
     """Provides a live momentum converting tool.
 
-    QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5 for now we retain
+    QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt6 for now we retain
     a number of the metaphors from BokehTool, including a "context" that stores the state, and can
     be used to programmatically interface with the tool.
     """

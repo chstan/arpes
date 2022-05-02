@@ -2,7 +2,7 @@
 # pylint: disable=import-error
 
 from arpes.utilities.qt.utils import PlotOrientation
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import numpy as np
 import weakref
@@ -52,39 +52,39 @@ class QtToolWindow(SimpleWindow):
             KeyBinding(
                 "Scroll Cursor",
                 [
-                    QtCore.Qt.Key_Left,
-                    QtCore.Qt.Key_Right,
-                    QtCore.Qt.Key_Up,
-                    QtCore.Qt.Key_Down,
+                    QtCore.Qt.Key.Key_Left,
+                    QtCore.Qt.Key.Key_Right,
+                    QtCore.Qt.Key.Key_Up,
+                    QtCore.Qt.Key.Key_Down,
                 ],
                 self.scroll,
             ),
             KeyBinding(
                 "Reset Intensity",
-                [QtCore.Qt.Key_I],
+                [QtCore.Qt.Key.Key_I],
                 self.reset_intensity,
             ),
             KeyBinding(
                 "Scroll Z-Cursor",
                 [
-                    QtCore.Qt.Key_N,
-                    QtCore.Qt.Key_M,
+                    QtCore.Qt.Key.Key_N,
+                    QtCore.Qt.Key.Key_M,
                 ],
                 self.scroll_z,
             ),
             KeyBinding(
                 "Center Cursor",
-                [QtCore.Qt.Key_C],
+                [QtCore.Qt.Key.Key_C],
                 self.center_cursor,
             ),
             KeyBinding(
                 "Transpose - Roll Axis",
-                [QtCore.Qt.Key_T],
+                [QtCore.Qt.Key.Key_T],
                 self.transpose_roll,
             ),
             KeyBinding(
                 "Transpose - Swap Front Axes",
-                [QtCore.Qt.Key_Y],
+                [QtCore.Qt.Key.Key_Y],
                 self.transpose_swap,
             ),
         ]
@@ -113,8 +113,8 @@ class QtToolWindow(SimpleWindow):
 
     def scroll_z(self, event: QtGui.QKeyEvent):
         key_map = {
-            QtCore.Qt.Key_N: (2, -1),
-            QtCore.Qt.Key_M: (2, 1),
+            QtCore.Qt.Key.Key_N: (2, -1),
+            QtCore.Qt.Key.Key_M: (2, 1),
         }
 
         delta = self._update_scroll_delta(key_map.get(event.key()), event)
@@ -124,10 +124,10 @@ class QtToolWindow(SimpleWindow):
 
     def scroll(self, event: QtGui.QKeyEvent):
         key_map = {
-            QtCore.Qt.Key_Left: (0, -1),
-            QtCore.Qt.Key_Right: (0, 1),
-            QtCore.Qt.Key_Down: (1, -1),
-            QtCore.Qt.Key_Up: (1, 1),
+            QtCore.Qt.Key.Key_Left: (0, -1),
+            QtCore.Qt.Key.Key_Right: (0, 1),
+            QtCore.Qt.Key.Key_Down: (1, -1),
+            QtCore.Qt.Key.Key_Up: (1, 1),
         }
 
         delta = self._update_scroll_delta(key_map.get(event.key()), event)
@@ -137,7 +137,7 @@ class QtToolWindow(SimpleWindow):
 
 
 class QtTool(SimpleApp):
-    """QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt5.
+    """QtTool is an implementation of Image/Bokeh Tool based on PyQtGraph and PyQt6.
 
     For now we retain a number of the metaphors from BokehTool, including a "context"
     that stores the state, and can be used to programmatically interface with the tool.
