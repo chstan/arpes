@@ -193,7 +193,7 @@ def calculate_kp_bounds(arr: xr.DataArray):
 
     sampled_phi_values = np.array([phi_low, phi_mid, phi_high])
 
-    kinetic_energy = arr.coords["phi"].max()
+    kinetic_energy = arr.coords["eV"].max()
     kps = (
         arpes.constants.K_INV_ANGSTROM
         * np.sqrt(kinetic_energy)
