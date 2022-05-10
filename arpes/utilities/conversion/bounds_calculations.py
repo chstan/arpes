@@ -193,7 +193,7 @@ def calculate_kp_bounds(arr: xr.DataArray):
 
     sampled_phi_values = np.array([phi_low, phi_mid, phi_high])
 
-    kinetic_energy = arr.coords["eV"].max()
+    kinetic_energy = arr.coords["eV"].values.max()
     kps = (
         arpes.constants.K_INV_ANGSTROM
         * np.sqrt(kinetic_energy)
@@ -244,7 +244,7 @@ def calculate_kx_ky_bounds(arr: xr.DataArray):
             beta_mid,
         ]
     )
-    kinetic_energy = arr.coords["eV"].max()
+    kinetic_energy = arr.coords["eV"].values.max()
 
     kxs = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(sampled_phi_values)
     kys = (
