@@ -54,9 +54,9 @@ class DataArrayPlot(pg.PlotWidget):
         self._coord_axis.setImage(data)
 
         if self.orientation == PlotOrientation.Horizontal:
-            return self.plotItem.plot(np.arange(0, len(y)), y, *args, **kwargs)
+            return self.plotItem.plot(np.arange(0, len(y)), y, pen=pg.mkPen(color=(68,1,84), width=3), *args, **kwargs)
         else:
-            return self.plotItem.plot(y, np.arange(0, len(y)), *args, **kwargs)
+            return self.plotItem.plot(y, np.arange(0, len(y)), pen=pg.mkPen(color=(68,1,84), width=3), *args, **kwargs)
 
 
 class DataArrayImageView(pg.ImageView):

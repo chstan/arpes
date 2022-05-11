@@ -279,7 +279,7 @@ class QtTool(SimpleApp):
 
             self.views["xy"].view.setYLink(self.views["y"])
             self.views["xy"].view.setXLink(self.views["x"])
-            self.views["xz"].view.setYLink(self.views["z"])
+            self.views["xz"].view.setXLink(self.views["z"])
             self.views["xz"].view.setXLink(self.views["xy"].view)
 
         if len(self.data.dims) == 4:
@@ -430,7 +430,7 @@ class QtTool(SimpleApp):
             ["Binning", binning_tab],
             ["K-Space", kspace_tab],
         )
-        self.tabs.setFixedHeight(qt_info.inches_to_px(1))
+        self.tabs.setFixedHeight(qt_info.inches_to_px(1.25))
 
         self.main_layout.addLayout(self.content_layout, 0, 0)
         self.main_layout.addWidget(self.tabs, 1, 0)
@@ -446,8 +446,10 @@ class QtTool(SimpleApp):
         self.configure_image_widgets()
         self.add_contextual_widgets()
         import matplotlib.cm
-
-        self.set_colormap(matplotlib.cm.viridis)
+        if self.data.min()>=0.0:
+            self.set_colormap(matplotlib.cm.viridis)
+        else:
+            self.set_colormap(matplotlib.cm.RdBu_r)
 
     def after_show(self):
         """Initialize application state after app show.

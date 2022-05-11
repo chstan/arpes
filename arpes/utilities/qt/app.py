@@ -24,8 +24,6 @@ class SimpleApp:
     WINDOW_SIZE = (4, 4)
     TITLE = "Untitled Tool"
 
-    DEFAULT_COLORMAP = "viridis"
-
     _data = None
 
     def __init__(self):
@@ -101,8 +99,8 @@ class SimpleApp:
         reasons we want to use the ones from matplotlib. This will sample the colors
         from the colormap and convert it into an array suitable for pyqtgraph.
         """
-        sampled_colormap = colormap.colors[::51]
-        sampled_colormap = np.array([s + [1.0] for s in sampled_colormap])
+        sampling_array=np.linspace(0,1,5)
+        sampled_colormap = colormap(sampling_array)
 
         # need to scale colors if pyqtgraph is older.
         if pg.__version__.split(".")[1] != "10":
@@ -152,9 +150,9 @@ class SimpleApp:
 
             if cursors:
                 cursor = CursorRegion(
-                    orientation=CursorRegion.Vertical
+                    orientation=CursorRegion.Horizontal
                     if orientation == PlotOrientation.Vertical
-                    else CursorRegion.Horizontal,
+                    else CursorRegion.Vertical,
                     movable=True,
                 )
                 widget.addItem(cursor, ignoreBounds=False)
@@ -231,9 +229,6 @@ class SimpleApp:
         self.window.app = weakref.ref(self)
 
         self.before_show()
-
-        if self.DEFAULT_COLORMAP is not None:
-            self.set_colormap(self.DEFAULT_COLORMAP)
 
         self.window.show()
 
