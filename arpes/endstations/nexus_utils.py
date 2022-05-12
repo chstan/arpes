@@ -11,6 +11,7 @@ from typing import Dict, Any, List, Callable
 
 __all__ = ["read_data_attributes_from"]
 
+
 def read_group_data(group, attribute_name=None) -> Any:
     if attribute_name is not None:
         try:
@@ -18,7 +19,7 @@ def read_group_data(group, attribute_name=None) -> Any:
         except ValueError:
             data = group[attribute_name]
     else:
-        try: 
+        try:
             data = group["data"]
         except ValueError:
             data = group
@@ -35,6 +36,7 @@ def read_group_data(group, attribute_name=None) -> Any:
             pass
 
     return data
+
 
 @dataclass
 class Target:
@@ -53,6 +55,7 @@ class Target:
     def write_to_dataset(self, dset: xr.Dataset):
         pass
 
+
 @dataclass
 class DebugTarget(Target):
     name = "debug"
@@ -60,11 +63,13 @@ class DebugTarget(Target):
     def read_h5(self, g, path):
         print(path, self.read(read_group_data(g)))
 
+
 @dataclass
 class AttrTarget(Target):
     def write_to_dataarray(self, arr: xr.DataArray):
         arr.attrs[self.name] = self.value
-    
+
+
 @dataclass
 class CoordTarget(Target):
     def write_to_dataarray(self, arr: xr.DataArray):
@@ -76,7 +81,7 @@ def read_data_attributes_from_tree(group, tree, targets=None, path=None) -> List
 
     This is handled in a more robust way because we use two stages
     to (1) read the attribute data from the file and (2) bind the data
-    we read to the target xr.DataArray and xr.Dataset. 
+    we read to the target xr.DataArray and xr.Dataset.
 
     Args:
         group: The NeXuS/HDF Group or File object to read from
@@ -88,10 +93,10 @@ def read_data_attributes_from_tree(group, tree, targets=None, path=None) -> List
 
     if targets is None:
         targets = []
-    
+
     if path is None:
         path = []
-    
+
     if isinstance(tree, Target):
         tree = [tree]
 
@@ -99,9 +104,9 @@ def read_data_attributes_from_tree(group, tree, targets=None, path=None) -> List
         for t in tree:
             t.read_h5(group, path)
             targets.append(t)
-        
+
         return targets
-    
+
     marked = set()
     for k, g in group.items():
         if k in tree:
@@ -119,6 +124,7 @@ def read_data_attributes_from_tree(group, tree, targets=None, path=None) -> List
             path.pop()
 
     return targets
+
 
 def read_data_attributes_from(group, paths) -> Dict[str, Any]:
     """Reads simple (float, string, etc.) leaves from nested paths out of a NeXuS file.

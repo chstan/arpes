@@ -7,7 +7,13 @@ import numpy as np
 
 import xarray as xr
 from arpes.endstations import HemisphericalEndstation, SingleFileEndstation, SynchrotronEndstation
-from arpes.endstations.nexus_utils import AttrTarget, CoordTarget, DebugTarget, read_data_attributes_from, read_data_attributes_from_tree
+from arpes.endstations.nexus_utils import (
+    AttrTarget,
+    CoordTarget,
+    DebugTarget,
+    read_data_attributes_from,
+    read_data_attributes_from_tree,
+)
 from arpes.preparation import disambiguate_coordinates
 
 __all__ = ("ANTARESEndstation",)
@@ -29,9 +35,7 @@ USER_INFO_READ_TREE = {
 }
 
 READ_TREE = {
-    "ANTARES": {
-        "Monochromator": MONO_READ_TREE
-    },
+    "ANTARES": {"Monochromator": MONO_READ_TREE},
     "User": USER_INFO_READ_TREE,
     "comment_conditions": AttrTarget("comment_conditions"),
     "experimental_frame": AttrTarget("experimental_frame"),
@@ -54,6 +58,7 @@ MBS_TREE = {
     "NoSlices": AttrTarget("mbs_no_slices"),
     "NoScans": AttrTarget("mbs_no_scans"),
 }
+
 
 def parse_axis_name_from_long_name(name, keep_segments=1, separator="_"):
     segments = name.split("/")[-keep_segments:]
@@ -137,7 +142,9 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         while len(set_names) != len(actuator_names):
             keep_segments += 1
             actuator_names = [
-                name if set_names[name] == 1 else parse_axis_name_from_long_name(actuator_long_names[i], keep_segments) 
+                name
+                if set_names[name] == 1
+                else parse_axis_name_from_long_name(actuator_long_names[i], keep_segments)
                 for i, name in enumerate(actuator_names)
             ]
             set_names = Counter(actuator_names)

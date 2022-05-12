@@ -58,7 +58,7 @@ class SimpleWindow(QtWidgets.QMainWindow, QtCore.QObject):
         """Unused hook for supporting additional cursor modes."""
         return []
 
-    def closeEvent(self,event):
+    def closeEvent(self, event):
         self.do_close(event)
 
     def do_close(self, event):
