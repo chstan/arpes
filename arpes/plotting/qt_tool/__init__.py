@@ -446,7 +446,8 @@ class QtTool(SimpleApp):
         self.configure_image_widgets()
         self.add_contextual_widgets()
         import matplotlib.cm
-        if self.data.min()>=0.0:
+
+        if self.data.min() >= 0.0:
             self.set_colormap(matplotlib.cm.viridis)
         else:
             self.set_colormap(matplotlib.cm.RdBu_r)

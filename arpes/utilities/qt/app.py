@@ -99,7 +99,7 @@ class SimpleApp:
         reasons we want to use the ones from matplotlib. This will sample the colors
         from the colormap and convert it into an array suitable for pyqtgraph.
         """
-        sampling_array=np.linspace(0,1,5)
+        sampling_array = np.linspace(0, 1, 5)
         sampled_colormap = colormap(sampling_array)
 
         # need to scale colors if pyqtgraph is older.

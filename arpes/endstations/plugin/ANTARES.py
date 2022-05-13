@@ -1,4 +1,5 @@
-"""Implements data loading for ANTARES at SOLEIL."""
+"""implements data loading for ANTARES at SOLEIL."""
+from collections import Counter
 import warnings
 
 import h5py
@@ -6,51 +7,63 @@ import numpy as np
 
 import xarray as xr
 from arpes.endstations import HemisphericalEndstation, SingleFileEndstation, SynchrotronEndstation
-from arpes.endstations.nexus_utils import read_data_attributes_from
+from arpes.endstations.nexus_utils import (
+    AttrTarget,
+    CoordTarget,
+    DebugTarget,
+    read_data_attributes_from,
+    read_data_attributes_from_tree,
+)
 from arpes.preparation import disambiguate_coordinates
 
 __all__ = ("ANTARESEndstation",)
 
+MONO_READ_TREE = {
+    "energy": CoordTarget("hv"),
+    "exitSlitAperature": AttrTarget("exit_slit_aperature"),
+    "resolution": AttrTarget("resolution"),
+    "currentGratingName": AttrTarget("current_grating_name"),
+    "currentSlotName": AttrTarget("current_slot_name"),
+}
 
-mono = [
-    ["ANTARES", "Monochromator"],
-    ["exitSlitAperture", "resolution", "currentGratingName", "currentSlotName", "energy"],
-]
-user_info = [["User"], ["email", "address", "affiliation", "name", "telephone_number"]]
-misc = [[], ["comment_conditions", "experimental_frame", "start_time"]]
+USER_INFO_READ_TREE = {
+    "email": AttrTarget("user_email"),
+    "address": AttrTarget("user_address"),
+    "affiliation": AttrTarget("user_affiliation"),
+    "name": AttrTarget("user_name"),
+    "telephone_number": AttrTarget("user_telephone_number"),
+}
+
+READ_TREE = {
+    "ANTARES": {"Monochromator": MONO_READ_TREE},
+    "User": USER_INFO_READ_TREE,
+    "comment_conditions": AttrTarget("comment_conditions"),
+    "experimental_frame": AttrTarget("experimental_frame"),
+    "start_time": AttrTarget("start_time"),
+}
+
+MBS_TREE = {
+    "Frames": AttrTarget("frames"),
+    "LensMode": AttrTarget("lens_mode"),
+    "PASSENERGY": AttrTarget("pass_energy"),
+    "DeflX": CoordTarget("psi"),
+    "DeflY": CoordTarget("defl_y"),
+    "CenterKE": AttrTarget("center_ke"),
+    "StepSize": AttrTarget("mbs_step_size"),
+    "StartX": AttrTarget("mbs_start_x"),
+    "StartY": AttrTarget("mbs_start_y"),
+    "EndX": AttrTarget("mbs_end_x"),
+    "EndY": AttrTarget("mbs_end_y"),
+    "StartKE": AttrTarget("mbs_start_ke"),
+    "NoSlices": AttrTarget("mbs_no_slices"),
+    "NoScans": AttrTarget("mbs_no_scans"),
+}
 
 
-general_paths = [mono, user_info, misc]
-
-# not generally needed
-mbs_general_location = [[], ["PI-X", "PI-Y", "PI-Z", "Phi", "Theta"]]
-mbs_general_paths = [mbs_general_location]
-
-# To be run inside ANTARES/MBSAcquisition_{idx}
-mbs_acquisition_spectrometer = [
-    [],
-    [
-        "Frames",
-        "LensMode",
-        "PASSENERGY",
-        "DeflX",
-        "DeflY",
-        "CenterKE",
-        "StepSize",
-        "StartX",
-        "StartY",
-        "EndX",
-        "EndY",
-        "StartKE",
-        "NoSlices",
-        "NoScans",
-    ],
-]
-mbs_acquisition_paths = [mbs_acquisition_spectrometer]
-
-
-def parse_axis_name_from_long_name(name):
-    return name.split("/")[-1].replace("'", "")
+def parse_axis_name_from_long_name(name, keep_segments=1, separator="_"):
+    segments = name.split("/")[-keep_segments:]
+    segments = [s.replace("'", "") for s in segments]
+    return separator.join(segments)
 
 
 def infer_scan_type_from_data(group):
@@ -83,29 +96,30 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
 
     _TOLERATED_EXTENSIONS = {".nxs"}
 
-    RENAME_KEYS = {
-        "DeflX": "psi",
-        "deflx": "psi",
-        "energy": "hv",
-        "PASSENERGY": "pass_energy",
-        "LensMode": "lens_mode",
-    }
+    RENAME_KEYS = {}
 
     def load_top_level_scan(self, group, scan_desc: dict = None, spectrum_index=None):
         """Reads a spectrum from the top level group in a NeXuS scan format."""
         dr = self.read_scan_data(group)
-        attrs = read_data_attributes_from(group, general_paths)
+        bindings = read_data_attributes_from_tree(group, READ_TREE)
+
+        for binding in bindings:
+            binding.write_to_dataarray(dr)
 
         try:
             mbs_key = [k for k in list(group["ANTARES"].keys()) if "MBSAcquisition" in k][0]
-            attrs.update(
-                read_data_attributes_from(group["ANTARES"][mbs_key], mbs_acquisition_paths)
-            )
+            mbs_group = group["ANTARES"][mbs_key]
+            mbs_bindings = read_data_attributes_from_tree(mbs_group, MBS_TREE)
+            bindings.extend(mbs_bindings)
         except IndexError:
             pass
 
-        dr = dr.assign_attrs(attrs)
-        return xr.Dataset(dict([["spectrum-{}".format(spectrum_index), dr]]))
+        ds = xr.Dataset(dict([["spectrum-{}".format(spectrum_index), dr]]))
+
+        for binding in bindings:
+            binding.write_to_dataset(ds)
+
+        return ds
 
     def get_coords(self, group, scan_name, shape):
         """Extracts coordinates from the actuator header information.
@@ -118,10 +132,23 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         # handle actuators
         relaxed_shape = list(shape)
         actuator_list = [k for k in list(data.keys()) if "actuator" in k]
-        actuator_names = [
-            parse_axis_name_from_long_name(str(data[act].attrs["long_name"]))
-            for act in actuator_list
-        ]
+        actuator_long_names = [str(data[act].attrs["long_name"]) for act in actuator_list]
+        actuator_names = [parse_axis_name_from_long_name(name) for name in actuator_long_names]
+
+        # This more carefully deduplicates names if they have a common
+        # suffix in the long name format.
+        keep_segments = 1
+        set_names = Counter(actuator_names)
+        while len(set_names) != len(actuator_names):
+            keep_segments += 1
+            actuator_names = [
+                name
+                if set_names[name] == 1
+                else parse_axis_name_from_long_name(actuator_long_names[i], keep_segments)
+                for i, name in enumerate(actuator_names)
+            ]
+            set_names = Counter(actuator_names)
+
         actuator_list = [data[act][:] for act in actuator_list]
 
         actuator_dim_order = []
@@ -273,6 +300,12 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
         for l in ls:
             check_attrs(l)
 
+        # attempt to determine whether the energy is likely a kinetic energy
+        # if so, we will subtract the photon energy
+        if "eV" in data.indexes:
+            mean_energy = data["eV"].values.mean()
+            photon_energy = data.coords.get("hv", 0)
+
         # TODO fix this
         defaults = {
             "z": 0,
@@ -282,7 +315,7 @@ class ANTARESEndstation(HemisphericalEndstation, SynchrotronEndstation, SingleFi
             "chi": 0,
             "theta": 0,
             "beta": 0,
-            "hv": 100,
+            "hv": None,
             "psi": 0,
         }
         for k, v in defaults.items():

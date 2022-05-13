@@ -238,10 +238,19 @@ class DynamicTool(BokehInteractiveTool, CursorTool):
 
             widget = None
             if specification["type"] == int:
-                widget = widgets.Slider(start=specification["start"], end=specification["end"], value=specification["value"], title=parameter_name)
+                widget = widgets.Slider(
+                    start=specification["start"],
+                    end=specification["end"],
+                    value=specification["value"],
+                    title=parameter_name,
+                )
             if specification["type"] == float:
                 widget = widgets.Slider(
-                    start=specification["start"], end=specification["end"], value=specification["value"], step=specification["step"], title=parameter_name
+                    start=specification["start"],
+                    end=specification["end"],
+                    value=specification["value"],
+                    step=specification["step"],
+                    title=parameter_name,
                 )
 
             if widget is not None:
