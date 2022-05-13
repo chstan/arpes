@@ -77,7 +77,7 @@ class SelectFromCollection:
     (i.e., `offsets`).
     """
 
-    def __init__(self, ax, collection, alpha_other=0.3, on_select=None):
+    def __init__(self, ax, collection, alpha_other=0.03, on_select=None):
         self.canvas = ax.figure.canvas
         self.collection = collection
         self.alpha_other = alpha_other
@@ -503,7 +503,7 @@ def pca_explorer(
         ax_components.clear()
         context["selected_components"] = [component_x, component_y]
         for_scatter, size = compute_for_scatter()
-        pts = ax_components.scatter(for_scatter.values[0], for_scatter.values[1], s=size)
+        pts = ax_components.scatter(for_scatter.values[0], for_scatter.values[1], s=size, alpha=0.2)
 
         if context["selector"] is not None:
             context["selector"].disconnect()

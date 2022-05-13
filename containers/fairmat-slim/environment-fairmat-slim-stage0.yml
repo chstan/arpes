@@ -1,0 +1,12 @@
+name: arpes
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+
+  - nomkl
+  - pip
+
+  # pip
+  - pip:
+      - PyQt5==5.15

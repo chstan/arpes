@@ -1,8 +1,8 @@
 """An interactive band selection tool used to initialize curve fits."""
-import numpy as np
-from bokeh import events
 
+import numpy as np
 import xarray as xr
+
 from arpes.analysis.band_analysis import fit_patterned_bands
 from arpes.exceptions import AnalysisError
 from arpes.models import band
@@ -35,6 +35,7 @@ class BandTool(SaveableTool, CursorTool):
         from bokeh.models.mappers import LinearColorMapper
         from bokeh.models import widgets
         from bokeh.plotting import figure
+        from bokeh import events
 
         if len(self.arr.shape) != 2:
             raise AnalysisError("Cannot use the band tool on non image-like spectra")

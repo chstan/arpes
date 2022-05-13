@@ -46,7 +46,7 @@ available either from the main repository at
 
 .. code:: bash
 
-   pip install -e .
+   pip install -e .[all]
 
 5. *Recommended:* Configure IPython kernel according to the **Barebones
    Kernel Installation** below
@@ -64,7 +64,7 @@ recommend
 .. code:: bash
 
    conda config --append channels conda-forge
-   conda install -c arpes arpes
+   conda install -c arpes arpes[all]
 
 Additional Suggested Steps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

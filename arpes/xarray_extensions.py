@@ -38,6 +38,7 @@ The `.F.` accessor:
 """
 
 import pandas as pd
+from arpes.feature_gate import Gates, gate
 import lmfit
 import arpes
 import contextlib
@@ -904,6 +905,8 @@ class ARPESAccessorBase:
 
         return 10
 
+    gate(Gates.ML)
+
     def find_spectrum_energy_edges(self, indices=False):
         energy_marginal = self._obj.sum([d for d in self._obj.dims if d not in ["eV"]])
 
@@ -924,6 +927,8 @@ class ARPESAccessorBase:
 
         delta = self._obj.G.stride(generic_dim_names=False)
         return edges * delta["eV"] + self._obj.coords["eV"].values[0]
+
+    gate(Gates.ML)
 
     def find_spectrum_angular_edges_full(self, indices=False):
         # as a first pass, we need to find the bottom of the spectrum, we will use this
@@ -1063,6 +1068,8 @@ class ARPESAccessorBase:
         return self._obj.mean(
             [d for d in self._obj.dims if d not in dim_or_dims], keep_attrs=keep_attrs
         )
+
+    gate(Gates.ML)
 
     def find_spectrum_angular_edges(self, indices=False):
         angular_dim = "pixel" if "pixel" in self._obj.dims else "phi"
@@ -1775,12 +1782,14 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
         with plt.rc_context(rc={"text.usetex": False}):
             self._obj.plot(*args, **kwargs)
 
+    @gate(Gates.Qt)
     def show(self, detached=False, **kwargs):
         """Opens the Qt based image tool."""
         import arpes.plotting.qt_tool
 
         arpes.plotting.qt_tool.qt_tool(self._obj, detached=detached, **kwargs)
 
+    @gate(Gates.LegacyUI)
     def show_d2(self, **kwargs):
         """Opens the Bokeh based second derivative image tool."""
         from arpes.plotting.all import CurvatureTool
@@ -1788,6 +1797,7 @@ class ARPESDataArrayAccessor(ARPESAccessorBase):
         curve_tool = CurvatureTool(**kwargs)
         return curve_tool.make_tool(self._obj)
 
+    @gate(Gates.LegacyUI)
     def show_band_tool(self, **kwargs):
         """Opens the Bokeh based band placement tool."""
         from arpes.plotting.all import BandTool
@@ -2475,6 +2485,7 @@ class ARPESDatasetFitToolAccessor:
     def eval(self, *args, **kwargs):
         return self._obj.results.G.map(lambda x: x.eval(*args, **kwargs))
 
+    @gate(Gates.Qt)
     def show(self, detached=False):
         from arpes.plotting.fit_tool import fit_tool
 
@@ -2621,6 +2632,7 @@ class ARPESFitToolsAccessor:
             }
         )
 
+    @gate(Gates.LegacyUI)
     def show(self, detached: bool = False):
         """Opens a Bokeh based interactive fit inspection tool."""
         from arpes.plotting.fit_tool import fit_tool

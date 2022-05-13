@@ -39,4 +39,4 @@ dependencies:
       - rx
       - dill
       - ase>=3.17.0,<3.22.0
-      - -e .
+      - -e .[all]

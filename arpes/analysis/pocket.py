@@ -1,6 +1,5 @@
 """Contains electron/hole pocket analysis routines."""
 import numpy as np
-from sklearn.decomposition import PCA
 
 import xarray as xr
 from arpes.fits.fit_models import AffineBackgroundModel, LorentzianModel
@@ -8,6 +7,7 @@ from arpes.provenance import update_provenance
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
 from arpes.utilities.conversion import slice_along_path
+from arpes.feature_gate import gate, Gates
 
 from typing import List, Tuple
 
@@ -19,6 +19,7 @@ __all__ = (
 )
 
 
+@gate(Gates.ML)
 def pocket_parameters(data: DataType, kf_method=None, sel=None, method_kwargs=None, **kwargs):
     """Estimates pocket center, anisotropy, principal vectors, and extent in either angle or k-space.
 
@@ -35,6 +36,8 @@ def pocket_parameters(data: DataType, kf_method=None, sel=None, method_kwargs=No
     Returns:
         Extracted asymmetry parameters.
     """
+    from sklearn.decomposition import PCA
+
     slices, _ = curves_along_pocket(data, **kwargs)  # slices, angles =
 
     if kf_method is None:

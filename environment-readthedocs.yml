@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python=3.8
 
+  - nomkl
   - astropy
   - xarray>=0.16.1
   - h5py>=3.2.1
@@ -46,4 +47,4 @@ dependencies:
       - sphinx_rtd_theme
       - nbsphinx
       - sphinx_copybutton
-      - -e .
+      - -e .[core]

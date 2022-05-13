@@ -22,7 +22,7 @@ or
    git clone https://github.com/chstan/arpes
 
 3. Install PyARPES into your conda environment/virtualenv with
-   ``pip install -e .``
+   ``pip install -e .[all]``
 
 Tests
 ~~~~~

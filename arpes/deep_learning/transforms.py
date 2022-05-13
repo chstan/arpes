@@ -9,15 +9,19 @@ class Identity:
     """Represents a reversible identity transform."""
 
     def encodes(self, x):
+        """Identity transform."""
         return x
 
     def __call__(self, x):
+        """Passthrough for `self.encodes`."""
         return x
 
     def decodes(self, x):
+        """The inverse of the idenity transform is also the identity."""
         return x
 
     def __repr__(self):
+        """Just include the class name since there are no parameters here."""
         return "Identity()"
 
 
