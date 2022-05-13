@@ -65,17 +65,17 @@ def full_angles_to_k(kinetic_energy, phi, psi, alpha, beta, theta, chi, inner_po
     vrchi_y = sin_chi * vrbeta_x + cos_chi * vrbeta_y
     vrchi_z = vrbeta_z
 
-    v_par_sq = vrchi_x ** 2 + vrchi_y ** 2
+    v_par_sq = vrchi_x**2 + vrchi_y**2
 
     """
     velocity -> momentum in each of parallel and perpendicular directions
     in the perpendicular case, we need the value of the cos^2(zeta) for the polar declination
     angle zeta in the sample (emission) frame. The total in plane velocity v_parallel is proportional
     to sin(zeta), so by the trig identity:
-    
+
     1 = cos^2(zeta) + sin^2(zeta)
-    
-    we may substitute cos^2(zeta) for 1 - sin^2(zeta) which is 1 - (vrchi_x **2 + vrchi_y ** 2) above.  
+
+    we may substitute cos^2(zeta) for 1 - sin^2(zeta) which is 1 - (vrchi_x **2 + vrchi_y ** 2) above.
     """
     k_par = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy)
     k_perp = arpes.constants.K_INV_ANGSTROM * np.sqrt(
@@ -118,7 +118,7 @@ def euler_to_kz(kinetic_energy, phi, beta, theta=0, inner_potential=10, slit_is_
         beta_term = np.cos(phi + theta) * np.cos(beta)
 
     return arpes.constants.K_INV_ANGSTROM * np.sqrt(
-        kinetic_energy * beta_term ** 2 + inner_potential
+        kinetic_energy * beta_term**2 + inner_potential
     )
 
 
@@ -193,7 +193,7 @@ def calculate_kp_bounds(arr: xr.DataArray):
 
     sampled_phi_values = np.array([phi_low, phi_mid, phi_high])
 
-    kinetic_energy = arr.S.hv - arr.S.work_function
+    kinetic_energy = arr.coords["eV"].values.max()
     kps = (
         arpes.constants.K_INV_ANGSTROM
         * np.sqrt(kinetic_energy)
@@ -244,7 +244,7 @@ def calculate_kx_ky_bounds(arr: xr.DataArray):
             beta_mid,
         ]
     )
-    kinetic_energy = arr.S.hv - arr.S.work_function
+    kinetic_energy = arr.coords["eV"].values.max()
 
     kxs = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(sampled_phi_values)
     kys = (
