@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
 
-from arpes.io import example_data
-from arpes.fits.utilities import broadcast_model
+import arpes.xarray_extensions
 from arpes.fits.fit_models import AffineBroadenedFD, QuadraticModel
+from arpes.fits.utilities import broadcast_model
+from arpes.io import example_data
 from arpes.utilities.conversion import convert_to_kspace
 from arpes.utilities.conversion.forward import convert_through_angular_point
-import arpes.xarray_extensions
 
 
 def load_energy_corrected():
@@ -26,14 +26,14 @@ def test_cut_momentum_conversion():
     assert np.nan_to_num(selected).tolist() == [
         pytest.approx(c)
         for c in [
-            0,
-            319.73139835,
-            318.12917486,
-            258.94653353,
-            200.48829069,
-            163.12937875,
-            346.93136055,
-            0,
+            0.0,
+            319.7579866213813,
+            318.1358154841895,
+            258.94674635813885,
+            200.47090110761422,
+            163.15644326100534,
+            346.9402106918347,
+            0.0,
         ]
     ]
 
@@ -49,7 +49,7 @@ def test_cut_momentum_conversion_ranges():
     153, 146, 139, 139, 138, 127, 125, 121, 117, 118, 113, 125, 145, 
     147, 141, 147, 147, 146, 143, 143, 145, 131, 147, 136, 133, 145, 
     139, 136, 138, 128, 133, 126, 136, 135, 139, 141, 147, 143, 144, 
-    155, 151, 159, 140, 150, 120, 121, 125, 131, 130, 138, 140, 149, 
+    155, 151, 159, 140, 150, 120, 121, 125, 127, 130, 138, 140, 149, 
     144, 155, 151, 154, 165, 165, 166, 172, 168, 167, 177, 177, 171, 
     168, 160
     """.replace(
@@ -73,9 +73,9 @@ def test_fermi_surface_conversion():
     ky_max = kdata.idxmax(dim="kx").max().item()
 
     assert ky_max == pytest.approx(0.4373433583959896)
-    assert kx_max == pytest.approx(-0.015037593984962516)
-    assert kdata.mean().item() == pytest.approx(613.79029047)
-    assert kdata.fillna(0).mean().item() == pytest.approx(415.7048189)
+    assert kx_max == pytest.approx(-0.02506265664160412)
+    assert kdata.mean().item() == pytest.approx(613.848688084093)
+    assert kdata.fillna(0).mean().item() == pytest.approx(415.7673895479573)
 
 
 @pytest.mark.skip
@@ -120,32 +120,32 @@ def test_convert_angular_point_and_angle():
     )
 
     max_values = [
-        4141.79361851789,
-        4352.118805852634,
-        4528.183675544601,
-        4772.701193743715,
-        4967.954937427305,
-        5143.416481043858,
-        5389.480518039409,
-        5564.486620498726,
-        5963.2608828950015,
-        6495.800810281041,
-        6865.562982108332,
-        7112.036574537716,
-        7796.474181791687,
-        8160.106902788172,
-        8524.980143784462,
-        8520.4603140169,
-        8266.738479510586,
-        7786.5089626268455,
-        7151.2409294143,
-        6764.616607333701,
-        6381.040104212984,
-        6075.501205633937,
-        5922.880496514519,
-        5625.495181926943,
-        3077.8516096096077,
-        117.28646806572776,
+        4141.827366031282,
+        4352.104413953421,
+        4528.141587081243,
+        4772.790364388664,
+        4967.805454675143,
+        5143.319351060313,
+        5389.489299730738,
+        5564.495169531284,
+        5963.146620422676,
+        6495.75206989827,
+        6865.545155007645,
+        7112.055898285905,
+        7796.474144588328,
+        8160.193714723893,
+        8525.136971985057,
+        8520.552639235233,
+        8266.861947781663,
+        7786.596026041245,
+        7151.341160693082,
+        6764.770214858431,
+        6381.080528876631,
+        6075.551683306253,
+        5922.880032224642,
+        5625.561944388922,
+        3077.8859544793277,
+        117.28906072530499,
     ]
 
     assert kdata.sel(ky=slice(-0.7, 0)).isel(eV=slice(None, -20, 5)).max("ky").values.tolist() == [

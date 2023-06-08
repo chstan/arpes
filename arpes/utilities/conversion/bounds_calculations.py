@@ -4,9 +4,9 @@ Mostly these are used as common helper routines to the coordinate conversion cod
 which is responsible for actually outputing the desired bounds.
 """
 import numpy as np
+import xarray as xr
 
 import arpes.constants
-import xarray as xr
 
 __all__ = (
     "calculate_kp_kz_bounds",
@@ -193,7 +193,7 @@ def calculate_kp_bounds(arr: xr.DataArray):
 
     sampled_phi_values = np.array([phi_low, phi_mid, phi_high])
 
-    kinetic_energy = arr.coords["eV"].values.max()
+    kinetic_energy = max(arr.coords["eV"].values.max(), arr.S.hv - arr.S.work_function)
     kps = (
         arpes.constants.K_INV_ANGSTROM
         * np.sqrt(kinetic_energy)
@@ -244,7 +244,7 @@ def calculate_kx_ky_bounds(arr: xr.DataArray):
             beta_mid,
         ]
     )
-    kinetic_energy = arr.coords["eV"].values.max()
+    kinetic_energy = max(arr.coords["eV"].values.max(), arr.S.hv - arr.S.work_function)
 
     kxs = arpes.constants.K_INV_ANGSTROM * np.sqrt(kinetic_energy) * np.sin(sampled_phi_values)
     kys = (
