@@ -1,5 +1,6 @@
 """Utilities related to plotting Brillouin zones and data onto them."""
 # pylint: disable=import-error
+from __future__ import annotations
 
 import itertools
 import warnings
@@ -7,9 +8,6 @@ import warnings
 import matplotlib.cm
 import matplotlib.pyplot as plt
 import numpy as np
-
-from typing import Union, List
-
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -19,7 +17,7 @@ from arpes.analysis.mask import apply_mask_to_coords
 from arpes.plotting.utils import path_for_plot
 from arpes.typing import DataType
 from arpes.utilities import normalize_to_spectrum
-from arpes.utilities.bz import build_2dbz_poly, process_kpath, hex_cell_2d
+from arpes.utilities.bz import build_2dbz_poly, hex_cell_2d, process_kpath
 from arpes.utilities.bz_spec import A_GRAPHENE, A_WS2, A_WSe2
 from arpes.utilities.geometry import polyhedron_intersect_plane
 
@@ -129,11 +127,11 @@ class Translation:
         return result if not single_vector else result[0]
 
 
-Transformation = Union[Translation, Rotation]
+Transformation = Translation | Rotation
 
 
 def apply_transformations(
-    points: np.ndarray, transformations: List[Transformation] = None, inverse=False
+    points: np.ndarray, transformations: list[Transformation] = None, inverse=False
 ) -> np.ndarray:
     """Applies a series of transformations to a sequence of vectors or a single vector.
 
@@ -191,7 +189,7 @@ def plot_data_to_bz2d(
     mask=True,
     out=None,
     bz_number=None,
-    **kwargs
+    **kwargs,
 ):
     """Plots data onto a 2D Brillouin zone."""
     data = normalize_to_spectrum(data)
@@ -279,7 +277,7 @@ def bz3d_plot(
     repeat=None,
     transformations=None,
     hide_ax=True,
-    **kwargs
+    **kwargs,
 ):
     """For now this is lifted from ase.dft.bz.bz3d_plot with some modifications.
 
@@ -287,7 +285,8 @@ def bz3d_plot(
     (Atomic Simulation Environment).
     """
     try:
-        from ase.dft.bz import bz_vertices  # dynamic because we do not require ase
+        from ase.dft.bz import \
+            bz_vertices  # dynamic because we do not require ase
     except ImportError:
         warnings.warn(
             "You will need to install ASE (Atomic Simulation Environment) to use this feature."
@@ -309,17 +308,12 @@ def bz3d_plot(
     kpoints = points
 
     if isinstance(paths, str):
-        from ase.dft.kpoints import (
-            get_special_points,
-            special_paths,
-            parse_path_string,
-            crystal_structure_from_cell,
-        )
+        from ase.cell import Cell
+        from ase.dft.kpoints import parse_path_string
 
-        special_points = get_special_points(cell)
-        structure = crystal_structure_from_cell(cell)
-
-        path_string = special_paths[structure] if paths == "all" else paths
+        cell_structure = Cell(cell).get_bravais_lattice()
+        special_points = cell_structure.get_special_points()
+        path_string = cell_structure.special_path if paths == "all" else paths
         paths = []
         for names in parse_path_string(path_string):
             points = []
@@ -462,13 +456,13 @@ def bz3d_plot(
 
 def annotate_special_paths(
     ax,
-    paths,
+    paths: list[str] | str,
     cell=None,
     transformations=None,
     offset=None,
     special_points=None,
     labels=None,
-    **kwargs
+    **kwargs,
 ):
     """Annotates user indicated paths in k-space by plotting lines (or points) over the BZ."""
     if paths == "":
@@ -584,7 +578,7 @@ def twocell_to_bz1(cell):
 def bz2d_plot(
     cell,
     vectors=False,
-    paths=None,
+    paths: str | None = None,
     points=None,
     repeat=None,
     ax=None,
@@ -592,9 +586,10 @@ def bz2d_plot(
     offset=None,
     hide_ax=True,
     set_equal_aspect=True,
-    **kwargs
+    **kwargs,
 ):
-    """This piece of code modified from ase.ase.dft.bz.py:bz2d_plot and follows copyright and license for ASE.
+    """This piece of code modified from ase.ase.dft.bz.py:bz2d_plot and follows copyright and
+    license for ASE.
 
     Plots a Brillouin zone corresponding to a given unit cell
     """
@@ -604,17 +599,12 @@ def bz2d_plot(
         ax = plt.axes()
 
     if isinstance(paths, str):
-        from ase.dft.kpoints import (
-            get_special_points,
-            special_paths,
-            parse_path_string,
-            crystal_structure_from_cell,
-        )
+        from ase.cell import Cell
+        from ase.dft.kpoints import parse_path_string
 
-        special_points = get_special_points(cell)
-        structure = crystal_structure_from_cell(cell)
-
-        path_string = special_paths[structure] if paths == "all" else paths
+        cell_structure = Cell(cell).get_bravais_lattice()
+        special_points = cell_structure.get_special_points()
+        path_string = cell_structure.special_path if paths == "all" else paths
         paths = []
         for names in parse_path_string(path_string):
             points = []

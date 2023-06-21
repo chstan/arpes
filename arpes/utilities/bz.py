@@ -130,7 +130,7 @@ def process_kpath(paths, cell, special_points=None):
     icell = np.linalg.inv(cell).T
 
     if special_points is None:
-        from ase.dft.kpoints import get_special_points  # pylint: disable=import-error
+        from ase.dft.kpoints import get_special_points
 
         special_points = get_special_points(cell)
 
