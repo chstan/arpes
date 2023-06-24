@@ -1,10 +1,10 @@
 """Definitions of models involving Dirac points, graphene, graphite."""
 
-from lmfit.models import update_param_vals
 import lmfit as lf
+from lmfit.models import update_param_vals
 
-from .x_model_mixin import XModelMixin
 from .functional_forms import lorentzian
+from .x_model_mixin import XModelMixin
 
 __all__ = [
     "DiracDispersionModel",
@@ -35,7 +35,7 @@ class DiracDispersionModel(XModelMixin):
             x, center=kd + center, amplitude=amplitude_2, gamma=sigma_2
         )
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.dirac_dispersion, **kwargs)

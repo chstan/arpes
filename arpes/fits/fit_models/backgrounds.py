@@ -1,10 +1,10 @@
 """Definitions of common backgrounds."""
 
-from lmfit.models import update_param_vals
 import numpy as np
+from lmfit.models import update_param_vals
 
-from .x_model_mixin import XModelMixin
 from .functional_forms import affine_bkg
+from .x_model_mixin import XModelMixin
 
 __all__ = ["AffineBackgroundModel"]
 
@@ -12,7 +12,14 @@ __all__ = ["AffineBackgroundModel"]
 class AffineBackgroundModel(XModelMixin):
     """A model for an affine background."""
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(
+        self,
+        independent_vars=["x"],
+        prefix="",
+        missing="raise",
+        name=None,
+        **kwargs,
+    ):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(affine_bkg, **kwargs)

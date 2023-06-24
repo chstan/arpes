@@ -1,10 +1,10 @@
 """Includes multi-peak model definitions."""
 
 import lmfit as lf
-
-from .x_model_mixin import XModelMixin
-from .functional_forms import gaussian, affine_bkg, lorentzian, twolorentzian
 from lmfit.models import update_param_vals
+
+from .functional_forms import affine_bkg, gaussian, twolorentzian
+from .x_model_mixin import XModelMixin
 
 __all__ = ["TwoGaussianModel", "TwoLorModel"]
 
@@ -23,7 +23,7 @@ class TwoGaussianModel(XModelMixin):
             + affine_bkg(x, lin_bkg, const_bkg)
         )
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Sets physical constraints for peak width and other parameters."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.twogaussian, **kwargs)
@@ -57,7 +57,7 @@ class TwoGaussianModel(XModelMixin):
 class TwoLorModel(XModelMixin):
     """A model for two gaussian functions with a linear background."""
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Sets physical constraints for peak width and other parameters."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(twolorentzian, **kwargs)

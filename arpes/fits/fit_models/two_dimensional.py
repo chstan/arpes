@@ -43,7 +43,7 @@ class Gaussian2DModel(XModelMixin):
         return np.ravel(gauss + bkg)
 
     def __init__(
-        self, independent_vars=("x", "y"), prefix="", missing="raise", name=None, **kwargs
+        self, independent_vars=["x", "y"], prefix="", missing="raise", name=None, **kwargs
     ):
         """Sets reasonable constraints on the width and constraints the amplitude to be positive."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
@@ -106,7 +106,7 @@ class EffectiveMassModel(XModelMixin):
         return (coherent + bkg).ravel()
 
     def __init__(
-        self, independent_vars=("eV", "kp"), prefix="", missing="raise", name=None, **kwargs
+        self, independent_vars=["eV", "kp"], prefix="", missing="raise", name=None, **kwargs
     ):
         """Mostly just set parameter hints to physically realistic values here."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})

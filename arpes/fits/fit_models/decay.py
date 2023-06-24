@@ -32,7 +32,14 @@ class ExponentialDecayCModel(XModelMixin):
         mask = (dx >= 0) * 1
         return const_bkg + amp * mask * np.exp(-(x - t0) / tau)
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(
+        self,
+        independent_vars=["x"],
+        prefix="",
+        missing="raise",
+        name=None,
+        **kwargs,
+    ) -> None:
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.exponential_decay_c, **kwargs)
@@ -79,7 +86,14 @@ class TwoExponentialDecayCModel(XModelMixin):
         f[dx >= 0] = y[dx >= 0]
         return f
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(
+        self,
+        independent_vars=["x"],
+        prefix="",
+        missing="raise",
+        name=None,
+        **kwargs,
+    ) -> None:
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.twoexponential_decay_c, **kwargs)

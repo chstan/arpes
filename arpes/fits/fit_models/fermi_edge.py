@@ -1,23 +1,23 @@
 """Definitions of models involving Fermi edges."""
 
+import lmfit as lf
+import numpy as np
 from lmfit.models import update_param_vals
 from scipy import stats
-import numpy as np
-import lmfit as lf
 from scipy.ndimage import gaussian_filter
 
-from .x_model_mixin import XModelMixin
 from .functional_forms import (
+    band_edge_bkg,
     fermi_dirac,
     fermi_dirac_affine,
+    g,
     gstep,
     gstep_stdev,
     gstepb,
     lorentzian,
-    band_edge_bkg,
-    g,
     twolorentzian,
 )
+from .x_model_mixin import XModelMixin
 
 __all__ = [
     "AffineBroadenedFD",
@@ -60,7 +60,7 @@ class AffineBroadenedFD(XModelMixin):
             + offset
         )
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.affine_broadened_fd, **kwargs)
@@ -103,7 +103,7 @@ class FermiLorentzianModel(XModelMixin):
             x, gamma, lorcenter, 1
         )
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.gstepb_mult_lorentzian, **kwargs)
@@ -134,7 +134,7 @@ class FermiLorentzianModel(XModelMixin):
 class FermiDiracModel(XModelMixin):
     """A model for the Fermi Dirac function."""
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="drop", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="drop", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(fermi_dirac, **kwargs)
@@ -158,7 +158,7 @@ class FermiDiracModel(XModelMixin):
 class GStepBModel(XModelMixin):
     """A model for fitting Fermi functions with a linear background."""
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(gstepb, **kwargs)
@@ -195,7 +195,7 @@ class TwoBandEdgeBModel(XModelMixin):
         """Some missing model referenced in old Igor code retained for visibility here."""
         raise NotImplementedError
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update(
             {
@@ -243,7 +243,7 @@ class TwoBandEdgeBModel(XModelMixin):
 class BandEdgeBModel(XModelMixin):
     """A model for fitting a Lorentzian and background multiplied into the fermi dirac distribution."""
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update(
             {
@@ -307,7 +307,7 @@ class BandEdgeBGModel(XModelMixin):
             mode="same",
         )
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update(
             {
@@ -362,7 +362,7 @@ class FermiDiracAffGaussModel(XModelMixin):
             mode="same",
         )
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="drop", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="drop", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.fermi_dirac_bkg_gauss, **kwargs)
@@ -412,7 +412,7 @@ class GStepBStdevModel(XModelMixin):
         dx = x - center
         return const_bkg + lin_bkg * np.min(dx, 0) + gstep_stdev(x, center, sigma, erf_amp)
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.gstepb_stdev, **kwargs)
@@ -446,7 +446,7 @@ class GStepBStandardModel(XModelMixin):
         """Specializes paramters in gstepb."""
         return gstepb(x, center, width=sigma, erf_amp=amplitude, **kwargs)
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.gstepb_standard, **kwargs)
@@ -494,7 +494,7 @@ class TwoLorEdgeModel(XModelMixin):
         GS = gstep(x, g_center, sigma, erf_amp)
         return TL * GS
 
-    def __init__(self, independent_vars=("x",), prefix="", missing="raise", name=None, **kwargs):
+    def __init__(self, independent_vars=["x"], prefix="", missing="raise", name=None, **kwargs):
         """Defer to lmfit for initialization."""
         kwargs.update({"prefix": prefix, "missing": missing, "independent_vars": independent_vars})
         super().__init__(self.twolorentzian_gstep, **kwargs)
