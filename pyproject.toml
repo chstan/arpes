@@ -14,7 +14,7 @@ authors = [
 description = "Modular data analysis code for angle resolved photoemission spectroscopy (ARPES)"
 readme = "README.rst"
 license = { file = "LICENSE" }
-requires-python = ">=3.8.0,<3.13"
+requires-python = ">=3.10,<3.14"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
@@ -23,11 +23,10 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -48,7 +47,7 @@ dependencies = [
     "netCDF4>=1.5.0,<1.7.0; python_version<'3.9'",
     "netCDF4>=1.5.0; python_version>='3.9'",
     "numba>=0.53.0",
-    "numpy>=1.20.0,<2.0.0",
+    "numpy>=2.0.0",
     "packaging",
     "pandas",
     "pint",

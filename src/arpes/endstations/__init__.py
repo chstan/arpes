@@ -349,7 +349,7 @@ class EndstationBase:
         # this is done for performance reasons in momentum space conversion, primarily
         for k, v in data.data_vars.items():
             if not v.dtype.isnative:
-                v.values = v.values.byteswap().newbyteorder()
+                v.values = v.values.byteswap().view(v.values.byteswap().dtype.newbyteorder())
 
         return data
 
